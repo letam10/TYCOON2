@@ -45,7 +45,9 @@ namespace Tycoon.Editor
         {
             // Build baseline từ scene hiện có, không tạo lại scene hoặc cấu hình art.
             if (!File.Exists(ScenePath)) throw new FileNotFoundException("Không có scene TYCOON2", ScenePath);
-            string output = GameSession.Argument("--build-output", Path.Combine(Root, "Builds/Windows/TYCOON2.exe"));
+            string defaultOutput = Path.Combine(Root, "Builds/Windows/TYCOON2.exe");
+            string output = GameSession.Argument("--build-output", defaultOutput);
+            string reportPath = output == defaultOutput ? Path.Combine(Root, "QA/build-report.json") : Path.Combine(Path.GetDirectoryName(output), "build-report.json");
             var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions {
                 scenes = new[] { ScenePath }, locationPathName = output,
                 target = BuildTarget.StandaloneWindows64, options = BuildOptions.None
@@ -55,7 +57,7 @@ namespace Tycoon.Editor
                 seconds = report.summary.totalTime.TotalSeconds, errors = report.summary.totalErrors,
                 warnings = report.summary.totalWarnings, builtUtc = DateTime.UtcNow.ToString("o")
             };
-            File.WriteAllText(Path.Combine(Path.GetDirectoryName(output), "build-report.json"), JsonUtility.ToJson(summary, true));
+            File.WriteAllText(reportPath, JsonUtility.ToJson(summary, true));
             if (report.summary.result != BuildResult.Succeeded) throw new Exception("Build Windows failed: " + report.summary.result);
             Debug.Log("Windows build succeeded: " + summary.bytes + " bytes.");
         }
