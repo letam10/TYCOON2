@@ -36,7 +36,7 @@ namespace Tycoon
             prompt = Text("ActionText", action.transform, "", 22, TextAnchor.MiddleCenter, "#FFFFFF"); Rect(prompt.rectTransform, Vector2.zero, Vector2.one, new Vector2(10,0), new Vector2(-10,0));
             var toastRoot = Panel("Toast", root.transform, new Vector2(.5f,1), new Vector2(.5f,1), new Vector2(-500,-100), new Vector2(500,-36), "#275D34", .9f);
             toast = Text("ToastText", toastRoot.transform, "", 22, TextAnchor.MiddleCenter, "#FFFFFF"); Rect(toast.rectTransform, Vector2.zero, Vector2.one, new Vector2(12,0), new Vector2(-12,0));
-            var help = Text("Help", root.transform, "WASD / tay cầm • tự thao tác khi đứng gần • E: thao tác • R: lấy từ kho • Q: chọn hàng • F5: lưu • Esc: menu", 18, TextAnchor.MiddleCenter, "#FFFFFF");
+            var help = Text("Help", root.transform, "WASD / cần trái: di chuyển • Đứng trong vùng để thao tác • Q / RB: chọn hàng • F5 / Start: lưu • Esc / Back: menu", 18, TextAnchor.MiddleCenter, "#FFFFFF");
             Rect(help.rectTransform, Vector2.zero, new Vector2(1,0), new Vector2(10,10), new Vector2(-10,42));
             menu = Panel("Pause", root.transform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, "#143627", .95f);
             var heading = Text("PauseHeading", menu.transform, "TYCOON2\nNông trại → Đế chế kinh doanh", 40, TextAnchor.MiddleCenter, "#FFFFFF");
@@ -52,9 +52,10 @@ namespace Tycoon
             money.text = game.Economy.Money.ToString("N0");
             string area = game.BusinessStage switch { 5 => "Nhà hàng & tiệm bánh", 4 => "Tiệm bánh", 3 => "Siêu thị", 2 => "Chế biến", _ => "Nông trại & cửa hàng" };
             progress.text = area + "\n" + game.Workers.Count + " nhân viên • " + game.Economy.Transactions + " lượt bán";
-            carry.text = "Hàng: " + game.Player.Carry.Total + "/" + game.Player.Carry.Capacity + "\nKho: " + Definitions.Items[game.SelectedItem].label;
+            var carried = game.Player.Carry.Snapshot();
+            carry.text = (carried.Count == 0 ? "Giỏ trống" : Definitions.Item(carried[0].id).label) + ": " + game.Player.Carry.Total + "/" + game.Player.Carry.Capacity + "\nChọn lấy: " + Definitions.Items[game.SelectedItem].label;
             var station = game.NearestStation(game.Player.transform.position);
-            prompt.text = station ? station.Prompt : "Thu hoạch → xếp lên quầy → phục vụ khách → nhận tiền";
+            prompt.text = !string.IsNullOrEmpty(game.Player.InteractionReason) ? game.Player.InteractionReason : station ? station.Prompt : "Đứng vào vùng: Lấy → Đặt → Vận hành → Giao → Thu tiền";
             toast.transform.parent.gameObject.SetActive(Time.time < game.ToastUntil); toast.text = game.Toast;
         }
         public void TogglePause()

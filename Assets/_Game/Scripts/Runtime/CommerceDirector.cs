@@ -19,7 +19,7 @@ namespace Tycoon
         void Update()
         {
             var game = GameSession.Instance;
-            if (!game.NavigationReady) return;
+            if (!game.NavigationReady || !game.CanSimulate) return;
             if (!restored)
             {
                 // Nạp theo vị trí đã lưu trước khi sinh khách mới để giữ nguyên FIFO.
@@ -122,7 +122,8 @@ namespace Tycoon
         public void Begin(string shop, int index)
         {
             var game = GameSession.Instance;
-            Lane?.Queue.Remove(this); Shop = shop; Basket.Restore(null); Receipt = game.NextReceipt++;
+            Lane?.Queue.Remove(this); Shop = shop;
+            if(Basket.Authority!=null)Basket.Unbind();Basket.Restore(null); Receipt = game.NextReceipt++;
             Lane = CommerceDirector.FindLane(shop); exitPoint = transform.position; decideAt = 0;
             var available = new List<string>();
             foreach (var shelf in game.Shelves)
@@ -145,13 +146,14 @@ namespace Tycoon
             Order = new OrderState(Receipt, lines, Time.time);
             if (!Lane || lines.Count == 0) { Leave(); return; }
             Current = State.Queue; Lane.Queue.Add(this); Go(Lane.QueuePoint(this)); RefreshBubble();
+            game.Transactions?.BindCustomer(this,Snapshot(),true);
         }
 
         public void Restore(CustomerSave saved)
         {
             Lane?.Queue.Remove(this); Shop = saved.shop; Receipt = saved.receipt;
             Lane = GameSession.Instance.Checkouts.Find(x => x.Id == saved.lane);
-            Basket.Restore(saved.basket); Order = OrderState.Restore(saved, Time.time);
+            if(Basket.Authority!=null)Basket.Unbind();Basket.Restore(saved.basket); Order = OrderState.Restore(saved, Time.time);
             exitPoint = new Vector3(saved.exitX, saved.exitY, saved.exitZ); decideAt = 0;
             Current = saved.phase == (int)State.Leaving || Order.Finished ? State.Leaving : State.Queue;
             if (Current == State.Queue && Lane)
@@ -160,10 +162,12 @@ namespace Tycoon
             }
             else Go(exitPoint);
             RefreshBubble();
+            if(GameSession.Instance.Transactions!=null)GameSession.Instance.Transactions.BindCustomer(this,saved,GameSession.Instance.Transactions.Order(saved.receipt)==null);
         }
 
         void Update()
         {
+            if(!GameSession.Instance.CanSimulate)return;
             if (View && Agent) View.SetMotion(Agent.velocity.magnitude, Basket.Total > 0);
             if (Current == State.Queue)
             {
@@ -220,8 +224,9 @@ namespace Tycoon
         public string ShopId;
         public StationZone CashZone;
         public readonly List<CustomerAgent> Queue = new();
-        public int Cash;
-        public int Sales;
+        int cash,sales;
+        public int Cash {get {if(Authority==null)return cash;int total=Authority.View.legacyCash.Find(x=>x.id==Id)?.amount??0;foreach(var p in Authority.View.payments)if(p.counter==Id&&!p.collected)total+=p.amount;return total;} set{if(Authority!=null&&value!=Cash)throw new System.InvalidOperationException("Cash chỉ được cập nhật qua transaction.");cash=value;}}
+        public int Sales {get {if(Authority==null)return sales;int total=0;foreach(var p in Authority.View.payments)if(p.counter==Id)total++;return total;} set{if(Authority!=null&&value!=Sales)throw new System.InvalidOperationException("Sales chỉ được cập nhật qua transaction.");sales=value;}}
         public OrderState FrontOrder => Queue.Count > 0 ? Queue[0].Order : null;
         readonly List<GameObject> bills = new();
         int shownCash = -1;
@@ -256,7 +261,7 @@ namespace Tycoon
             int moved = order.Deliver(source, customer.Basket, game.Economy, Time.time);
             if (order.Paid && !previouslyPaid)
             {
-                Cash += order.TotalPrice; Sales++; WorkCount++;
+                if(Authority==null){Cash += order.TotalPrice; Sales++; WorkCount++;}
                 if (ShopId == "bakery") game.BakerySales++;
                 game.Feedback?.PlaySale();
             }
@@ -270,7 +275,7 @@ namespace Tycoon
         {
             var game = GameSession.Instance;
             if (!IsUnlocked || !player || player != game.Player || !CashZone || !CashZone.ContainsInteractionPoint(player.transform.position)) return 0;
-            int collected = game.Economy.CollectCash(Cash); Cash -= collected;
+            int collected = Authority!=null?Authority.Collect(Id):game.Economy.CollectCash(Cash); if(Authority==null)Cash -= collected;
             if (collected > 0) { game.Say("+" + collected + " xu"); game.Feedback?.PlaySale(); }
             return collected;
         }

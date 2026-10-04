@@ -7,7 +7,7 @@ namespace Tycoon
 {
     [Serializable] public sealed class WorkerSave
     {
-        public string id, upgrade, source, destination, item, working;
+        public string id, upgrade, source, destination, item, working, reservation;
         public float x,z;
         public int phase,count,deliveries;
         public long tableReceipt;
@@ -29,6 +29,8 @@ namespace Tycoon
         float nextDecision,stuckTime;
         Vector3 previous;
         bool heldSpace;
+        string reservationId;
+        float workDelta;
         long tableReceipt;
         TextMesh label;
         public string Diagnostic()=>WorkerId+" "+Reason+" phase="+phase+" item="+item+" carry="+Carry.Total+" source="+source?.Id+" destination="+destination?.Id;
@@ -42,7 +44,8 @@ namespace Tycoon
         }
         void Update()
         {
-            var g=GameSession.Instance;if(!g.NavigationReady||!Agent.isOnNavMesh)return;
+            var g=GameSession.Instance;if(!g.NavigationReady||!g.CanSimulate||!Agent.isOnNavMesh)return;
+            crew=g.CrewStates.Find(x=>x.id==UpgradeId)??crew;
             if(!g.StorageFor(crew.area)){Reason="Khu chưa có kho riêng";return;}
             Agent.speed=4.2f*(1+.2f*(crew.speedLevel-1));Carry.Capacity=crew.carryLevel==1?6:crew.carryLevel==2?10:crew.carryLevel==3?16:24;
             View.SetMotion(Agent.velocity.magnitude,Carry.Total>0);
@@ -86,7 +89,8 @@ namespace Tycoon
                     return;
                 }
                 Reason=working is ProductionStation livestock&&livestock.Animal?"Đang chăm vật nuôi":"Đang làm việc";
-                working.Work(Carry,Time.deltaTime*(1+.2f*(crew.speedLevel-1)),GetEntityId());
+                workDelta+=Time.deltaTime;if(workDelta<.1f)return;
+                working.Work(Carry,workDelta*(1+.2f*(crew.speedLevel-1)),GetEntityId());workDelta=0;
                 if(Carry.Total>0){StopWorking();BeginDrop(g.StorageFor(crew.area));}
                 return;
             }
@@ -183,6 +187,13 @@ namespace Tycoon
             source=pickup;destination=drop;from=pickup.Inventory;to=input?((MachineStation)drop).Input:drop.Inventory;item=sku;
             count=Mathf.Min(requested,Carry.FreeFor(sku),from.Available(sku),drop is CheckoutStation?requested:to.FreeFor(sku));
             if(count<=0){Reason=from.Available(sku)==0?"Thiếu nguyên liệu":"Đích đã đầy";return;}
+            if(GameSession.Instance.Transactions!=null)
+            {
+                if(drop is CheckoutStation servingCounter)to=servingCounter.Queue[0].Basket;
+                if(drop is TableStation servingTable)to=servingTable.Occupant.Basket;
+                reservationId=GameSession.Instance.Transactions.Reserve(from,to,sku,count,GetEntityId(),Carry);
+                if(reservationId==null)return;heldSpace=true;phase=1;Navigation.Go(Agent,pickup.InteractionPoint);Reason="Đang lấy hàng";return;
+            }
             if(to!=null&&!to.TryReserveSpace(sku,count))return;
             if(!from.TryReserve(sku,count)){to?.ReleaseSpace(sku,count);return;}
             heldSpace=to!=null;phase=1;Navigation.Go(Agent,pickup.InteractionPoint);Reason="Đang lấy hàng";
@@ -193,10 +204,20 @@ namespace Tycoon
             var items=Carry.Snapshot();if(items.Count==0)return;item=items[0].id;source=null;destination=drop;from=Carry;to=drop.Inventory;
             count=Mathf.Min(Carry.Count(item),to.FreeFor(item));
             if(count<=0){Reason="Đích đã đầy";Navigation.Go(Agent,drop.InteractionPoint+Vector3.left*2);return;}
+            if(GameSession.Instance.Transactions!=null)
+            {
+                reservationId=GameSession.Instance.Transactions.Reserve(Carry,to,item,count,GetEntityId());
+                if(reservationId==null)return;heldSpace=true;phase=2;Navigation.Go(Agent,drop.InteractionPoint);return;
+            }
             heldSpace=to.TryReserveSpace(item,count);if(!heldSpace)return;phase=2;Navigation.Go(Agent,drop.InteractionPoint);
         }
         void Transport()
         {
+            if(GameSession.Instance.Transactions!=null)
+            {
+                var r=GameSession.Instance.Transactions.Reservation(reservationId);
+                if(r==null||r.status!=ReservationStatus.Active||r.expiresAt<=GameSession.Instance.Transactions.Now){CancelTransport();Reason="Chỗ giữ đã hết hạn";return;}
+            }
             var target=phase==1?source:destination;
             if(!target||!target.IsUnlocked){CancelTransport();Reason="Đích không còn khả dụng";return;}
             if(destination is TableStation requestedTable&&(!requestedTable.NeedsMeal||requestedTable.Occupant.Receipt!=tableReceipt))
@@ -207,14 +228,29 @@ namespace Tycoon
             Agent.ResetPath();
             if(phase==1)
             {
-                int n=Inventory.TransferReserved(from,Carry,item,count);
-                if(n<count){to?.ReleaseSpace(item,count-n);from.Release(item,count-n);}count=n;
+                int n=GameSession.Instance.Transactions!=null?GameSession.Instance.Transactions.Transfer(from,Carry,item,count,reservation:reservationId):Inventory.TransferReserved(from,Carry,item,count);
+                if(n<count&&GameSession.Instance.Transactions==null){to?.ReleaseSpace(item,count-n);from.Release(item,count-n);}count=n;
                 if(n==0){phase=0;heldSpace=false;Reason="Thiếu nguyên liệu";return;}
                 phase=2;Navigation.Go(Agent,destination.InteractionPoint);Reason="Đang vận chuyển";
             }
             else
             {
                 int n;
+                if(GameSession.Instance.Transactions!=null)
+                {
+                    if(destination is CheckoutStation counter)
+                    {
+                        var customer=counter.Queue.Count>0?counter.Queue[0]:null;
+                        if(!customer||Vector3.Distance(customer.transform.position,counter.QueuePoint(customer))>.9f){Reason="Chờ khách tại quầy";return;}
+                        n=GameSession.Instance.Transactions.Deliver(tableReceipt,Carry,reservationId);
+                        if(customer.Order.Finished)customer.Leave();
+                    }
+                    else if(destination is TableStation table)n=GameSession.Instance.Transactions.Deliver(tableReceipt,Carry,reservationId);
+                    else n=GameSession.Instance.Transactions.Transfer(Carry,to,item,count,reservation:reservationId);
+                    if(n==0){Reason="Chờ đích nhận hàng";return;}
+                    heldSpace=false;phase=0;reservationId=null;Deliveries++;
+                    if(destination is ProductionStation livestock&&livestock.Animal)working=livestock;return;
+                }
                 if(destination is CheckoutStation servingCounter)
                 {
                     // Giao từ giỏ nhân viên sau khi đã đi tới đúng quầy và đúng đơn.
@@ -239,24 +275,41 @@ namespace Tycoon
                 foreach(var ingredient in machine.Recipe.inputs)if(ingredient.id==sku)reserve+=ingredient.count*2;
             return Mathf.Max(0,source.Inventory.Available(sku)-reserve);
         }
-        void StopWorking(){if(working)working.ReleaseOperator(GetEntityId());working=null;}
+        void StopWorking(){if(working)working.ReleaseOperator(GetEntityId());working=null;workDelta=0;}
         void CancelTransport()
         {
+            if(GameSession.Instance&&GameSession.Instance.Transactions!=null)
+            {
+                GameSession.Instance.Transactions.Release(reservationId,GetEntityId());reservationId=null;
+                heldSpace=false;phase=0;count=0;source=destination=null;from=to=null;return;
+            }
             if(phase==1&&from!=null)from.Release(item,count);
             if(heldSpace&&to!=null)to.ReleaseSpace(item,count);
             heldSpace=false;phase=0;count=0;source=destination=null;from=to=null;
         }
         void OnDisable(){StopWorking();CancelTransport();}
         string InventoryId(Station s,Inventory inv)=>s==null?"":s.Id+(s is MachineStation m&&ReferenceEquals(m.Input,inv)?"_input":"");
-        public WorkerSave Snapshot()=>new(){id=WorkerId,upgrade=UpgradeId,source=InventoryId(source,from),destination=InventoryId(destination,to),item=item,working=working?.Id,tableReceipt=tableReceipt,x=transform.position.x,z=transform.position.z,phase=phase,count=count,deliveries=Deliveries,carry=Carry.Snapshot()};
+        public WorkerSave Snapshot()=>new(){id=WorkerId,upgrade=UpgradeId,source=InventoryId(source,from),destination=InventoryId(destination,to),item=item,working=working?.Id,reservation=reservationId,tableReceipt=tableReceipt,x=transform.position.x,z=transform.position.z,phase=phase,count=count,deliveries=Deliveries,carry=Carry.Snapshot()};
         public void Restore(WorkerSave saved)
         {
             StopWorking();CancelTransport();
-            Carry.Restore(saved.carry);Deliveries=saved.deliveries;item=saved.item;count=saved.count;phase=saved.phase;tableReceipt=saved.tableReceipt;
+            if(Carry.Authority==null)Carry.Restore(saved.carry);Deliveries=saved.deliveries;item=saved.item;count=saved.count;phase=saved.phase;tableReceipt=saved.tableReceipt;reservationId=saved.reservation;
             var g=GameSession.Instance;
             source=g.Stations.Find(s=>s.Id==saved.source);destination=g.Stations.Find(s=>s.Id==saved.destination||s.Id+"_input"==saved.destination);
             from=source?.Inventory;to=destination is MachineStation m&&saved.destination.EndsWith("_input")?m.Input:destination?.Inventory;
             working=g.Stations.Find(s=>s.Id==saved.working);
+            if(g.Transactions!=null)
+            {
+                if(phase is 1 or 2)
+                {
+                    if(destination is CheckoutStation)to=null;
+                    if(destination is TableStation)to=null;
+                    var reservation=g.Transactions.Reservation(reservationId);
+                    heldSpace=reservation!=null&&reservation.status==ReservationStatus.Active;
+                    if(!heldSpace){phase=0;count=0;reservationId=null;}
+                }
+                return;
+            }
             if(phase is 1 or 2)
             {
                 heldSpace=to!=null&&to.TryReserveSpace(item,count);

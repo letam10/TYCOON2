@@ -6,9 +6,15 @@ namespace Tycoon
     {
         public RecipeDefinition Recipe;
         [System.NonSerialized] public Inventory Input=new(36);
-        public bool Running,Broken,RepairPaid;
-        public float Remaining,RepairRemaining=8;
-        public int Batches,RepairFee=20;
+        bool running,broken,repairPaid;float remaining,repairRemaining=8;int batches,repairFee=20;
+        public bool Running {get=>Runtime?.running??running;set{GuardState();running=value;}}
+        public bool Broken {get=>Runtime?.progress.broken??broken;set{GuardState();broken=value;}}
+        public bool RepairPaid {get=>Runtime?.progress.repairPaid??repairPaid;set{GuardState();repairPaid=value;}}
+        public float Remaining {get=>(float)(Runtime?.remaining??remaining);set{GuardState();remaining=value;}}
+        public float RepairRemaining {get=>Runtime?.progress.repairRemaining??repairRemaining;set{GuardState();repairRemaining=value;}}
+        public int Batches {get=>Runtime?.batches??batches;set{GuardState();batches=value;}}
+        public int RepairFee {get=>Runtime?.progress.repairFee??repairFee;set{GuardState();repairFee=value;}}
+        void GuardState(){if(Runtime!=null)throw new System.InvalidOperationException("Machine chỉ được cập nhật qua transaction.");}
         public Transform Rotor;
         public override string Prompt=>Broken?Label+" • sửa "+RepairFee+" xu • "+RepairRemaining.ToString("0.0")+"s":Label+" • "+(Running?"Đứng vận hành • "+Remaining.ToString("0.0")+"s":"Đưa nguyên liệu / vận hành / lấy hàng");
         bool outputReserved;
@@ -16,7 +22,9 @@ namespace Tycoon
         public void ConfigureInputLimits(){if(Recipe!=null&&Recipe.inputs.Length>0)foreach(var item in Recipe.inputs)Input.SetLimit(item.id,Mathf.Max(item.count,Input.Capacity/Recipe.inputs.Length));}
         public bool Operate(float delta,EntityId actorId)
         {
-            if(!IsUnlocked||Broken||delta<=0||float.IsNaN(delta)||float.IsInfinity(delta)||Recipe==null||Inventory==null||!Lease(actorId))return false;
+            if(!IsUnlocked||Broken||delta<=0||float.IsNaN(delta)||float.IsInfinity(delta)||Recipe==null||Inventory==null)return false;
+            if(Authority!=null){bool worked=Authority.OperateMachine(this,delta,actorId);if(worked&&Rotor)Rotor.Rotate(Vector3.up,130*delta,Space.Self);return worked;}
+            if(!Lease(actorId))return false;
             ConfigureInputLimits();
             if(!Running)
             {
@@ -34,10 +42,12 @@ namespace Tycoon
             }
             return true;
         }
-        public void BreakDown(int fee){if(Broken)return;Broken=true;RepairFee=Mathf.Clamp(fee,10,100);RepairRemaining=8;RepairPaid=false;}
+        public void BreakDown(int fee){if(Broken)return;if(Authority!=null){var command=Authority.Command(TransactionKind.BreakMachine,"simulation",Id);command.quantity=fee;Authority.TryExecute(command,out _);return;}Broken=true;RepairFee=Mathf.Clamp(fee,10,100);RepairRemaining=8;RepairPaid=false;}
         public bool Repair(Economy economy,float delta,EntityId actorId)
         {
-            if(!IsUnlocked||!Broken||economy==null||delta<=0||float.IsNaN(delta)||float.IsInfinity(delta)||!Lease(actorId))return false;
+            if(!IsUnlocked||!Broken||economy==null||delta<=0||float.IsNaN(delta)||float.IsInfinity(delta))return false;
+            if(Authority!=null)return Authority.StationAction(TransactionKind.RepairMachine,this,actorId,delta);
+            if(!Lease(actorId))return false;
             if(!RepairPaid){if(!economy.TrySpend(RepairFee))return false;RepairPaid=true;}
             RepairRemaining=Mathf.Max(0,RepairRemaining-delta);
             if(RepairRemaining==0){Broken=false;RepairPaid=false;}return true;

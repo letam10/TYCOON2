@@ -25,6 +25,8 @@ namespace Tycoon
     [Serializable]
     public sealed class SaveData
     {
+        public TransactionState transactionState;
+        public int transactionVersion;
         public int version = 2;
         public int money;
         public int revenue;
@@ -57,7 +59,7 @@ namespace Tycoon
 
     public static class SaveStore
     {
-        public static void Write(string path, SaveData data)
+        public static void Write(string path, SaveData data, Action<CommitBoundary> fault = null)
         {
             Validate(data);
             string directory = Path.GetDirectoryName(path);
@@ -65,10 +67,14 @@ namespace Tycoon
             string temporary = path + ".tmp";
             try
             {
-                File.WriteAllText(temporary, JsonUtility.ToJson(data, true));
+                byte[] bytes = System.Text.Encoding.UTF8.GetBytes(JsonUtility.ToJson(data, true));
+                using (var stream = new FileStream(temporary, FileMode.Create, FileAccess.Write, FileShare.None))
+                { stream.Write(bytes, 0, bytes.Length); stream.Flush(true); }
+                fault?.Invoke(CommitBoundary.TemporaryFlushed);
                 // Replace không truyền backup path: ghi nguyên tử mà không tạo .bak.
                 if (File.Exists(path)) File.Replace(temporary, path, null);
                 else File.Move(temporary, path);
+                fault?.Invoke(CommitBoundary.Replaced);
             }
             finally { if(File.Exists(temporary))File.Delete(temporary); }
         }
@@ -76,6 +82,8 @@ namespace Tycoon
         {
             if (!File.Exists(path)) return null;
             var data = JsonUtility.FromJson<SaveData>(File.ReadAllText(path));
+            // Unity có thể tạo inline class rỗng khi JSON thiếu field; marker phân biệt save v2 cũ.
+            if(data!=null&&data.transactionVersion==0)data.transactionState=null;
             if (data == null || data.version != 2 || data.money < 0 || data.inventories == null || data.unlocked == null)
                 throw new InvalidDataException("Save không hợp lệ hoặc phiên bản chưa hỗ trợ.");
             Validate(data);
@@ -112,6 +120,8 @@ namespace Tycoon
                 cash+=counter.amount;
             }
             if(cash!=data.pendingCash)throw new InvalidDataException("Tiền tại quầy không khớp sổ tiền chờ thu.");
+            if(data.transactionVersion is <0 or >1)throw new InvalidDataException("Transaction save version chưa hỗ trợ.");
+            if (data.transactionVersion==1) TransactionCore.Validate(data.transactionState);
         }
     }
 }

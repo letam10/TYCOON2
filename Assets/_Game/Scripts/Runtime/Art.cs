@@ -118,11 +118,15 @@ namespace Tycoon
         public float Scale = .65f;
         public float LayerHeight = .24f;
         public int VisibleCount => items.Count;
+        public string VisibleItemId(int index) => items[index].name;
         readonly List<GameObject> items = new();
         int revision = -1;
-        void LateUpdate()
+        Inventory displayedInventory;
+        void LateUpdate() => Refresh();
+        public void Refresh()
         {
-            if (Inventory == null || Pool == null || revision == Inventory.Revision) return;
+            if (Inventory == null || Pool == null || ReferenceEquals(displayedInventory, Inventory) && revision == Inventory.Revision) return;
+            displayedInventory = Inventory;
             revision = Inventory.Revision;
             foreach (var go in items) Pool.Return(go);
             items.Clear();
@@ -131,7 +135,8 @@ namespace Tycoon
             {var size=Art.ModelSize(Definitions.Item(amount.id).model);spacing=Mathf.Max(spacing,Mathf.Sqrt(size.x*size.x+size.z*size.z)*Scale+.025f);}
             foreach (var value in Inventory.Snapshot())
             {
-                for (int count = 0; count < value.count && items.Count < Maximum; count++)
+                // Giỏ một loại phải hiển thị đủ hàng thật, kể cả sau nâng cấp hoặc load save.
+                for (int count = 0; count < value.count && items.Count < (Inventory.SingleItem ? Inventory.Total : Maximum); count++)
                 {
                     var go = Pool.Take(value.id, transform);
                     int index = items.Count;

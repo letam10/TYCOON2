@@ -31,10 +31,14 @@ namespace Tycoon
     {
         public const float Patience = 90;
         public long Receipt { get; private set; }
-        public readonly List<OrderLine> Lines = new();
-        public float Deadline { get; private set; }
-        public bool Paid { get; private set; }
-        public bool TimedOut { get; private set; }
+        RuntimeTransactions authority;
+        readonly List<OrderLine> lines = new();
+        float deadline; bool paid,timedOut;
+        public List<OrderLine> Lines => authority==null?lines:authority.Order(Receipt).lines.ConvertAll(x=>x.Copy());
+        public float Deadline { get => authority==null?deadline:(float)authority.Order(Receipt).deadline; private set => deadline=value; }
+        public bool Paid { get => authority==null?paid:authority.Order(Receipt).status==OrderStatus.Complete; private set => paid=value; }
+        public bool TimedOut { get => authority==null?timedOut:authority.Order(Receipt).status==OrderStatus.Failed; private set => timedOut=value; }
+        internal void Bind(RuntimeTransactions runtime) { if(runtime.Order(Receipt)==null)throw new System.IO.InvalidDataException("Order reference không tồn tại: "+Receipt);authority=runtime; }
         public bool Finished => Paid || TimedOut;
         public bool Complete => Lines.Count > 0 && Lines.TrueForAll(x => x.Remaining == 0);
         public int TotalPrice { get { int total = 0; foreach (var line in Lines) total += line.requested * line.unitPrice; return total; } }
@@ -45,15 +49,17 @@ namespace Tycoon
             if (lines != null) foreach (var line in lines)
                 if (line != null && line.requested > 0 && line.unitPrice > 0 && !string.IsNullOrEmpty(line.id) && Definitions.Item(line.id) != null) Lines.Add(line.Copy());
         }
-        public float RemainingPatience(float now) => Math.Max(0, Deadline - now);
+        public float RemainingPatience(float now) => authority==null?Math.Max(0,Deadline-now):(float)Math.Max(0,authority.Order(Receipt).deadline-authority.Now);
         public bool Expire(Inventory received, Economy economy, float now)
         {
+            if(authority!=null)return !Finished&&authority.Now>=authority.Order(Receipt).deadline&&authority.Fail(Receipt);
             if (Finished || now < Deadline || economy == null) return false;
             if (economy.IsPaid(Receipt)) { Paid = true; return false; }
             TimedOut = true; economy.RecordLoss(Receipt, received); return true;
         }
         public int Deliver(Inventory source, Inventory received, Economy economy, float now)
         {
+            if(authority!=null)return authority.Deliver(Receipt,source);
             if (Finished || economy == null || received == null) return 0;
             if (economy.IsPaid(Receipt)) { Paid = true; return 0; }
             if (economy.IsLost(Receipt)) { TimedOut = true; return 0; }

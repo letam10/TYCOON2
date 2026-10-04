@@ -39,6 +39,8 @@ namespace Tycoon
         public string Toast = "";
         public float ToastUntil;
         public List<string> RuntimeErrors = new();
+        public RuntimeTransactions Transactions { get; private set; }
+        public bool CanSimulate => !SaveBlocked;
 
         void Awake()
         {
@@ -110,16 +112,19 @@ namespace Tycoon
             bool baseline=Array.Exists(Environment.GetCommandLineArgs(),x=>x=="--qa-baseline");
             if (File.Exists(SavePath)&&!baseline) LoadGame();
             ApplyProgression();
+            if (!baseline && Transactions == null && !SaveBlocked)
+                try { InitializeTransactions(); } catch(Exception error) { BlockRecovery(error); }
             Feedback = gameObject.AddComponent<GameFeedback>();
             Commerce = gameObject.AddComponent<CommerceDirector>();
             Restaurant = gameObject.AddComponent<RestaurantDirector>();
-            if(IsQa&&baseline)gameObject.AddComponent<QaBaseline>();
+            if(IsQa&&Array.Exists(Environment.GetCommandLineArgs(),x=>x=="--qa-stage23"))gameObject.AddComponent<QaStages>();
+            else if(IsQa&&baseline)gameObject.AddComponent<QaBaseline>();
             else if (IsQa) gameObject.AddComponent<QaDriver>();
             Say("Đứng gần để thu / xếp hàng • đến quầy nhận tiền • WASD di chuyển");
         }
         void Update()
         {
-            if (!Player || !NavigationReady) return;
+            if (!Player || !NavigationReady || !CanSimulate) return;
             SyncWorkers();
             TickEvents();
             if (!IsQa && Time.time > nextAutosave) { nextAutosave = Time.time + 60; SaveGame(); }
@@ -141,6 +146,7 @@ namespace Tycoon
                     root.transform.position=position;
                     var model=Art.Model("player",Vector3.zero,root.transform);model.AddComponent<ActorView>();
                     var worker=root.AddComponent<WorkerAgent>();worker.Initialize(Definitions.Upgrade(crew.id));worker.WorkerId=key;Workers.Add(worker);
+                    Transactions?.BindWorker(worker,saved);
                     if(saved!=null){worker.Restore(saved);PendingWorkers.Remove(saved);}
                 }
             }
@@ -150,6 +156,11 @@ namespace Tycoon
             var args = Environment.GetCommandLineArgs();
             for (int index = 0; index < args.Length - 1; index++) if (args[index] == key) return args[index + 1];
             return defaultValue;
+        }
+        public IEnumerable<IPlayerInteractionArea> PlayerInteractionAreas()
+        {
+            foreach (var station in Stations)
+                if (station && station is IPlayerInteractionArea area) yield return area;
         }
         public Station NearestStation(Vector3 position)
         {
@@ -166,13 +177,18 @@ namespace Tycoon
         public void Say(string message) { Toast = message; ToastUntil = Time.time + 4; }
         public void OnPurchased(UpgradeDefinition upgrade)
         {
-            if (upgrade.kind == "worker" && !CrewStates.Exists(x => x.id == upgrade.id)) CrewStates.Add(CrewFor(upgrade));
+            if (Transactions == null && upgrade.kind == "worker" && !CrewStates.Exists(x => x.id == upgrade.id)) CrewStates.Add(CrewFor(upgrade));
             ApplyProgression();
             Say(upgrade.label + " hoàn tất");
         }
         public void SaveGame()
         {
             if(SaveBlocked){Say("Save đang bị chặn vì file tải không hợp lệ");return;}
+            try { if(Transactions!=null)Transactions.Checkpoint();else SaveStore.Write(SavePath,CaptureSaveData());Say("Đã lưu trò chơi"); }
+            catch(Exception error){Say("Không lưu được: "+error.Message);Debug.LogException(error);}
+        }
+        public SaveData CaptureSaveData()
+        {
             var data = new SaveData {
                 money = Economy.Money, revenue = Economy.Revenue, transactions = Economy.Transactions,
                 nextReceipt = NextReceipt, savedAt = DateTime.UtcNow.ToString("o"),
@@ -195,9 +211,17 @@ namespace Tycoon
             if (Restaurant) foreach (var diner in Restaurant.Diners) data.diners.Add(diner.Snapshot());
             // Actor chưa spawn vẫn giữ hàng khi người chơi lưu lại ngay sau load.
             data.workers.AddRange(PendingWorkers);data.customers.AddRange(PendingCustomers);data.diners.AddRange(PendingDiners);
-            try { SaveStore.Write(SavePath, data); Say("Đã lưu trò chơi"); }
-            catch (Exception error) { Say("Không lưu được: " + error.Message); Debug.LogException(error); }
+            return data;
         }
+        public void InitializeTransactions(TransactionState state=null,bool persist=true)
+        {
+            foreach(var machine in Machines)machine.ConfigureInputLimits();
+            Transactions = new RuntimeTransactions(this,state??RuntimeTransactions.Migrate(this,CaptureSaveData()),persist);
+            Transactions.CompletePurchases();
+            foreach(var order in Transactions.Snapshot().orders)if(long.TryParse(order.id.Substring(6),out long receipt))Transactions.Settle(receipt);
+        }
+        public void BlockRecovery(Exception error)
+        { SaveBlocked=true;if(Player)Player.CanControl=false;Say("Gameplay dừng: "+error.Message);Debug.LogException(error); }
         public bool SaveBlocked { get; private set; }
         public void LoadGame()
         {
@@ -207,6 +231,7 @@ namespace Tycoon
                 if (data == null) return;
                 ValidateSaveOwners(data);
                 Player.StopInteraction();
+                Transactions?.Detach();Transactions=null;
                 foreach(var worker in Workers){worker.gameObject.SetActive(false);Destroy(worker.gameObject);}
                 Workers.Clear();Commerce?.ResetForLoad();Restaurant?.ResetForLoad();
                 foreach(var counter in Checkouts){counter.Queue.Clear();counter.Cash=0;}
@@ -235,14 +260,23 @@ namespace Tycoon
                 Player.transform.position = new Vector3(data.playerX, .05f, data.playerZ);
                 if(Player.Controller)Player.Controller.enabled = true;
                 ApplyProgression();
+                SaveBlocked=false;Player.CanControl=true;
+                if(data.transactionState!=null)InitializeTransactions(data.transactionState);
                 CameraRig?.Snap();
                 SaveBlocked=false;
                 Say("Đã tải trò chơi");
             }
-            catch (Exception error) { SaveBlocked=true;Say("Không tải được save: " + error.Message); Debug.LogException(error); }
+            catch (Exception error) { BlockRecovery(error); }
         }
         void ValidateSaveOwners(SaveData data)
         {
+            if(data.transactionState!=null)
+            {
+                TransactionCore.Validate(data.transactionState);
+                foreach(var state in data.transactionState.stations)
+                    if(!Stations.Exists(x=>x is not StationZone&&x.Id==state.id))throw new InvalidDataException("Station reference không còn tồn tại: "+state.id);
+                if(data.transactionState.money!=data.money)throw new InvalidDataException("Core money không khớp save projection.");
+            }
             if(data.transit.Count>0)throw new InvalidDataException("Transit prototype không có owner; không tự trả hàng về kho.");
             var owners=new Dictionary<string,Inventory>{{"player",Player.Carry}};
             var stations=new Dictionary<string,Station>();

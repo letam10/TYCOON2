@@ -2,6 +2,7 @@ using UnityEngine;
 
 namespace Tycoon
 {
+    [RequireComponent(typeof(Camera))]
     public sealed class FollowCamera : MonoBehaviour
     {
         public Transform Target;
@@ -10,15 +11,18 @@ namespace Tycoon
         public float Distance = 24;
         public Vector3 FocusOffset=new(2,.8f,3);
         public bool Overview;
+        public float Damping = .18f;
         Vector3 velocity;
-        void LateUpdate()
+        void Awake() => GetComponent<Camera>().orthographic = false;
+        void LateUpdate() => Follow(Time.deltaTime);
+        public void Follow(float delta)
         {
-            if (!Target) return;
+            if (!Target || delta <= 0 || float.IsNaN(delta) || float.IsInfinity(delta)) return;
             var rotation = Quaternion.Euler(Pitch, Yaw, 0);
             var focus = Overview ? new Vector3(5, .1f, 20) : Target.position + FocusOffset;
             float distance = Overview ? 95 : Distance;
             var destination = focus - rotation * Vector3.forward * distance;
-            transform.position = Vector3.SmoothDamp(transform.position, destination, ref velocity, .22f);
+            transform.position = Vector3.SmoothDamp(transform.position, destination, ref velocity, Damping, Mathf.Infinity, delta);
             transform.rotation = rotation;
         }
         public void Snap()
@@ -26,7 +30,9 @@ namespace Tycoon
             if (!Target) return;
             var rotation = Quaternion.Euler(Pitch, Yaw, 0);
             transform.rotation = rotation;
-            transform.position = Target.position + FocusOffset - rotation * Vector3.forward * Distance;
+            var focus = Overview ? new Vector3(5, .1f, 20) : Target.position + FocusOffset;
+            transform.position = focus - rotation * Vector3.forward * (Overview ? 95 : Distance);
+            GetComponent<Camera>().orthographic = false;
             velocity = Vector3.zero;
         }
     }

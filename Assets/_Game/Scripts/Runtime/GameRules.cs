@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Tycoon
 {
-    [Serializable] public sealed class PurchaseProgress { public string id; public int paid; }
+    [Serializable] public sealed class PurchaseProgress { public string id; public int paid, total; public bool complete; }
     [Serializable] public sealed class CrewState
     {
         public string id, role, area;
@@ -17,8 +17,10 @@ namespace Tycoon
     }
     public sealed partial class GameSession
     {
-        public List<PurchaseProgress> Purchases = new();
-        public List<CrewState> CrewStates = new();
+        List<PurchaseProgress> purchases = new();
+        List<CrewState> crewStates = new();
+        public List<PurchaseProgress> Purchases { get => Transactions == null ? purchases : Transactions.View.purchases.ConvertAll(x => new PurchaseProgress { id=x.id, paid=x.contributed, total=Definitions.Upgrade(x.id).cost, complete=x.complete }); set { if(Transactions!=null)throw new InvalidOperationException("Purchase chỉ được cập nhật qua transaction."); purchases=value; } }
+        public List<CrewState> CrewStates { get => Transactions == null ? crewStates : Transactions.View.crews.ConvertAll(TransactionCore.Copy); set { if(Transactions!=null)throw new InvalidOperationException("Crew chỉ được cập nhật qua transaction."); crewStates=value; } }
         public List<CustomerSave> PendingCustomers = new();
         public List<WorkerSave> PendingWorkers = new();
         public EventState Events = new();
@@ -79,6 +81,7 @@ namespace Tycoon
         public int Contribute(UpgradeDefinition u, int amount)
         {
             if (!CanPurchase(u, out _) || amount <= 0) return 0;
+            if (Transactions != null) return Transactions.Contribute(u, amount);
             var progress = Purchases.Find(x => x.id == u.id);
             if (progress == null) { progress = new PurchaseProgress { id = u.id }; Purchases.Add(progress); }
             int moved = Mathf.Min(amount, Economy.Money, u.cost - progress.paid);
@@ -110,6 +113,11 @@ namespace Tycoon
         {
             var c = CrewStates.Find(x => x.id == id); if (c == null || kind is not ("speed" or "carry" or "count")) return false;
             if (kind == "carry" && c.role == "Cashier") return false;
+            if(Transactions!=null)
+            {
+                var command=Transactions.Command(TransactionKind.UpgradeCrew,"player",id);command.secondary=kind;
+                return Transactions.TryExecute(command,out _);
+            }
             int level = kind == "speed" ? c.speedLevel : kind == "carry" ? c.carryLevel : c.count;
             if (level >= 3 || !Economy.TrySpend(CrewUpgradeCost(id, kind))) return false;
             if (kind == "speed") c.speedLevel++; else if (kind == "carry") c.carryLevel++; else c.count++;
@@ -117,6 +125,7 @@ namespace Tycoon
         }
         void ApplyProgression()
         {
+            if(Transactions!=null)return;
             Player.Carry.Capacity = Economy.Has("carry24") ? 24 : Economy.Has("carry16") ? 16 : Economy.Has("carry10") ? 10 : 6;
             foreach (var s in Stations)
             {
