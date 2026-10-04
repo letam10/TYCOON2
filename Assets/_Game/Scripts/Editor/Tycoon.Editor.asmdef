@@ -1,0 +1,8 @@
+{
+  "name": "Tycoon.Editor",
+  "rootNamespace": "Tycoon.Editor",
+  "references": ["Tycoon.Runtime", "Unity.AI.Navigation", "Unity.RenderPipelines.Universal.Runtime", "Unity.RenderPipelines.Core.Runtime"],
+  "includePlatforms": ["Editor"],
+  "allowUnsafeCode": false,
+  "autoReferenced": true
+}

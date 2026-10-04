@@ -1,0 +1,548 @@
+{
+    "models": [
+        {
+            "key": "farmer",
+            "clips": [
+                "Idle",
+                "Pickup",
+                "Run",
+                "Walk",
+                "Carry",
+                "CarryWalk",
+                "Drop"
+            ],
+            "bounds": [
+                0.7580679655075073,
+                1.7876970767974854,
+                0.8336098790168762
+            ],
+            "renderers": 4,
+            "materialSlots": 12,
+            "validAvatar": true
+        },
+        {
+            "key": "worker",
+            "clips": [
+                "Idle",
+                "Pickup",
+                "Run",
+                "Walk",
+                "Carry",
+                "CarryWalk",
+                "Drop"
+            ],
+            "bounds": [
+                0.7430590391159058,
+                1.7873401641845703,
+                0.8318783044815063
+            ],
+            "renderers": 4,
+            "materialSlots": 13,
+            "validAvatar": true
+        },
+        {
+            "key": "customer_suit",
+            "clips": [
+                "Idle",
+                "Pickup",
+                "Run",
+                "Walk",
+                "Carry",
+                "CarryWalk",
+                "Drop"
+            ],
+            "bounds": [
+                0.7326210737228394,
+                1.7856500148773193,
+                0.8137626051902771
+            ],
+            "renderers": 4,
+            "materialSlots": 10,
+            "validAvatar": true
+        },
+        {
+            "key": "cow",
+            "clips": [
+                "Death",
+                "Idle",
+                "Jump",
+                "Run",
+                "Walk",
+                "WalkSlow"
+            ],
+            "bounds": [
+                0.7753420472145081,
+                1.818100929260254,
+                2.8854689598083496
+            ],
+            "renderers": 1,
+            "materialSlots": 3,
+            "validAvatar": true
+        },
+        {
+            "key": "carrot",
+            "clips": [],
+            "bounds": [
+                0.19279584288597107,
+                0.4622485041618347,
+                0.13575759530067444
+            ],
+            "renderers": 2,
+            "materialSlots": 2,
+            "validAvatar": false
+        },
+        {
+            "key": "tomato",
+            "clips": [],
+            "bounds": [
+                0.40864863991737366,
+                0.46783125400543213,
+                0.40864866971969604
+            ],
+            "renderers": 2,
+            "materialSlots": 2,
+            "validAvatar": false
+        },
+        {
+            "key": "wheat",
+            "clips": [],
+            "bounds": [
+                0.20676042139530182,
+                0.4103130102157593,
+                0.04378068819642067
+            ],
+            "renderers": 1,
+            "materialSlots": 1,
+            "validAvatar": false
+        },
+        {
+            "key": "milk",
+            "clips": [],
+            "bounds": [
+                0.23379309475421906,
+                0.41999995708465576,
+                0.23379310965538025
+            ],
+            "renderers": 2,
+            "materialSlots": 2,
+            "validAvatar": false
+        },
+        {
+            "key": "egg",
+            "clips": [],
+            "bounds": [
+                0.27176469564437866,
+                0.42000001668930054,
+                0.27176475524902344
+            ],
+            "renderers": 1,
+            "materialSlots": 1,
+            "validAvatar": false
+        },
+        {
+            "key": "flour",
+            "clips": [],
+            "bounds": [
+                0.33157891035079956,
+                0.41999995708465576,
+                0.269131600856781
+            ],
+            "renderers": 3,
+            "materialSlots": 3,
+            "validAvatar": false
+        },
+        {
+            "key": "cheese",
+            "clips": [],
+            "bounds": [
+                0.41999995708465576,
+                0.1887587010860443,
+                0.39823877811431885
+            ],
+            "renderers": 1,
+            "materialSlots": 1,
+            "validAvatar": false
+        },
+        {
+            "key": "sauce",
+            "clips": [],
+            "bounds": [
+                0.3360000252723694,
+                0.41999995708465576,
+                0.335999995470047
+            ],
+            "renderers": 3,
+            "materialSlots": 3,
+            "validAvatar": false
+        },
+        {
+            "key": "cake",
+            "clips": [],
+            "bounds": [
+                0.41999998688697815,
+                0.2823333144187927,
+                0.41999998688697815
+            ],
+            "renderers": 4,
+            "materialSlots": 4,
+            "validAvatar": false
+        },
+        {
+            "key": "meal",
+            "clips": [],
+            "bounds": [
+                0.41999998688697815,
+                0.16227275133132935,
+                0.41999995708465576
+            ],
+            "renderers": 4,
+            "materialSlots": 4,
+            "validAvatar": false
+        },
+        {
+            "key": "bread",
+            "clips": [],
+            "bounds": [
+                0.24286088347434998,
+                0.29669323563575745,
+                0.42000001668930054
+            ],
+            "renderers": 1,
+            "materialSlots": 2,
+            "validAvatar": false
+        },
+        {
+            "key": "carrot_crop",
+            "clips": [],
+            "bounds": [
+                0.3437720835208893,
+                0.6499999761581421,
+                0.2548672556877136
+            ],
+            "renderers": 1,
+            "materialSlots": 3,
+            "validAvatar": false
+        },
+        {
+            "key": "coop",
+            "clips": [],
+            "bounds": [
+                3.3815343379974365,
+                2.5999999046325684,
+                3.025832176208496
+            ],
+            "renderers": 1,
+            "materialSlots": 5,
+            "validAvatar": false
+        },
+        {
+            "key": "barn",
+            "clips": [],
+            "bounds": [
+                5.085695266723633,
+                4.199999809265137,
+                5.473765850067139
+            ],
+            "renderers": 1,
+            "materialSlots": 5,
+            "validAvatar": false
+        },
+        {
+            "key": "fence",
+            "clips": [],
+            "bounds": [
+                4.563645839691162,
+                0.8499999046325684,
+                0.12823528051376343
+            ],
+            "renderers": 1,
+            "materialSlots": 1,
+            "validAvatar": false
+        },
+        {
+            "key": "well",
+            "clips": [],
+            "bounds": [
+                1.2496371269226074,
+                2.0999999046325684,
+                1.4553158283233643
+            ],
+            "renderers": 1,
+            "materialSlots": 5,
+            "validAvatar": false
+        },
+        {
+            "key": "shelf",
+            "clips": [],
+            "bounds": [
+                2.700000047683716,
+                2.2300000190734863,
+                1.0800001621246338
+            ],
+            "renderers": 3,
+            "materialSlots": 3,
+            "validAvatar": false
+        },
+        {
+            "key": "checkout",
+            "clips": [],
+            "bounds": [
+                2.549999952316284,
+                1.8904297351837158,
+                1.2499998807907104
+            ],
+            "renderers": 5,
+            "materialSlots": 5,
+            "validAvatar": false
+        },
+        {
+            "key": "crate",
+            "clips": [],
+            "bounds": [
+                1.0000001192092896,
+                0.5,
+                0.779999852180481
+            ],
+            "renderers": 2,
+            "materialSlots": 2,
+            "validAvatar": false
+        },
+        {
+            "key": "shop",
+            "clips": [],
+            "bounds": [
+                7.020000457763672,
+                3.7300000190734863,
+                5.5
+            ],
+            "renderers": 4,
+            "materialSlots": 4,
+            "validAvatar": false
+        },
+        {
+            "key": "table",
+            "clips": [],
+            "bounds": [
+                2.4100000858306885,
+                1.4849998950958252,
+                1.2599998712539673
+            ],
+            "renderers": 7,
+            "materialSlots": 7,
+            "validAvatar": false
+        },
+        {
+            "key": "chicken",
+            "clips": [],
+            "bounds": [
+                0.6251081228256226,
+                0.9453940391540527,
+                1.0954684019088745
+            ],
+            "renderers": 5,
+            "materialSlots": 5,
+            "validAvatar": false
+        },
+        {
+            "key": "mill",
+            "clips": [],
+            "bounds": [
+                1.7200000286102295,
+                2.0799999237060547,
+                1.8249999284744263
+            ],
+            "renderers": 7,
+            "materialSlots": 7,
+            "validAvatar": false
+        },
+        {
+            "key": "cheesemaker",
+            "clips": [],
+            "bounds": [
+                1.7200000286102295,
+                2.1600000858306885,
+                1.825000286102295
+            ],
+            "renderers": 7,
+            "materialSlots": 7,
+            "validAvatar": false
+        },
+        {
+            "key": "saucemaker",
+            "clips": [],
+            "bounds": [
+                1.7200000286102295,
+                2.1600000858306885,
+                1.825000286102295
+            ],
+            "renderers": 7,
+            "materialSlots": 7,
+            "validAvatar": false
+        },
+        {
+            "key": "oven",
+            "clips": [],
+            "bounds": [
+                1.720000147819519,
+                2.0749998092651367,
+                1.8249999284744263
+            ],
+            "renderers": 8,
+            "materialSlots": 8,
+            "validAvatar": false
+        },
+        {
+            "key": "cakeoven",
+            "clips": [],
+            "bounds": [
+                1.720000147819519,
+                2.075000047683716,
+                1.8249999284744263
+            ],
+            "renderers": 8,
+            "materialSlots": 8,
+            "validAvatar": false
+        },
+        {
+            "key": "kitchen",
+            "clips": [],
+            "bounds": [
+                1.7200000286102295,
+                2.1600000858306885,
+                1.825000286102295
+            ],
+            "renderers": 7,
+            "materialSlots": 7,
+            "validAvatar": false
+        },
+        {
+            "key": "tree",
+            "clips": [],
+            "bounds": [
+                1.5599998235702515,
+                2.8000001907348633,
+                1.559999942779541
+            ],
+            "renderers": 3,
+            "materialSlots": 3,
+            "validAvatar": false
+        },
+        {
+            "key": "beef",
+            "clips": [],
+            "bounds": [
+                0.6399999856948853,
+                0.17450004816055298,
+                0.6399999260902405
+            ],
+            "renderers": 3,
+            "materialSlots": 3,
+            "validAvatar": false
+        },
+        {
+            "key": "player",
+            "clips": [
+                "Carry",
+                "CarryWalk",
+                "Drop",
+                "Idle",
+                "Pickup",
+                "Run",
+                "Sit",
+                "Walk"
+            ],
+            "bounds": [
+                1.1296700239181519,
+                1.8220694065093994,
+                1.2217057943344116
+            ],
+            "renderers": 1,
+            "materialSlots": 1,
+            "validAvatar": true
+        },
+        {
+            "key": "customer",
+            "clips": [
+                "Carry",
+                "CarryWalk",
+                "Drop",
+                "Idle",
+                "Pickup",
+                "Run",
+                "Sit",
+                "Walk"
+            ],
+            "bounds": [
+                1.137529730796814,
+                1.824265480041504,
+                1.0784744024276733
+            ],
+            "renderers": 1,
+            "materialSlots": 1,
+            "validAvatar": true
+        },
+        {
+            "key": "customer_beach",
+            "clips": [
+                "Carry",
+                "CarryWalk",
+                "Drop",
+                "Idle",
+                "Pickup",
+                "Run",
+                "Sit",
+                "Walk"
+            ],
+            "bounds": [
+                0.8652099370956421,
+                1.818190574645996,
+                1.3313103914260864
+            ],
+            "renderers": 1,
+            "materialSlots": 1,
+            "validAvatar": true
+        },
+        {
+            "key": "user_cow",
+            "clips": [
+                "Idle",
+                "Walk"
+            ],
+            "bounds": [
+                1.7880167961120605,
+                1.5404536724090576,
+                1.4649043083190918
+            ],
+            "renderers": 1,
+            "materialSlots": 1,
+            "validAvatar": true
+        },
+        {
+            "key": "user_chicken",
+            "clips": [
+                "Idle",
+                "Walk"
+            ],
+            "bounds": [
+                0.6013230085372925,
+                0.9289453029632568,
+                0.8608487248420715
+            ],
+            "renderers": 1,
+            "materialSlots": 1,
+            "validAvatar": true
+        },
+        {
+            "key": "user_checkout",
+            "clips": [],
+            "bounds": [
+                1.5048518180847168,
+                1.1512889862060547,
+                0.9118630290031433
+            ],
+            "renderers": 1,
+            "materialSlots": 1,
+            "validAvatar": false
+        }
+    ]
+}

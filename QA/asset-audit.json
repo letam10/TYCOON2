@@ -1,0 +1,2422 @@
+[
+  {
+    "key": "farmer",
+    "source": "ASSET\\Downloaded\\characters\\Humanoid Rig\\Individual Characters\\FBX\\Farmer.fbx",
+    "source_sha256": "76d57bf99aa30146b9376ecfc903fefdef67f8a293d82de323e2dd660933a352",
+    "triangles": 5476,
+    "meshes": 4,
+    "dimensions": [
+      0.4344654083251953,
+      0.3835758566856384,
+      1.78000009059906
+    ],
+    "uv_layers": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "materials": [
+      {
+        "name": "Beige",
+        "color": [
+          0.33245155215263367,
+          0.30946895480155945,
+          0.2015562802553177,
+          1.0
+        ]
+      },
+      {
+        "name": "Brown",
+        "color": [
+          0.17885959148406982,
+          0.12677308917045593,
+          0.051317352801561356,
+          1.0
+        ]
+      },
+      {
+        "name": "Brown2",
+        "color": [
+          0.10653223842382431,
+          0.07631582021713257,
+          0.032025814056396484,
+          1.0
+        ]
+      },
+      {
+        "name": "Eye",
+        "color": [
+          0.03106195665895939,
+          0.018161438405513763,
+          0.01130784023553133,
+          1.0
+        ]
+      },
+      {
+        "name": "Eyebrows",
+        "color": [
+          0.048171836882829666,
+          0.03433981165289879,
+          0.022173885256052017,
+          1.0
+        ]
+      },
+      {
+        "name": "LightBlue",
+        "color": [
+          0.033104777336120605,
+          0.04970657452940941,
+          0.06301002949476242,
+          1.0
+        ]
+      },
+      {
+        "name": "Red",
+        "color": [
+          0.20189833641052246,
+          0.0048876297660171986,
+          0.01379700843244791,
+          1.0
+        ]
+      },
+      {
+        "name": "Skin",
+        "color": [
+          0.6172067523002625,
+          0.4178851246833801,
+          0.23839758336544037,
+          1.0
+        ]
+      }
+    ],
+    "bones": 62,
+    "actions": [
+      "Carry",
+      "CarryWalk",
+      "Drop",
+      "Idle",
+      "Pickup",
+      "Run",
+      "Walk"
+    ],
+    "processed_blend": "ArtSource\\Processed\\farmer.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\farmer.fbx",
+    "fbx_sha256": "6b0d434baf17d0b8e728b45080e76e981f45f84ae1d508a7e4484f12eb824123"
+  },
+  {
+    "key": "worker",
+    "source": "ASSET\\Downloaded\\characters\\Humanoid Rig\\Individual Characters\\FBX\\Worker.fbx",
+    "source_sha256": "000eb1269f39e0b10a77c9bd33181c790341480324d72708cc7c22be177c49d6",
+    "triangles": 5240,
+    "meshes": 4,
+    "dimensions": [
+      0.43203204870224,
+      0.37122443318367004,
+      1.78000009059906
+    ],
+    "uv_layers": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "materials": [
+      {
+        "name": "Black",
+        "color": [
+          0.017641952261328697,
+          0.017641952261328697,
+          0.017641952261328697,
+          1.0
+        ]
+      },
+      {
+        "name": "Brown",
+        "color": [
+          0.17885959148406982,
+          0.12677308917045593,
+          0.051317352801561356,
+          1.0
+        ]
+      },
+      {
+        "name": "Brown2",
+        "color": [
+          0.10653223842382431,
+          0.07631582021713257,
+          0.032025814056396484,
+          1.0
+        ]
+      },
+      {
+        "name": "Eye",
+        "color": [
+          0.03106195665895939,
+          0.018161438405513763,
+          0.01130784023553133,
+          1.0
+        ]
+      },
+      {
+        "name": "Eyebrows",
+        "color": [
+          0.048171836882829666,
+          0.03433981165289879,
+          0.022173885256052017,
+          1.0
+        ]
+      },
+      {
+        "name": "Grey",
+        "color": [
+          0.04970657452940941,
+          0.04970657452940941,
+          0.04970657452940941,
+          1.0
+        ]
+      },
+      {
+        "name": "LightBrown",
+        "color": [
+          0.3049873113632202,
+          0.2788942754268646,
+          0.22696588933467865,
+          1.0
+        ]
+      },
+      {
+        "name": "Moustache",
+        "color": [
+          0.16263839602470398,
+          0.0526905357837677,
+          0.0013117819325998425,
+          1.0
+        ]
+      },
+      {
+        "name": "Skin",
+        "color": [
+          0.6172067523002625,
+          0.4178851246833801,
+          0.23839758336544037,
+          1.0
+        ]
+      },
+      {
+        "name": "Worker_Vest",
+        "color": [
+          0.48514997959136963,
+          0.12743771076202393,
+          0.023153362795710564,
+          1.0
+        ]
+      },
+      {
+        "name": "Worker_Yellow",
+        "color": [
+          0.4564110040664673,
+          0.29613831639289856,
+          0.006512089632451534,
+          1.0
+        ]
+      }
+    ],
+    "bones": 62,
+    "actions": [
+      "Carry",
+      "CarryWalk",
+      "Drop",
+      "Idle",
+      "Pickup",
+      "Run",
+      "Walk"
+    ],
+    "processed_blend": "ArtSource\\Processed\\worker.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\worker.fbx",
+    "fbx_sha256": "ca23afe131e6864eb03a8234c91bbd5e91cb98f1d7ab27984d17b15aa8a91e0c"
+  },
+  {
+    "key": "customer_suit",
+    "source": "ASSET\\Downloaded\\characters\\Humanoid Rig\\Individual Characters\\FBX\\Suit.fbx",
+    "source_sha256": "fea0cd877573ec24e8882f3165708a1c6e3ed1aff7b886b3d867820dee916413",
+    "triangles": 6634,
+    "meshes": 4,
+    "dimensions": [
+      0.43424296379089355,
+      0.3561827540397644,
+      1.7799999713897705
+    ],
+    "uv_layers": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "materials": [
+      {
+        "name": "Black",
+        "color": [
+          0.017641952261328697,
+          0.017641952261328697,
+          0.017641952261328697,
+          1.0
+        ]
+      },
+      {
+        "name": "Eye",
+        "color": [
+          0.03106195665895939,
+          0.018161438405513763,
+          0.01130784023553133,
+          1.0
+        ]
+      },
+      {
+        "name": "Eyebrows",
+        "color": [
+          0.048171836882829666,
+          0.03433981165289879,
+          0.022173885256052017,
+          1.0
+        ]
+      },
+      {
+        "name": "Hair",
+        "color": [
+          0.06680474430322647,
+          0.027386492118239403,
+          0.00902561191469431,
+          1.0
+        ]
+      },
+      {
+        "name": "Skin",
+        "color": [
+          0.6172067523002625,
+          0.4178851246833801,
+          0.23839758336544037,
+          1.0
+        ]
+      },
+      {
+        "name": "Suit",
+        "color": [
+          0.015208512544631958,
+          0.021219007670879364,
+          0.02732088789343834,
+          1.0
+        ]
+      },
+      {
+        "name": "Tie",
+        "color": [
+          0.0666259378194809,
+          0.07818741351366043,
+          0.10224173218011856,
+          1.0
+        ]
+      },
+      {
+        "name": "White",
+        "color": [
+          0.45752230286598206,
+          0.45752230286598206,
+          0.45752230286598206,
+          1.0
+        ]
+      }
+    ],
+    "bones": 62,
+    "actions": [
+      "Carry",
+      "CarryWalk",
+      "Drop",
+      "Idle",
+      "Pickup",
+      "Run",
+      "Walk"
+    ],
+    "processed_blend": "ArtSource\\Processed\\customer_suit.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\customer_suit.fbx",
+    "fbx_sha256": "c9522d84cbc6483f4b37d09f5b8ed342e74aa3c35d6930bbdb9ff74389241407"
+  },
+  {
+    "key": "cow",
+    "source": "ASSET\\Downloaded\\animals\\FBX\\Cow.fbx",
+    "source_sha256": "0202789cad8c1debb8ae5b4a47d1a5d2e5f93a0875878bc0b05a80e42ae37e8d",
+    "triangles": 796,
+    "meshes": 1,
+    "dimensions": [
+      0.6165269613265991,
+      2.494626998901367,
+      1.399999976158142
+    ],
+    "uv_layers": [
+      1
+    ],
+    "materials": [
+      {
+        "name": "Black",
+        "color": [
+          0.029097795486450195,
+          0.029097795486450195,
+          0.029097795486450195,
+          1.0
+        ]
+      },
+      {
+        "name": "Pink",
+        "color": [
+          0.8000000715255737,
+          0.17604881525039673,
+          0.21668972074985504,
+          1.0
+        ]
+      },
+      {
+        "name": "White",
+        "color": [
+          0.800000011920929,
+          0.800000011920929,
+          0.800000011920929,
+          1.0
+        ]
+      }
+    ],
+    "bones": 39,
+    "actions": [
+      "Armature|Armature|Death",
+      "Armature|Armature|Idle",
+      "Armature|Armature|Jump",
+      "Armature|Armature|Run",
+      "Armature|Armature|Walk",
+      "Armature|Armature|WalkSlow"
+    ],
+    "processed_blend": "ArtSource\\Processed\\cow.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\cow.fbx",
+    "fbx_sha256": "4a7d8b3492b296a7a333fe0734c9dbf3d8fc94c7665e2602938d9d0f3762f7e3"
+  },
+  {
+    "key": "carrot",
+    "source": "authored:Tools/process_assets.py",
+    "source_sha256": null,
+    "triangles": 176,
+    "meshes": 2,
+    "dimensions": [
+      0.19279584288597107,
+      0.13575756549835205,
+      0.4622485041618347
+    ],
+    "uv_layers": [
+      1,
+      1
+    ],
+    "materials": [
+      {
+        "name": "CoralPaint",
+        "color": [
+          0.7900000214576721,
+          0.30000001192092896,
+          0.23999999463558197,
+          1.0
+        ]
+      },
+      {
+        "name": "Leaf",
+        "color": [
+          0.25,
+          0.47999998927116394,
+          0.17000000178813934,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\carrot.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\carrot.fbx",
+    "fbx_sha256": "2acabf98a6e9925618330f1efb21bed98c534361d35cb54039a433670ba60558"
+  },
+  {
+    "key": "tomato",
+    "source": "authored:Tools/process_assets.py",
+    "source_sha256": null,
+    "triangles": 744,
+    "meshes": 2,
+    "dimensions": [
+      0.40864866971969604,
+      0.40864866971969604,
+      0.46783125400543213
+    ],
+    "uv_layers": [
+      1,
+      1
+    ],
+    "materials": [
+      {
+        "name": "Leaf",
+        "color": [
+          0.25,
+          0.47999998927116394,
+          0.17000000178813934,
+          1.0
+        ]
+      },
+      {
+        "name": "TomatoRed",
+        "color": [
+          0.8299999833106995,
+          0.1599999964237213,
+          0.10000000149011612,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\tomato.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\tomato.fbx",
+    "fbx_sha256": "b2082e3c1ca941623b1be5941cb138d32f414787502464433cc7f3f21f2c410f"
+  },
+  {
+    "key": "wheat",
+    "source": "authored:Tools/process_assets.py",
+    "source_sha256": null,
+    "triangles": 3108,
+    "meshes": 1,
+    "dimensions": [
+      0.206760436296463,
+      0.043780647218227386,
+      0.41031306982040405
+    ],
+    "uv_layers": [
+      1
+    ],
+    "materials": [
+      {
+        "name": "HarvestGold",
+        "color": [
+          0.8999999761581421,
+          0.6299999952316284,
+          0.20000000298023224,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\wheat.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\wheat.fbx",
+    "fbx_sha256": "fc21bbaa7e1f1fd62265e3cd2af4f3745f6f5cc4fdc2bc82a6d3344322045959"
+  },
+  {
+    "key": "milk",
+    "source": "authored:Tools/process_assets.py",
+    "source_sha256": null,
+    "triangles": 1232,
+    "meshes": 2,
+    "dimensions": [
+      0.23379309475421906,
+      0.23379309475421906,
+      0.42000001668930054
+    ],
+    "uv_layers": [
+      1,
+      1
+    ],
+    "materials": [
+      {
+        "name": "MintPaint",
+        "color": [
+          0.3100000023841858,
+          0.6600000262260437,
+          0.5600000023841858,
+          1.0
+        ]
+      },
+      {
+        "name": "WarmWhite",
+        "color": [
+          0.9399999976158142,
+          0.9200000166893005,
+          0.8299999833106995,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\milk.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\milk.fbx",
+    "fbx_sha256": "d7301a126deaf13f5fa85fda0f7d923e95b38ea5c66d408cd4490d598649599a"
+  },
+  {
+    "key": "egg",
+    "source": "authored:Tools/process_assets.py",
+    "source_sha256": null,
+    "triangles": 288,
+    "meshes": 1,
+    "dimensions": [
+      0.27176469564437866,
+      0.27176469564437866,
+      0.41999998688697815
+    ],
+    "uv_layers": [
+      1
+    ],
+    "materials": [
+      {
+        "name": "Cream",
+        "color": [
+          0.9100000262260437,
+          0.8299999833106995,
+          0.6399999856948853,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\egg.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\egg.fbx",
+    "fbx_sha256": "299d4ce0cbdfb3c8ffaedc99ff3fc04e6d7ebfff346a0e0430b0c5273d843dec"
+  },
+  {
+    "key": "flour",
+    "source": "authored:Tools/process_assets.py",
+    "source_sha256": null,
+    "triangles": 756,
+    "meshes": 3,
+    "dimensions": [
+      0.33157891035079956,
+      0.26913154125213623,
+      0.41999995708465576
+    ],
+    "uv_layers": [
+      1,
+      1,
+      1
+    ],
+    "materials": [
+      {
+        "name": "Cream",
+        "color": [
+          0.9100000262260437,
+          0.8299999833106995,
+          0.6399999856948853,
+          1.0
+        ]
+      },
+      {
+        "name": "MintPaint",
+        "color": [
+          0.3100000023841858,
+          0.6600000262260437,
+          0.5600000023841858,
+          1.0
+        ]
+      },
+      {
+        "name": "WarmWood",
+        "color": [
+          0.4699999988079071,
+          0.28999999165534973,
+          0.12999999523162842,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\flour.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\flour.fbx",
+    "fbx_sha256": "16d4db656737655493c99b5a2ca99cef7796ba7a3d6fc0242f05bce251a0cf22"
+  },
+  {
+    "key": "cheese",
+    "source": "authored:Tools/process_assets.py",
+    "source_sha256": null,
+    "triangles": 80,
+    "meshes": 1,
+    "dimensions": [
+      0.41999998688697815,
+      0.3982388377189636,
+      0.18875868618488312
+    ],
+    "uv_layers": [
+      1
+    ],
+    "materials": [
+      {
+        "name": "HarvestGold",
+        "color": [
+          0.8999999761581421,
+          0.6299999952316284,
+          0.20000000298023224,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\cheese.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\cheese.fbx",
+    "fbx_sha256": "4a8dc59d1ade3ccece3c922aebcd3de75542966546d9d5eb0d57ef2ad5feb1e3"
+  },
+  {
+    "key": "sauce",
+    "source": "authored:Tools/process_assets.py",
+    "source_sha256": null,
+    "triangles": 708,
+    "meshes": 3,
+    "dimensions": [
+      0.3360000252723694,
+      0.3360000252723694,
+      0.42000001668930054
+    ],
+    "uv_layers": [
+      1,
+      1,
+      1
+    ],
+    "materials": [
+      {
+        "name": "Cream",
+        "color": [
+          0.9100000262260437,
+          0.8299999833106995,
+          0.6399999856948853,
+          1.0
+        ]
+      },
+      {
+        "name": "MintPaint",
+        "color": [
+          0.3100000023841858,
+          0.6600000262260437,
+          0.5600000023841858,
+          1.0
+        ]
+      },
+      {
+        "name": "TomatoRed",
+        "color": [
+          0.8299999833106995,
+          0.1599999964237213,
+          0.10000000149011612,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\sauce.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\sauce.fbx",
+    "fbx_sha256": "4b0abfd00aa596ff25c531c770676eb6304f0b90d3e589f39ab13280c4a5cf43"
+  },
+  {
+    "key": "cake",
+    "source": "authored:Tools/process_assets.py",
+    "source_sha256": null,
+    "triangles": 1548,
+    "meshes": 4,
+    "dimensions": [
+      0.41999998688697815,
+      0.41999998688697815,
+      0.2823333442211151
+    ],
+    "uv_layers": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "materials": [
+      {
+        "name": "Cream",
+        "color": [
+          0.9100000262260437,
+          0.8299999833106995,
+          0.6399999856948853,
+          1.0
+        ]
+      },
+      {
+        "name": "MintPaint",
+        "color": [
+          0.3100000023841858,
+          0.6600000262260437,
+          0.5600000023841858,
+          1.0
+        ]
+      },
+      {
+        "name": "TomatoRed",
+        "color": [
+          0.8299999833106995,
+          0.1599999964237213,
+          0.10000000149011612,
+          1.0
+        ]
+      },
+      {
+        "name": "WarmWhite",
+        "color": [
+          0.9399999976158142,
+          0.9200000166893005,
+          0.8299999833106995,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\cake.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\cake.fbx",
+    "fbx_sha256": "0b2de55c961c2932d01418fb344433e54c1d05971ca790ec631ec8d89a1db763"
+  },
+  {
+    "key": "meal",
+    "source": "authored:Tools/process_assets.py",
+    "source_sha256": null,
+    "triangles": 1000,
+    "meshes": 4,
+    "dimensions": [
+      0.41999998688697815,
+      0.41999998688697815,
+      0.16227272152900696
+    ],
+    "uv_layers": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "materials": [
+      {
+        "name": "Cream",
+        "color": [
+          0.9100000262260437,
+          0.8299999833106995,
+          0.6399999856948853,
+          1.0
+        ]
+      },
+      {
+        "name": "HarvestGold",
+        "color": [
+          0.8999999761581421,
+          0.6299999952316284,
+          0.20000000298023224,
+          1.0
+        ]
+      },
+      {
+        "name": "Leaf",
+        "color": [
+          0.25,
+          0.47999998927116394,
+          0.17000000178813934,
+          1.0
+        ]
+      },
+      {
+        "name": "TomatoRed",
+        "color": [
+          0.8299999833106995,
+          0.1599999964237213,
+          0.10000000149011612,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\meal.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\meal.fbx",
+    "fbx_sha256": "7c118e8a121406ed0083a4e2103b379a13af4c701a382d7c3dd869cfc5af1b07"
+  },
+  {
+    "key": "bread",
+    "source": "ASSET\\Downloaded\\food\\FBX\\Bread.fbx",
+    "source_sha256": "f2d21acadac6f5876fe121442a34400f73a760bbce555ed59d6fc57989244099",
+    "triangles": 412,
+    "meshes": 1,
+    "dimensions": [
+      0.24286089837551117,
+      0.42000001668930054,
+      0.29669320583343506
+    ],
+    "uv_layers": [
+      1
+    ],
+    "materials": [
+      {
+        "name": "Brown",
+        "color": [
+          0.16263727843761444,
+          0.10511866211891174,
+          0.04624766856431961,
+          1.0
+        ]
+      },
+      {
+        "name": "Light",
+        "color": [
+          0.36722829937934875,
+          0.2665834128856659,
+          0.1561516970396042,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\bread.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\bread.fbx",
+    "fbx_sha256": "c758ae358e064a85382995d6098072b946388f95e2011a93d251e2263740b0ae"
+  },
+  {
+    "key": "carrot_crop",
+    "source": "ASSET\\Downloaded\\crops\\FBX\\Carrot_4.fbx",
+    "source_sha256": "9b220d77e66cec7b33e0786192dc693033ef4814594e58ad6227c96a6f788d8a",
+    "triangles": 514,
+    "meshes": 1,
+    "dimensions": [
+      0.3437720239162445,
+      0.25486716628074646,
+      0.6499999165534973
+    ],
+    "uv_layers": [
+      1
+    ],
+    "materials": [
+      {
+        "name": "DarkGreen2",
+        "color": [
+          0.08744194358587265,
+          0.15232062339782715,
+          0.05986013635993004,
+          1.0
+        ]
+      },
+      {
+        "name": "Green",
+        "color": [
+          0.23164623975753784,
+          0.44797465205192566,
+          0.12646017968654633,
+          1.0
+        ]
+      },
+      {
+        "name": "LightOrange",
+        "color": [
+          0.548847496509552,
+          0.32919058203697205,
+          0.10517245531082153,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\carrot_crop.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\carrot_crop.fbx",
+    "fbx_sha256": "a9e9225a298aab3daf7e15d0bc2e62492f628b31c563cfa07f5b831e0debcd28"
+  },
+  {
+    "key": "coop",
+    "source": "ASSET\\Downloaded\\buildings\\FBX\\ChickenCoop.fbx",
+    "source_sha256": "f037de32326147646cb4db05b3dedb8effeb4a59a1b1036d79ee86d84ecd743b",
+    "triangles": 948,
+    "meshes": 1,
+    "dimensions": [
+      3.3815345764160156,
+      3.0258326530456543,
+      2.5999999046325684
+    ],
+    "uv_layers": [
+      1
+    ],
+    "materials": [
+      {
+        "name": "Brown",
+        "color": [
+          0.28100478649139404,
+          0.09588584303855896,
+          0.046705469489097595,
+          1.0
+        ]
+      },
+      {
+        "name": "DarkRed",
+        "color": [
+          0.2529407739639282,
+          0.05315002426505089,
+          0.04008389264345169,
+          1.0
+        ]
+      },
+      {
+        "name": "LightRed",
+        "color": [
+          0.3423793613910675,
+          0.07004915922880173,
+          0.052458349615335464,
+          1.0
+        ]
+      },
+      {
+        "name": "RoofBlack",
+        "color": [
+          0.09850253909826279,
+          0.09850253909826279,
+          0.09850253909826279,
+          1.0
+        ]
+      },
+      {
+        "name": "White",
+        "color": [
+          0.800000011920929,
+          0.800000011920929,
+          0.800000011920929,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\coop.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\coop.fbx",
+    "fbx_sha256": "9acd763c8f4120dc94e1840cd2d80cb1e5e8bdbf3a1138606fc8dbab5ed0a1b4"
+  },
+  {
+    "key": "barn",
+    "source": "ASSET\\Downloaded\\buildings\\FBX\\OpenBarn.fbx",
+    "source_sha256": "c7a6338c9853a8340538e149799f6076ba77288e2d88d443a6ce66eeb052b787",
+    "triangles": 1612,
+    "meshes": 1,
+    "dimensions": [
+      5.085695266723633,
+      5.473766326904297,
+      4.200000286102295
+    ],
+    "uv_layers": [
+      1
+    ],
+    "materials": [
+      {
+        "name": "Brown",
+        "color": [
+          0.28100478649139404,
+          0.09588584303855896,
+          0.046705469489097595,
+          1.0
+        ]
+      },
+      {
+        "name": "DarkRed",
+        "color": [
+          0.2529407739639282,
+          0.05315002426505089,
+          0.04008389264345169,
+          1.0
+        ]
+      },
+      {
+        "name": "LightRed",
+        "color": [
+          0.3423793613910675,
+          0.07004915922880173,
+          0.052458349615335464,
+          1.0
+        ]
+      },
+      {
+        "name": "RoofBlack",
+        "color": [
+          0.09850253909826279,
+          0.09850253909826279,
+          0.09850253909826279,
+          1.0
+        ]
+      },
+      {
+        "name": "White",
+        "color": [
+          0.800000011920929,
+          0.800000011920929,
+          0.800000011920929,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\barn.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\barn.fbx",
+    "fbx_sha256": "a214d23cb97c51994540934f141ef8a0e644c6a8d79019f5637fed91d6d9be3d"
+  },
+  {
+    "key": "fence",
+    "source": "ASSET\\Downloaded\\buildings\\FBX\\Fence.fbx",
+    "source_sha256": "bc5b6c5afc48cc5b0bed12a57a98c0d2c2984b16fe4805f4a9c7196061854123",
+    "triangles": 188,
+    "meshes": 1,
+    "dimensions": [
+      4.563645839691162,
+      0.12823519110679626,
+      0.8499999642372131
+    ],
+    "uv_layers": [
+      1
+    ],
+    "materials": [
+      {
+        "name": "Brown",
+        "color": [
+          0.28100478649139404,
+          0.09588584303855896,
+          0.046705469489097595,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\fence.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\fence.fbx",
+    "fbx_sha256": "595f0fbb71aba0b95f72b831866d042db39b49ba9263ff11f3b8c378f3eee426"
+  },
+  {
+    "key": "well",
+    "source": "ASSET\\Downloaded\\buildings\\FBX\\Well.fbx",
+    "source_sha256": "b5aa5b3f77a9eeba740a4ac4d58bac1ae08b7073424cbfcee0c215cbbd79210c",
+    "triangles": 2880,
+    "meshes": 1,
+    "dimensions": [
+      1.2496371269226074,
+      1.4553157091140747,
+      2.0999999046325684
+    ],
+    "uv_layers": [
+      1
+    ],
+    "materials": [
+      {
+        "name": "Brown",
+        "color": [
+          0.28100478649139404,
+          0.09588584303855896,
+          0.046705469489097595,
+          1.0
+        ]
+      },
+      {
+        "name": "DarkGrey",
+        "color": [
+          0.14731115102767944,
+          0.14731115102767944,
+          0.14731115102767944,
+          1.0
+        ]
+      },
+      {
+        "name": "Grey",
+        "color": [
+          0.43853959441185,
+          0.43853959441185,
+          0.43853959441185,
+          1.0
+        ]
+      },
+      {
+        "name": "LightRed",
+        "color": [
+          0.3423793613910675,
+          0.07004915922880173,
+          0.052458349615335464,
+          1.0
+        ]
+      },
+      {
+        "name": "White",
+        "color": [
+          0.8700000047683716,
+          0.800000011920929,
+          0.800000011920929,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\well.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\well.fbx",
+    "fbx_sha256": "8e2cea71565f31eeca7fea8a38877d738ecee0d638be7282ab3d2ac45f8c0f16"
+  },
+  {
+    "key": "shelf",
+    "source": "authored:Tools/process_assets.py",
+    "source_sha256": null,
+    "triangles": 2256,
+    "meshes": 3,
+    "dimensions": [
+      2.700000047683716,
+      1.0799999237060547,
+      2.2300000190734863
+    ],
+    "uv_layers": [
+      1,
+      1,
+      1
+    ],
+    "materials": [
+      {
+        "name": "Cream",
+        "color": [
+          0.9100000262260437,
+          0.8299999833106995,
+          0.6399999856948853,
+          1.0
+        ]
+      },
+      {
+        "name": "LightWood",
+        "color": [
+          0.6899999976158142,
+          0.49000000953674316,
+          0.27000001072883606,
+          1.0
+        ]
+      },
+      {
+        "name": "MintPaint",
+        "color": [
+          0.3100000023841858,
+          0.6600000262260437,
+          0.5600000023841858,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\shelf.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\shelf.fbx",
+    "fbx_sha256": "56a6cd33f0e15eea8ada9ebec8db89d9c41237ca9b35b34eeb40e633ae58e11b"
+  },
+  {
+    "key": "checkout",
+    "source": "authored:Tools/process_assets.py",
+    "source_sha256": null,
+    "triangles": 1552,
+    "meshes": 5,
+    "dimensions": [
+      2.549999952316284,
+      1.25,
+      1.890429973602295
+    ],
+    "uv_layers": [
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "materials": [
+      {
+        "name": "BrushedMetal",
+        "color": [
+          0.3100000023841858,
+          0.4000000059604645,
+          0.4099999964237213,
+          1.0
+        ]
+      },
+      {
+        "name": "Charcoal",
+        "color": [
+          0.03500000014901161,
+          0.06499999761581421,
+          0.06800000369548798,
+          1.0
+        ]
+      },
+      {
+        "name": "Cream",
+        "color": [
+          0.9100000262260437,
+          0.8299999833106995,
+          0.6399999856948853,
+          1.0
+        ]
+      },
+      {
+        "name": "MintPaint",
+        "color": [
+          0.3100000023841858,
+          0.6600000262260437,
+          0.5600000023841858,
+          1.0
+        ]
+      },
+      {
+        "name": "TealPaint",
+        "color": [
+          0.07500000298023224,
+          0.25,
+          0.25999999046325684,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\checkout.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\checkout.fbx",
+    "fbx_sha256": "b0fa68adcf80a8004012bbfa7e60c0af38cd180e5f7683f1354e39b68efc0695"
+  },
+  {
+    "key": "crate",
+    "source": "authored:Tools/process_assets.py",
+    "source_sha256": null,
+    "triangles": 2444,
+    "meshes": 2,
+    "dimensions": [
+      1.0,
+      0.7799999713897705,
+      0.5
+    ],
+    "uv_layers": [
+      1,
+      1
+    ],
+    "materials": [
+      {
+        "name": "LightWood",
+        "color": [
+          0.6899999976158142,
+          0.49000000953674316,
+          0.27000001072883606,
+          1.0
+        ]
+      },
+      {
+        "name": "WarmWood",
+        "color": [
+          0.4699999988079071,
+          0.28999999165534973,
+          0.12999999523162842,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\crate.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\crate.fbx",
+    "fbx_sha256": "35373c51c06c0da6ec8968123d01228a9dac911c013c37f9a378c631812ef6e3"
+  },
+  {
+    "key": "shop",
+    "source": "authored:Tools/process_assets.py",
+    "source_sha256": null,
+    "triangles": 5926,
+    "meshes": 4,
+    "dimensions": [
+      7.020000457763672,
+      5.5,
+      3.7300000190734863
+    ],
+    "uv_layers": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "materials": [
+      {
+        "name": "BrandDecal",
+        "color": [
+          0.800000011920929,
+          0.800000011920929,
+          0.800000011920929,
+          1.0
+        ]
+      },
+      {
+        "name": "Cream",
+        "color": [
+          0.9100000262260437,
+          0.8299999833106995,
+          0.6399999856948853,
+          1.0
+        ]
+      },
+      {
+        "name": "MintPaint",
+        "color": [
+          0.3100000023841858,
+          0.6600000262260437,
+          0.5600000023841858,
+          1.0
+        ]
+      },
+      {
+        "name": "WarmWood",
+        "color": [
+          0.4699999988079071,
+          0.28999999165534973,
+          0.12999999523162842,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\shop.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\shop.fbx",
+    "fbx_sha256": "6d3514c451c51b63322abf8e3f6781218df6ac4a214ca33df1d4f62be77a8724"
+  },
+  {
+    "key": "table",
+    "source": "authored:Tools/process_assets.py",
+    "source_sha256": null,
+    "triangles": 4108,
+    "meshes": 7,
+    "dimensions": [
+      2.4099998474121094,
+      1.2599999904632568,
+      1.4850000143051147
+    ],
+    "uv_layers": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "materials": [
+      {
+        "name": "CoralPaint",
+        "color": [
+          0.7900000214576721,
+          0.30000001192092896,
+          0.23999999463558197,
+          1.0
+        ]
+      },
+      {
+        "name": "Cream",
+        "color": [
+          0.9100000262260437,
+          0.8299999833106995,
+          0.6399999856948853,
+          1.0
+        ]
+      },
+      {
+        "name": "Leaf",
+        "color": [
+          0.25,
+          0.47999998927116394,
+          0.17000000178813934,
+          1.0
+        ]
+      },
+      {
+        "name": "LightWood",
+        "color": [
+          0.6899999976158142,
+          0.49000000953674316,
+          0.27000001072883606,
+          1.0
+        ]
+      },
+      {
+        "name": "MintPaint",
+        "color": [
+          0.3100000023841858,
+          0.6600000262260437,
+          0.5600000023841858,
+          1.0
+        ]
+      },
+      {
+        "name": "TealPaint",
+        "color": [
+          0.07500000298023224,
+          0.25,
+          0.25999999046325684,
+          1.0
+        ]
+      },
+      {
+        "name": "WarmWood",
+        "color": [
+          0.4699999988079071,
+          0.28999999165534973,
+          0.12999999523162842,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\table.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\table.fbx",
+    "fbx_sha256": "ee84a375b52d5e4bc02c4c4eb331d1eeca43a06c116b8fbb88f293f7ddd06fa8"
+  },
+  {
+    "key": "chicken",
+    "source": "authored:Tools/process_assets.py",
+    "source_sha256": null,
+    "triangles": 4788,
+    "meshes": 5,
+    "dimensions": [
+      0.6251081228256226,
+      1.095468521118164,
+      0.9453942179679871
+    ],
+    "uv_layers": [
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "materials": [
+      {
+        "name": "Charcoal",
+        "color": [
+          0.03500000014901161,
+          0.06499999761581421,
+          0.06800000369548798,
+          1.0
+        ]
+      },
+      {
+        "name": "Cream",
+        "color": [
+          0.9100000262260437,
+          0.8299999833106995,
+          0.6399999856948853,
+          1.0
+        ]
+      },
+      {
+        "name": "HarvestGold",
+        "color": [
+          0.8999999761581421,
+          0.6299999952316284,
+          0.20000000298023224,
+          1.0
+        ]
+      },
+      {
+        "name": "TomatoRed",
+        "color": [
+          0.8299999833106995,
+          0.1599999964237213,
+          0.10000000149011612,
+          1.0
+        ]
+      },
+      {
+        "name": "WarmWhite",
+        "color": [
+          0.9399999976158142,
+          0.9200000166893005,
+          0.8299999833106995,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\chicken.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\chicken.fbx",
+    "fbx_sha256": "e7124cdf3c9613d0ce33c9a80778869a4724a8a58899be74548d8823fff56df9"
+  },
+  {
+    "key": "mill",
+    "source": "authored:Tools/process_assets.py",
+    "source_sha256": null,
+    "triangles": 1596,
+    "meshes": 7,
+    "dimensions": [
+      1.7200000286102295,
+      1.8250000476837158,
+      2.0799999237060547
+    ],
+    "uv_layers": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "materials": [
+      {
+        "name": "BrushedMetal",
+        "color": [
+          0.3100000023841858,
+          0.4000000059604645,
+          0.4099999964237213,
+          1.0
+        ]
+      },
+      {
+        "name": "CoralPaint",
+        "color": [
+          0.7900000214576721,
+          0.30000001192092896,
+          0.23999999463558197,
+          1.0
+        ]
+      },
+      {
+        "name": "Cream",
+        "color": [
+          0.9100000262260437,
+          0.8299999833106995,
+          0.6399999856948853,
+          1.0
+        ]
+      },
+      {
+        "name": "HarvestGold",
+        "color": [
+          0.8999999761581421,
+          0.6299999952316284,
+          0.20000000298023224,
+          1.0
+        ]
+      },
+      {
+        "name": "LightWood",
+        "color": [
+          0.6899999976158142,
+          0.49000000953674316,
+          0.27000001072883606,
+          1.0
+        ]
+      },
+      {
+        "name": "MintPaint",
+        "color": [
+          0.3100000023841858,
+          0.6600000262260437,
+          0.5600000023841858,
+          1.0
+        ]
+      },
+      {
+        "name": "TealPaint",
+        "color": [
+          0.07500000298023224,
+          0.25,
+          0.25999999046325684,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\mill.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\mill.fbx",
+    "fbx_sha256": "914938c986d617772f8fece99b0d1d03ce5d56e3a1974796df7909a7bef00fbf"
+  },
+  {
+    "key": "cheesemaker",
+    "source": "authored:Tools/process_assets.py",
+    "source_sha256": null,
+    "triangles": 2544,
+    "meshes": 7,
+    "dimensions": [
+      1.7200000286102295,
+      1.8250000476837158,
+      2.1600000858306885
+    ],
+    "uv_layers": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "materials": [
+      {
+        "name": "BrushedMetal",
+        "color": [
+          0.3100000023841858,
+          0.4000000059604645,
+          0.4099999964237213,
+          1.0
+        ]
+      },
+      {
+        "name": "CoralPaint",
+        "color": [
+          0.7900000214576721,
+          0.30000001192092896,
+          0.23999999463558197,
+          1.0
+        ]
+      },
+      {
+        "name": "Cream",
+        "color": [
+          0.9100000262260437,
+          0.8299999833106995,
+          0.6399999856948853,
+          1.0
+        ]
+      },
+      {
+        "name": "LightWood",
+        "color": [
+          0.6899999976158142,
+          0.49000000953674316,
+          0.27000001072883606,
+          1.0
+        ]
+      },
+      {
+        "name": "MintPaint",
+        "color": [
+          0.3100000023841858,
+          0.6600000262260437,
+          0.5600000023841858,
+          1.0
+        ]
+      },
+      {
+        "name": "TealPaint",
+        "color": [
+          0.07500000298023224,
+          0.25,
+          0.25999999046325684,
+          1.0
+        ]
+      },
+      {
+        "name": "WarmWood",
+        "color": [
+          0.4699999988079071,
+          0.28999999165534973,
+          0.12999999523162842,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\cheesemaker.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\cheesemaker.fbx",
+    "fbx_sha256": "fdf9c6ded55b658a2ff534e2fc13ecc47b0e6b9e2899cb386c6bdf74926d0186"
+  },
+  {
+    "key": "saucemaker",
+    "source": "authored:Tools/process_assets.py",
+    "source_sha256": null,
+    "triangles": 2544,
+    "meshes": 7,
+    "dimensions": [
+      1.7200000286102295,
+      1.8250000476837158,
+      2.1600000858306885
+    ],
+    "uv_layers": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "materials": [
+      {
+        "name": "BrushedMetal",
+        "color": [
+          0.3100000023841858,
+          0.4000000059604645,
+          0.4099999964237213,
+          1.0
+        ]
+      },
+      {
+        "name": "CoralPaint",
+        "color": [
+          0.7900000214576721,
+          0.30000001192092896,
+          0.23999999463558197,
+          1.0
+        ]
+      },
+      {
+        "name": "Cream",
+        "color": [
+          0.9100000262260437,
+          0.8299999833106995,
+          0.6399999856948853,
+          1.0
+        ]
+      },
+      {
+        "name": "LightWood",
+        "color": [
+          0.6899999976158142,
+          0.49000000953674316,
+          0.27000001072883606,
+          1.0
+        ]
+      },
+      {
+        "name": "MintPaint",
+        "color": [
+          0.3100000023841858,
+          0.6600000262260437,
+          0.5600000023841858,
+          1.0
+        ]
+      },
+      {
+        "name": "TealPaint",
+        "color": [
+          0.07500000298023224,
+          0.25,
+          0.25999999046325684,
+          1.0
+        ]
+      },
+      {
+        "name": "WarmWood",
+        "color": [
+          0.4699999988079071,
+          0.28999999165534973,
+          0.12999999523162842,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\saucemaker.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\saucemaker.fbx",
+    "fbx_sha256": "50ea82618b4f63db560cb6e1914035936495a48f78b26d50e7f3a347e63ad13a"
+  },
+  {
+    "key": "oven",
+    "source": "authored:Tools/process_assets.py",
+    "source_sha256": null,
+    "triangles": 2260,
+    "meshes": 8,
+    "dimensions": [
+      1.7200000286102295,
+      1.8250000476837158,
+      2.0749998092651367
+    ],
+    "uv_layers": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "materials": [
+      {
+        "name": "BrushedMetal",
+        "color": [
+          0.3100000023841858,
+          0.4000000059604645,
+          0.4099999964237213,
+          1.0
+        ]
+      },
+      {
+        "name": "Charcoal",
+        "color": [
+          0.03500000014901161,
+          0.06499999761581421,
+          0.06800000369548798,
+          1.0
+        ]
+      },
+      {
+        "name": "CoralPaint",
+        "color": [
+          0.7900000214576721,
+          0.30000001192092896,
+          0.23999999463558197,
+          1.0
+        ]
+      },
+      {
+        "name": "Cream",
+        "color": [
+          0.9100000262260437,
+          0.8299999833106995,
+          0.6399999856948853,
+          1.0
+        ]
+      },
+      {
+        "name": "LightWood",
+        "color": [
+          0.6899999976158142,
+          0.49000000953674316,
+          0.27000001072883606,
+          1.0
+        ]
+      },
+      {
+        "name": "MintPaint",
+        "color": [
+          0.3100000023841858,
+          0.6600000262260437,
+          0.5600000023841858,
+          1.0
+        ]
+      },
+      {
+        "name": "TealPaint",
+        "color": [
+          0.07500000298023224,
+          0.25,
+          0.25999999046325684,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\oven.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\oven.fbx",
+    "fbx_sha256": "8e851bf5db3c855b5490af28527e6ff5eaee9996c35bd5df0a95df62107c9ea0"
+  },
+  {
+    "key": "cakeoven",
+    "source": "authored:Tools/process_assets.py",
+    "source_sha256": null,
+    "triangles": 2260,
+    "meshes": 8,
+    "dimensions": [
+      1.7200000286102295,
+      1.8250000476837158,
+      2.075000047683716
+    ],
+    "uv_layers": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "materials": [
+      {
+        "name": "BrushedMetal",
+        "color": [
+          0.3100000023841858,
+          0.4000000059604645,
+          0.4099999964237213,
+          1.0
+        ]
+      },
+      {
+        "name": "Charcoal",
+        "color": [
+          0.03500000014901161,
+          0.06499999761581421,
+          0.06800000369548798,
+          1.0
+        ]
+      },
+      {
+        "name": "CoralPaint",
+        "color": [
+          0.7900000214576721,
+          0.30000001192092896,
+          0.23999999463558197,
+          1.0
+        ]
+      },
+      {
+        "name": "Cream",
+        "color": [
+          0.9100000262260437,
+          0.8299999833106995,
+          0.6399999856948853,
+          1.0
+        ]
+      },
+      {
+        "name": "LightWood",
+        "color": [
+          0.6899999976158142,
+          0.49000000953674316,
+          0.27000001072883606,
+          1.0
+        ]
+      },
+      {
+        "name": "MintPaint",
+        "color": [
+          0.3100000023841858,
+          0.6600000262260437,
+          0.5600000023841858,
+          1.0
+        ]
+      },
+      {
+        "name": "TealPaint",
+        "color": [
+          0.07500000298023224,
+          0.25,
+          0.25999999046325684,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\cakeoven.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\cakeoven.fbx",
+    "fbx_sha256": "a2807ed8eab52ac25a51a1a9a9aa23cae63e0e90d1b416bd8f825f88dd8306cf"
+  },
+  {
+    "key": "kitchen",
+    "source": "authored:Tools/process_assets.py",
+    "source_sha256": null,
+    "triangles": 2544,
+    "meshes": 7,
+    "dimensions": [
+      1.7200000286102295,
+      1.8250000476837158,
+      2.1600000858306885
+    ],
+    "uv_layers": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "materials": [
+      {
+        "name": "BrushedMetal",
+        "color": [
+          0.3100000023841858,
+          0.4000000059604645,
+          0.4099999964237213,
+          1.0
+        ]
+      },
+      {
+        "name": "CoralPaint",
+        "color": [
+          0.7900000214576721,
+          0.30000001192092896,
+          0.23999999463558197,
+          1.0
+        ]
+      },
+      {
+        "name": "Cream",
+        "color": [
+          0.9100000262260437,
+          0.8299999833106995,
+          0.6399999856948853,
+          1.0
+        ]
+      },
+      {
+        "name": "LightWood",
+        "color": [
+          0.6899999976158142,
+          0.49000000953674316,
+          0.27000001072883606,
+          1.0
+        ]
+      },
+      {
+        "name": "MintPaint",
+        "color": [
+          0.3100000023841858,
+          0.6600000262260437,
+          0.5600000023841858,
+          1.0
+        ]
+      },
+      {
+        "name": "TealPaint",
+        "color": [
+          0.07500000298023224,
+          0.25,
+          0.25999999046325684,
+          1.0
+        ]
+      },
+      {
+        "name": "WarmWood",
+        "color": [
+          0.4699999988079071,
+          0.28999999165534973,
+          0.12999999523162842,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\kitchen.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\kitchen.fbx",
+    "fbx_sha256": "cff87b8d32c851df3624485304c7dc71be71990fa9ac3df692f702dd2b807ab4"
+  },
+  {
+    "key": "tree",
+    "source": "authored:Tools/process_assets.py",
+    "source_sha256": null,
+    "triangles": 372,
+    "meshes": 3,
+    "dimensions": [
+      1.559999942779541,
+      1.559999942779541,
+      2.799999952316284
+    ],
+    "uv_layers": [
+      1,
+      1,
+      1
+    ],
+    "materials": [
+      {
+        "name": "TreeLeaf",
+        "color": [
+          0.23999999463558197,
+          0.6399999856948853,
+          0.054999999701976776,
+          1.0
+        ]
+      },
+      {
+        "name": "TreeLeafLight",
+        "color": [
+          0.41999998688697815,
+          0.800000011920929,
+          0.07500000298023224,
+          1.0
+        ]
+      },
+      {
+        "name": "TreeTrunk",
+        "color": [
+          0.2199999988079071,
+          0.09000000357627869,
+          0.02500000037252903,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\tree.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\tree.fbx",
+    "fbx_sha256": "415f1a46bd2dc77a76615a256079ffc32dea3e2ae340e1672e61fd6745b31f76"
+  },
+  {
+    "key": "beef",
+    "source": "authored:Tools/process_assets.py",
+    "source_sha256": null,
+    "triangles": 692,
+    "meshes": 3,
+    "dimensions": [
+      0.6399999856948853,
+      0.6399999856948853,
+      0.1744999885559082
+    ],
+    "uv_layers": [
+      1,
+      1,
+      1
+    ],
+    "materials": [
+      {
+        "name": "Fat",
+        "color": [
+          0.9200000166893005,
+          0.7799999713897705,
+          0.6499999761581421,
+          1.0
+        ]
+      },
+      {
+        "name": "Porcelain",
+        "color": [
+          0.9399999976158142,
+          0.9399999976158142,
+          0.8500000238418579,
+          1.0
+        ]
+      },
+      {
+        "name": "Steak",
+        "color": [
+          0.7799999713897705,
+          0.10000000149011612,
+          0.054999999701976776,
+          1.0
+        ]
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\beef.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\beef.fbx",
+    "fbx_sha256": "e2fe0baa2d5485a0537d20c01abe1765e363835205dd0b6d39fa5055bfb318bb"
+  },
+  {
+    "key": "player",
+    "source": "ASSET\\UserProvided\\Character1.glb",
+    "source_sha256": "1ae30f17000da96665ce58639e7e35b51494135f46c094ab937852fde8d1e85e",
+    "triangles": 9500,
+    "meshes": 1,
+    "dimensions": [
+      0.9669073820114136,
+      1.0077240467071533,
+      1.5592432022094727
+    ],
+    "uv_layers": [
+      1
+    ],
+    "materials": [
+      {
+        "name": "Material.001",
+        "color": [
+          0.800000011920929,
+          0.800000011920929,
+          0.800000011920929,
+          1.0
+        ],
+        "texture": "Assets/_Game/Art/Imported/Textures/player_basecolor.png"
+      }
+    ],
+    "bones": 18,
+    "actions": [
+      "Carry",
+      "CarryWalk",
+      "Drop",
+      "Idle",
+      "Pickup",
+      "Run",
+      "Sit",
+      "Walk"
+    ],
+    "processed_blend": "ArtSource\\Processed\\player.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\player.fbx",
+    "fbx_sha256": "16d5376cd938ad592d8b097f2f80d4a7e335c72b57ae0928a7ae022560491e86"
+  },
+  {
+    "key": "customer",
+    "source": "ASSET\\UserProvided\\Character2.glb",
+    "source_sha256": "19beaf240c9b3d5b6330453206071e37db2892e869cd70360d6f9a91d3beaf79",
+    "triangles": 7500,
+    "meshes": 1,
+    "dimensions": [
+      0.793411374092102,
+      1.1680476665496826,
+      1.5532578229904175
+    ],
+    "uv_layers": [
+      1
+    ],
+    "materials": [
+      {
+        "name": "Material.001",
+        "color": [
+          0.800000011920929,
+          0.800000011920929,
+          0.800000011920929,
+          1.0
+        ],
+        "texture": "Assets/_Game/Art/Imported/Textures/customer_basecolor.png"
+      }
+    ],
+    "bones": 18,
+    "actions": [
+      "Carry",
+      "CarryWalk",
+      "Drop",
+      "Idle",
+      "Pickup",
+      "Run",
+      "Sit",
+      "Walk"
+    ],
+    "processed_blend": "ArtSource\\Processed\\customer.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\customer.fbx",
+    "fbx_sha256": "6b8d6452194f4b20e85d837aee3394281e043906b666954dcf883d14224c1c41"
+  },
+  {
+    "key": "customer_beach",
+    "source": "ASSET\\UserProvided\\Character3.glb",
+    "source_sha256": "0fd47ccccefa37778debafef0c2fdea3b8e9039d4015833c18db2a69e5e904c7",
+    "triangles": 7499,
+    "meshes": 1,
+    "dimensions": [
+      0.7874670028686523,
+      1.2232589721679688,
+      1.5526031255722046
+    ],
+    "uv_layers": [
+      1
+    ],
+    "materials": [
+      {
+        "name": "Material.001",
+        "color": [
+          0.800000011920929,
+          0.800000011920929,
+          0.800000011920929,
+          1.0
+        ],
+        "texture": "Assets/_Game/Art/Imported/Textures/customer_beach_basecolor.png"
+      }
+    ],
+    "bones": 18,
+    "actions": [
+      "Carry",
+      "CarryWalk",
+      "Drop",
+      "Idle",
+      "Pickup",
+      "Run",
+      "Sit",
+      "Walk"
+    ],
+    "processed_blend": "ArtSource\\Processed\\customer_beach.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\customer_beach.fbx",
+    "fbx_sha256": "b33368ceb8d8c904d835bd0f1a898345300a92880922602143c8b417ce8a972c"
+  },
+  {
+    "key": "user_cow",
+    "source": "ASSET\\UserProvided\\Cow.glb",
+    "source_sha256": "cdba973b66b5565c97bd08d22c86701059c0b6b87044008e2ef463eb69b1ecc0",
+    "triangles": 3499,
+    "meshes": 1,
+    "dimensions": [
+      1.7880167961120605,
+      1.3336970806121826,
+      1.3480587005615234
+    ],
+    "uv_layers": [
+      1
+    ],
+    "materials": [
+      {
+        "name": "Material.001",
+        "color": [
+          0.800000011920929,
+          0.800000011920929,
+          0.800000011920929,
+          1.0
+        ],
+        "texture": "Assets/_Game/Art/Imported/Textures/user_cow_basecolor.png"
+      }
+    ],
+    "bones": 10,
+    "actions": [
+      "Idle",
+      "Walk"
+    ],
+    "processed_blend": "ArtSource\\Processed\\user_cow.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\user_cow.fbx",
+    "fbx_sha256": "28e156d2bb24bb748c68d90da05cb2051d3519c6117f07629e4758a31a17c881"
+  },
+  {
+    "key": "user_chicken",
+    "source": "ASSET\\UserProvided\\Chicken.glb",
+    "source_sha256": "94c271ccf2467412fb5433d14f4f749f2ab0a6919c97a4c72454b6a5efb8eec8",
+    "triangles": 2500,
+    "meshes": 1,
+    "dimensions": [
+      0.6013230085372925,
+      0.8003610372543335,
+      0.8129174709320068
+    ],
+    "uv_layers": [
+      1
+    ],
+    "materials": [
+      {
+        "name": "Material.001",
+        "color": [
+          0.800000011920929,
+          0.800000011920929,
+          0.800000011920929,
+          1.0
+        ],
+        "texture": "Assets/_Game/Art/Imported/Textures/user_chicken_basecolor.png"
+      }
+    ],
+    "bones": 6,
+    "actions": [
+      "Idle",
+      "Walk"
+    ],
+    "processed_blend": "ArtSource\\Processed\\user_chicken.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\user_chicken.fbx",
+    "fbx_sha256": "a993bbb915461e343f0b894c76716fc4f437fe95ccba8727a8d1519c8099768f"
+  },
+  {
+    "key": "user_checkout",
+    "source": "ASSET\\UserProvided\\Machine2.glb",
+    "source_sha256": "7f6c13bfa9dbba945eb631e367ed62c95fe2db974f182b7b0d514e467395ec07",
+    "triangles": 5000,
+    "meshes": 1,
+    "dimensions": [
+      1.5048515796661377,
+      0.9118629693984985,
+      1.1512888669967651
+    ],
+    "uv_layers": [
+      1
+    ],
+    "materials": [
+      {
+        "name": "Material.001",
+        "color": [
+          0.800000011920929,
+          0.800000011920929,
+          0.800000011920929,
+          1.0
+        ],
+        "texture": "Assets/_Game/Art/Imported/Textures/user_checkout_basecolor.png"
+      }
+    ],
+    "bones": 0,
+    "actions": [],
+    "processed_blend": "ArtSource\\Processed\\user_checkout.blend",
+    "unity_fbx": "Assets\\_Game\\Art\\Imported\\Models\\user_checkout.fbx",
+    "fbx_sha256": "130b27e1389ed4b6bed8eca5d2ce58cdb26ac0c6526d96fe889d6ddbe0a91530"
+  }
+]

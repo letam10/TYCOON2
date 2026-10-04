@@ -1,0 +1,14 @@
+{
+    "graphicsDevice": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "width": 1920,
+    "height": 1080,
+    "samples": 2707,
+    "renderedFrames": 3592,
+    "minimumCustomers": 28,
+    "maximumCustomers": 30,
+    "gpuSamples": 2707,
+    "averageFps": 119.99127960205078,
+    "p95Milliseconds": 8.336699485778809,
+    "gpuAverageMilliseconds": 1.74842117768748,
+    "cpuAverageMilliseconds": 8.333993018101214
+}

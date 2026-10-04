@@ -1,0 +1,107 @@
+[
+  {
+    "pack": "crops",
+    "path": "ASSET\\Downloaded\\crops\\FBX\\Carrot_4.fbx",
+    "bytes": 27324,
+    "sha256": "9b220d77e66cec7b33e0786192dc693033ef4814594e58ad6227c96a6f788d8a",
+    "drive_id": "1DylHrDAs_1ckGnAKCXs9YXIaQlFUyLUJ"
+  },
+  {
+    "pack": "crops",
+    "path": "ASSET\\Downloaded\\crops\\FBX\\Carrot_Crop.fbx",
+    "bytes": 20540,
+    "sha256": "00df3c1ff0cbf8e2834bcf683c35dc9d067909fdeaf35e6c3f74c083b30101d2",
+    "drive_id": "1M5tAmfLFmkIlTpn7rFxF8JaniZz6dZEu"
+  },
+  {
+    "pack": "crops",
+    "path": "ASSET\\Downloaded\\crops\\License.txt",
+    "bytes": 364,
+    "sha256": "83d8959f9fc56353ed571fbe2dc52e4bcd64508e2399501cd45ac2ce3df0bf8c",
+    "drive_id": "1Nu6uebTf-tnJhYyark490TvgZl5C5XmD"
+  },
+  {
+    "pack": "animals",
+    "path": "ASSET\\Downloaded\\animals\\FBX\\Cow.fbx",
+    "bytes": 1044076,
+    "sha256": "0202789cad8c1debb8ae5b4a47d1a5d2e5f93a0875878bc0b05a80e42ae37e8d",
+    "drive_id": "1ifw6UjxCw8Bsv3c6JDxpwIOz_VK8bte5"
+  },
+  {
+    "pack": "animals",
+    "path": "ASSET\\Downloaded\\animals\\License.txt",
+    "bytes": 581,
+    "sha256": "551ec32f604f57be7eca26fc6e6331b3c6d765804726ac259bc7891276634353",
+    "drive_id": "1tOEbeiWqvuTIfFzyZTe92NUdGNAZSOHL"
+  },
+  {
+    "pack": "food",
+    "path": "ASSET\\Downloaded\\food\\FBX\\Bread.fbx",
+    "bytes": 24300,
+    "sha256": "f2d21acadac6f5876fe121442a34400f73a760bbce555ed59d6fc57989244099",
+    "drive_id": "13kwZmPirsNbha-Ep8qY1-fe80i0yglag"
+  },
+  {
+    "pack": "food",
+    "path": "ASSET\\Downloaded\\food\\FBX\\Carrot.fbx",
+    "bytes": 31324,
+    "sha256": "e127e5e6e00cd8b1afbbdf270195b032bbd9c0456dcae45af14f0995046507f4",
+    "drive_id": "1lzkuyH8kYnv3LzTKhnbHXdYWL3t8nmje"
+  },
+  {
+    "pack": "food",
+    "path": "ASSET\\Downloaded\\food\\License.txt",
+    "bytes": 364,
+    "sha256": "83d8959f9fc56353ed571fbe2dc52e4bcd64508e2399501cd45ac2ce3df0bf8c",
+    "drive_id": "1-VM994jSJmNLt7WfSI6914WE5I_gaz2w"
+  },
+  {
+    "pack": "buildings",
+    "path": "ASSET\\Downloaded\\buildings\\FBX\\ChickenCoop.fbx",
+    "bytes": 30796,
+    "sha256": "f037de32326147646cb4db05b3dedb8effeb4a59a1b1036d79ee86d84ecd743b",
+    "drive_id": "1wUEjZYRU9lHiiYIkDw66aHIQLcNumeKQ"
+  },
+  {
+    "pack": "buildings",
+    "path": "ASSET\\Downloaded\\buildings\\FBX\\Fence.fbx",
+    "bytes": 17308,
+    "sha256": "bc5b6c5afc48cc5b0bed12a57a98c0d2c2984b16fe4805f4a9c7196061854123",
+    "drive_id": "1c0SNguly8AG2zcIWIvyi300m4It4V8Dl"
+  },
+  {
+    "pack": "buildings",
+    "path": "ASSET\\Downloaded\\buildings\\FBX\\OpenBarn.fbx",
+    "bytes": 38860,
+    "sha256": "c7a6338c9853a8340538e149799f6076ba77288e2d88d443a6ce66eeb052b787",
+    "drive_id": "1TREw6oObapTLBtgqgobt48q6z-tAqraP"
+  },
+  {
+    "pack": "buildings",
+    "path": "ASSET\\Downloaded\\buildings\\FBX\\SmallBarn.fbx",
+    "bytes": 50396,
+    "sha256": "bfa85180603ba1dfcea9f207da6911e8f57f0f559d230f8417fd4dc959564a6a",
+    "drive_id": "1HX4lFGgKGYubD79aIW99LyizVwzfwUCq"
+  },
+  {
+    "pack": "buildings",
+    "path": "ASSET\\Downloaded\\buildings\\FBX\\Well.fbx",
+    "bytes": 68316,
+    "sha256": "b5aa5b3f77a9eeba740a4ac4d58bac1ae08b7073424cbfcee0c215cbbd79210c",
+    "drive_id": "16bw85R_OC-fyNQRsNj58TjWW69vjjZQi"
+  },
+  {
+    "pack": "buildings",
+    "path": "ASSET\\Downloaded\\buildings\\FBX\\Windmill.fbx",
+    "bytes": 39436,
+    "sha256": "5dddd661f5ad3b198a4f3235611088e9fc0ad473d35182c4d4362c7f2253916e",
+    "drive_id": "1IrJBhR4fSyTUN3Xkw5lOgFgKGsotMUB8"
+  },
+  {
+    "pack": "buildings",
+    "path": "ASSET\\Downloaded\\buildings\\License.txt",
+    "bytes": 364,
+    "sha256": "83d8959f9fc56353ed571fbe2dc52e4bcd64508e2399501cd45ac2ce3df0bf8c",
+    "drive_id": "1O_kX6fCUCRUsBCKrxpeQU2E0GSJQ6GAf"
+  }
+]

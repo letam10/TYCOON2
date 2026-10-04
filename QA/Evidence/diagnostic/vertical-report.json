@@ -1,0 +1,40 @@
+{
+    "passed": true,
+    "startedUtc": "2026-10-03T06:32:01.4568089Z",
+    "finishedUtc": "2026-10-03T06:36:01.1126174Z",
+    "graphicsDevice": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "failure": "",
+    "distanceWalked": 230.0197296142578,
+    "playerHeight": 0.0,
+    "interactions": 7,
+    "materialSlotsChecked": 0,
+    "checks": [
+        "resume uses earned vertical save",
+        "Cook and Waiter hired",
+        "ordered meals cooked served eaten and paid",
+        "bakery customers bought bread or cake",
+        "recipe operated mill",
+        "recipe operated cheesemaker",
+        "recipe operated saucemaker",
+        "recipe operated oven",
+        "recipe operated cakeoven",
+        "recipe operated kitchen",
+        "shelf capacity shelf_farm_1",
+        "shelf capacity shelf_farm_2",
+        "shelf capacity shelf_market_1",
+        "shelf capacity shelf_market_2",
+        "shelf capacity shelf_market_3",
+        "shelf capacity shelf_bakery",
+        "benchmark rendered actual camera frames",
+        "benchmark samples with thirty customers",
+        "1080p average sixty FPS with thirty customers",
+        "saved full business progression",
+        "full pending cash conserved"
+    ],
+    "screenshots": [
+        "07-bakery.png",
+        "08-restaurant.png",
+        "09-all-businesses.png"
+    ],
+    "runtimeErrors": []
+}

@@ -1,0 +1,7 @@
+{
+  "name": "Tycoon.Tests",
+  "references": ["Tycoon.Runtime"],
+  "includePlatforms": ["Editor"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "autoReferenced": false
+}

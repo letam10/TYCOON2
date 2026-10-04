@@ -1,0 +1,27 @@
+{
+    "passed": true,
+    "startedUtc": "2026-10-03T00:46:30.3415771Z",
+    "finishedUtc": "2026-10-03T00:46:31.7223762Z",
+    "graphicsDevice": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "failure": "",
+    "distanceWalked": 0.0,
+    "playerHeight": 0.0,
+    "interactions": 0,
+    "materialSlotsChecked": 0,
+    "checks": [
+        "restart loaded wallet",
+        "restart retained cash",
+        "restart unlocked farmer",
+        "restart unlocked restocker",
+        "restart unlocked cashier",
+        "restart unlocked mill",
+        "restart unlocked processor",
+        "restart unlocked machine_upgrade",
+        "receipt IDs advance across restart",
+        "transit conserved wheat"
+    ],
+    "screenshots": [
+        "restart-loaded.png"
+    ],
+    "runtimeErrors": []
+}

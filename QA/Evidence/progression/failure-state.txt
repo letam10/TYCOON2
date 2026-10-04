@@ -1,0 +1,76 @@
+UTC=2026-10-03T05:08:59.2592940Z
+timeScale=1 money=766 pending=1194 transactions=341
+player=(-14.71, 0.02, 16.71) nearest= input=False
+unlocked=farmer,restocker,cashier,mill,processor,machine_upgrade,farmer_2,barn,animal_worker,farm_upgrade,worker_upgrade,carry_upgrade,dairy,supermarket,restocker_market,cashier_market,bakery,cook_bakery
+field_carrot total=24 {"id":"field_carrot","items":[{"id":"carrot","count":24}]}
+field_tomato total=24 {"id":"field_tomato","items":[{"id":"tomato","count":24}]}
+field_wheat total=22 {"id":"field_wheat","items":[{"id":"wheat","count":22}]}
+dairy_milk total=36 {"id":"dairy_milk","items":[{"id":"milk","count":36}]}
+coop_egg total=34 {"id":"coop_egg","items":[{"id":"egg","count":34}]}
+ranch_beef total=35 {"id":"ranch_beef","items":[{"id":"beef","count":35}]}
+storage total=800 {"id":"storage","items":[{"id":"carrot","count":8},{"id":"tomato","count":261},{"id":"wheat","count":22},{"id":"milk","count":22},{"id":"egg","count":218},{"id":"flour","count":6},{"id":"cheese","count":16},{"id":"sauce","count":6},{"id":"beef","count":241}]}
+shelf_farm_1 total=25 {"id":"shelf_farm_1","items":[{"id":"carrot","count":7},{"id":"tomato","count":18}]}
+shelf_farm_2 total=20 {"id":"shelf_farm_2","items":[{"id":"wheat","count":17},{"id":"milk","count":3}]}
+machine_mill total=22 {"id":"machine_mill","items":[{"id":"flour","count":22}]}
+machine_cheesemaker total=4 {"id":"machine_cheesemaker","items":[{"id":"cheese","count":4}]}
+machine_saucemaker total=12 {"id":"machine_saucemaker","items":[{"id":"sauce","count":12}]}
+shelf_market_1 total=0 {"id":"shelf_market_1","items":[]}
+shelf_market_2 total=0 {"id":"shelf_market_2","items":[]}
+shelf_market_3 total=0 {"id":"shelf_market_3","items":[]}
+machine_oven total=0 {"id":"machine_oven","items":[]}
+machine_cakeoven total=0 {"id":"machine_cakeoven","items":[]}
+shelf_bakery total=0 {"id":"shelf_bakery","items":[]}
+machine_kitchen total=0 {"id":"machine_kitchen","items":[]}
+table_0 total=0 {"id":"table_0","items":[]}
+table_1 total=0 {"id":"table_1","items":[]}
+table_2 total=0 {"id":"table_2","items":[]}
+table_3 total=0 {"id":"table_3","items":[]}
+table_4 total=0 {"id":"table_4","items":[]}
+table_5 total=0 {"id":"table_5","items":[]}
+machine_mill input={"id":"machine_mill","items":[]} running=False remaining=0 batches=23
+machine_cheesemaker input={"id":"machine_cheesemaker","items":[]} running=False remaining=0 batches=10
+machine_saucemaker input={"id":"machine_saucemaker","items":[]} running=False remaining=0 batches=10
+machine_oven input={"id":"machine_oven","items":[{"id":"egg","count":2},{"id":"flour","count":4}]} running=False remaining=0 batches=0
+machine_cakeoven input={"id":"machine_cakeoven","items":[{"id":"egg","count":4},{"id":"flour","count":4}]} running=False remaining=0 batches=0
+machine_kitchen input={"id":"machine_kitchen","items":[]} running=False remaining=0 batches=0
+farmer role=Farmer job=3 item=carrot carry=4 deliveries=89 from=24 to=800 position=(-3.08, 0.07, 3.57) target=(-3.00, 0.07, 3.50) remaining=0.1097802 path=PathComplete velocity=(0.00, 0.00, 0.00)
+restocker role=Restocker job=1 item=wheat carry=0 deliveries=88 from=800 to=20 position=(-1.89, 0.07, 3.67) target=(0.00, 0.07, 5.50) remaining=2.632805 path=PathComplete velocity=(1.93, 0.00, 1.89)
+cashier role=Cashier job=0 item= carry=0 deliveries=0 from= to= position=(10.00, 0.07, -1.76) target=(10.00, 0.07, -1.76) remaining=0 path=PathComplete velocity=(0.00, 0.00, 0.00)
+processor role=Processor job=2 item=tomato carry=8 deliveries=43 from=800 to=0 position=(14.49, 0.07, -4.23) target=(33.00, 0.07, 9.70) remaining=24.10543 path=PathComplete velocity=(2.92, 0.00, -0.26)
+farmer_2 role=Farmer job=3 item=wheat carry=2 deliveries=60 from=22 to=800 position=(-2.95, 0.07, 2.62) target=(-3.00, 0.07, 2.60) remaining=0.05718606 path=PathComplete velocity=(0.00, 0.00, 0.00)
+animal_worker role=AnimalWorker job=3 item=egg carry=6 deliveries=86 from=34 to=800 position=(-1.99, 0.07, 2.55) target=(-2.10, 0.07, 2.60) remaining=0.1190591 path=PathComplete velocity=(0.00, 0.00, 0.00)
+restocker_market role=Restocker job=1 item=sauce carry=0 deliveries=9 from=800 to=0 position=(22.73, 0.07, 24.87) target=(0.00, 0.07, 5.50) remaining=Infinity path=PathComplete velocity=(-3.58, 0.00, -2.70)
+cashier_market role=Cashier job=0 item= carry=0 deliveries=0 from= to= position=(29.02, 0.07, 24.16) target=(29.00, 0.07, 24.16) remaining=0.02217484 path=PathComplete velocity=(0.00, 0.00, 0.00)
+cook_bakery role=Cook job=1 item=milk carry=0 deliveries=4 from=800 to=6 position=(14.82, 0.07, -5.34) target=(0.00, 0.07, 5.50) remaining=19.1503 path=PathComplete velocity=(-4.45, 0.00, -0.48)
+checkout_farm cash=126 queue=1
+checkout_market cash=534 queue=2
+checkout_market_2 cash=534 queue=2
+checkout_bakery cash=0 queue=0
+checkout_restaurant cash=0 queue=0
+market state=Queue basket=3 receipt=437 position=(32.76, 0.07, 30.30) target=(23.00, 0.07, 20.40) remaining=13.91706 path=PathComplete
+market state=Leaving basket=0 receipt=443 position=(24.73, 0.07, 13.95) target=(30.70, 0.07, 14.00) remaining=5.97277 path=PathComplete
+market state=Leaving basket=0 receipt=446 position=(18.57, 0.07, 14.47) target=(28.15, 0.07, 14.00) remaining=9.592883 path=PathComplete
+market state=Leaving basket=0 receipt=449 position=(20.06, 0.07, 20.34) target=(30.70, 0.07, 14.00) remaining=Infinity path=PathComplete
+market state=Queue basket=3 receipt=452 position=(31.21, 0.07, 29.07) target=(23.00, 0.07, 21.50) remaining=11.48947 path=PathComplete
+bakery state=Waiting basket=0 receipt=453 position=(6.46, 0.07, 21.83) target=(7.40, 0.07, 21.30) remaining=1.081415 path=PathComplete
+market state=Queue basket=3 receipt=455 position=(33.77, 0.07, 28.32) target=(29.00, 0.07, 20.40) remaining=9.417108 path=PathComplete
+bakery state=Waiting basket=0 receipt=456 position=(3.61, 0.07, 21.00) target=(4.45, 0.07, 21.30) remaining=0.8879491 path=PathComplete
+market state=Queue basket=3 receipt=458 position=(32.33, 0.07, 27.22) target=(29.00, 0.07, 21.50) remaining=7.404794 path=PathComplete
+bakery state=Waiting basket=0 receipt=459 position=(8.24, 0.07, 21.41) target=(8.20, 0.07, 21.30) remaining=0.1180764 path=PathComplete
+market state=Shopping basket=0 receipt=461 position=(24.47, 0.07, 15.04) target=(35.36, 0.07, 32.45) remaining=Infinity path=PathComplete
+bakery state=Waiting basket=0 receipt=462 position=(5.31, 0.07, 21.40) target=(5.25, 0.07, 21.30) remaining=0.1149895 path=PathComplete
+market state=Shopping basket=0 receipt=464 position=(19.17, 0.07, 15.20) target=(35.36, 0.07, 34.10) remaining=Infinity path=PathComplete
+bakery state=Waiting basket=0 receipt=465 position=(7.29, 0.07, 21.36) target=(7.40, 0.07, 21.30) remaining=0.1272185 path=PathComplete
+market state=Shopping basket=0 receipt=467 position=(25.58, 0.07, 15.02) target=(35.36, 0.07, 33.00) remaining=Infinity path=PathComplete
+bakery state=Waiting basket=0 receipt=468 position=(4.38, 0.07, 21.58) target=(4.45, 0.07, 21.30) remaining=0.2861218 path=PathComplete
+market state=Shopping basket=0 receipt=470 position=(21.28, 0.07, 14.94) target=(35.36, 0.07, 31.90) remaining=Infinity path=PathComplete
+bakery state=Waiting basket=0 receipt=471 position=(9.18, 0.07, 21.21) target=(8.20, 0.07, 21.30) remaining=0.9808747 path=PathComplete
+market state=Shopping basket=0 receipt=473 position=(23.10, 0.07, 14.94) target=(35.36, 0.07, 33.55) remaining=Infinity path=PathComplete
+bakery state=Waiting basket=0 receipt=474 position=(6.14, 0.07, 20.92) target=(5.25, 0.07, 21.30) remaining=0.9717044 path=PathComplete
+market state=Shopping basket=0 receipt=476 position=(20.10, 0.07, 14.98) target=(35.36, 0.07, 32.45) remaining=Infinity path=PathComplete
+bakery state=Waiting basket=0 receipt=477 position=(7.80, 0.07, 20.56) target=(7.40, 0.07, 21.30) remaining=0.8448958 path=PathComplete
+farm state=Shopping basket=0 receipt=478 position=(12.68, 0.07, 4.61) target=(13.40, 0.07, 11.55) remaining=6.973303 path=PathComplete
+market state=Shopping basket=0 receipt=479 position=(26.59, 0.07, 14.95) target=(35.36, 0.07, 34.10) remaining=Infinity path=PathComplete
+bakery state=Waiting basket=0 receipt=480 position=(4.55, 0.07, 20.63) target=(4.45, 0.07, 21.30) remaining=0.6736173 path=PathComplete
+farm state=Queue basket=3 receipt=481 position=(13.44, 0.07, 5.18) target=(10.00, 0.07, -4.50) remaining=11.20835 path=PathComplete
+market state=Waiting basket=0 receipt=482 position=(28.92, 0.07, 15.16) target=(28.95, 0.07, 15.20) remaining=0.05240557 path=PathComplete

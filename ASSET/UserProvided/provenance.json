@@ -1,0 +1,38 @@
+[
+  {
+    "file": "ASSET\\UserProvided\\Character1.glb",
+    "original": "D:\\APP\\TYCOON\\ASSET\\Character1.glb",
+    "sha256": "1ae30f17000da96665ce58639e7e35b51494135f46c094ab937852fde8d1e85e",
+    "permission": "User explicitly authorized copying into TYCOON2; no separate publisher license supplied."
+  },
+  {
+    "file": "ASSET\\UserProvided\\Character2.glb",
+    "original": "D:\\APP\\TYCOON\\ASSET\\Character2.glb",
+    "sha256": "19beaf240c9b3d5b6330453206071e37db2892e869cd70360d6f9a91d3beaf79",
+    "permission": "User explicitly authorized copying into TYCOON2; no separate publisher license supplied."
+  },
+  {
+    "file": "ASSET\\UserProvided\\Character3.glb",
+    "original": "D:\\APP\\TYCOON\\ASSET\\Character3.glb",
+    "sha256": "0fd47ccccefa37778debafef0c2fdea3b8e9039d4015833c18db2a69e5e904c7",
+    "permission": "User explicitly authorized copying into TYCOON2; no separate publisher license supplied."
+  },
+  {
+    "file": "ASSET\\UserProvided\\Cow.glb",
+    "original": "D:\\APP\\TYCOON\\ASSET\\Cow.glb",
+    "sha256": "cdba973b66b5565c97bd08d22c86701059c0b6b87044008e2ef463eb69b1ecc0",
+    "permission": "User explicitly authorized copying into TYCOON2; no separate publisher license supplied."
+  },
+  {
+    "file": "ASSET\\UserProvided\\Chicken.glb",
+    "original": "D:\\APP\\TYCOON\\ASSET\\Chicken.glb",
+    "sha256": "94c271ccf2467412fb5433d14f4f749f2ab0a6919c97a4c72454b6a5efb8eec8",
+    "permission": "User explicitly authorized copying into TYCOON2; no separate publisher license supplied."
+  },
+  {
+    "file": "ASSET\\UserProvided\\Machine2.glb",
+    "original": "D:\\APP\\TYCOON\\ASSET\\Machine2.glb",
+    "sha256": "7f6c13bfa9dbba945eb631e367ed62c95fe2db974f182b7b0d514e467395ec07",
+    "permission": "User explicitly authorized copying into TYCOON2; no separate publisher license supplied."
+  }
+]
