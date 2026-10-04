@@ -8,7 +8,9 @@ namespace Tycoon
     {
         Take, Place, Transfer, Reserve, Release, Split, Merge, CreateOrder, DeliverOrder,
         CompleteOrder, FailOrder, CreatePayment, CollectPayment, ContributePurchase, CompletePurchase,
-        StartMachine, AdvanceMachine, CompleteMachine, AcknowledgeEvent
+        StartMachine, AdvanceMachine, CompleteMachine, AcknowledgeEvent,
+        RegisterOwner, OperateProducer, TickProducer, HarvestProducer, FeedProducer,
+        ReleaseOperator, BreakMachine, RepairMachine, UpgradeCrew, CleanTable, AdvanceDiner, Checkpoint
     }
     public enum OrderStatus { Open, Complete, Failed }
     public enum ReservationStatus { Active, Used, Released, Expired }
@@ -23,6 +25,10 @@ namespace Tycoon
         public bool singleItem;
         public List<string> writers = new();
         public List<ItemAmount> limits = new();
+        public List<string> accepts = new();
+        public CustomerSave customer;
+        public DinerSave diner;
+        public WorkerSave worker;
     }
     [Serializable] public sealed class ItemStackState
     {
@@ -32,6 +38,7 @@ namespace Tycoon
     [Serializable] public sealed class ReservationState
     {
         public string id, holder, source, destination, item;
+        public string relay;
         public int quantity;
         public double expiresAt;
         public ReservationStatus status;
@@ -44,6 +51,9 @@ namespace Tycoon
         public double deadline;
         public OrderStatus status;
         public List<OrderLine> lines = new();
+        public string table;
+        public int dinerPhase;
+        public double eatingRemaining;
     }
     [Serializable] public sealed class PaymentState
     {
@@ -59,10 +69,13 @@ namespace Tycoon
     }
     [Serializable] public sealed class StationRuntimeState
     {
-        public string id, definitionId, input, output, jobId, reservationId, operatorId;
+        public string id, definitionId, input, output, jobId, reservationId, operatorId, escrow;
         public int definitionVersion = 1, level = 1, workCount, batches;
         public double remaining;
         public bool running;
+        public string kind = "machine", item, area, requirement;
+        public double operatorUntil;
+        public StationProgressSave progress = new();
     }
     [Serializable] public sealed class TransactionReceipt
     {
@@ -81,6 +94,11 @@ namespace Tycoon
         public int schemaVersion = 1, catalogVersion = Definitions.Version;
         public long revision;
         public int money, revenue;
+        public double simulationTime;
+        public int legacyRevenue, legacyTransactions;
+        public List<long> legacyPaid = new();
+        public List<LossRecord> legacyLosses = new();
+        public List<CashSave> legacyCash = new();
         public List<OwnerState> owners = new();
         public List<ItemStackState> stacks = new();
         public List<ReservationState> reservations = new();
@@ -104,6 +122,7 @@ namespace Tycoon
         public int quantity;
         public double duration, expiresAt;
         public List<OrderLine> lines = new();
+        public OwnerState owner;
     }
     [Serializable] public sealed class ConsumerState { public string id; public int appliedEvents; }
     public sealed class TransactionRejectedException : InvalidOperationException

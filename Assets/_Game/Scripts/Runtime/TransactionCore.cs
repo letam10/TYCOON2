@@ -45,6 +45,7 @@ namespace Tycoon
                 var draft = Copy(state);
                 Expire(draft, clock());
                 int amount = Apply(draft, c);
+                draft.simulationTime = clock();
                 draft.revision = checked(state.revision + 1);
                 receipt = new TransactionReceipt {
                     id = "receipt:" + c.key, key = c.key, effectId = c.effectId,
@@ -112,6 +113,34 @@ namespace Tycoon
                     var consumer = s.consumers.Find(x => x.id == c.secondary);
                     if (consumer == null) { consumer = new ConsumerState { id = c.secondary }; s.consumers.Add(consumer); }
                     consumer.appliedEvents++; return 1;
+                case TransactionKind.RegisterOwner:
+                    Require(c.actor == "simulation" && c.owner != null, "authority", "Chỉ mô phỏng đăng ký owner.");
+                    Require(!s.owners.Any(x => x.id == c.owner.id), "duplicate", "Owner đã tồn tại.");
+                    s.owners.Add(Copy(c.owner));
+                    if (c.owner.kind == OwnerKind.Worker)
+                        foreach (var shared in s.owners.Where(x => x.kind is not (OwnerKind.Player or OwnerKind.Worker)))
+                            if (!shared.writers.Contains(c.owner.actor)) shared.writers.Add(c.owner.actor);
+                    return 1;
+                case TransactionKind.OperateProducer: return OperateProducer(s, c);
+                case TransactionKind.TickProducer: return TickProducer(s, c);
+                case TransactionKind.HarvestProducer: return HarvestProducer(s, c);
+                case TransactionKind.FeedProducer: return FeedProducer(s, c);
+                case TransactionKind.ReleaseOperator:
+                    var station = Station(s, c.target);
+                    if (station.operatorId != c.actor) return 0;
+                    station.operatorId = null; station.operatorUntil = 0; return 1;
+                case TransactionKind.BreakMachine:
+                    Require(c.actor == "simulation", "authority", "Chỉ mô phỏng làm hỏng máy.");
+                    var broken = Station(s, c.target); Require(broken.kind == "machine", "station", "Không phải máy.");
+                    if (broken.progress.broken) return 0;
+                    broken.progress.broken = true; broken.progress.repairFee = Math.Clamp(c.quantity, 10, 100);
+                    broken.progress.repairRemaining = 8; broken.progress.repairPaid = false; return 1;
+                case TransactionKind.RepairMachine: return RepairMachine(s, c);
+                case TransactionKind.UpgradeCrew: return UpgradeCrew(s, c);
+                case TransactionKind.CleanTable: return CleanTable(s, c);
+                case TransactionKind.AdvanceDiner: return AdvanceDiner(s, c);
+                case TransactionKind.Checkpoint:
+                    Require(c.actor == "simulation", "authority", "Chỉ mô phỏng ghi checkpoint."); return 0;
                 default: throw new TransactionRejectedException("kind", "Transaction không hỗ trợ.");
             }
         }
@@ -130,8 +159,9 @@ namespace Tycoon
         static int Reserved(TransactionState s, string stack) => s.reservations.Where(x => x.status == ReservationStatus.Active).Sum(x => x.allocations.Where(a => a.stack == stack).Sum(a => a.quantity));
         static int Free(TransactionState s, OwnerState owner, string item)
         {
+            if(owner.accepts.Count>0&&!owner.accepts.Contains(item))return 0;
             var stock = s.stacks.Where(x => x.owner == owner.id).ToArray();
-            var held = s.reservations.Where(x => x.status == ReservationStatus.Active && x.destination == owner.id).ToArray();
+            var held = s.reservations.Where(x => x.status == ReservationStatus.Active && (x.destination == owner.id || x.relay == owner.id)).ToArray();
             if (owner.singleItem && (stock.Any(x => x.item != item) || held.Any(x => x.item != item))) return 0;
             int total = checked(stock.Sum(x => x.quantity) + held.Sum(x => x.quantity));
             int count = checked(stock.Where(x => x.item == item).Sum(x => x.quantity) + held.Where(x => x.item == item).Sum(x => x.quantity));
@@ -174,12 +204,24 @@ namespace Tycoon
             if (!string.IsNullOrEmpty(c.reservation))
             {
                 var r = Reservation(s, c.reservation);
-                Require(r.status == ReservationStatus.Active && r.holder == c.actor && r.source == c.source && r.destination == c.destination && r.item == c.item && r.quantity == c.quantity, "reservation", "Reservation không khớp hoặc hết hạn.");
-                allocation = r.allocations; r.status = ReservationStatus.Used;
+                Require(r.status == ReservationStatus.Active && r.holder == c.actor && r.source == c.source && (r.destination == c.destination || r.relay == c.destination) && r.item == c.item && r.quantity == c.quantity, "reservation", "Reservation không khớp hoặc hết hạn.");
+                allocation = r.allocations;
+                bool relay = r.relay == c.destination;
+                r.status = ReservationStatus.Used;
+                Require(Free(s, destination, c.item) >= c.quantity, "capacity", "Đích không đủ chỗ.");
+                Consume(s, allocation); AddStack(s, "stack:" + c.effectId, destination.id, c.item, c.quantity);
+                if (relay)
+                {
+                    // Giữ chỗ ở đích suốt hai chặng; stock reservation theo hàng sang giỏ worker.
+                    r.status = ReservationStatus.Active; r.source = destination.id; r.relay = null;
+                    r.allocations = new() { new StackAllocation { stack = "stack:" + c.effectId, quantity = c.quantity } };
+                }
+                CountPlace(s, c); return c.quantity;
             }
             else allocation = Allocate(s, c.source, c.item, c.quantity);
             Require(Free(s, destination, c.item) >= c.quantity, "capacity", "Đích không đủ chỗ.");
-            Consume(s, allocation); AddStack(s, "stack:" + c.effectId, destination.id, c.item, c.quantity); return c.quantity;
+            Consume(s, allocation); AddStack(s, "stack:" + c.effectId, destination.id, c.item, c.quantity);
+            CountPlace(s, c); return c.quantity;
         }
         int Reserve(TransactionState s, TransactionCommand c)
         {
@@ -189,8 +231,13 @@ namespace Tycoon
             WriteAccess(source, c.actor); WriteAccess(destination, c.actor);
             Require(source.kind != OwnerKind.Customer, "escrow", "Không reserve hàng đã giao cho khách.");
             Require(Free(s, destination, c.item) >= c.quantity, "capacity", "Đích không đủ chỗ.");
+            if (!string.IsNullOrEmpty(c.secondary))
+            {
+                var relay = Owner(s, c.secondary); WriteAccess(relay, c.actor);
+                Require(relay.kind == OwnerKind.Worker && relay.actor == c.actor && relay.id != source.id && relay.id != destination.id && Free(s, relay, c.item) >= c.quantity, "capacity", "Giỏ worker không đủ chỗ.");
+            }
             s.reservations.Add(new ReservationState { id = c.target, holder = c.actor, source = c.source, destination = c.destination, item = c.item,
-                quantity = c.quantity, expiresAt = c.expiresAt, allocations = Allocate(s, source.id, c.item, c.quantity) }); return c.quantity;
+                relay = c.secondary, quantity = c.quantity, expiresAt = c.expiresAt, allocations = Allocate(s, source.id, c.item, c.quantity) }); return c.quantity;
         }
         static int Split(TransactionState s, TransactionCommand c)
         {
@@ -229,9 +276,14 @@ namespace Tycoon
         {
             Require(c.actor == "simulation", "authority", "Chỉ mô phỏng tạo đơn.");
             Require(!s.orders.Any(x => x.id == c.target) && double.IsFinite(c.expiresAt) && c.expiresAt > clock(), "order", "Order ID hoặc hạn không hợp lệ.");
+            if(!string.IsNullOrEmpty(c.owner?.id))
+            {
+                Require(c.owner.id==c.destination&&c.owner.kind==OwnerKind.Customer&&!s.owners.Any(x=>x.id==c.owner.id),"owner","Customer owner không hợp lệ.");
+                s.owners.Add(Copy(c.owner));
+            }
             Require(Owner(s, c.destination).kind == OwnerKind.Customer && Owner(s, c.source).kind == OwnerKind.Counter, "owner", "Sai owner đơn.");
             Require(c.lines.Count > 0 && c.lines.Select(x => x.id).Distinct().Count() == c.lines.Count && c.lines.All(x => Definitions.Item(x.id) != null && x.requested > 0 && x.delivered == 0 && x.unitPrice >= 0), "lines", "Dòng đơn không hợp lệ.");
-            s.orders.Add(new OrderRuntimeState { id = c.target, customer = c.destination, counter = c.source, deadline = c.expiresAt, lines = c.lines.Select(Copy).ToList() }); return 1;
+            s.orders.Add(new OrderRuntimeState { id = c.target, customer = c.destination, counter = c.source, table = c.secondary, deadline = c.expiresAt, lines = c.lines.Select(Copy).ToList() }); return 1;
         }
         int Deliver(TransactionState s, TransactionCommand c)
         {
@@ -244,27 +296,40 @@ namespace Tycoon
         {
             var o = Order(s, c, false); if (o.status == OrderStatus.Complete) return 0;
             Require(o.status == OrderStatus.Open && clock() < o.deadline && o.lines.All(x => x.Remaining == 0), "order-incomplete", "Chưa giao đủ hoặc đã hết hạn.");
-            o.status = OrderStatus.Complete; return 1;
+            o.status = OrderStatus.Complete;
+            if (!string.IsNullOrEmpty(o.table)) { o.dinerPhase = 2; o.eatingRemaining = 6; }
+            return 1;
         }
         int FailOrder(TransactionState s, TransactionCommand c)
         {
             var o = Order(s, c, false); if (o.status == OrderStatus.Failed) return 0;
             Require(o.status == OrderStatus.Open, "order-closed", "Đơn đã hoàn tất.");
             o.status = OrderStatus.Failed;
+            if (!string.IsNullOrEmpty(o.table)) o.dinerPhase = 3;
             foreach (var r in s.reservations.Where(x => x.destination == o.customer && x.status == ReservationStatus.Active)) r.status = ReservationStatus.Released;
             return o.lines.Sum(x => checked(x.delivered * x.unitPrice));
         }
         int CreatePayment(TransactionState s, TransactionCommand c)
         {
             var o = Order(s, c, false); Require(o.status == OrderStatus.Complete, "order-incomplete", "Đơn chưa thành công.");
+            if(long.TryParse(o.id.Replace("order:",""),out long legacyReceipt)&&s.legacyPaid.Contains(legacyReceipt))return 0;
             if (s.payments.Any(x => x.order == o.id)) return 0;
             int amount = o.lines.Sum(x => checked(x.requested * x.unitPrice));
             s.payments.Add(new PaymentState { id = "payment:" + o.id, order = o.id, counter = o.counter, amount = amount });
-            s.revenue = checked(s.revenue + amount); return amount;
+            s.revenue = checked(s.revenue + amount);
+            var station = s.stations.Find(x => x.id == o.counter); if (station != null) station.workCount++;
+            return amount;
         }
         static int Collect(TransactionState s, TransactionCommand c)
         {
-            Player(s, c.actor); var payment = s.payments.Find(x => x.id == c.target);
+            Player(s, c.actor);
+            if(c.target!=null&&c.target.StartsWith("legacy-cash:"))
+            {
+                string counter=c.target.Substring(12);WriteAccess(Owner(s,counter),c.actor);
+                var cash=s.legacyCash.Find(x=>x.id==counter);if(cash==null||cash.amount==0)return 0;
+                int amount=cash.amount;s.money=checked(s.money+amount);cash.amount=0;return amount;
+            }
+            var payment = s.payments.Find(x => x.id == c.target);
             Require(payment != null, "payment", "Payment không tồn tại."); WriteAccess(Owner(s, payment.counter), c.actor);
             if (payment.collected) return 0;
             s.money = checked(s.money + payment.amount); payment.collected = true; return payment.amount;
@@ -274,6 +339,7 @@ namespace Tycoon
             Player(s, c.actor); var definition = Definitions.Upgrade(c.target);
             Require(definition != null && definition.kind != "legacy" && c.quantity > 0 && !s.unlocked.Contains(c.target), "purchase", "Purchase không khả dụng.");
             Require(string.IsNullOrEmpty(definition.requirement) || s.unlocked.Contains(definition.requirement), "requirement", "Thiếu điều kiện mở khóa.");
+            ValidatePurchaseRequirements(s,definition);
             var purchase = s.purchases.Find(x => x.id == c.target);
             if (purchase == null) { purchase = new PurchaseRuntimeState { id = c.target, definitionId = c.target }; s.purchases.Add(purchase); }
             int amount = Math.Min(c.quantity, Math.Min(s.money, definition.cost - purchase.contributed));
@@ -287,29 +353,39 @@ namespace Tycoon
             if (purchase.complete) return 0;
             purchase.complete = true; if (!s.unlocked.Contains(c.target)) s.unlocked.Add(c.target);
             if (definition.kind == "worker" && !s.crews.Any(x => x.id == c.target)) s.crews.Add(GameSession.CrewFor(definition));
+            RefreshProgression(s);
             return 1;
         }
         static StationRuntimeState Machine(TransactionState s, TransactionCommand c)
         {
             var m = s.stations.Find(x => x.id == c.target); Require(m != null, "station", "Station không tồn tại.");
+            Require(m.kind == "machine" && (string.IsNullOrEmpty(m.requirement) || s.unlocked.Contains(m.requirement)), "requirement", "Máy chưa mở.");
             WriteAccess(Owner(s, m.input), c.actor); WriteAccess(Owner(s, m.output), c.actor); return m;
         }
         int StartMachine(TransactionState s, TransactionCommand c)
         {
             var m = Machine(s, c); var recipe = Array.Find(Definitions.Recipes, x => x.id == m.definitionId);
-            Require(recipe != null && !m.running, "machine", "Máy đang chạy hoặc sai recipe.");
+            Require(recipe != null && !m.running && !m.progress.broken, "machine", "Máy đang chạy, hỏng hoặc sai recipe.");
+            Lease(m, c.actor, clock());
             Require(!string.IsNullOrWhiteSpace(c.secondary), "job", "Thiếu job ID.");
             Require(!s.jobIds.Contains(m.id + ":" + c.secondary), "job", "Job ID đã dùng.");
             Require(Free(s, Owner(s, m.output), recipe.output) >= recipe.yield, "capacity", "Đầu ra đầy.");
-            foreach (var input in recipe.inputs) Consume(s, Allocate(s, m.input, input.id, input.count));
+            m.escrow="escrow:"+m.id+":"+c.secondary;
+            s.owners.Add(new OwnerState{id=m.escrow,actor="simulation",location=m.escrow,kind=OwnerKind.Escrow,capacity=recipe.inputs.Sum(x=>x.count)});
+            foreach (var input in recipe.inputs)
+            {
+                Consume(s, Allocate(s, m.input, input.id, input.count));
+                AddStack(s,"job-input:"+m.id+":"+c.secondary+":"+input.id,m.escrow,input.id,input.count);
+            }
             m.jobId = c.secondary; m.reservationId = "output:" + m.id + ":" + c.secondary; m.operatorId = c.actor;
             s.jobIds.Add(m.id + ":" + c.secondary);
             s.reservations.Add(new ReservationState { id = m.reservationId, holder = c.actor, destination = m.output, item = recipe.output, quantity = recipe.yield, expiresAt = double.MaxValue });
             m.running = true; m.remaining = recipe.seconds; return 1;
         }
-        static int AdvanceMachine(TransactionState s, TransactionCommand c)
+        int AdvanceMachine(TransactionState s, TransactionCommand c)
         {
-            var m = Machine(s, c); Require(m.running && m.jobId == c.secondary && m.operatorId == c.actor, "lease", "Sai job hoặc operator.");
+            var m = Machine(s, c); Require(m.running && !m.progress.broken && m.jobId == c.secondary, "lease", "Sai job hoặc máy đang hỏng.");
+            Lease(m, c.actor, clock());
             Require(double.IsFinite(c.duration) && c.duration > 0, "duration", "Delta không hợp lệ.");
             m.remaining = Math.Max(0, m.remaining - c.duration); return 1;
         }
@@ -322,13 +398,159 @@ namespace Tycoon
             var reservation = Reservation(s, m.reservationId); Require(reservation.status == ReservationStatus.Active, "reservation", "Mất chỗ đầu ra.");
             reservation.status = ReservationStatus.Used;
             Require(Free(s, Owner(s, m.output), recipe.output) >= recipe.yield, "capacity", "Đầu ra không còn chỗ.");
+            if(!string.IsNullOrEmpty(m.escrow))s.stacks.RemoveAll(x=>x.owner==m.escrow);
             AddStack(s, "job-output:" + m.id + ":" + m.jobId, m.output, recipe.output, recipe.yield);
             m.running = false; m.batches++; m.workCount++; m.remaining = 0; return recipe.yield;
+        }
+        static StationRuntimeState Station(TransactionState s, string id)
+        { var m = s.stations.Find(x => x.id == id); Require(m != null, "station", "Station không tồn tại: " + id); return m; }
+        static void CountPlace(TransactionState s, TransactionCommand c)
+        {
+            if (c.kind != TransactionKind.Place) return;
+            var station = s.stations.Find(x => x.output == c.destination || x.input == c.destination);
+            if (station != null) station.workCount++;
+        }
+        static void Lease(StationRuntimeState m, string actor, double now)
+        {
+            Require(string.IsNullOrEmpty(m.operatorId) || m.operatorId == actor || now >= m.operatorUntil, "lease", "Trạm đang có người vận hành.");
+            m.operatorId = actor; m.operatorUntil = now + .25;
+        }
+        StationRuntimeState Producer(TransactionState s, TransactionCommand c, bool lease = true)
+        {
+            var m = Station(s, c.target);
+            Require(m.kind == "producer" && (string.IsNullOrEmpty(m.requirement) || s.unlocked.Contains(m.requirement)), "requirement", "Trạm chưa mở.");
+            if (lease) { WriteAccess(Owner(s, m.output), c.actor); Lease(m, c.actor, clock()); }
+            return m;
+        }
+        int OperateProducer(TransactionState s, TransactionCommand c)
+        {
+            var m = Producer(s, c); var p = m.progress;
+            Require(double.IsFinite(c.duration) && c.duration > 0, "duration", "Delta không hợp lệ.");
+            if (m.item is "milk" or "egg" or "beef")
+            {
+                Require(p.feed > 0, "feed", "Hãy đặt cà rốt vào vùng Cho ăn.");
+                if (p.herd < 3 && p.breeding == 0) { p.feed--; p.breeding = 60; }
+                return 1;
+            }
+            Require(p.phase < 2, "phase", p.phase == 2 ? "Cây đang lớn." : "Cây đã chín; hãy sang vùng Lấy hàng.");
+            p.action += (float)c.duration;
+            if (p.action >= 1) { p.action = 0; if (p.phase == 0) p.phase = 1; else { p.phase = 2; p.remaining = 2; } }
+            return 1;
+        }
+        int TickProducer(TransactionState s, TransactionCommand c)
+        {
+            Require(c.actor == "simulation" && double.IsFinite(c.duration) && c.duration > 0, "authority", "Tick không hợp lệ.");
+            var m = Producer(s, c, false); var p = m.progress;
+            if (m.item is not ("milk" or "egg" or "beef"))
+            { if (p.phase == 2) { p.remaining = Math.Max(0, p.remaining - (float)c.duration); if (p.remaining == 0) p.phase = 3; } return 1; }
+            if (p.breeding > 0) { p.breeding = Math.Max(0, p.breeding - (float)c.duration); if (p.breeding == 0) p.herd++; }
+            if (p.herd > 0 && p.feed > 0) { p.cycle = Math.Max(0, p.cycle - (float)c.duration * (clock() < m.operatorUntil ? 2 : 1)); p.remaining = p.cycle; }
+            return 1;
+        }
+        int HarvestProducer(TransactionState s, TransactionCommand c)
+        {
+            var m = Producer(s, c); var p = m.progress; var carrier = Owner(s, c.destination); WriteAccess(carrier, c.actor);
+            Require(carrier.actor == c.actor && carrier.kind is OwnerKind.Player or OwnerKind.Worker, "authority", "Chỉ lấy vào giỏ người thao tác.");
+            Require(double.IsFinite(c.duration) && c.duration > 0 && Free(s, carrier, m.item) > 0, "capacity", "Giỏ đầy hoặc đang mang loại khác.");
+            bool animal = m.item is "milk" or "egg" or "beef";
+            Require(animal ? p.herd > 0 && p.feed > 0 && p.cycle == 0 : p.phase == 3, "phase", "Chưa đến lúc thu hoạch.");
+            p.action += (float)c.duration;
+            if (p.action < 1) return 0;
+            int count = m.item == "beef" ? Math.Min(3, Free(s, carrier, m.item)) : 1;
+            AddStack(s, "harvest:" + c.effectId, carrier.id, m.item, count);
+            p.action = 0; p.produced += count; m.workCount++;
+            if (animal) { if (m.item == "beef") p.herd--; p.feed--; p.cycle = m.item == "beef" ? 45 : 30; } else p.phase = 0;
+            return count;
+        }
+        int FeedProducer(TransactionState s, TransactionCommand c)
+        {
+            var m = Producer(s, c); var p = m.progress;
+            Require(m.item is "milk" or "egg" or "beef" && p.feed < 3, "feed", "Máng ăn đã đầy hoặc trạm không nhận thức ăn.");
+            var source = Owner(s, c.source); WriteAccess(source, c.actor);
+            Require(source.kind != OwnerKind.Customer, "escrow", "Không lấy thức ăn từ khách.");
+            Consume(s, Allocate(s, source.id, "carrot", 1)); p.feed++; m.workCount++; return 1;
+        }
+        int RepairMachine(TransactionState s, TransactionCommand c)
+        {
+            Player(s, c.actor); var m = Machine(s, c); var p = m.progress;
+            Require(p.broken && double.IsFinite(c.duration) && c.duration > 0, "repair", "Máy chưa cần sửa.");
+            Lease(m, c.actor, clock());
+            if (!p.repairPaid) { Require(s.money >= p.repairFee, "funds", "Không đủ tiền sửa máy."); s.money -= p.repairFee; p.repairPaid = true; }
+            p.repairRemaining = Math.Max(0, p.repairRemaining - (float)c.duration);
+            if (p.repairRemaining == 0) { p.broken = false; p.repairPaid = false; } return 1;
+        }
+        static int UpgradeCrew(TransactionState s, TransactionCommand c)
+        {
+            Player(s, c.actor); var crew = s.crews.Find(x => x.id == c.target);
+            Require(crew != null && c.secondary is "speed" or "carry" or "count", "crew", "Không có nâng cấp đội.");
+            Require(c.secondary != "carry" || crew.role != "Cashier", "crew", "Đội thu ngân không nâng sức mang.");
+            int level = c.secondary == "speed" ? crew.speedLevel : c.secondary == "carry" ? crew.carryLevel : crew.count;
+            int cost = checked(150 * level * level * (crew.area is "farm" or "farm_shop" ? 1 : 3));
+            Require(level < 3 && s.money >= cost, "funds", "Không đủ tiền hoặc đội đã đạt cấp tối đa.");
+            s.money -= cost; if (c.secondary == "speed") crew.speedLevel++; else if (c.secondary == "carry") crew.carryLevel++; else crew.count++;
+            RefreshProgression(s); return cost;
+        }
+        static void RefreshProgression(TransactionState s)
+        {
+            foreach (var owner in s.owners)
+            {
+                if (owner.kind == OwnerKind.Player) owner.capacity = s.unlocked.Contains("carry24") ? 24 : s.unlocked.Contains("carry16") ? 16 : s.unlocked.Contains("carry10") ? 10 : 6;
+                if (owner.kind == OwnerKind.Worker && !string.IsNullOrEmpty(owner.worker?.upgrade))
+                { var crew = s.crews.Find(x => x.id == owner.worker.upgrade); if (crew != null) owner.capacity = crew.carryLevel == 3 ? 16 : crew.carryLevel == 2 ? 10 : 6; }
+            }
+            foreach (var m in s.stations)
+            {
+                string family = m.kind == "producer" ? (m.item is "milk" or "egg" or "beef" ? "animal" : "farm") : m.area == "processing" ? "mill" : m.area == "supermarket" ? "market" : m.area == "bakery" ? "oven" : m.area == "restaurant" ? "kitchen" : "counter";
+                m.level = s.unlocked.Contains(family + "_level3") ? 3 : s.unlocked.Contains(family + "_level2") ? 2 : 1;
+            }
+        }
+        static void ValidatePurchaseRequirements(TransactionState s,UpgradeDefinition d)
+        {
+            int Tier(string family)=>s.unlocked.Contains(family+"_level3")?3:s.unlocked.Contains(family+"_level2")?2:1;
+            int sales=s.legacyTransactions+s.payments.Count;
+            bool eligible=d.id switch
+            {
+                "farm_shop"=>Tier("farm")==3&&sales>=50,
+                "mill"=>Tier("animal")==3&&sales>=200,
+                "supermarket"=>new[]{"mill","cheesemaker","saucemaker"}.All(id=>s.stations.Any(x=>x.definitionId==id&&x.batches>=50))&&sales>=600,
+                "bakery"=>Tier("market")==3&&sales>=1000,
+                "restaurant"=>Tier("oven")==3&&s.payments.Count(x=>s.stations.Any(m=>m.id==x.counter&&m.area=="bakery"))>=60,
+                "animal_level2"=>s.unlocked.Any(x=>x is "barn" or "milk_line" or "egg_line"),
+                _=>true
+            };
+            Require(eligible,"requirement","Chưa đạt điều kiện mở khóa.");
+            if(d.kind!="worker")return;
+            var crew=GameSession.CrewFor(d);
+            string family=crew.role=="Farmer"?"farm":crew.role=="AnimalWorker"?"animal":crew.area=="supermarket"?"market":crew.area=="processing"?"mill":crew.area=="bakery"?"oven":crew.area=="restaurant"?"kitchen":"counter";
+            int work=s.stations.Where(x=>x.area==crew.area&&(crew.role!="Farmer"||x.kind=="producer"&&x.item is "carrot" or "tomato" or "wheat")&&(crew.role!="AnimalWorker"||x.kind=="producer"&&x.item is "milk" or "egg" or "beef")).Sum(x=>x.workCount);
+            Require(Tier(family)==3&&work>=30&&s.stations.Any(x=>x.kind=="storage"&&x.area==crew.area),"requirement","Cần trạm cấp 3, 30 lượt việc và kho riêng của đội.");
+        }
+        int CleanTable(TransactionState s, TransactionCommand c)
+        {
+            var m = Station(s, c.target); WriteAccess(Owner(s, m.output), c.actor);
+            Require(m.kind == "table" && m.progress.remaining > 0 && double.IsFinite(c.duration) && c.duration > 0, "table", "Bàn chưa cần dọn.");
+            Lease(m, c.actor, clock()); m.progress.remaining = Math.Max(0, m.progress.remaining - (float)c.duration);
+            if (m.progress.remaining == 0) m.workCount++; return 1;
+        }
+        int AdvanceDiner(TransactionState s, TransactionCommand c)
+        {
+            Require(c.actor == "simulation", "authority", "Chỉ mô phỏng tiến triển khách bàn.");
+            var o = Order(s, c, false); Require(!string.IsNullOrEmpty(o.table), "table", "Đơn không thuộc bàn.");
+            if (c.secondary == "seat" && o.dinerPhase == 0) { o.dinerPhase = 1; return 1; }
+            if (o.status == OrderStatus.Open && clock() >= o.deadline) return FailOrder(s, c);
+            if (o.dinerPhase != 2) return 0;
+            Require(double.IsFinite(c.duration) && c.duration > 0, "duration", "Delta không hợp lệ.");
+            o.eatingRemaining = Math.Max(0, o.eatingRemaining - c.duration);
+            if (o.eatingRemaining > 0) return 1;
+            CreatePayment(s, c); o.dinerPhase = 3;
+            // Ăn xong là tiêu thụ có chủ đích; không trả món về kho.
+            s.stacks.RemoveAll(x => x.owner == o.customer);
+            var table = Station(s, o.table); table.progress.remaining = 3; table.workCount++; return 1;
         }
         public static void Validate(TransactionState s)
         {
             if (s == null) throw new InvalidDataException("Thiếu transaction state.");
-            Require(s.schemaVersion == 1 && s.catalogVersion == Definitions.Version && s.revision >= 0 && s.money >= 0 && s.revenue >= 0, "schema", "Version hoặc tiền không hợp lệ.");
+            Require(s.schemaVersion == 1 && s.catalogVersion == Definitions.Version && s.revision >= 0 && s.money >= 0 && s.revenue >= 0 && double.IsFinite(s.simulationTime), "schema", "Version hoặc tiền không hợp lệ.");
             Unique(s.owners.Select(x => x.id)); Unique(s.stacks.Select(x => x.id)); Unique(s.reservations.Select(x => x.id));
             Unique(s.orders.Select(x => x.id)); Unique(s.payments.Select(x => x.id)); Unique(s.purchases.Select(x => x.id)); Unique(s.crews.Select(x => x.id)); Unique(s.stations.Select(x => x.id));
             Unique(s.receipts.Select(x => x.id)); Unique(s.receipts.Select(x => x.key)); Unique(s.receipts.Select(x => x.effectId)); Unique(s.outbox.Select(x => x.id)); Unique(s.unlocked);
@@ -338,8 +560,9 @@ namespace Tycoon
             {
                 Require(!string.IsNullOrWhiteSpace(owner.actor) && !string.IsNullOrWhiteSpace(owner.location) && owner.capacity >= 0 && Enum.IsDefined(typeof(OwnerKind), owner.kind), "owner", "Owner không hợp lệ.");
                 Unique(owner.limits.Select(x => x.id)); Require(owner.limits.All(x => Definitions.Item(x.id) != null && x.count >= 0), "limits", "Giới hạn sai.");
+                Unique(owner.accepts);Require(owner.accepts.All(x=>Definitions.Item(x)!=null),"limits","Loại nhận hàng không hợp lệ.");
                 var items = s.stacks.Where(x => x.owner == owner.id).ToArray();
-                var reserved = s.reservations.Where(x => x.status == ReservationStatus.Active && x.destination == owner.id).ToArray();
+                var reserved = s.reservations.Where(x => x.status == ReservationStatus.Active && (x.destination == owner.id || x.relay == owner.id)).ToArray();
                 Require((long)items.Sum(x => x.quantity) + reserved.Sum(x => x.quantity) <= owner.capacity, "capacity", "Owner vượt capacity.");
                 var types = items.Select(x => x.item).Concat(reserved.Select(x => x.item)).Distinct().ToArray();
                 Require(!owner.singleItem || types.Length <= 1, "single-item", "Người mang có nhiều loại hàng.");
@@ -349,11 +572,13 @@ namespace Tycoon
             {
                 var owner = Owner(s, stack.owner);
                 Require(stack.quantity > 0 && Definitions.Item(stack.item) != null && stack.definitionVersion == 1 && stack.location == owner.location && Reserved(s, stack.id) <= stack.quantity, "stack", "Stack không hợp lệ.");
+                Require(owner.accepts.Count==0||owner.accepts.Contains(stack.item),"item","Owner chứa sai loại hàng.");
             }
             foreach (var r in s.reservations)
             {
                 Require(!string.IsNullOrWhiteSpace(r.holder) && r.quantity > 0 && Definitions.Item(r.item) != null && double.IsFinite(r.expiresAt) && Enum.IsDefined(typeof(ReservationStatus), r.status), "reservation", "Reservation không hợp lệ.");
                 Owner(s, r.destination);
+                if (!string.IsNullOrEmpty(r.relay)) Require(Owner(s, r.relay).kind == OwnerKind.Worker && r.relay != r.destination && r.relay != r.source, "reservation", "Relay không hợp lệ.");
                 if (r.status != ReservationStatus.Active) continue;
                 if (string.IsNullOrEmpty(r.source)) Require(s.stations.Any(x => x.running && x.reservationId == r.id && x.output == r.destination), "reservation", "Reservation capacity không thuộc job.");
                 else
@@ -374,12 +599,25 @@ namespace Tycoon
             { var order = s.orders.Find(x => x.id == p.order); Require(order != null && order.status == OrderStatus.Complete && p.counter == order.counter && p.amount == order.lines.Sum(x => checked(x.requested * x.unitPrice)), "payment", "Payment không khớp đơn."); }
             foreach (var p in s.purchases)
             { var d = Definitions.Upgrade(p.definitionId); Require(d != null && p.id == d.id && p.definitionVersion == d.version && p.contributed >= 0 && p.contributed <= d.cost && (!p.complete || p.contributed == d.cost && s.unlocked.Contains(d.id)), "purchase", "Purchase sai."); }
-            foreach (var crew in s.crews) Require(Definitions.Upgrade(crew.id)?.kind == "worker" && s.unlocked.Contains(crew.id) && crew.count is >= 1 and <= 3 && crew.speedLevel is >= 1 and <= 3 && crew.carryLevel is >= 1 and <= 3, "crew", "Crew sai.");
+            foreach (var crew in s.crews)
+            {
+                var definition=Definitions.Upgrade(crew.id);var expected=definition==null?null:GameSession.CrewFor(definition);
+                Require(definition?.kind=="worker"&&s.unlocked.Contains(crew.id)&&crew.role==expected.role&&crew.area==expected.area&&
+                    crew.count is >=1 and <=3&&crew.speedLevel is >=1 and <=3&&crew.carryLevel is >=1 and <=3,"crew","Crew sai.");
+            }
             foreach (var m in s.stations)
             {
                 Owner(s, m.input); Owner(s, m.output); var recipe = Array.Find(Definitions.Recipes, x => x.id == m.definitionId);
-                Require(recipe != null && m.definitionVersion == recipe.version && m.level >= 1 && m.batches >= 0 && m.workCount >= 0 && double.IsFinite(m.remaining) && m.remaining >= 0, "station", "Machine sai.");
+                Require(m.level >= 1 && m.batches >= 0 && m.workCount >= 0 && double.IsFinite(m.remaining) && m.remaining >= 0 && m.progress != null, "station", "Station sai: " + m.id);
+                if (m.kind != "machine")
+                {
+                    Require(m.kind is "producer" or "storage" or "shelf" or "counter" or "table" or "purchase", "station", "Station kind sai: " + m.id);
+                    if (m.kind == "producer") Require(Definitions.Item(m.item) != null && m.progress.phase is >= 0 and <= 3 && m.progress.herd is >= 0 and <= 3 && m.progress.feed is >= 0 and <= 3 && float.IsFinite(m.progress.remaining) && m.progress.remaining >= 0 && float.IsFinite(m.progress.action) && m.progress.action >= 0 && float.IsFinite(m.progress.cycle) && m.progress.cycle >= 0 && float.IsFinite(m.progress.breeding) && m.progress.breeding >= 0, "station", "Producer state sai: " + m.id);
+                    continue;
+                }
+                Require(recipe != null && m.definitionVersion == recipe.version, "station", "Recipe version sai: " + m.id);
                 if (m.running) Require(s.reservations.Any(x => x.id == m.reservationId && x.status == ReservationStatus.Active && x.destination == m.output && x.item == recipe.output && x.quantity == recipe.yield), "station", "Job mất reservation.");
+                if(m.running&&!string.IsNullOrEmpty(m.escrow))Require(Owner(s,m.escrow).kind==OwnerKind.Escrow&&recipe.inputs.All(i=>s.stacks.Where(x=>x.owner==m.escrow&&x.item==i.id).Sum(x=>x.quantity)==i.count),"escrow","Job thiếu nguyên liệu đang xử lý.");
             }
             Require(s.receipts.Count == s.outbox.Count && s.receipts.Count == s.revision, "journal", "Mutation thiếu receipt hoặc outbox.");
             foreach (var r in s.receipts) Require(r.revision > 0 && r.revision <= s.revision && !string.IsNullOrEmpty(r.fingerprint) && !string.IsNullOrEmpty(r.effectFingerprint) && s.outbox.Any(e => e.id == r.eventId && e.receiptId == r.id && e.effectId == r.effectId && e.revision == r.revision), "journal", "Receipt không khớp event.");
