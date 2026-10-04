@@ -98,13 +98,17 @@ namespace Tycoon
         }
         public void Restore(IEnumerable<ItemAmount> values)
         {
-            amounts.Clear(); ClearReservations(); Total = 0;
+            var restored=new Dictionary<string,int>();long total=0;
             if (values != null) foreach (var value in values)
             {
-                if (value == null || value.count <= 0 || string.IsNullOrEmpty(value.id) || Definitions.Item(value.id) == null) continue;
-                if (SingleItem && Total > Count(value.id)) throw new ArgumentException("Giỏ hàng chỉ được chứa một loại sản phẩm.");
-                amounts[value.id] = Count(value.id) + value.count; Total += value.count;
+                if(value==null||value.count<=0||string.IsNullOrEmpty(value.id)||Definitions.Item(value.id)==null||restored.ContainsKey(value.id))
+                    throw new System.IO.InvalidDataException("Danh sách hàng không hợp lệ.");
+                restored.Add(value.id,value.count);total+=value.count;
             }
+            if(total>int.MaxValue||(SingleItem&&restored.Count>1))throw new System.IO.InvalidDataException("Giỏ hàng không hợp lệ.");
+            // Kiểm tra toàn bộ trước khi thay thế để không làm mất hàng khi save bị lỗi.
+            amounts.Clear();ClearReservations();Total=(int)total;
+            foreach(var value in restored)amounts.Add(value.Key,value.Value);
             // Giữ nguyên lượng hàng trong save khi giới hạn kho đã thay đổi.
             Revision++;
         }

@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('Import','Tests','Build','Scene')] [string]$Task = 'Import'
+    [ValidateSet('Import','Tests','Build','Scene','Baseline')] [string]$Task = 'Import'
 )
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
@@ -16,7 +16,11 @@ $arguments = @('-batchmode','-nographics','-projectPath',('"' + $taskRoot + '"')
 if ($Task -eq 'Tests') {
     $arguments += @('-runTests','-testPlatform','EditMode','-testResults',('"' + (Join-Path $taskRoot 'QA\editmode-results.xml') + '"'))
 } else {
-    $arguments += '-quit'
+    if($Task -ne 'Baseline') { $arguments += '-quit' }
+    if($Task -eq 'Baseline') {
+        $qaOutput=Join-Path $taskRoot 'work\stage01\editor-play'
+        $arguments += @('-executeMethod','Tycoon.Editor.ProjectBuilder.PlayBaseline','--qa','--qa-baseline','--qa-output',('"' + $qaOutput + '"'))
+    }
     if ($Task -eq 'Build') { $arguments += @('-executeMethod','Tycoon.Editor.ProjectBuilder.BuildWindows') }
     if ($Task -eq 'Scene') { $arguments += @('-executeMethod','Tycoon.Editor.ProjectBuilder.CreateScene') }
 }

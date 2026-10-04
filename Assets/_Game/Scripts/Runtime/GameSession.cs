@@ -107,12 +107,14 @@ namespace Tycoon
             cameraObject.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>().renderPostProcessing = true;
             CameraRig = cameraObject.AddComponent<FollowCamera>(); CameraRig.Target = playerRoot.transform; CameraRig.Snap();
             Hud = gameObject.AddComponent<GameHud>(); Hud.Initialize();
-            if (File.Exists(SavePath)) LoadGame();
+            bool baseline=Array.Exists(Environment.GetCommandLineArgs(),x=>x=="--qa-baseline");
+            if (File.Exists(SavePath)&&!baseline) LoadGame();
             ApplyProgression();
             Feedback = gameObject.AddComponent<GameFeedback>();
             Commerce = gameObject.AddComponent<CommerceDirector>();
             Restaurant = gameObject.AddComponent<RestaurantDirector>();
-            if (IsQa) gameObject.AddComponent<QaDriver>();
+            if(IsQa&&baseline)gameObject.AddComponent<QaBaseline>();
+            else if (IsQa) gameObject.AddComponent<QaDriver>();
             Say("Đứng gần để thu / xếp hàng • đến quầy nhận tiền • WASD di chuyển");
         }
         void Update()
@@ -170,6 +172,7 @@ namespace Tycoon
         }
         public void SaveGame()
         {
+            if(SaveBlocked){Say("Save đang bị chặn vì file tải không hợp lệ");return;}
             var data = new SaveData {
                 money = Economy.Money, revenue = Economy.Revenue, transactions = Economy.Transactions,
                 nextReceipt = NextReceipt, savedAt = DateTime.UtcNow.ToString("o"),
@@ -184,30 +187,40 @@ namespace Tycoon
             foreach (var station in Stations)
             {
                 if (station.Inventory != null) data.inventories.Add(new InventorySave(station.Id, station.Inventory));
-                if (station is ProductionStation producer) data.production.Add(new ProductionSave { id = station.Id, remaining = producer.Remaining, running = true });
-                if (station is MachineStation machine)
-                { data.inventories.Add(new InventorySave(station.Id + "_input", machine.Input)); data.production.Add(new ProductionSave { id = station.Id, remaining = machine.Remaining, running = machine.Running,batches=machine.Batches }); }
+                if (station is MachineStation machine) data.inventories.Add(new InventorySave(station.Id+"_input",machine.Input));
                 if (station is CheckoutStation checkout) data.cash.Add(new CashSave { id = station.Id, amount = checkout.Cash });
-                if (station is TableStation table) data.production.Add(new ProductionSave { id = table.Id, remaining = table.Cleaning, running = table.Cleaning > 0 });
             }
             foreach (var worker in Workers) data.workers.Add(worker.Snapshot());
             if (Commerce) foreach (var customer in Commerce.Customers) data.customers.Add(customer.Snapshot());
             if (Restaurant) foreach (var diner in Restaurant.Diners) data.diners.Add(diner.Snapshot());
+            // Actor chưa spawn vẫn giữ hàng khi người chơi lưu lại ngay sau load.
+            data.workers.AddRange(PendingWorkers);data.customers.AddRange(PendingCustomers);data.diners.AddRange(PendingDiners);
             try { SaveStore.Write(SavePath, data); Say("Đã lưu trò chơi"); }
             catch (Exception error) { Say("Không lưu được: " + error.Message); Debug.LogException(error); }
         }
+        public bool SaveBlocked { get; private set; }
         public void LoadGame()
         {
             try
             {
                 var data = SaveStore.Read(SavePath);
                 if (data == null) return;
+                ValidateSaveOwners(data);
+                Player.StopInteraction();
+                foreach(var worker in Workers){worker.gameObject.SetActive(false);Destroy(worker.gameObject);}
+                Workers.Clear();Commerce?.ResetForLoad();Restaurant?.ResetForLoad();
+                foreach(var counter in Checkouts){counter.Queue.Clear();counter.Cash=0;}
+                foreach(var table in Tables)table.Occupant=null;
                 Economy.Restore(data.money, data.revenue, data.transactions, data.unlocked, data.pendingCash, data.receipts, data.losses);
                 Purchases=data.purchases; CrewStates=data.crews; Events=data.events ?? new EventState();
                 PendingCustomers=data.customers; PendingWorkers=data.workers;
                 BakerySales = data.bakerySales; RestaurantMeals = data.restaurantMeals;
                 PendingDiners = data.diners;
                 NextReceipt = Math.Max(1, data.nextReceipt);
+                foreach(long receipt in data.receipts)NextReceipt=Math.Max(NextReceipt,receipt+1);
+                foreach(var loss in data.losses)NextReceipt=Math.Max(NextReceipt,loss.receipt+1);
+                foreach(var customer in data.customers)NextReceipt=Math.Max(NextReceipt,customer.receipt+1);
+                foreach(var diner in data.diners)NextReceipt=Math.Max(NextReceipt,diner.receipt+1);
                 foreach (var inventory in data.inventories)
                 {
                     if (inventory.id == "player") { Player.Carry.Restore(inventory.items); continue; }
@@ -218,21 +231,66 @@ namespace Tycoon
                 // Save v2 giữ hàng trên đúng chủ sở hữu; không hoàn hàng khách vào kho.
                 foreach(var progress in data.stationStates) Stations.Find(x=>x.Id==progress.id)?.RestoreProgress(progress);
                 foreach (var cash in data.cash) if (Stations.Find(x => x.Id == cash.id) is CheckoutStation checkout) checkout.Cash = cash.amount;
-                foreach (var progress in data.production)
-                {
-                    var station = Stations.Find(x => x.Id == progress.id);
-                    if (station is ProductionStation producer) producer.Remaining = Mathf.Max(0, progress.remaining);
-                    if (station is MachineStation machine) { machine.Remaining = Mathf.Max(0, progress.remaining); machine.Running = progress.running;machine.Batches=progress.batches; }
-                    if (station is TableStation table) table.Cleaning = Mathf.Max(0, progress.remaining);
-                }
-                Player.Controller.enabled = false;
+                if(Player.Controller)Player.Controller.enabled = false;
                 Player.transform.position = new Vector3(data.playerX, .05f, data.playerZ);
-                Player.Controller.enabled = true;
+                if(Player.Controller)Player.Controller.enabled = true;
                 ApplyProgression();
-                CameraRig.Snap();
+                CameraRig?.Snap();
+                SaveBlocked=false;
                 Say("Đã tải trò chơi");
             }
-            catch (Exception error) { Say("Không tải được save: " + error.Message); Debug.LogException(error); }
+            catch (Exception error) { SaveBlocked=true;Say("Không tải được save: " + error.Message); Debug.LogException(error); }
+        }
+        void ValidateSaveOwners(SaveData data)
+        {
+            if(data.transit.Count>0)throw new InvalidDataException("Transit prototype không có owner; không tự trả hàng về kho.");
+            var owners=new Dictionary<string,Inventory>{{"player",Player.Carry}};
+            var stations=new Dictionary<string,Station>();
+            foreach(var station in Stations)
+            {
+                if(string.IsNullOrEmpty(station.Id)||!stations.TryAdd(station.Id,station))throw new InvalidDataException("Stable ID trạm bị thiếu hoặc lặp.");
+                if(station.Inventory!=null&&!owners.TryAdd(station.Id,station.Inventory))throw new InvalidDataException("Owner inventory bị lặp.");
+                if(station is MachineStation machine&&!owners.TryAdd(station.Id+"_input",machine.Input))throw new InvalidDataException("Owner đầu vào máy bị lặp.");
+            }
+            if(data.inventories.Count!=owners.Count)throw new InvalidDataException("Save thiếu owner inventory.");
+            foreach(var inventory in data.inventories)
+            {
+                if(!owners.TryGetValue(inventory.id,out var target))throw new InvalidDataException("Owner không còn tồn tại: "+inventory.id);
+                new Inventory(int.MaxValue,target.SingleItem).Restore(inventory.items);
+            }
+            var ids=new HashSet<string>();
+            if(data.stationStates.Count!=stations.Count)throw new InvalidDataException("Save thiếu trạng thái trạm.");
+            foreach(var state in data.stationStates)
+                if(state==null||!stations.ContainsKey(state.id)||!ids.Add(state.id)||float.IsNaN(state.remaining)||float.IsInfinity(state.remaining))
+                    throw new InvalidDataException("Trạng thái trạm không hợp lệ.");
+            foreach(var cash in data.cash)if(!Checkouts.Exists(c=>c.Id==cash.id))throw new InvalidDataException("Quầy tiền không còn tồn tại.");
+            var receipts=new HashSet<long>();
+            foreach(var customer in data.customers)
+            {
+                if(customer==null||customer.receipt<=0||customer.receipt==long.MaxValue||!receipts.Add(customer.receipt)||
+                    !Checkouts.Exists(c=>c.Id==customer.lane&&c.ShopId==customer.shop))
+                    throw new InvalidDataException("Owner khách không hợp lệ.");
+                new Inventory(int.MaxValue).Restore(customer.basket);
+            }
+            foreach(var diner in data.diners)
+            {
+                if(diner==null||diner.receipt<=0||diner.receipt==long.MaxValue||!receipts.Add(diner.receipt)||!Tables.Exists(t=>t.Id==diner.table))
+                    throw new InvalidDataException("Owner khách bàn không hợp lệ.");
+                new Inventory(int.MaxValue).Restore(diner.basket);
+            }
+            ids.Clear();
+            foreach(var worker in data.workers)
+            {
+                if(worker==null||string.IsNullOrEmpty(worker.id)||!ids.Add(worker.id)||!data.crews.Exists(c=>c.id==worker.upgrade)||
+                    worker.phase<0||worker.phase>2||worker.count<0||
+                    (worker.phase>0&&(!stations.ContainsKey(worker.destination?.Replace("_input","")??"")||
+                    (worker.phase==1&&!stations.ContainsKey(worker.source??"")))))
+                    throw new InvalidDataException("Owner nhân viên hoặc tuyến vận chuyển không hợp lệ.");
+                new Inventory(int.MaxValue,true).Restore(worker.carry);
+            }
+            if(data.nextReceipt==long.MaxValue||float.IsNaN(data.playerX)||float.IsNaN(data.playerZ)||
+                float.IsInfinity(data.playerX)||float.IsInfinity(data.playerZ))
+                throw new InvalidDataException("Vị trí hoặc số biên nhận không hợp lệ.");
         }
         void OnApplicationQuit() { if (Player != null && !IsQa) SaveGame(); }
         void OnLog(string condition, string trace, LogType type)

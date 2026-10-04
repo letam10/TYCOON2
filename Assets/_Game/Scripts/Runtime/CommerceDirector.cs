@@ -76,6 +76,11 @@ namespace Tycoon
             if (!Customers.Remove(customer)) return;
             customer.Lane?.Queue.Remove(customer); customer.gameObject.SetActive(false); pool.Enqueue(customer);
         }
+        public void ResetForLoad()
+        {
+            foreach(var customer in Customers.ToArray())Recycle(customer);
+            restored=false;nextSpawn=Time.time;
+        }
     }
 
     public sealed class CustomerAgent : MonoBehaviour

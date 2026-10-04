@@ -1,6 +1,9 @@
 using System.Collections.Generic;
+using System.IO;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace Tycoon.Tests
 {
@@ -19,8 +22,81 @@ namespace Tycoon.Tests
             game=root.AddComponent<GameSession>();GameSession.Instance=game;
             game.Economy=new Economy(500);
             game.Player=Add<PlayerController>("Player");
+            game.SavePath=Path.Combine(Path.GetFullPath(Path.Combine(Application.dataPath,"..")),"work","stage01","editor",System.Guid.NewGuid()+".json");
         }
-        [TearDown] public void TearDown(){Object.DestroyImmediate(game.gameObject);GameSession.Instance=previous;}
+        [TearDown] public void TearDown()
+        {
+            if(File.Exists(game.SavePath))File.Delete(game.SavePath);
+            if(File.Exists(game.SavePath+".tmp"))File.Delete(game.SavePath+".tmp");
+            Object.DestroyImmediate(game.gameObject);GameSession.Instance=previous;
+        }
+        [Test] public void InvalidRestorePreservesInventoryAndReservations()
+        {
+            var stock=new Inventory(10,true);stock.TryAdd("carrot",3);stock.TryReserve("carrot",1);
+            Assert.Throws<InvalidDataException>(()=>stock.Restore(new[]{new ItemAmount("milk",1),new ItemAmount("egg",1)}));
+            Assert.That(stock.Count("carrot"),Is.EqualTo(3));Assert.That(stock.Available("carrot"),Is.EqualTo(2));
+        }
+        [Test] public void SaveRejectsDuplicateOwners()
+        {
+            var save=new SaveData();
+            save.inventories.Add(new InventorySave("player",new Inventory(6)));
+            save.inventories.Add(new InventorySave("player",new Inventory(6)));
+            Assert.Throws<InvalidDataException>(()=>SaveStore.Write(game.SavePath,save));
+            Assert.That(File.Exists(game.SavePath),Is.False);
+        }
+        [Test] public void SaveRejectsReceiptThatIsBothPaidAndLost()
+        {
+            var save=new SaveData();save.receipts.Add(31);save.losses.Add(new LossRecord{receipt=31});
+            Assert.Throws<InvalidDataException>(()=>SaveStore.Write(game.SavePath,save));
+        }
+        [Test] public void SaveRejectsCashMismatch()
+        {
+            var save=new SaveData{pendingCash=10};save.cash.Add(new CashSave{id="checkout",amount=20});
+            Assert.Throws<InvalidDataException>(()=>SaveStore.Write(game.SavePath,save));
+        }
+        [Test] public void InvalidOwnerBlocksAutosaveAndLeavesOriginalFileAndGameUnchanged()
+        {
+            game.Player.Carry.TryAdd("carrot",2);
+            var save=new SaveData{money=1};save.inventories.Add(new InventorySave("unknown",new Inventory(6)));
+            SaveStore.Write(game.SavePath,save);string original=File.ReadAllText(game.SavePath);
+            LogAssert.Expect(LogType.Exception,new Regex("Owner không còn tồn tại"));
+            game.LoadGame();game.SaveGame();
+            Assert.That(game.SaveBlocked,Is.True);Assert.That(game.Economy.Money,Is.EqualTo(500));
+            Assert.That(game.Player.Carry.Count("carrot"),Is.EqualTo(2));
+            Assert.That(File.ReadAllText(game.SavePath),Is.EqualTo(original));
+        }
+        [Test] public void RepeatedLoadPreservesCashGoodsAndMonotonicReceipt()
+        {
+            var counter=Add<CheckoutStation>("Checkout");counter.Id="checkout";counter.ShopId="farm";
+            game.Stations.Add(counter);game.Checkouts.Add(counter);
+            game.Player.Carry.TryAdd("carrot",2);
+            Assert.That(game.Economy.RecordPayment(42,10),Is.True);counter.Cash=10;
+            game.SaveGame();game.Player.Carry.TryRemove("carrot",2);game.Economy.CollectCash(10);
+            Assert.That(File.Exists(game.SavePath),Is.True);
+            game.LoadGame();game.LoadGame();
+            Assert.That(game.SaveBlocked,Is.False);Assert.That(game.Player.Carry.Count("carrot"),Is.EqualTo(2));
+            Assert.That(game.Economy.Money,Is.EqualTo(500));Assert.That(game.Economy.PendingCash,Is.EqualTo(10));
+            Assert.That(counter.Cash,Is.EqualTo(10));Assert.That(game.Economy.Transactions,Is.EqualTo(1));
+            Assert.That(game.NextReceipt,Is.EqualTo(43));Assert.That(File.Exists(game.SavePath+".tmp"),Is.False);
+        }
+        [Test] public void ResaveRetainsOwnersWaitingForSpawn()
+        {
+            game.PendingCustomers.Add(new CustomerSave{receipt=43,shop="farm",lane="checkout",remaining=20,
+                order=new List<OrderLine>{new("carrot",1,10){delivered=1}},basket=new List<ItemAmount>{new("carrot",1)}});
+            game.PendingWorkers.Add(new WorkerSave{id="cashier:0",upgrade="cashier",carry=new List<ItemAmount>{new("milk",1)}});
+            game.SaveGame();var save=SaveStore.Read(game.SavePath);
+            Assert.That(save.customers.Count,Is.EqualTo(1));Assert.That(save.customers[0].basket[0].count,Is.EqualTo(1));
+            Assert.That(save.workers.Count,Is.EqualTo(1));Assert.That(save.workers[0].carry[0].id,Is.EqualTo("milk"));
+        }
+        [Test] public void SaveIncludesSeparateMachineInputOwner()
+        {
+            var machine=Add<MachineStation>("Mill");machine.Id="mill";machine.Recipe=Definitions.Recipe("mill");
+            machine.Input=new Inventory(8);machine.Inventory=new Inventory(8);machine.Input.TryAdd("wheat",4);
+            game.Stations.Add(machine);game.SaveGame();var save=SaveStore.Read(game.SavePath);
+            Assert.That(save.inventories.Count,Is.EqualTo(3));
+            Assert.That(save.inventories.Find(i=>i.id=="mill_input").items[0].count,Is.EqualTo(4));
+            Assert.That(save.inventories.Find(i=>i.id=="mill").items,Is.Empty);
+        }
         [Test] public void UnknownAreaHasNoSharedWarehouseFallback()
         {
             var farm=Add<StorageStation>("Farm");farm.Id="farm";farm.AreaId="farm";farm.Inventory=new Inventory(10);

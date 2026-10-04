@@ -59,13 +59,18 @@ namespace Tycoon
     {
         public static void Write(string path, SaveData data)
         {
+            Validate(data);
             string directory = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
             string temporary = path + ".tmp";
-            File.WriteAllText(temporary, JsonUtility.ToJson(data, true));
-            // Replace không truyền backup path: ghi nguyên tử mà không tạo .bak.
-            if (File.Exists(path)) File.Replace(temporary, path, null);
-            else File.Move(temporary, path);
+            try
+            {
+                File.WriteAllText(temporary, JsonUtility.ToJson(data, true));
+                // Replace không truyền backup path: ghi nguyên tử mà không tạo .bak.
+                if (File.Exists(path)) File.Replace(temporary, path, null);
+                else File.Move(temporary, path);
+            }
+            finally { if(File.Exists(temporary))File.Delete(temporary); }
         }
         public static SaveData Read(string path)
         {
@@ -73,7 +78,40 @@ namespace Tycoon
             var data = JsonUtility.FromJson<SaveData>(File.ReadAllText(path));
             if (data == null || data.version != 2 || data.money < 0 || data.inventories == null || data.unlocked == null)
                 throw new InvalidDataException("Save không hợp lệ hoặc phiên bản chưa hỗ trợ.");
+            Validate(data);
             return data;
+        }
+        static void Validate(SaveData data)
+        {
+            if(data==null||data.version!=2||data.money<0||data.pendingCash<0||data.revenue<0||data.transactions<0||
+                data.inventories==null||data.receipts==null||data.losses==null||data.cash==null||
+                data.customers==null||data.diners==null||data.workers==null||data.stationStates==null||
+                data.purchases==null||data.crews==null||data.unlocked==null||data.transit==null)
+                throw new InvalidDataException("Save v2 không hợp lệ.");
+            var ids=new HashSet<string>();
+            foreach(var inventory in data.inventories)
+            {
+                if(inventory==null||string.IsNullOrEmpty(inventory.id)||inventory.items==null||!ids.Add(inventory.id))
+                    throw new InvalidDataException("Owner inventory bị thiếu hoặc lặp.");
+                new Inventory(int.MaxValue).Restore(inventory.items);
+            }
+            var receipts=new HashSet<long>();
+            foreach(long receipt in data.receipts)
+                if(receipt<=0||receipt==long.MaxValue||!receipts.Add(receipt))throw new InvalidDataException("Biên nhận bị lặp hoặc không hợp lệ.");
+            foreach(var loss in data.losses)
+            {
+                if(loss==null||loss.receipt<=0||loss.receipt==long.MaxValue||loss.goods==null||!receipts.Add(loss.receipt))
+                    throw new InvalidDataException("Biên nhận thanh toán và thất thoát mâu thuẫn.");
+                new Inventory(int.MaxValue).Restore(loss.goods);
+            }
+            ids.Clear();long cash=0;
+            foreach(var counter in data.cash)
+            {
+                if(counter==null||string.IsNullOrEmpty(counter.id)||counter.amount<0||!ids.Add(counter.id))
+                    throw new InvalidDataException("Quầy tiền bị thiếu hoặc lặp.");
+                cash+=counter.amount;
+            }
+            if(cash!=data.pendingCash)throw new InvalidDataException("Tiền tại quầy không khớp sổ tiền chờ thu.");
         }
     }
 }
