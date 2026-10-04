@@ -43,6 +43,7 @@ namespace Tycoon
         void Update()
         {
             var g=GameSession.Instance;if(!g.NavigationReady||!Agent.isOnNavMesh)return;
+            if(!g.StorageFor(crew.area)){Reason="Khu chưa có kho riêng";return;}
             Agent.speed=4.2f*(1+.2f*(crew.speedLevel-1));Carry.Capacity=crew.carryLevel==1?6:crew.carryLevel==2?10:crew.carryLevel==3?16:24;
             View.SetMotion(Agent.velocity.magnitude,Carry.Total>0);
             if(label){label.text=Reason;label.gameObject.SetActive((g.Player.transform.position-transform.position).sqrMagnitude<60);label.transform.rotation=Camera.main.transform.rotation;}
@@ -53,7 +54,7 @@ namespace Tycoon
             if(working)
             {
                 if(!working.IsUnlocked){StopWorking();return;}
-                if(working is ProductionStation waitingCrop&&!waitingCrop.IsAnimal&&waitingCrop.Phase==2)
+                if(working is ProductionStation waitingCrop&&!waitingCrop.Animal&&waitingCrop.Phase==2)
                 {StopWorking();nextDecision=0;return;}
                 if(working is MachineStation waitingMachine&&
                    (waitingMachine.Broken||!waitingMachine.Running&&(!waitingMachine.Recipe.CanMake(waitingMachine.Input)||waitingMachine.Inventory.FreeFor(waitingMachine.Recipe.output)<waitingMachine.Recipe.yield)))
@@ -77,14 +78,14 @@ namespace Tycoon
                     if(!table.NeedsMeal&&table.Cleaning<=0)StopWorking();
                     return;
                 }
-                if(working is ProductionStation animal&&animal.IsAnimal&&animal.Feed==0&&animal.Inventory.Available("carrot")==0&&Carry.Count("carrot")==0)
+                if(working is ProductionStation animal&&animal.Animal&&animal.Feed==0&&animal.Inventory.Available("carrot")==0&&Carry.Count("carrot")==0)
                 {
                     StopWorking();var supply=g.StorageFor(crew.area);
                     if(supply.Inventory.Available("carrot")>0)BeginMove(supply,animal,"carrot",3,false);
                     else{Reason="Thiếu cà rốt làm thức ăn";Navigation.Go(Agent,animal.InteractionPoint+Vector3.left*2);}
                     return;
                 }
-                Reason=working is ProductionStation livestock&&livestock.IsAnimal?"Đang chăm vật nuôi":"Đang làm việc";
+                Reason=working is ProductionStation livestock&&livestock.Animal?"Đang chăm vật nuôi":"Đang làm việc";
                 working.Work(Carry,Time.deltaTime*(1+.2f*(crew.speedLevel-1)),GetEntityId());
                 if(Carry.Total>0){StopWorking();BeginDrop(g.StorageFor(crew.area));}
                 return;
@@ -96,16 +97,30 @@ namespace Tycoon
                 var counters=g.Checkouts.FindAll(x=>x.ShopId==shop&&x.IsUnlocked);
                 if(counters.Count==0){Reason="Chờ quầy";return;}
                 Checkout=counters[Math.Abs(Slot)%counters.Count];Anchor=Checkout.transform.position+new Vector3(0,0,1.4f);
-                if((transform.position-Anchor).sqrMagnitude>1.3f){Navigation.Go(Agent,Anchor);return;}
-                Agent.ResetPath();Reason="Chờ hàng tại quầy";
-                foreach(var shelf in g.Shelves)if(shelf.ShopId==shop&&shelf.IsUnlocked&&Checkout.Serve(shelf.Inventory)){Deliveries++;Reason="Đang phục vụ";break;}
+                if(Carry.Total>0)
+                {
+                    if((transform.position-Checkout.InteractionPoint).sqrMagnitude>1.3f){Navigation.Go(Agent,Checkout.InteractionPoint);return;}
+                    Agent.ResetPath();
+                    if(Checkout.Serve(Carry)){Deliveries++;Reason="Đang phục vụ";}
+                    else BeginDrop(g.StorageFor(crew.area));
+                    return;
+                }
+                var order=Checkout.FrontOrder;
+                if(order==null){Reason="Chờ khách tại quầy";return;}
+                foreach(var row in order.Lines)
+                {
+                    int needed=row.requested-row.delivered;if(needed<=0)continue;
+                    var shelf=g.Shelves.Find(x=>x.ShopId==shop&&x.IsUnlocked&&x.Inventory.Available(row.id)>0);
+                    if(shelf){BeginMove(shelf,Checkout,row.id,needed,false);return;}
+                }
+                Reason="Chờ hàng tại kệ";
                 return;
             }
             if(Carry.Total>0){BeginDrop(g.StorageFor(crew.area));return;}
             if(Role is "Farmer" or "AnimalWorker")
             {
                 var list=g.Producers.FindAll(x=>x.IsUnlocked&&x.AreaId==crew.area&&(Role=="Farmer"?x.ItemId is "carrot" or "wheat" or "tomato":x.ItemId is "milk" or "egg" or "beef"));
-                list.RemoveAll(x=>!x.IsAnimal&&x.Phase==2||g.Workers.Exists(w=>w!=this&&w.working==x)||x.IsOperatedByOther(GetEntityId()));
+                list.RemoveAll(x=>!x.Animal&&x.Phase==2||g.Workers.Exists(w=>w!=this&&w.working==x)||x.IsOperatedByOther(GetEntityId()));
                 if(list.Count>0){working=list[(Math.Abs(Slot)+cursor++)%list.Count];Navigation.Go(Agent,working.InteractionPoint);}
                 else Reason="Chờ trạm sản xuất";
                 return;
@@ -156,16 +171,17 @@ namespace Tycoon
         void BeginMove(Station pickup,Station drop,string sku,int requested,bool input)
         {
             if(!pickup||!drop)return;
-            tableReceipt=drop is TableStation table?table.Occupant?.Receipt??0:0;
+            tableReceipt=drop is TableStation table?table.Occupant?.Receipt??0:drop is CheckoutStation counter?counter.FrontOrder?.Receipt??0:0;
             source=pickup;destination=drop;from=pickup.Inventory;to=input?((MachineStation)drop).Input:drop.Inventory;item=sku;
-            count=Mathf.Min(requested,Carry.FreeFor(sku),from.Available(sku),to.FreeFor(sku));
+            count=Mathf.Min(requested,Carry.FreeFor(sku),from.Available(sku),drop is CheckoutStation?requested:to.FreeFor(sku));
             if(count<=0){Reason=from.Available(sku)==0?"Thiếu nguyên liệu":"Đích đã đầy";return;}
-            if(!to.TryReserveSpace(sku,count))return;
-            if(!from.TryReserve(sku,count)){to.ReleaseSpace(sku,count);return;}
-            heldSpace=true;phase=1;Navigation.Go(Agent,pickup.InteractionPoint);Reason="Đang lấy hàng";
+            if(to!=null&&!to.TryReserveSpace(sku,count))return;
+            if(!from.TryReserve(sku,count)){to?.ReleaseSpace(sku,count);return;}
+            heldSpace=to!=null;phase=1;Navigation.Go(Agent,pickup.InteractionPoint);Reason="Đang lấy hàng";
         }
         void BeginDrop(Station drop)
         {
+            if(!drop){Reason="Khu chưa có kho riêng";return;}
             var items=Carry.Snapshot();if(items.Count==0)return;item=items[0].id;source=null;destination=drop;from=Carry;to=drop.Inventory;
             count=Mathf.Min(Carry.Count(item),to.FreeFor(item));
             if(count<=0){Reason="Đích đã đầy";Navigation.Go(Agent,drop.InteractionPoint+Vector3.left*2);return;}
@@ -177,32 +193,40 @@ namespace Tycoon
             if(!target||!target.IsUnlocked){CancelTransport();Reason="Đích không còn khả dụng";return;}
             if(destination is TableStation requestedTable&&(!requestedTable.NeedsMeal||requestedTable.Occupant.Receipt!=tableReceipt))
             {CancelTransport();Reason="Đơn bàn đã kết thúc";return;}
+            if(destination is CheckoutStation requestedCounter&&requestedCounter.FrontOrder?.Receipt!=tableReceipt)
+            {CancelTransport();Reason="Đơn quầy đã kết thúc";return;}
             if((transform.position-target.InteractionPoint).sqrMagnitude>1.3f){Navigation.Go(Agent,target.InteractionPoint);return;}
             Agent.ResetPath();
             if(phase==1)
             {
                 int n=Inventory.TransferReserved(from,Carry,item,count);
-                if(n<count){to.ReleaseSpace(item,count-n);from.Release(item,count-n);}count=n;
+                if(n<count){to?.ReleaseSpace(item,count-n);from.Release(item,count-n);}count=n;
                 if(n==0){phase=0;heldSpace=false;Reason="Thiếu nguyên liệu";return;}
                 phase=2;Navigation.Go(Agent,destination.InteractionPoint);Reason="Đang vận chuyển";
             }
             else
             {
                 int n;
-                if(destination is TableStation servingTable)
+                if(destination is CheckoutStation servingCounter)
+                {
+                    // Giao từ giỏ nhân viên sau khi đã đi tới đúng quầy và đúng đơn.
+                    n=servingCounter.Serve(Carry)?count:0;
+                    if(n==0){CancelTransport();Reason="Đơn quầy không nhận hàng";return;}
+                }
+                else if(destination is TableStation servingTable)
                 {n=servingTable.DeliverMeal(Carry,tableReceipt)?1:0;if(n>0)to.ReleaseSpace(item,n);}
                 else n=Inventory.TransferIntoReservedSpace(Carry,to,item,count);
                 if(n==0){Reason="Đích đã đầy";return;}
                 count-=n;if(count>0)return;
                 heldSpace=false;phase=0;Deliveries++;destination.WorkCount++;
-                if(destination is ProductionStation animal&&animal.IsAnimal)working=animal;
+                if(destination is ProductionStation animal&&animal.Animal)working=animal;
             }
         }
         static string SupplyArea(string sku)=>sku is "flour" or "cheese" or "sauce"?"processing":sku is "bread" or "cake"?"bakery":sku=="meal"?"restaurant":"farm";
         static int SaleAvailable(Station source,string sku)
         {
             int reserve=0;var game=GameSession.Instance;
-            if(source.AreaId=="farm"&&sku=="carrot")foreach(var animal in game.Producers)if(animal.IsUnlocked&&animal.IsAnimal)reserve+=3;
+            if(source.AreaId=="farm"&&sku=="carrot")foreach(var animal in game.Producers)if(animal.IsUnlocked&&animal.Animal)reserve+=3;
             foreach(var machine in game.Machines)if(machine.IsUnlocked&&SupplyArea(sku)==source.AreaId)
                 foreach(var ingredient in machine.Recipe.inputs)if(ingredient.id==sku)reserve+=ingredient.count*2;
             return Mathf.Max(0,source.Inventory.Available(sku)-reserve);
@@ -228,7 +252,7 @@ namespace Tycoon
             if(phase is 1 or 2)
             {
                 heldSpace=to!=null&&to.TryReserveSpace(item,count);
-                if(!heldSpace||(phase==1&&(from==null||!from.TryReserve(item,count)))){if(heldSpace)to.ReleaseSpace(item,count);phase=0;heldSpace=false;throw new System.IO.InvalidDataException("Không khôi phục được chỗ giữ cho tuyến vận chuyển "+WorkerId);}
+                if((!heldSpace&&!(destination is CheckoutStation))||(phase==1&&(from==null||!from.TryReserve(item,count)))){if(heldSpace)to.ReleaseSpace(item,count);phase=0;heldSpace=false;throw new System.IO.InvalidDataException("Không khôi phục được chỗ giữ cho tuyến vận chuyển "+WorkerId);}
             }
         }
     }

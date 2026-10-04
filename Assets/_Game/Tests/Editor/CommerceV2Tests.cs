@@ -92,10 +92,14 @@ namespace Tycoon.Tests
             Assert.That(game.Economy.Money, Is.EqualTo(openingMoney));
             Assert.That(lane.Serve(workerSource), Is.False); Assert.That(game.Economy.Transactions, Is.EqualTo(1));
             var player = Component<PlayerController>("Player");
-            Assert.That(lane.Interact(player, true), Is.True);
+            game.Player=player;
+            lane.CashZone=Component<StationZone>("Cash");
+            lane.CashZone.Target=lane;lane.CashZone.Mode="cash";
+            player.transform.position=lane.CashZone.InteractionPoint;
+            Assert.That(lane.CollectCash(player), Is.EqualTo(30));
             Assert.That(game.Economy.Money, Is.EqualTo(openingMoney + 30));
             Assert.That(lane.Cash, Is.Zero); Assert.That(game.Economy.PendingCash, Is.Zero);
-            Assert.That(lane.Interact(player, true), Is.False);
+            Assert.That(lane.CollectCash(player), Is.Zero);
         }
 
         [Test]

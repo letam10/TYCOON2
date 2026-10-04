@@ -36,7 +36,8 @@ namespace Tycoon.Editor
         [MenuItem("TYCOON/Build Windows")]
         public static void BuildWindows()
         {
-            CreateScene();
+            // Build baseline từ scene hiện có, không tạo lại scene hoặc cấu hình art.
+            if (!File.Exists(ScenePath)) throw new FileNotFoundException("Không có scene TYCOON2", ScenePath);
             var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions {
                 scenes = new[] { ScenePath }, locationPathName = Path.Combine(Root, "Builds/Windows/TYCOON2.exe"),
                 target = BuildTarget.StandaloneWindows64, options = BuildOptions.None

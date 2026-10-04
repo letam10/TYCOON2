@@ -258,13 +258,6 @@ namespace Tycoon
             return moved > 0;
         }
 
-        public bool ProcessPayment()
-        {
-            foreach (var shelf in GameSession.Instance.Shelves)
-                if (shelf.ShopId == ShopId && shelf.IsUnlocked && Serve(shelf.Inventory)) return true;
-            return false;
-        }
-
         public override bool Work(Inventory carrier, float delta, EntityId actorId) => Serve(carrier);
 
         public int CollectCash(PlayerController player)
@@ -277,7 +270,7 @@ namespace Tycoon
         }
 
         public override bool Interact(PlayerController player, bool withdraw) =>
-            !withdraw && IsUnlocked && player && ContainsInteractionPoint(player.transform.position) && (Serve(player.Carry) || ProcessPayment());
+            !withdraw && IsUnlocked && player && ContainsInteractionPoint(player.transform.position) && Serve(player.Carry);
 
         protected override void LateUpdate() { if (StatusLabel) StatusLabel.text = "THU NGÂN\n" + Cash + " xu • " + Queue.Count + " chờ"; }
     }

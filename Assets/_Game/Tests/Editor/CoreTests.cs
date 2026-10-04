@@ -23,9 +23,10 @@ namespace Tycoon.Tests
         public void DeferredCheckoutPaysOnlyOnceAndCashCollectionIsConserved()
         {
             var economy = new Economy(); var basket = new Inventory(3); basket.TryAdd("milk", 3);
-            Assert.That(economy.TryCheckout(41, basket, false), Is.True);
+            int price=3 * Definitions.Item("milk").price;
+            Assert.That(economy.RecordPayment(41, price), Is.True);
             Assert.That(economy.Money, Is.Zero); Assert.That(economy.PendingCash, Is.EqualTo(3 * Definitions.Item("milk").price));
-            Assert.That(economy.TryCheckout(41, basket, false), Is.False);
+            Assert.That(economy.RecordPayment(41, price), Is.False);
             Assert.That(economy.CollectCash(1000), Is.EqualTo(3 * Definitions.Item("milk").price));
             Assert.That(economy.Money, Is.EqualTo(3 * Definitions.Item("milk").price)); Assert.That(economy.PendingCash, Is.Zero);
             Assert.That(economy.CollectCash(1000), Is.Zero);
@@ -87,33 +88,39 @@ namespace Tycoon.Tests
         [Test]
         public void PurchaseEnforcesMoneyPrerequisitesAndSinglePayment()
         {
-            var economy = new Economy(500);
-            Assert.IsFalse(economy.TryBuy(Definitions.Upgrade("supermarket")));
-            Assert.AreEqual(500, economy.Money);
-            Assert.IsTrue(economy.TryBuy(Definitions.Upgrade("farmer")));
-            Assert.AreEqual(500-Definitions.Upgrade("farmer").cost, economy.Money);
-            Assert.IsFalse(economy.TryBuy(Definitions.Upgrade("farmer")));
-            Assert.AreEqual(500-Definitions.Upgrade("farmer").cost, economy.Money);
-            Assert.IsFalse(economy.TryBuy(Definitions.Upgrade("mill")));
-            Assert.IsFalse(economy.Has("mill"));
+            var previous=GameSession.Instance;var root=new GameObject("PurchaseTest");root.SetActive(false);
+            try
+            {
+                var game=root.AddComponent<GameSession>();GameSession.Instance=game;
+                game.Player=root.AddComponent<PlayerController>();game.Economy=new Economy(500);
+                var upgrade=Definitions.Upgrade("barn");
+                Assert.That(game.Contribute(Definitions.Upgrade("supermarket"),500),Is.Zero);
+                Assert.That(game.Contribute(Definitions.Upgrade("farmer"),500),Is.Zero);
+                Assert.That(game.Contribute(upgrade,200),Is.EqualTo(200));
+                Assert.That(game.Economy.Has("barn"),Is.False);Assert.That(game.Economy.Money,Is.EqualTo(300));
+                Assert.That(game.Contribute(upgrade,1000),Is.EqualTo(300));
+                Assert.That(game.Economy.Has("barn"),Is.True);Assert.That(game.Economy.Money,Is.Zero);
+                Assert.That(game.Contribute(upgrade,500),Is.Zero);
+            }
+            finally{UnityEngine.Object.DestroyImmediate(root);GameSession.Instance=previous;}
         }
 
         [Test]
-        public void CheckoutConsumesPurchasedItemsAndNeverPaysTwice()
+        public void PaymentRetainsDeliveredItemsWithCustomerAndNeverPaysTwice()
         {
             var economy = new Economy(); var basket = new Inventory(12);
             basket.TryAdd("carrot", 2); basket.TryAdd("tomato", 1);
-            Assert.IsTrue(economy.TryCheckout(17, basket));
-            Assert.AreEqual(2*Definitions.Item("carrot").price+Definitions.Item("tomato").price, economy.Money);
+            int price=2*Definitions.Item("carrot").price+Definitions.Item("tomato").price;
+            Assert.IsTrue(economy.RecordPayment(17, price));
+            Assert.AreEqual(0, economy.Money);
             Assert.AreEqual(2*Definitions.Item("carrot").price+Definitions.Item("tomato").price, economy.Revenue);
             Assert.AreEqual(1, economy.Transactions);
-            Assert.AreEqual(0, basket.Total);
-            basket.TryAdd("carrot", 2);
-            Assert.IsFalse(economy.TryCheckout(17, basket));
-            Assert.AreEqual(2*Definitions.Item("carrot").price+Definitions.Item("tomato").price, economy.Money);
-            Assert.AreEqual(2, basket.Total);
-            Assert.IsTrue(economy.TryCheckout(18, basket));
-            Assert.AreEqual(4*Definitions.Item("carrot").price+Definitions.Item("tomato").price, economy.Money);
+            Assert.AreEqual(3, basket.Total);
+            Assert.IsFalse(economy.RecordPayment(17, price));
+            Assert.AreEqual(price,economy.PendingCash);
+            Assert.AreEqual(3,basket.Total);
+            Assert.AreEqual(price,economy.CollectCash(price));
+            Assert.AreEqual(price,economy.Money);
         }
 
         [Test]
@@ -165,7 +172,7 @@ namespace Tycoon.Tests
         }
 
         [Test]
-        public void RestorePreservesInTransitStockEvenWhenWarehouseWasFull()
+        public void RestorePreservesOwnerStockEvenWhenCapacityWasReduced()
         {
             var inventory = new Inventory(3);
             inventory.Restore(new[] { new ItemAmount("carrot", 3), new ItemAmount("bread", 2) });

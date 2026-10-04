@@ -132,7 +132,9 @@ namespace Tycoon
                     if (Workers.Exists(x=>x.WorkerId==key)) continue;
                     var root=new GameObject("Worker_"+key); root.transform.SetParent(transform);
                     var saved=PendingWorkers.Find(x=>x.id==key);
-                    Vector3 position=saved!=null?new Vector3(saved.x,.05f,saved.z):StorageFor(crew.area).InteractionPoint+Vector3.left*(2+slot);
+                    var storage=StorageFor(crew.area);
+                    if(!storage)throw new InvalidDataException("Không có kho cho đội "+crew.id+" tại khu "+crew.area);
+                    Vector3 position=saved!=null?new Vector3(saved.x,.05f,saved.z):storage.InteractionPoint+Vector3.left*(2+slot);
                     if (UnityEngine.AI.NavMesh.SamplePosition(position,out var hit,3,UnityEngine.AI.NavMesh.AllAreas)) position=hit.position;
                     root.transform.position=position;
                     var model=Art.Model("player",Vector3.zero,root.transform);model.AddComponent<ActorView>();

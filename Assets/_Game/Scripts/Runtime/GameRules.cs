@@ -36,7 +36,8 @@ namespace Tycoon
         public StorageStation StorageFor(string area)
         {
             if (area == "market") area = "supermarket";
-            return Stations.Find(x => x is StorageStation && x.AreaId == area) as StorageStation ?? Storage;
+            if (area == "farm_shop") area = "farm";
+            return Stations.Find(x => x is StorageStation && x.AreaId == area) as StorageStation;
         }
         public int ItemPrice(string id)
         {
@@ -54,6 +55,7 @@ namespace Tycoon
         {
             reason = "";
             if (u == null) { reason = "Không có nâng cấp"; return false; }
+            if (Definitions.Upgrade(u.id) != u || u.kind == "legacy") { reason = "Nâng cấp prototype đã ngừng sử dụng"; return false; }
             if (Economy.Has(u.id)) { reason = "Đã mở"; return false; }
             if (!string.IsNullOrEmpty(u.requirement) && !Economy.Has(u.requirement)) reason = "Cần " + (Definitions.Upgrade(u.requirement)?.label ?? u.requirement);
             int sales = 0;

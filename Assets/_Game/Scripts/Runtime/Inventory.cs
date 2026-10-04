@@ -156,29 +156,15 @@ namespace Tycoon
             Money -= amount; return true;
         }
         public bool Unlock(string id) => !string.IsNullOrEmpty(id) && Unlocked.Add(id);
-        public bool TryBuy(UpgradeDefinition upgrade)
-        {
-            if (upgrade == null || Has(upgrade.id) || !Has(upgrade.requirement) || !TrySpend(upgrade.cost)) return false;
-            return Unlock(upgrade.id);
-        }
         public bool RecordPayment(long receiptId, int amount)
         {
-            if (amount <= 0 || receipts.Contains(receiptId) || losses.ContainsKey(receiptId)) return false;
+            if (receiptId <= 0 || amount <= 0 || receipts.Contains(receiptId) || losses.ContainsKey(receiptId)) return false;
             receipts.Add(receiptId); PendingCash += amount; Revenue += amount; Transactions++; return true;
         }
         public bool RecordLoss(long receiptId, Inventory goods)
         {
-            if (goods == null || goods.Total == 0 || receipts.Contains(receiptId) || losses.ContainsKey(receiptId)) return false;
+            if (receiptId <= 0 || goods == null || receipts.Contains(receiptId) || losses.ContainsKey(receiptId)) return false;
             losses.Add(receiptId, new LossRecord { receipt = receiptId, goods = goods.Snapshot() }); return true;
-        }
-        public bool TryCheckout(long receiptId, Inventory basket, bool collectNow = true)
-        {
-            if (basket == null || basket.Total <= 0) return false;
-            int total = 0;
-            foreach (var item in basket.Snapshot()) total += Definitions.Item(item.id).price * item.count;
-            if (!RecordPayment(receiptId, total)) return false;
-            if (collectNow) CollectCash(total);
-            basket.Restore(null); return true;
         }
         public int CollectCash(int amount)
         {

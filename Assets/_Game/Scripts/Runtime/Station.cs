@@ -40,7 +40,7 @@ namespace Tycoon
             if(Mode=="cash")return false;
             if(Mode=="operate"&&Target is MachineStation operating)return operating.Broken?operating.Repair(GameSession.Instance.Economy,delta,actorId):operating.Operate(delta,actorId);
             if(Time.time<nextTransfer)return false;
-            if(Mode=="serve"&&Target is CheckoutStation counter){nextTransfer=Time.time+.15f;return counter.Serve(carrier)||counter.ProcessPayment();}
+            if(Mode=="serve"&&Target is CheckoutStation counter){nextTransfer=Time.time+.15f;return counter.Serve(carrier);}
             if(Mode=="deposit")
             {
                 foreach(var row in carrier.Snapshot())
@@ -148,7 +148,7 @@ namespace Tycoon
         public bool HoldToBuy(float delta)
         {
             var game=GameSession.Instance;
-            if(delta<=0||!game.CanPurchase(Upgrade,out _)||game.Economy.Money<=0){held=0;return false;}
+            if(delta<=0||float.IsNaN(delta)||float.IsInfinity(delta)||!game.CanPurchase(Upgrade,out _)||game.Economy.Money<=0){held=0;return false;}
             held+=delta*35;int amount=Mathf.FloorToInt(held);
             if(amount==0)return false;
             held-=amount;return game.Contribute(Upgrade,amount)>0;
