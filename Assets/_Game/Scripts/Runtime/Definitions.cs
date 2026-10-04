@@ -7,11 +7,12 @@ namespace Tycoon
     [Serializable]
     public sealed class ItemDefinition
     {
-        public string id;
-        public string label;
-        public int price;
-        public Color color;
-        public string model;
+        public readonly string id;
+        public readonly string label;
+        public readonly int price;
+        public readonly Color color;
+        public readonly string model;
+        public int version => 1;
         public ItemDefinition(string id, string label, int price, string hex, string model = null)
         {
             this.id = id; this.label = label; this.price = price; this.model = model ?? id;
@@ -31,20 +32,23 @@ namespace Tycoon
     [Serializable]
     public sealed class RecipeDefinition
     {
-        public string id;
-        public string label;
-        public ItemAmount[] inputs;
-        public string output;
-        public int yield;
-        public float seconds;
+        public readonly string id;
+        public readonly string label;
+        readonly ItemAmount[] ingredients;
+        public ItemAmount[] inputs => Array.ConvertAll(ingredients, x => new ItemAmount(x.id, x.count));
+        public readonly string output;
+        public readonly int yield;
+        public readonly float seconds;
+        public int version => 1;
         public RecipeDefinition(string id, string label, string output, int yield, float seconds, params ItemAmount[] inputs)
         {
             this.id = id; this.label = label; this.output = output;
-            this.yield = yield; this.seconds = seconds; this.inputs = inputs;
+            this.yield = yield; this.seconds = seconds;
+            ingredients = Array.ConvertAll(inputs, x => new ItemAmount(x.id, x.count));
         }
         public bool CanMake(Inventory inventory)
         {
-            foreach (var input in inputs) if (inventory.Count(input.id) < input.count) return false;
+            foreach (var input in ingredients) if (inventory.Available(input.id) < input.count) return false;
             return true;
         }
         public bool Consume(Inventory inventory)
@@ -58,12 +62,13 @@ namespace Tycoon
     [Serializable]
     public sealed class UpgradeDefinition
     {
-        public string id;
-        public string label;
-        public string requirement;
-        public int cost;
-        public string kind;
-        public string role;
+        public readonly string id;
+        public readonly string label;
+        public readonly string requirement;
+        public readonly int cost;
+        public readonly string kind;
+        public readonly string role;
+        public int version => 1;
         public UpgradeDefinition(string id, string label, int cost, string requirement = "", string kind = "unlock", string role = "")
         {
             this.id = id; this.label = label; this.cost = cost; this.requirement = requirement;
@@ -73,7 +78,9 @@ namespace Tycoon
 
     public static class Definitions
     {
-        public static readonly ItemDefinition[] Items = {
+        public const int Version = 1;
+        public static ItemDefinition[] Items => (ItemDefinition[])items.Clone();
+        static readonly ItemDefinition[] items = {
             new("carrot", "Cà rốt", 10, "#F68D4C"),
             new("tomato", "Cà chua", 14, "#EF6461"),
             new("wheat", "Lúa mì", 12, "#E9C26A"),
@@ -87,7 +94,8 @@ namespace Tycoon
             new("meal", "Suất ăn", 200, "#AFC986"),
             new("beef", "Thịt bò", 60, "#F4654E")
         };
-        public static readonly RecipeDefinition[] Recipes = {
+        public static RecipeDefinition[] Recipes => (RecipeDefinition[])recipes.Clone();
+        static readonly RecipeDefinition[] recipes = {
             new("mill", "Xay bột mì", "flour", 3, 6, new ItemAmount("wheat", 4)),
             new("cheesemaker", "Làm phô mai", "cheese", 2, 8, new ItemAmount("milk", 3)),
             new("saucemaker", "Nấu sốt", "sauce", 3, 7, new ItemAmount("tomato", 4)),
@@ -95,7 +103,8 @@ namespace Tycoon
             new("cakeoven", "Làm bánh kem", "cake", 2, 11, new("flour", 2), new("egg", 2), new("milk", 2)),
             new("kitchen", "Nấu suất ăn", "meal", 2, 10, new("carrot", 2), new("tomato", 2), new("cheese", 1), new("bread", 1))
         };
-        public static readonly UpgradeDefinition[] Upgrades = {
+        public static UpgradeDefinition[] Upgrades => (UpgradeDefinition[])upgrades.Clone();
+        static readonly UpgradeDefinition[] upgrades = {
             new("farmer", "Thuê nông dân", 150, "", "worker", "Farmer"),
             new("restocker", "Thuê xếp hàng Farm Shop", 200, "", "worker", "Restocker"),
             new("cashier", "Thuê bán hàng Farm Shop", 250, "", "worker", "Cashier"),

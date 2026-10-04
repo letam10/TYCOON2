@@ -1,0 +1,114 @@
+using System;
+using System.Collections.Generic;
+
+namespace Tycoon
+{
+    public enum OwnerKind { Player, Worker, Customer, Storage, Counter, Machine, Conveyor, Station, Escrow }
+    public enum TransactionKind
+    {
+        Take, Place, Transfer, Reserve, Release, Split, Merge, CreateOrder, DeliverOrder,
+        CompleteOrder, FailOrder, CreatePayment, CollectPayment, ContributePurchase, CompletePurchase,
+        StartMachine, AdvanceMachine, CompleteMachine, AcknowledgeEvent
+    }
+    public enum OrderStatus { Open, Complete, Failed }
+    public enum ReservationStatus { Active, Used, Released, Expired }
+    public enum CoreLifecycle { Ready, RecoveryFailed }
+
+    // Chỉ TransactionCore giữ bản authoritative; mọi bản trả ra ngoài đều là bản sao.
+    [Serializable] public sealed class OwnerState
+    {
+        public string id, actor, location;
+        public OwnerKind kind;
+        public int capacity;
+        public bool singleItem;
+        public List<string> writers = new();
+        public List<ItemAmount> limits = new();
+    }
+    [Serializable] public sealed class ItemStackState
+    {
+        public string id, item, owner, location;
+        public int quantity, definitionVersion = 1;
+    }
+    [Serializable] public sealed class ReservationState
+    {
+        public string id, holder, source, destination, item;
+        public int quantity;
+        public double expiresAt;
+        public ReservationStatus status;
+        public List<StackAllocation> allocations = new();
+    }
+    [Serializable] public sealed class StackAllocation { public string stack; public int quantity; }
+    [Serializable] public sealed class OrderRuntimeState
+    {
+        public string id, customer, counter;
+        public double deadline;
+        public OrderStatus status;
+        public List<OrderLine> lines = new();
+    }
+    [Serializable] public sealed class PaymentState
+    {
+        public string id, order, counter;
+        public int amount;
+        public bool collected;
+    }
+    [Serializable] public sealed class PurchaseRuntimeState
+    {
+        public string id, definitionId;
+        public int definitionVersion = 1, contributed;
+        public bool complete;
+    }
+    [Serializable] public sealed class StationRuntimeState
+    {
+        public string id, definitionId, input, output, jobId, reservationId, operatorId;
+        public int definitionVersion = 1, level = 1, workCount, batches;
+        public double remaining;
+        public bool running;
+    }
+    [Serializable] public sealed class TransactionReceipt
+    {
+        public string id, key, fingerprint, effectId, effectFingerprint, eventId;
+        public long revision;
+        public int amount;
+    }
+    [Serializable] public sealed class TransactionEvent
+    {
+        public string id, receiptId, effectId, kind;
+        public long revision;
+        public List<string> consumers = new();
+    }
+    [Serializable] public sealed class TransactionState
+    {
+        public int schemaVersion = 1, catalogVersion = Definitions.Version;
+        public long revision;
+        public int money, revenue;
+        public List<OwnerState> owners = new();
+        public List<ItemStackState> stacks = new();
+        public List<ReservationState> reservations = new();
+        public List<OrderRuntimeState> orders = new();
+        public List<PaymentState> payments = new();
+        public List<PurchaseRuntimeState> purchases = new();
+        public List<CrewState> crews = new();
+        public List<StationRuntimeState> stations = new();
+        public List<string> jobIds = new();
+        public List<ConsumerState> consumers = new();
+        public List<string> unlocked = new();
+        public List<TransactionReceipt> receipts = new();
+        public List<TransactionEvent> outbox = new();
+    }
+    [Serializable] public sealed class TransactionCommand
+    {
+        public string key, effectId, actor;
+        public TransactionKind kind;
+        public long expectedRevision;
+        public string source, destination, item, target, secondary, reservation;
+        public int quantity;
+        public double duration, expiresAt;
+        public List<OrderLine> lines = new();
+    }
+    [Serializable] public sealed class ConsumerState { public string id; public int appliedEvents; }
+    public sealed class TransactionRejectedException : InvalidOperationException
+    {
+        public string Code { get; }
+        public TransactionRejectedException(string code, string message) : base(code + ": " + message) { Code = code; }
+    }
+}
