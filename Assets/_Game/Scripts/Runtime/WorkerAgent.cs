@@ -99,10 +99,18 @@ namespace Tycoon
                 Checkout=counters[Math.Abs(Slot)%counters.Count];Anchor=Checkout.transform.position+new Vector3(0,0,1.4f);
                 if(Carry.Total>0)
                 {
+                    var currentOrder=Checkout.FrontOrder;
+                    bool needed=currentOrder!=null&&currentOrder.Receipt==tableReceipt;
+                    if(needed)
+                    {
+                        needed=false;
+                        foreach(var row in currentOrder.Lines)needed|=row.Remaining>0&&Carry.Available(row.id)>0;
+                    }
+                    if(!needed){BeginDrop(g.StorageFor(crew.area));return;}
                     if((transform.position-Checkout.InteractionPoint).sqrMagnitude>1.3f){Navigation.Go(Agent,Checkout.InteractionPoint);return;}
                     Agent.ResetPath();
                     if(Checkout.Serve(Carry)){Deliveries++;Reason="Đang phục vụ";}
-                    else BeginDrop(g.StorageFor(crew.area));
+                    else Reason="Chờ khách tại quầy";
                     return;
                 }
                 var order=Checkout.FrontOrder;

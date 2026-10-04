@@ -15,8 +15,15 @@ namespace Tycoon
         readonly List<string> checks=new();
         string failure;
         Keyboard keyboard;
+#if UNITY_EDITOR
+        InputSettings.EditorInputBehaviorInPlayMode editorInputBehavior;
+#endif
         IEnumerator Start()
         {
+#if UNITY_EDITOR
+            editorInputBehavior=InputSystem.settings.editorInputBehaviorInPlayMode;
+            InputSystem.settings.editorInputBehaviorInPlayMode=InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
+#endif
             var routine=Run();
             while(true)
             {
@@ -27,6 +34,9 @@ namespace Tycoon
                 yield return routine.Current;
             }
             if(keyboard!=null)InputSystem.RemoveDevice(keyboard);
+#if UNITY_EDITOR
+            InputSystem.settings.editorInputBehaviorInPlayMode=editorInputBehavior;
+#endif
             var game=GameSession.Instance;
             if(game.RuntimeErrors.Count>0)failure=failure??string.Join("\n",game.RuntimeErrors);
             var report=new Report{result=failure==null?"Passed":"Failed",unity=Application.unityVersion,
@@ -52,13 +62,29 @@ namespace Tycoon
             Check(game.NavigationReady,"NavMesh built in existing scene");
             var ids=new HashSet<string>();
             foreach(var station in game.Stations)Check(ids.Add(station.Id),"Stable ID "+station.Id);
-            Check(game.StorageFor("unknown")==null&&game.StorageFor("farm_shop")==game.Storage,"Warehouses have explicit area owners");
+            var shopStorage=game.Stations.Find(x=>x.Id=="storage_farm_shop") as StorageStation;
+            Check(game.StorageFor("unknown")==null&&game.StorageFor("farm")==game.Storage&&
+                game.StorageFor("farm_shop")==shopStorage&&shopStorage!=game.Storage,"Farm and Farm Shop own separate warehouses");
             game.Player.Controller.enabled=false;game.Player.transform.position=new Vector3(5,.05f,2);game.Player.Controller.enabled=true;
             keyboard=InputSystem.AddDevice<Keyboard>();Vector3 start=game.Player.transform.position;
             InputSystem.QueueStateEvent(keyboard,new KeyboardState(Key.D));yield return new WaitForSeconds(.35f);
+            Vector2 movement=game.Player.Move.ReadValue<Vector2>();
+            Vector3 moved=game.Player.transform.position-start;
+            bool pressed=keyboard.dKey.isPressed;
+            int controls=game.Player.Move.controls.Count;
             InputSystem.QueueStateEvent(keyboard,new KeyboardState());yield return null;
-            Check((game.Player.transform.position-start).sqrMagnitude>.02f,"Input System moves player in PlayMode");
+            Check(moved.sqrMagnitude>.02f,
+                "Input System moves player in PlayMode (input="+movement+", key="+pressed+", controls="+controls+", control="+game.Player.CanControl+", moved="+moved+")");
             game.Player.enabled=false;
+            shopStorage.Inventory.TryAdd("carrot",1);
+            var pickup=game.Stations.Find(x=>x.Id=="storage_farm_shop_withdraw") as StationZone;
+            var deposit=game.Stations.Find(x=>x.Id=="storage_farm_shop_deposit") as StationZone;
+            game.Player.Controller.enabled=false;game.Player.transform.position=pickup.InteractionPoint;game.Player.Controller.enabled=true;
+            Check(game.Player.InteractAtCurrentPosition(.13f)&&game.Player.Carry.Count("carrot")==1&&shopStorage.Inventory.Count("carrot")==0,
+                "Player picks up from the selected warehouse zone");
+            game.Player.Controller.enabled=false;game.Player.transform.position=deposit.InteractionPoint;game.Player.Controller.enabled=true;
+            Check(game.Player.InteractAtCurrentPosition(.13f)&&game.Player.Carry.Count("carrot")==0&&shopStorage.Inventory.Count("carrot")==1,
+                "Player deposits into the selected warehouse zone");
             game.Economy.Unlock("mill");
             var machine=game.Machines.Find(m=>m.Recipe.id=="mill");machine.Input.TryAdd("wheat",4);
             Check(machine.Operate(.1f,game.Player.GetEntityId()),"Machine starts with explicit operator");
@@ -73,6 +99,9 @@ namespace Tycoon
             Check(Vector3.Distance(customer.transform.position,counter.QueuePoint(customer))<=.75f&&customer.Agent.isOnNavMesh,"Customer navigates to queue");
             Check(!counter.Serve(game.Player.Carry)&&shelf.Inventory.Count("carrot")==3,"Empty carrier cannot consume shelf stock");
             int wallet=game.Economy.Money;int transactions=game.Economy.Transactions;
+            game.CrewStates.Add(new CrewState{id="processor",role="Processor",area="processing"});
+            game.SyncWorkers();
+            Check(game.Workers.Count==0,"Worker without a dedicated warehouse stays unspawned");
             game.CrewStates.Add(new CrewState{id="cashier",role="Cashier",area="farm_shop"});
             until=Time.realtimeSinceStartup+20;bool carried=false;
             while(!customer.Order.Paid&&Time.realtimeSinceStartup<until)
@@ -81,7 +110,8 @@ namespace Tycoon
                 yield return null;
             }
             Check(carried,"Cashier physically carries shelf goods");
-            Check(customer.Order.Paid&&customer.Basket.Count("carrot")==1&&shelf.Inventory.Count("carrot")==2,"Cashier delivers own goods at counter");
+            Check(customer.Order.Paid&&customer.Basket.Count("carrot")==1&&shelf.Inventory.Count("carrot")==2,
+                "Cashier delivers own goods at counter");
             int price=customer.Order.TotalPrice;
             Check(game.Economy.Money==wallet&&counter.Cash==price&&game.Economy.Transactions==transactions+1,"Payment creates deferred counter cash once");
             game.Player.Controller.enabled=false;game.Player.transform.position=counter.CashZone.InteractionPoint;game.Player.Controller.enabled=true;
@@ -100,7 +130,7 @@ namespace Tycoon
             Check(machine.Running&&Mathf.Approximately(machine.Remaining,remaining)&&machine.Input.Count("wheat")==0,"Machine restores once from station state");
             yield return null;
             Check(game.Workers.Count==1&&game.PendingWorkers.Count==0,"Saved worker resumes once");
-            game.Commerce.enabled=true;yield return null;game.Commerce.enabled=false;
+            game.Milestone=0;game.Commerce.enabled=true;yield return null;game.Commerce.enabled=false;game.Milestone=1;
             Check(game.Commerce.Customers.Exists(c=>c.Receipt==receipt)&&game.PendingCustomers.Count==0,"Saved customer restores through pool");
             var order=new OrderState(game.NextReceipt++,new[]{new OrderLine("milk",2,10)},0,1);
             var goods=new Inventory(2);goods.TryAdd("milk",1);int stock=game.Storage.Inventory.Total;

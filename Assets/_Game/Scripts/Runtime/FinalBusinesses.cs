@@ -31,6 +31,8 @@ namespace Tycoon
                 Art.Model("table",Vector3.zero,root.transform,1.15f);
                 Art.Box("TableCollision",new Vector3(0,.5f,0),new Vector3(1.55f,1.25f,1.55f),"#FFFFFF",root.transform,true).GetComponent<Renderer>().enabled=false;
                 table.StatusLabel=Art.Label(table.Label,new Vector3(0,2,0),root.transform,.2f,"#FFFFFF");
+                WorldFactory.Zone(game,world,table,"operate",table.InteractionPoint+Vector3.right*1.5f);
+                WorldFactory.Zone(game,world,table,"serve",table.InteractionPoint+Vector3.left*1.5f);
                 root.AddComponent<UnlockVisual>().Requirement="restaurant";game.Tables.Add(table);game.Stations.Add(table);
             }
             foreach(string id in new[]{"supermarket","restocker_market","cashier_market","bakery","cook_bakery","restaurant","cook","waiter"})

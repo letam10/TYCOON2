@@ -97,13 +97,26 @@ namespace Tycoon.Tests
             Assert.That(save.inventories.Find(i=>i.id=="mill_input").items[0].count,Is.EqualTo(4));
             Assert.That(save.inventories.Find(i=>i.id=="mill").items,Is.Empty);
         }
+        [Test] public void SaveLoadValidatesPersistentStationsButNotActionZones()
+        {
+            var storage=Add<StorageStation>("Storage");storage.Id="storage_farm";storage.AreaId="farm";storage.Inventory=new Inventory(10);
+            var zone=Add<StationZone>("WithdrawZone");zone.Id="storage_farm_withdraw";zone.Target=storage;zone.Mode="withdraw";
+            game.Stations.Add(storage);game.Stations.Add(zone);
+            storage.Inventory.TryAdd("carrot",2);
+            game.SaveGame();game.LoadGame();
+            Assert.That(game.SaveBlocked,Is.False);
+            Assert.That(storage.Inventory.Count("carrot"),Is.EqualTo(2));
+        }
         [Test] public void UnknownAreaHasNoSharedWarehouseFallback()
         {
             var farm=Add<StorageStation>("Farm");farm.Id="farm";farm.AreaId="farm";farm.Inventory=new Inventory(10);
+            var shop=Add<StorageStation>("FarmShop");shop.Id="farm_shop";shop.AreaId="farm_shop";shop.Inventory=new Inventory(10);
             var market=Add<StorageStation>("Market");market.Id="market";market.AreaId="supermarket";market.Inventory=new Inventory(10);
-            game.Storage=farm;game.Stations.Add(farm);game.Stations.Add(market);
+            game.Storage=farm;game.Stations.Add(farm);game.Stations.Add(shop);game.Stations.Add(market);
             farm.Inventory.TryAdd("carrot",3);
-            Assert.That(game.StorageFor("farm_shop"),Is.SameAs(farm));
+            Assert.That(game.StorageFor("farm"),Is.SameAs(farm));
+            Assert.That(game.StorageFor("farm_shop"),Is.SameAs(shop));
+            Assert.That(game.StorageFor("farm_shop"),Is.Not.SameAs(farm));
             Assert.That(game.StorageFor("supermarket"),Is.SameAs(market));
             Assert.That(game.StorageFor("unknown"),Is.Null);
             Assert.That(market.Inventory.Count("carrot"),Is.Zero);
@@ -158,6 +171,17 @@ namespace Tycoon.Tests
                 }
             Assert.That(game.Economy.Money,Is.EqualTo(500));
             Assert.That(game.Purchases,Is.Empty);
+        }
+        [Test] public void WorkerCannotBePurchasedWithoutItsOwnWarehouse()
+        {
+            game.Economy.Unlock("mill");
+            var processor=Definitions.Upgrade("processor");
+            int money=game.Economy.Money;
+            Assert.That(game.CanPurchase(processor,out var reason),Is.False);
+            Assert.That(reason,Does.Contain("chưa có kho riêng"));
+            Assert.That(game.Contribute(processor,processor.cost),Is.Zero);
+            Assert.That(game.Economy.Money,Is.EqualTo(money));
+            Assert.That(game.Economy.Has(processor.id),Is.False);
         }
         [Test] public void RunningMachineStillNeedsAnOperatorToAdvance()
         {

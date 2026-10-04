@@ -33,6 +33,12 @@ namespace Tycoon
             {
                 var locked = game.Producers.Find(x => x.Id == id); locked.Requirement = "farm_shop";
                 locked.gameObject.AddComponent<UnlockVisual>().Requirement = "farm_shop";
+                foreach (var station in game.Stations)
+                    if (station is StationZone zone && zone.Target == locked)
+                    {
+                        zone.Requirement = locked.Requirement;
+                        zone.gameObject.AddComponent<UnlockVisual>().Requirement = locked.Requirement;
+                    }
             }
             Pen(world, new Vector3(-14, 0, 25), new Vector2(20, 12), "user_cow", 28, 1, "barn", "milk_line");
             Pen(world, new Vector3(-28, 0, 25), new Vector2(8, 12), "user_chicken", 12, .9f, "egg_line");
@@ -126,6 +132,8 @@ namespace Tycoon
             var plants = new List<Transform>();
             for (int i = 0; i < 9; i++) plants.Add(Art.Model(item == "carrot" ? "carrot_crop" : item, new Vector3(-.95f + i % 3 * .95f, .14f, -.75f + i / 3 * .75f), station.transform, item == "tomato" ? .8f : 1).transform);
             station.Plants = plants.ToArray(); station.InteractionPoint = point + Vector3.back * 2.25f; game.Producers.Add(station);
+            Zone(game, parent, station, "operate", station.InteractionPoint + Vector3.back);
+            Zone(game, parent, station, "withdraw", station.InteractionPoint + Vector3.right * 1.7f);
         }
         static void AnimalProducer(GameSession game, Transform parent, string id, string item, string label, Vector3 point, float interval, string requirement)
         {
@@ -134,6 +142,9 @@ namespace Tycoon
             Art.Box("BlueBinBase", new Vector3(0, .08f, 0), new Vector3(2, .16f, 2), "#049CDA", station.transform);
             Art.Box("BluePipe", new Vector3(-1.5f, .4f, 0), new Vector3(2, .25f, .25f), "#20BEE8", station.transform);
             Stack(game, station, new Vector3(0, .85f, 0), .75f, 2, 2, 24); game.Producers.Add(station); Locked(station);
+            Zone(game, parent, station, "operate", station.InteractionPoint + Vector3.back);
+            Zone(game, parent, station, "withdraw", station.InteractionPoint + Vector3.right * 1.7f);
+            Zone(game, parent, station, "deposit", station.InteractionPoint + Vector3.left * 1.7f);
         }
         public static StorageStation Warehouse(GameSession game, Transform parent, Vector3 point, string id = "storage", string area = "farm", int capacity = 800)
         {
@@ -141,31 +152,39 @@ namespace Tycoon
             Art.Box("StorageBase", new Vector3(0, .08f, 0), new Vector3(3.4f, .15f, 3.4f), "#FFFFFF", station.transform);
             Art.Box("StorageCollision",new Vector3(0,.55f,.5f),new Vector3(3.1f,1.1f,2.5f),"#FFFFFF",station.transform,true).GetComponent<Renderer>().enabled=false;
             for (int i = 0; i < 3; i++) Art.Model("crate", new Vector3(-1.1f + i * 1.1f, .15f, .8f), station.transform, 1);
-            Stack(game, station, new Vector3(0, .2f, 0), .7f); return station;
+            Stack(game, station, new Vector3(0, .2f, 0), .7f);
+            Zone(game, parent, station, "withdraw", station.InteractionPoint + Vector3.left * 1.6f);
+            Zone(game, parent, station, "deposit", station.InteractionPoint + Vector3.right * 1.6f);
+            return station;
         }
         public static ShelfStation Shelf(GameSession game, Transform parent, string id, string label, Vector3 point, string[] items, string shop, string requirement = "")
         {
             var station = Register<ShelfStation>(game, parent, id, label, point, 36); station.AllowedItems = items; station.ShopId = shop; station.AreaId = shop == "farm" ? "farm_shop" : shop == "market" ? "supermarket" : shop; station.Requirement = requirement; station.InteractionPoint = point + Vector3.left * 1.25f;
             Art.Box("BlueCounter", new Vector3(0, .45f, 0), new Vector3(1.4f, .9f, 4.7f), "#039BDD", station.transform, true);
             Art.Box("WhiteCounter", new Vector3(0, .95f, 0), new Vector3(1.48f, .13f, 4.8f), "#EAF8EF", station.transform);
-            Stack(game, station, new Vector3(0, 1.04f, -.25f), .75f, 2, 5, 36); game.Shelves.Add(station); Locked(station); return station;
+            Stack(game, station, new Vector3(0, 1.04f, -.25f), .75f, 2, 5, 36); game.Shelves.Add(station); Locked(station);
+            Zone(game, parent, station, "withdraw", station.InteractionPoint + Vector3.left * 1.2f);
+            Zone(game, parent, station, "deposit", station.InteractionPoint + Vector3.back * 1.6f);
+            return station;
         }
         public static CheckoutStation Checkout(GameSession game, Transform parent, string id, Vector3 point, string shop, string requirement = "")
         {
             var station = Register<CheckoutStation>(game, parent, id, "QUẦY " + shop, point); station.ShopId = shop; station.AreaId = shop == "farm" ? "farm_shop" : shop == "market" ? "supermarket" : shop; station.Requirement = requirement; Art.Model("user_checkout", Vector3.zero, station.transform, 1.25f);
             Art.Box("CheckoutCollision", new Vector3(.3f, .55f, 0), new Vector3(2.1f, 1.1f, .9f), "#05A4E3", station.transform, true).GetComponent<Renderer>().enabled = false;
-            station.InteractionPoint = point;
-            Zone(game, parent, station, "serve", point + Vector3.left * 2.7f + Vector3.back * 1.5f);
+            station.InteractionPoint = point + Vector3.left * 2.7f + Vector3.back * 1.5f;
+            Zone(game, parent, station, "serve", station.InteractionPoint);
             Zone(game, parent, station, "cash", point + Vector3.right * 2.7f + Vector3.back * 1.5f);
             game.Checkouts.Add(station); Locked(station); return station;
         }
-        static void Zone(GameSession game, Transform parent, Station target, string mode, Vector3 point)
+        public static void Zone(GameSession game, Transform parent, Station target, string mode, Vector3 point)
         {
-            var zone = Register<StationZone>(game, parent, target.Id + "_" + mode, mode == "serve" ? "GIAO HÀNG" : "THU TIỀN", point);
+            string label = mode switch { "withdraw" => "LẤY HÀNG", "deposit" => "ĐẶT HÀNG", "operate" => "VẬN HÀNH", "serve" => "GIAO HÀNG", "cash" => "THU TIỀN", _ => mode };
+            var zone = Register<StationZone>(game, parent, target.Id + "_" + mode, label, point);
             zone.Target = target; zone.Mode = mode; zone.AreaId = target.AreaId; zone.Requirement = target.Requirement; zone.InteractionPoint = point;
             target.PlayerUsesZones = true; zone.InteractionRadius = .85f;
             if (target is CheckoutStation checkout && mode == "cash") checkout.CashZone = zone;
-            Art.Box("InteractionZone", new Vector3(0, .035f, 0), new Vector3(1.8f, .07f, 1.8f), mode == "serve" ? "#73CF4F" : "#FFD63E", zone.transform);
+            string color = mode switch { "serve" => "#73CF4F", "withdraw" => "#39A4D8", "deposit" => "#F5AB3D", "operate" => "#9A72D8", _ => "#FFD63E" };
+            Art.Box("InteractionZone", new Vector3(0, .035f, 0), new Vector3(1.8f, .07f, 1.8f), color, zone.transform);
             Locked(zone);
         }
         public static MachineStation Machine(GameSession game, Transform parent, string key, Vector3 point, string requirement)
@@ -174,7 +193,11 @@ namespace Tycoon
             var model = Art.Model(key, Vector3.zero, station.transform, 1.45f);
             foreach (var child in model.GetComponentsInChildren<Transform>()) if (child.name.StartsWith("Rotor")) { station.Rotor = child; break; }
             Art.Box("MachineCollision", new Vector3(0, .9f, 0), new Vector3(2.65f, 1.8f, 2.25f), "#039BDD", station.transform, true).GetComponent<Renderer>().enabled = false;
-            station.InteractionPoint = point + Vector3.back * 2.3f; Stack(game, station, new Vector3(.9f, .18f, -.9f), .55f, 1, 2, 12); game.Machines.Add(station); Locked(station); return station;
+            station.InteractionPoint = point + Vector3.back * 2.3f; Stack(game, station, new Vector3(.9f, .18f, -.9f), .55f, 1, 2, 12); game.Machines.Add(station); Locked(station);
+            Zone(game, parent, station, "operate", station.InteractionPoint + Vector3.back * 1.25f);
+            Zone(game, parent, station, "withdraw", station.InteractionPoint + Vector3.right * 1.55f + Vector3.back * .35f);
+            Zone(game, parent, station, "deposit", station.InteractionPoint + Vector3.left * 1.55f + Vector3.back * .35f);
+            return station;
         }
         static void Locked(Station station) { if (!string.IsNullOrEmpty(station.Requirement)) station.gameObject.AddComponent<UnlockVisual>().Requirement = station.Requirement; }
         public static PurchasePad Pad(GameSession game, Transform parent, UpgradeDefinition upgrade, Vector3 point)

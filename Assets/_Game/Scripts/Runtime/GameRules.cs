@@ -36,7 +36,6 @@ namespace Tycoon
         public StorageStation StorageFor(string area)
         {
             if (area == "market") area = "supermarket";
-            if (area == "farm_shop") area = "farm";
             return Stations.Find(x => x is StorageStation && x.AreaId == area) as StorageStation;
         }
         public int ItemPrice(string id)
@@ -73,6 +72,7 @@ namespace Tycoon
             {
                 var crew = CrewFor(u); int work = WorkFor(crew), tier = Tier(FamilyFor(crew));
                 if (tier < 3 || work < 30) reason = "Trạm cấp 3 và 30 lượt việc • " + work + "/30";
+                if (StorageFor(crew.area) == null) reason = "Khu " + crew.area + " chưa có kho riêng";
             }
             return reason.Length == 0;
         }

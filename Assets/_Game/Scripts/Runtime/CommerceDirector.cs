@@ -19,7 +19,7 @@ namespace Tycoon
         void Update()
         {
             var game = GameSession.Instance;
-            if (!game.NavigationReady || game.Milestone == 0) return;
+            if (!game.NavigationReady) return;
             if (!restored)
             {
                 // Nạp theo vị trí đã lưu trước khi sinh khách mới để giữ nguyên FIFO.
@@ -33,6 +33,7 @@ namespace Tycoon
                 restored = game.PendingCustomers.Count == 0;
                 if (!restored) return;
             }
+            if (game.Milestone == 0) return;
             if (Time.time < nextSpawn || ActiveCount >= MaximumActive) return;
             nextSpawn = Time.time + (game.RushActive ? .65f : 2.5f);
             int limit = game.RushActive ? MaximumActive : game.Economy.Has("supermarket") ? 24 : 15;

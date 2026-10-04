@@ -132,10 +132,10 @@ namespace Tycoon
                 {
                     string key=crew.id+":"+slot;
                     if (Workers.Exists(x=>x.WorkerId==key)) continue;
-                    var root=new GameObject("Worker_"+key); root.transform.SetParent(transform);
                     var saved=PendingWorkers.Find(x=>x.id==key);
                     var storage=StorageFor(crew.area);
-                    if(!storage)throw new InvalidDataException("Không có kho cho đội "+crew.id+" tại khu "+crew.area);
+                    if(!storage)continue;
+                    var root=new GameObject("Worker_"+key); root.transform.SetParent(transform);
                     Vector3 position=saved!=null?new Vector3(saved.x,.05f,saved.z):storage.InteractionPoint+Vector3.left*(2+slot);
                     if (UnityEngine.AI.NavMesh.SamplePosition(position,out var hit,3,UnityEngine.AI.NavMesh.AllAreas)) position=hit.position;
                     root.transform.position=position;
@@ -248,6 +248,7 @@ namespace Tycoon
             var stations=new Dictionary<string,Station>();
             foreach(var station in Stations)
             {
+                if(station is StationZone)continue;
                 if(string.IsNullOrEmpty(station.Id)||!stations.TryAdd(station.Id,station))throw new InvalidDataException("Stable ID trạm bị thiếu hoặc lặp.");
                 if(station.Inventory!=null&&!owners.TryAdd(station.Id,station.Inventory))throw new InvalidDataException("Owner inventory bị lặp.");
                 if(station is MachineStation machine&&!owners.TryAdd(station.Id+"_input",machine.Input))throw new InvalidDataException("Owner đầu vào máy bị lặp.");
