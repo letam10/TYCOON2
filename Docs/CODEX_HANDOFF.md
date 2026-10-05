@@ -430,6 +430,18 @@ Regression Player cuối còn xác nhận: rời máy giữ input/job/progress, 
 - `ProjectSettings/QualitySettings.asset` có sẵn của người dùng và các file mới `ASSET/Downloaded/**`, `ASSET/downloaded_summary.json` từ công việc khác được giữ ngoài commit này.
 - Đã đối chiếu PID/executable/thời điểm/parent với lịch sử task: không còn Unity/Player/helper của lượt này chạy; không có process cần giữ. Lệnh dọn các file tạm đã xác minh bị cơ chế tự động duyệt lệnh từ chối với `blocked by policy`; không lách chặn. Thư mục debug Unity `work/stage14/Build/TYCOON2_BackUpThisFolder_ButDontShipItWithYourGame`, ảnh contact sheet `work/stage14/reference-1971.png`, save tạo nhầm `work/stage14/player-stage14milestones-20261005T110523261Z/qa-save.json` và `.journal`, cùng các thư mục rỗng `QA/Evidence/stage14*` còn tồn tại, không còn process sử dụng. Khi có cơ chế dọn được cho phép, chỉ xóa đúng các artifact này.
 
+## Công đoạn 14 — audit và tích hợp ASSET local — 2026-10-05
+
+**Mốc thư viện đã kiểm chứng; world dressing và kiểm tra cuối đang chốt trong commit tiếp theo.** Làm trực tiếp project hiện có, không thêm nội dung/gameplay khu mới.
+
+- Rà soát/hash toàn bộ 7.553 file ASSET (409,5 MiB), 3.668 file model gồm các định dạng khác nhau; 177 nhóm SHA trùng. Kiểm tra GLB/glTF metadata và dependencies, OBJ geometry counts, FBX header; không phát hiện lỗi trong phạm vi đó. Không tuyên bố đã kiểm tra deformation của toàn bộ rig.
+- Chọn 48 model phù hợp từ Kenney/KayKit/Quaternius; 12.372 triangles tổng thư viện, tối đa 1.612/model, 58 renderers/73 material slots trong Unity. Model tĩnh không có collider, pivot sát đất và bounds khớp manifest. Texture/material dùng URP; giữ license CC0 và SHA nguồn.
+- Giữ nhân vật/vật nuôi đang có rig, stable IDs, Input System, pooling, inventory/transaction/save. Thư viện fantasy, xe/nhà công nghiệp và character Sushi không được dùng khi không hợp chức năng/style hoặc thiếu license cục bộ.
+- File chính: `Assets/_Game/Art/Library/**`, `GameCatalog.cs`, `GameCatalog.asset`, `AssetLibraryBuilder.cs`, `ProjectBuilder.cs`, `Tools/audit_asset_library.py`, `Tools/prepare_library_assets.py`, `Tools/run_unity.ps1`, `Docs/ASSET_AUDIT.md`, `Docs/asset-library-import.json`.
+- Kiểm chứng: import 48/48 bounds/pivot/material/collider pass; Windows build và Player RTX 4060 pass; 118/118 EditMode pass tại 13:31 UTC. Ảnh toàn bộ model được chọn đã xem. Runtime/new-game và path evidence được chốt ở mốc tiếp theo.
+- Git mốc thư viện: commit có message `feat: import curated local tycoon asset library`; hash và push được ghi sau khi hoàn thành commit.
+- Raw ASSET có sẵn và `QualitySettings.asset` có sẵn của người dùng nằm ngoài commit. Chỉ commit derivative cần cho game cùng metadata/licenses/CLI. Build không phụ thuộc thư mục raw ASSET; tái xử lý art trên máy khác cần nguồn local tương ứng.
+
 ## Những gì chưa thực hiện được / chưa nghiệm thu — cập nhật cuối Công đoạn 14
 
 - **Công đoạn 14: chưa pass lượt liên tục new game 0 → Restaurant bằng sản xuất/thu tiền thực tế, không nạp state. Chưa pass mục tiêu mở toàn chuỗi trong 180–240 phút.** Preset sát ngưỡng xác nhận từng gate/gameplay nhưng không thay thế hai tiêu chí này; chưa chốt acceptance toàn Công đoạn 14.

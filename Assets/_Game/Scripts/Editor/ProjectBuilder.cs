@@ -200,6 +200,7 @@ namespace Tycoon.Editor
                 AssetDatabase.CreateAsset(catalog, catalogPath);
             }
             catalog.models = entries.ToArray();
+            AssetLibraryBuilder.ApplyCatalog(catalog);
             catalog.font = AssetDatabase.LoadAssetAtPath<Font>(ArtRoot + "/Imported/NotoSans-Regular.ttf");
             catalog.brandTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(ArtRoot + "/Imported/brand.png");
             string profilePath = ArtRoot + "/Materials/GameLighting.asset";

@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('Import','Tests','Build','Scene','Polish','Stage14Tests','Stage14Layout','Stage14Play','Baseline','Stage23','Stage45','Stage67','Stage08','Stage09','Stage10','Stage11','Stage12','Stage13')] [string]$Task = 'Import',
+    [ValidateSet('Import','ArtLibrary','Tests','Build','Scene','Polish','Stage14Tests','Stage14Layout','Stage14Play','Baseline','Stage23','Stage45','Stage67','Stage08','Stage09','Stage10','Stage11','Stage12','Stage13')] [string]$Task = 'Import',
     [string]$BuildPath = ''
 )
 $ErrorActionPreference = 'Stop'
@@ -25,6 +25,7 @@ if ($Task -in @('Tests','Stage08','Stage09','Stage10','Stage11','Stage12','Stage
 } else {
     if($Task -notin @('Baseline','Stage23','Stage45','Stage67','Stage14Layout','Stage14Play')) { $arguments += '-quit' }
     if($Task -eq 'Polish'){$arguments += @('-executeMethod','Tycoon.Editor.Stage14Tools.PrepareAnimations')}
+    if($Task -eq 'ArtLibrary'){$arguments += @('-executeMethod','Tycoon.Editor.AssetLibraryBuilder.Import')}
     if($Task -in @('Stage14Layout','Stage14Play')){
         $qaOutput=Join-Path $taskRoot ('work\stage14\editor-'+$Task.ToLower()+'-'+[DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'))
         $qaMode=if($Task -eq 'Stage14Layout'){'--qa-stage14-layout'}else{'--qa-stage14'}

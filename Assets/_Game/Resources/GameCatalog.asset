@@ -13,126 +13,286 @@ MonoBehaviour:
   m_Name: GameCatalog
   m_EditorClassIdentifier: Tycoon.Runtime::Tycoon.GameCatalog
   models:
-  - key: farmer
-    prefab: {fileID: 9156148861704964883, guid: 6544d7514e987ff4cad61ea684dfbc4a, type: 3}
-    size: {x: 0.75806797, y: 1.7876971, z: 0.8336099}
-  - key: worker
-    prefab: {fileID: 2444735038922188363, guid: 04a45e90613330f4482a0a4756e5d563, type: 3}
-    size: {x: 0.74305904, y: 1.7873402, z: 0.8318783}
-  - key: customer_suit
-    prefab: {fileID: 4628458869331314506, guid: 2c70213bb9139b64393ce124376c6ace, type: 3}
-    size: {x: 0.7326211, y: 1.78565, z: 0.8137626}
-  - key: cow
-    prefab: {fileID: 6761488881075491081, guid: 97d0d1f1253d2e54da783753cc0710d3, type: 3}
-    size: {x: 0.77534205, y: 1.8181009, z: 2.885469}
-  - key: carrot
-    prefab: {fileID: 3047201487704335376, guid: a65d5bc363009cb4c83b38037aacb7d7, type: 3}
-    size: {x: 0.19279584, y: 0.4622485, z: 0.1357576}
-  - key: tomato
-    prefab: {fileID: 5094751750770377396, guid: c65256a20ac610047b619d52910fa0c8, type: 3}
-    size: {x: 0.40864864, y: 0.46783125, z: 0.40864867}
-  - key: wheat
-    prefab: {fileID: 4286818863807328283, guid: 0d1f0714e5540fc46bc71f94173bf4dd, type: 3}
-    size: {x: 0.20676042, y: 0.410313, z: 0.04378069}
-  - key: milk
-    prefab: {fileID: 8213261752999077443, guid: 74242eaabdebe4d4786d48b0a9d13de9, type: 3}
-    size: {x: 0.2337931, y: 0.41999996, z: 0.23379311}
-  - key: egg
-    prefab: {fileID: 601921241534416848, guid: cfb45994a52c5f84cb4dd3a13236443e, type: 3}
-    size: {x: 0.2717647, y: 0.42000002, z: 0.27176476}
-  - key: flour
-    prefab: {fileID: 1405849918175957252, guid: 4f69113f358b1cf4c9526ce1f28d419d, type: 3}
-    size: {x: 0.3315789, y: 0.41999996, z: 0.2691316}
-  - key: cheese
-    prefab: {fileID: 499327437177344024, guid: 4271b6837e9e1164c86305df47c8bd9c, type: 3}
-    size: {x: 0.41999996, y: 0.1887587, z: 0.39823878}
-  - key: sauce
-    prefab: {fileID: 8398876698794757003, guid: 092979c34a8f8ed4db6cc0084193503c, type: 3}
-    size: {x: 0.33600003, y: 0.41999996, z: 0.336}
-  - key: cake
-    prefab: {fileID: 7251630177725745320, guid: cde17e271e8ce10479609cc5d47d359b, type: 3}
-    size: {x: 0.42, y: 0.2823333, z: 0.42}
-  - key: meal
-    prefab: {fileID: 893621757292177266, guid: 70ea99664283d9c4d9c8671a450fb3f7, type: 3}
-    size: {x: 0.42, y: 0.16227275, z: 0.41999996}
-  - key: bread
-    prefab: {fileID: 153844547583527339, guid: fbf50dc8b27af37459402ac98eff3158, type: 3}
-    size: {x: 0.24286088, y: 0.29669324, z: 0.42000002}
-  - key: carrot_crop
-    prefab: {fileID: 6884586487404764891, guid: e592e76e1b6767748a55d19cf550cd78, type: 3}
-    size: {x: 0.34377208, y: 0.65, z: 0.25486726}
-  - key: coop
-    prefab: {fileID: 5280222796388418467, guid: a2ef3317705fe96449ee11b28d315f0d, type: 3}
-    size: {x: 3.3815343, y: 2.6, z: 3.0258322}
   - key: barn
     prefab: {fileID: 412697910113009661, guid: 88443035f3e4b7743aa5a79cbbbcc3f2, type: 3}
     size: {x: 5.0856953, y: 4.2, z: 5.473766}
-  - key: fence
-    prefab: {fileID: 7959819739119458906, guid: b9d199bdee5143e458e6bbe0a86fb1ef, type: 3}
-    size: {x: 4.563646, y: 0.8499999, z: 0.12823528}
-  - key: well
-    prefab: {fileID: 1483365942052652623, guid: f5a528c0a4508624d9936fc95afd7181, type: 3}
-    size: {x: 1.2496371, y: 2.1, z: 1.4553158}
-  - key: shelf
-    prefab: {fileID: 1522505153075281573, guid: df5767b1c648ca542b4aac1470a28e45, type: 3}
-    size: {x: 2.7, y: 2.23, z: 1.0800002}
-  - key: checkout
-    prefab: {fileID: 3212271712959391860, guid: 072de157385e46c4b9095bb9c4f0c478, type: 3}
-    size: {x: 2.55, y: 1.8904297, z: 1.2499999}
-  - key: crate
-    prefab: {fileID: 341514056470942235, guid: a8733a2618c012843aec824ba54b2429, type: 3}
-    size: {x: 1.0000001, y: 0.5, z: 0.77999985}
-  - key: shop
-    prefab: {fileID: 1398169581185395602, guid: f22e8043f0c9aac44903dcf4cc41e520, type: 3}
-    size: {x: 7.0200005, y: 3.73, z: 5.5}
-  - key: table
-    prefab: {fileID: 1255864171310371051, guid: 5897c80d30fd8a7498403c4ffa28d3b8, type: 3}
-    size: {x: 2.41, y: 1.4849999, z: 1.2599999}
-  - key: chicken
-    prefab: {fileID: 2213802443391921843, guid: 103d918a9054b7b4f97e25afad80aa7f, type: 3}
-    size: {x: 0.6251081, y: 0.94539404, z: 1.0954684}
-  - key: mill
-    prefab: {fileID: 8857111454337974554, guid: 0d3b9d7862d0e9842be290789a4989c0, type: 3}
-    size: {x: 1.72, y: 2.08, z: 1.8249999}
-  - key: cheesemaker
-    prefab: {fileID: 2951306847808382604, guid: 007d99dd82afa7d4da291a317f26deff, type: 3}
-    size: {x: 1.72, y: 2.16, z: 1.8250003}
-  - key: saucemaker
-    prefab: {fileID: 9076189825689189746, guid: 38ef789f290ab984384219fef650d9b1, type: 3}
-    size: {x: 1.72, y: 2.16, z: 1.8250003}
-  - key: oven
-    prefab: {fileID: 2720749998293427705, guid: 430f9d05f8d4c8a4d86ee8aafbc983f1, type: 3}
-    size: {x: 1.7200001, y: 2.0749998, z: 1.8249999}
+  - key: beef
+    prefab: {fileID: 1694980716701618522, guid: a1324d81261d8c24e8c09a35b88b6b0c, type: 3}
+    size: {x: 0.3492821, y: 0.047082476, z: 0.42000002}
+  - key: bread
+    prefab: {fileID: 2420842064522230169, guid: aeb05b1a40b9c53479b433b43a02894d, type: 3}
+    size: {x: 0.42999998, y: 0.32807213, z: 0.27139342}
+  - key: cake
+    prefab: {fileID: 13230569921258603, guid: 4a21b0c0b36977e4b8d515a6e89b4462, type: 3}
+    size: {x: 0.43999976, y: 0.18797544, z: 0.44}
   - key: cakeoven
     prefab: {fileID: 5149855197781517727, guid: 879913aa23e7c754da0061c747cbbcd0, type: 3}
     size: {x: 1.7200001, y: 2.075, z: 1.8249999}
-  - key: kitchen
-    prefab: {fileID: 5767008575676512873, guid: 9e7151a756912dd4dbb578364af9537d, type: 3}
+  - key: carrot
+    prefab: {fileID: 604572439428849833, guid: 549ac87790554fe41b3586a63c773eb2, type: 3}
+    size: {x: 0.20119905, y: 0.42, z: 0.20119905}
+  - key: carrot_crop
+    prefab: {fileID: 6884586487404764891, guid: e592e76e1b6767748a55d19cf550cd78, type: 3}
+    size: {x: 0.34377208, y: 0.65, z: 0.25486726}
+  - key: checkout
+    prefab: {fileID: 3212271712959391860, guid: 072de157385e46c4b9095bb9c4f0c478, type: 3}
+    size: {x: 2.55, y: 1.8904297, z: 1.2499999}
+  - key: checkout_counter
+    prefab: {fileID: 7337837642249539009, guid: 78c1bb33e75f93340996506377fe11c2, type: 3}
+    size: {x: 2.1, y: 1, z: 1.1}
+  - key: cheese
+    prefab: {fileID: 8189086441575647107, guid: b37430849b8abca45b56210366559518, type: 3}
+    size: {x: 0.39999998, y: 0.021333331, z: 0.27499998}
+  - key: cheesemaker
+    prefab: {fileID: 2951306847808382604, guid: 007d99dd82afa7d4da291a317f26deff, type: 3}
     size: {x: 1.72, y: 2.16, z: 1.8250003}
-  - key: tree
-    prefab: {fileID: 7319429903213028775, guid: 2a2f1d854ee7a0a499359e257cad6d82, type: 3}
-    size: {x: 1.5599998, y: 2.8000002, z: 1.56}
-  - key: beef
-    prefab: {fileID: 2062150732405206038, guid: 4daeba081c8a60b45a147e9dbcce0c8f, type: 3}
-    size: {x: 0.64, y: 0.17450005, z: 0.6399999}
-  - key: player
-    prefab: {fileID: 8141086675229255233, guid: 5308350ca13f62c45b54af9b1b01c09b, type: 3}
-    size: {x: 1.12967, y: 1.8220694, z: 1.2217058}
+  - key: chicken
+    prefab: {fileID: 2213802443391921843, guid: 103d918a9054b7b4f97e25afad80aa7f, type: 3}
+    size: {x: 0.6251081, y: 0.94539404, z: 1.0954684}
+  - key: clean_plate
+    prefab: {fileID: 5826305612812965606, guid: d018cab540e34384e9a19b08c1fc385c, type: 3}
+    size: {x: 0.32999998, y: 0.03473684, z: 0.32999995}
+  - key: coffee_machine
+    prefab: {fileID: 4930468095369133193, guid: 274233526833f6a4187731061aff1b1c, type: 3}
+    size: {x: 0.69413316, y: 0.65, z: 0.8795395}
+  - key: cold_cabinet
+    prefab: {fileID: 8555401735031993398, guid: 4d3daa87cc57d104cb24a6ca9168bf5f, type: 3}
+    size: {x: 1.3, y: 1.8000001, z: 1.1}
+  - key: cooking_pot
+    prefab: {fileID: 2209456496371052795, guid: 3185ba2492864f04988be55d504cc063, type: 3}
+    size: {x: 0.48000002, y: 0.17142858, z: 0.34285715}
+  - key: cooking_range
+    prefab: {fileID: 3309884766340928029, guid: 87f1da1000352fd40aea3f4d1ee40bb8, type: 3}
+    size: {x: 2.4, y: 1.05, z: 1.8}
+  - key: coop
+    prefab: {fileID: 5280222796388418467, guid: a2ef3317705fe96449ee11b28d315f0d, type: 3}
+    size: {x: 3.3815343, y: 2.6, z: 3.0258322}
+  - key: cow
+    prefab: {fileID: 6761488881075491081, guid: 97d0d1f1253d2e54da783753cc0710d3, type: 3}
+    size: {x: 0.77534205, y: 1.8181009, z: 2.885469}
+  - key: crate
+    prefab: {fileID: 341514056470942235, guid: a8733a2618c012843aec824ba54b2429, type: 3}
+    size: {x: 1.0000001, y: 0.5, z: 0.77999985}
+  - key: crop_leaves
+    prefab: {fileID: 1964374856494896629, guid: 373aaf9c922cb2e4aa092fb5a8818289, type: 3}
+    size: {x: 0.28754473, y: 0.5, z: 0.28754473}
+  - key: crop_soil
+    prefab: {fileID: 1388785588325582431, guid: d7ee868cacf906d4191de90dbdbd3a8b, type: 3}
+    size: {x: 3.9, y: 0.14, z: 3.4}
   - key: customer
     prefab: {fileID: 5766310858829772529, guid: 4d384c38488f56b4489f5062abacef9b, type: 3}
     size: {x: 1.1375297, y: 1.8242655, z: 1.0784744}
   - key: customer_beach
     prefab: {fileID: 859019623858892680, guid: c57560436cdbd144aa9463b8d8b37d3d, type: 3}
     size: {x: 0.86520994, y: 1.8181906, z: 1.3313104}
-  - key: user_cow
-    prefab: {fileID: 9054544208520167903, guid: 4978c6bd06084d94190df893582714d7, type: 3}
-    size: {x: 1.7880168, y: 1.5404537, z: 1.4649043}
-  - key: user_chicken
-    prefab: {fileID: 7841966075442223862, guid: d54df17b4ad8c624e9794198a9c78b69, type: 3}
-    size: {x: 0.601323, y: 0.9289453, z: 0.8608487}
+  - key: customer_suit
+    prefab: {fileID: 4628458869331314506, guid: 2c70213bb9139b64393ce124376c6ace, type: 3}
+    size: {x: 0.7326211, y: 1.78565, z: 0.8137626}
+  - key: cutting_board
+    prefab: {fileID: 7310732973414054955, guid: 9a998fc7075ce934e8e12d496bff764b, type: 3}
+    size: {x: 0.45975605, y: 0.047560975, z: 0.65000004}
+  - key: dining_chair
+    prefab: {fileID: 1890096607896873132, guid: dc208be44cc51d441ad74eaec0a75171, type: 3}
+    size: {x: 0.536427, y: 0.90000004, z: 0.6044663}
+  - key: dining_table
+    prefab: {fileID: 2264917207828532155, guid: 8ccf51387cf90484e9af09c4103fd52e, type: 3}
+    size: {x: 1.5, y: 0.85, z: 1.5}
+  - key: dirty_plate
+    prefab: {fileID: 6141615283902734690, guid: 8fc1fd011a9199b4992e6a9c51eab99b, type: 3}
+    size: {x: 0.32999998, y: 0.03473684, z: 0.32999995}
+  - key: display_counter
+    prefab: {fileID: 5179606737500705093, guid: 93feccee686703e4999d2bbf662233ad, type: 3}
+    size: {x: 1.45, y: 1, z: 4.7}
+  - key: egg
+    prefab: {fileID: 3488593519404885008, guid: b42f7f7786c3f6c46ad401b49a02fd3b, type: 3}
+    size: {x: 0.19676097, y: 0.28, z: 0.22719999}
+  - key: extractor
+    prefab: {fileID: 5610387365434181259, guid: e65cfdfc0d68cc24ba879b673798333f, type: 3}
+    size: {x: 2.2, y: 0.5, z: 1.4}
+  - key: farm_fence
+    prefab: {fileID: 7664469092555131416, guid: 356b08ec219a0504cb176867149b0906, type: 3}
+    size: {x: 2.2, y: 0.84999996, z: 0.21999991}
+  - key: farm_shelter
+    prefab: {fileID: 8641706483526675120, guid: 7931fb4ad936c9c4cb55bd08b7d0d42a, type: 3}
+    size: {x: 4, y: 3.2, z: 2.2}
+  - key: farmer
+    prefab: {fileID: 9156148861704964883, guid: 6544d7514e987ff4cad61ea684dfbc4a, type: 3}
+    size: {x: 0.75806797, y: 1.7876971, z: 0.8336099}
+  - key: feed_trough
+    prefab: {fileID: 6215390087735933926, guid: 9e5cb50b4f784b145a190861a66a73e3, type: 3}
+    size: {x: 1.9, y: 0.8, z: 1.7999998}
+  - key: fence
+    prefab: {fileID: 7959819739119458906, guid: b9d199bdee5143e458e6bbe0a86fb1ef, type: 3}
+    size: {x: 4.563646, y: 0.8499999, z: 0.12823528}
+  - key: floor_tile
+    prefab: {fileID: 8198469650794701907, guid: ec779ffd321da4f49918fdce6a4e9663, type: 3}
+    size: {x: 4, y: 0.028, z: 4}
+  - key: flour
+    prefab: {fileID: 4259994473523411900, guid: dc2b6412b1db4bc429f18a3f40dce890, type: 3}
+    size: {x: 0.13211307, y: 0.36, z: 0.24717927}
+  - key: garden_bush
+    prefab: {fileID: 7192211336945000762, guid: 118721b2675739442bcb2178ca0b67bf, type: 3}
+    size: {x: 1.1555963, y: 0.75, z: 1.0363591}
+  - key: garden_rock
+    prefab: {fileID: 552933493964078822, guid: a24195a0bfed0fe4ba5dc35e25e75724, type: 3}
+    size: {x: 0.7, y: 0.37100002, z: 0.7}
+  - key: kitchen
+    prefab: {fileID: 5767008575676512873, guid: 9e7151a756912dd4dbb578364af9537d, type: 3}
+    size: {x: 1.72, y: 2.16, z: 1.8250003}
+  - key: kitchen_sink
+    prefab: {fileID: 5853143932603532772, guid: ea943719ec1684b44a93f5ba7c16ceb9, type: 3}
+    size: {x: 1.6, y: 1, z: 1.1}
+  - key: meal
+    prefab: {fileID: 6673166778511753376, guid: 47e6e35f275cbea4c85b7b5b1be2b499, type: 3}
+    size: {x: 0.45000002, y: 0.39377633, z: 0.41206697}
+  - key: menu_board
+    prefab: {fileID: 5138174358373765240, guid: b22df42f16d5a1d41ba6ab18842e18f1, type: 3}
+    size: {x: 0.34375, y: 0.55, z: 0.20625001}
+  - key: milk
+    prefab: {fileID: 2172211910331386446, guid: 6fbd8f3be17474549812b256db6b26fe, type: 3}
+    size: {x: 0.15578797, y: 0.4, z: 0.15578797}
+  - key: mill
+    prefab: {fileID: 8857111454337974554, guid: 0d3b9d7862d0e9842be290789a4989c0, type: 3}
+    size: {x: 1.72, y: 2.08, z: 1.8249999}
+  - key: oven
+    prefab: {fileID: 2720749998293427705, guid: 430f9d05f8d4c8a4d86ee8aafbc983f1, type: 3}
+    size: {x: 1.7200001, y: 2.0749998, z: 1.8249999}
+  - key: oven_asset
+    prefab: {fileID: 4312675819642932771, guid: cd4860a4595f03447b11abcc1f2a9930, type: 3}
+    size: {x: 2.25, y: 1.65, z: 1.8}
+  - key: park_bench
+    prefab: {fileID: 8529117383717351316, guid: 5dc8dc36c0342b64eb5dc4d424ac6d10, type: 3}
+    size: {x: 1.6999999, y: 0.85, z: 0.7}
+  - key: planter
+    prefab: {fileID: 1401199484321042821, guid: dba92992a7cff444aba014f0ab5b9363, type: 3}
+    size: {x: 0.29181722, y: 0.90000004, z: 0.33227858}
+  - key: player
+    prefab: {fileID: 8141086675229255233, guid: 5308350ca13f62c45b54af9b1b01c09b, type: 3}
+    size: {x: 1.12967, y: 1.8220694, z: 1.2217058}
+  - key: pos_keyboard
+    prefab: {fileID: 952886128839614547, guid: e72b7c926f500d249b6bba6ed7b5a22f, type: 3}
+    size: {x: 0.38, y: 0.03710588, z: 0.15915293}
+  - key: pos_screen
+    prefab: {fileID: 1297403821723160027, guid: 9dc20cb154502244a9484d40a775f417, type: 3}
+    size: {x: 0.5604392, y: 0.42000002, z: 0.14843316}
+  - key: prep_table
+    prefab: {fileID: 2303701302961685902, guid: ac42be1fc984f3e4680c6056947cc590, type: 3}
+    size: {x: 2.2, y: 0.95, z: 1.2}
+  - key: rolling_pin
+    prefab: {fileID: 7965858371448250201, guid: 5071bb44606c8914ab31756a4a7676fc, type: 3}
+    size: {x: 0.4, y: 0.06897076, z: 0.079640575}
+  - key: sauce
+    prefab: {fileID: 8621760729141283186, guid: 57a3a16dd72e7ee4eb94d8ba74fdde0a, type: 3}
+    size: {x: 0.14296293, y: 0.39000002, z: 0.16507937}
+  - key: saucemaker
+    prefab: {fileID: 9076189825689189746, guid: 38ef789f290ab984384219fef650d9b1, type: 3}
+    size: {x: 1.72, y: 2.16, z: 1.8250003}
+  - key: shelf
+    prefab: {fileID: 1522505153075281573, guid: df5767b1c648ca542b4aac1470a28e45, type: 3}
+    size: {x: 2.7, y: 2.23, z: 1.0800002}
+  - key: shop
+    prefab: {fileID: 1398169581185395602, guid: f22e8043f0c9aac44903dcf4cc41e520, type: 3}
+    size: {x: 7.0200005, y: 3.73, z: 5.5}
+  - key: storage_rack
+    prefab: {fileID: 4896415836585216970, guid: 6943e8f97ca9f3740ae4865cc2501502, type: 3}
+    size: {x: 3, y: 1.65, z: 0.85}
+  - key: street_lamp
+    prefab: {fileID: 5858804138372470394, guid: 470e0ecdfe8c9b14dab3105caac88ed0, type: 3}
+    size: {x: 0.9258249, y: 3.3000002, z: 0.23728588}
+  - key: supply_crate
+    prefab: {fileID: 2002448830840645021, guid: 77f25240f43ed4f42b34d46a1bb4cc9a, type: 3}
+    size: {x: 1.15, y: 0.7, z: 1.1499999}
+  - key: table
+    prefab: {fileID: 1255864171310371051, guid: 5897c80d30fd8a7498403c4ffa28d3b8, type: 3}
+    size: {x: 2.41, y: 1.4849999, z: 1.2599999}
+  - key: tomato
+    prefab: {fileID: 3986959281582824767, guid: 887cf57be1dd8c64a8ece4a3964dbf24, type: 3}
+    size: {x: 0.35999998, y: 0.30266094, z: 0.35999998}
+  - key: trash_bin
+    prefab: {fileID: 6500350232245028715, guid: 80cda5b920712fd4299a6ef941cd0757, type: 3}
+    size: {x: 1.6942883, y: 0.70000005, z: 1.7814676}
+  - key: tree
+    prefab: {fileID: 7319429903213028775, guid: 2a2f1d854ee7a0a499359e257cad6d82, type: 3}
+    size: {x: 1.5599998, y: 2.8000002, z: 1.56}
+  - key: tree_oak
+    prefab: {fileID: 7692768016622249105, guid: a66b961c9c678c04fb9fec5267ac73c4, type: 3}
+    size: {x: 1.9850155, y: 3.8, z: 2.2920983}
+  - key: tree_pine
+    prefab: {fileID: 6797770487844998356, guid: 4127d23187d733a40a71488e07660ece, type: 3}
+    size: {x: 1.8651965, y: 4.2, z: 2.1537435}
+  - key: tree_small
+    prefab: {fileID: 2087808628533563179, guid: 197d1e2d2a524294da75bec2579bc320, type: 3}
+    size: {x: 0.8945505, y: 2.8, z: 1.032938}
   - key: user_checkout
     prefab: {fileID: 5130297179352144900, guid: b6fbd36f16cfd814c9ed689f85571598, type: 3}
     size: {x: 1.5048518, y: 1.151289, z: 0.911863}
+  - key: user_chicken
+    prefab: {fileID: 7841966075442223862, guid: d54df17b4ad8c624e9794198a9c78b69, type: 3}
+    size: {x: 0.601323, y: 0.9289453, z: 0.8608487}
+  - key: user_cow
+    prefab: {fileID: 9054544208520167903, guid: 4978c6bd06084d94190df893582714d7, type: 3}
+    size: {x: 1.7880168, y: 1.5404537, z: 1.4649043}
+  - key: well
+    prefab: {fileID: 1483365942052652623, guid: f5a528c0a4508624d9936fc95afd7181, type: 3}
+    size: {x: 1.2496371, y: 2.1, z: 1.4553158}
+  - key: wheat
+    prefab: {fileID: 4286818863807328283, guid: 0d1f0714e5540fc46bc71f94173bf4dd, type: 3}
+    size: {x: 0.20676042, y: 0.410313, z: 0.04378069}
+  - key: wheat_crop
+    prefab: {fileID: 1705574949613827798, guid: 442bf604d9a07bd42a42eae17a374b03, type: 3}
+    size: {x: 0.70611393, y: 0.7, z: 0.5845365}
+  - key: worker
+    prefab: {fileID: 2444735038922188363, guid: 04a45e90613330f4482a0a4756e5d563, type: 3}
+    size: {x: 0.74305904, y: 1.7873402, z: 0.8318783}
+  libraryKeys:
+  - carrot
+  - tomato
+  - milk
+  - egg
+  - beef
+  - flour
+  - cheese
+  - sauce
+  - bread
+  - cake
+  - meal
+  - wheat_crop
+  - crop_soil
+  - crop_leaves
+  - floor_tile
+  - display_counter
+  - checkout_counter
+  - storage_rack
+  - supply_crate
+  - feed_trough
+  - farm_shelter
+  - oven_asset
+  - cooking_range
+  - prep_table
+  - kitchen_sink
+  - cold_cabinet
+  - extractor
+  - dining_table
+  - dining_chair
+  - clean_plate
+  - dirty_plate
+  - menu_board
+  - rolling_pin
+  - cutting_board
+  - cooking_pot
+  - pos_screen
+  - pos_keyboard
+  - coffee_machine
+  - planter
+  - tree_oak
+  - tree_pine
+  - tree_small
+  - garden_bush
+  - garden_rock
+  - farm_fence
+  - street_lamp
+  - park_bench
+  - trash_bin
   palette: []
   font: {fileID: 12800000, guid: 82a545c9919c8aa4da252738e73799d1, type: 3}
   brandTexture: {fileID: 2800000, guid: 0fa2bc4a6309f814383d64d2f1a1ba6a, type: 3}

@@ -6,6 +6,7 @@ namespace Tycoon
     public sealed class GameCatalog : ScriptableObject
     {
         public ModelEntry[] models;
+        public string[] libraryKeys;
         public Material[] palette;
         public Font font;
         public Texture2D brandTexture;

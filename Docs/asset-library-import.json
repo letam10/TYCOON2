@@ -1,0 +1,1471 @@
+{
+  "pipelineVersion": 4,
+  "entries": [
+    {
+      "key": "carrot",
+      "source": "ASSET/Downloaded/kenney_food_kit/Models/GLB format/carrot.glb",
+      "source_sha256": "621949f7fb7947a810a3f6adca7d6166c8f7ef5a1016737cd0d245d12d60ab4e",
+      "license": "ASSET/Downloaded/kenney_food_kit/License.txt",
+      "fingerprint": "2b6c48e7a0d0bfbda6969f84b543420cc94d86b6ac8c408b888a81514276104c",
+      "triangles": 148,
+      "size": [
+        0.20119905471801758,
+        0.41999998688697815,
+        0.20119905471801758
+      ],
+      "materials": [
+        {
+          "name": "colormap",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_75baf74d9483a0fc.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/carrot.fbx",
+      "fbx_sha256": "b3e3e7a00112f2c87bcea7067d9722bbb22a3a866298ef85cc276d44fd8bc0f3"
+    },
+    {
+      "key": "tomato",
+      "source": "ASSET/Downloaded/kenney_food_kit/Models/GLB format/tomato.glb",
+      "source_sha256": "c2179712b2fd4f5832f79f09f7188c4bc92f05798229d0e58264e1ca2558f4cc",
+      "license": "ASSET/Downloaded/kenney_food_kit/License.txt",
+      "fingerprint": "bb7e57e4729a2f65d4ac915cc6e582c0b612a55b87eab95527f35c2efbbad5ee",
+      "triangles": 132,
+      "size": [
+        0.35999998450279236,
+        0.3026609420776367,
+        0.35999998450279236
+      ],
+      "materials": [
+        {
+          "name": "colormap",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_75baf74d9483a0fc.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/tomato.fbx",
+      "fbx_sha256": "d15150a9dca0a90a0f6355202aee69cc6db33db3f7dadc009a9bfc09c43e255e"
+    },
+    {
+      "key": "milk",
+      "source": "ASSET/Downloaded/kenney_food_kit/Models/GLB format/carton.glb",
+      "source_sha256": "b63a5081c6edbda7ba8172e6a776f222e781f886a011a887789b2fde42095d04",
+      "license": "ASSET/Downloaded/kenney_food_kit/License.txt",
+      "fingerprint": "1fe31c25f59c80cfe3797140996b1ab7bf26ab6687b04a929691145d8572f224",
+      "triangles": 94,
+      "size": [
+        0.15578797459602356,
+        0.4000000059604645,
+        0.15578797459602356
+      ],
+      "materials": [
+        {
+          "name": "colormap",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_75baf74d9483a0fc.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/milk.fbx",
+      "fbx_sha256": "759aaab0876b2ca787477f7fc916d6b9d2a408fcb2e9bfc381dfb371ff9f5b06"
+    },
+    {
+      "key": "egg",
+      "source": "ASSET/Downloaded/kenney_food_kit/Models/GLB format/egg.glb",
+      "source_sha256": "32e20b7ed798e42e3f121bc39813cd557fe1606f6e6a943478f1fd02c8cfbec3",
+      "license": "ASSET/Downloaded/kenney_food_kit/License.txt",
+      "fingerprint": "d8357e3b263a1c423fba6eb18b10ee40c634d19d8f46df9febcafd0a961a42e5",
+      "triangles": 44,
+      "size": [
+        0.19676096737384796,
+        0.2800000011920929,
+        0.227199986577034
+      ],
+      "materials": [
+        {
+          "name": "colormap",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_75baf74d9483a0fc.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/egg.fbx",
+      "fbx_sha256": "ef5598f57581baf480410a70db93dd811e1617219b9660649e250ff8f0c866c4"
+    },
+    {
+      "key": "beef",
+      "source": "ASSET/Downloaded/kenney_food_kit/Models/GLB format/meat-raw.glb",
+      "source_sha256": "4d57460c350190a59c14cb666ac462d3d46a706af59460b4ea37d02c858668eb",
+      "license": "ASSET/Downloaded/kenney_food_kit/License.txt",
+      "fingerprint": "7f1237edfb137681a940c329861fc269a8f01994fec8508f193093db731b2a2c",
+      "triangles": 110,
+      "size": [
+        0.34928208589553833,
+        0.04708247631788254,
+        0.42000001668930054
+      ],
+      "materials": [
+        {
+          "name": "colormap",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_75baf74d9483a0fc.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/beef.fbx",
+      "fbx_sha256": "97640d0884fa4bbfe97ed2d3672e2e1f17bc2fc9c9fead24c556a322bedc140b"
+    },
+    {
+      "key": "flour",
+      "source": "ASSET/Downloaded/kenney_food_kit/Models/GLB format/bag.glb",
+      "source_sha256": "17803bb1e467d5cfd5ca9479a206870e60d160548c884b07ea294f1265334a06",
+      "license": "ASSET/Downloaded/kenney_food_kit/License.txt",
+      "fingerprint": "f03ee92f11145ea7bfc0c87955e717b0b5155e6f0ba1499bf761ba49cb0729e9",
+      "triangles": 46,
+      "size": [
+        0.13211306929588318,
+        0.36000001430511475,
+        0.24717926979064941
+      ],
+      "materials": [
+        {
+          "name": "colormap",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_75baf74d9483a0fc.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/flour.fbx",
+      "fbx_sha256": "0e546a94097cf5bbb457d3aae85f86b87eeeb1ad827af6839ab8f0a5d93569e6"
+    },
+    {
+      "key": "cheese",
+      "source": "ASSET/Downloaded/kenney_food_kit/Models/GLB format/cheese-cut.glb",
+      "source_sha256": "3937390f5d3cf21434844d7aab87a9c9d1ce75a38e71177959ca5cbdc7a4db14",
+      "license": "ASSET/Downloaded/kenney_food_kit/License.txt",
+      "fingerprint": "f8e8c348a2fc86a942efd39d98a02c8836b4bdf8a2f07f4aedaab852dfacf848",
+      "triangles": 160,
+      "size": [
+        0.3999999761581421,
+        0.021333331242203712,
+        0.2749999761581421
+      ],
+      "materials": [
+        {
+          "name": "colormap",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_75baf74d9483a0fc.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/cheese.fbx",
+      "fbx_sha256": "68c861d0fb8c5cb6a294c44ded8f6ddb2eee3dab8a19bd7e36f8ab9d20a9ada8"
+    },
+    {
+      "key": "sauce",
+      "source": "ASSET/Downloaded/kenney_food_kit/Models/GLB format/bottle-ketchup.glb",
+      "source_sha256": "26b0cd52d36be6c432ba7862cc817f39e5ce74482013a3ac3ba6a6d4730489be",
+      "license": "ASSET/Downloaded/kenney_food_kit/License.txt",
+      "fingerprint": "ef63678f6faa1a6ea94e0f806bfc882ccf8573dc84fb30d4ecf21a1c77697d8a",
+      "triangles": 96,
+      "size": [
+        0.14296293258666992,
+        0.39000001549720764,
+        0.16507937014102936
+      ],
+      "materials": [
+        {
+          "name": "colormap",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_75baf74d9483a0fc.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/sauce.fbx",
+      "fbx_sha256": "3fb9407a12a8506159a6123f6ccc412207eda74a5b38e234d4c8e891d2a87e29"
+    },
+    {
+      "key": "bread",
+      "source": "ASSET/Downloaded/kenney_food_kit/Models/GLB format/loaf.glb",
+      "source_sha256": "d2e490046b919e8b793b1f479b9b3ee941c8fb9e657163d073223f2a39c5f563",
+      "license": "ASSET/Downloaded/kenney_food_kit/License.txt",
+      "fingerprint": "788ab0e142a34a55e7f515d7006050480fb6b036af29fd6534fec12e1c1877d4",
+      "triangles": 116,
+      "size": [
+        0.429999977350235,
+        0.32807213068008423,
+        0.27139341831207275
+      ],
+      "materials": [
+        {
+          "name": "colormap",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_75baf74d9483a0fc.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/bread.fbx",
+      "fbx_sha256": "509d62b86f04caa7e8800bc5f71b56064a9ef7a9aa0c39313e8ee3378ed71615"
+    },
+    {
+      "key": "cake",
+      "source": "ASSET/Downloaded/kenney_food_kit/Models/GLB format/cake.glb",
+      "source_sha256": "9594766d701142c4f5ab1d36cc40957667cd966281757e887de4d40557e63e09",
+      "license": "ASSET/Downloaded/kenney_food_kit/License.txt",
+      "fingerprint": "9b9f122b27981cceb9df325cac4ebf21236469b9e8e50f4bcd707933cce1e836",
+      "triangles": 750,
+      "size": [
+        0.4399997591972351,
+        0.1879754364490509,
+        0.4400000125169754
+      ],
+      "materials": [
+        {
+          "name": "colormap",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_75baf74d9483a0fc.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/cake.fbx",
+      "fbx_sha256": "8a2950bce1a797ea0b3e445f23436459efeabafb00b5d3a3d630b66a12419a6f"
+    },
+    {
+      "key": "meal",
+      "source": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/gltf/food_dinner.gltf",
+      "source_sha256": "d5882d178346c41305152ee9199d7fbee3fa8e34704292e906d13372f374a242",
+      "license": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/LICENSE.txt",
+      "fingerprint": "37c8aa9b148c768969125cbb7baf8190ccd05becc54b58c874c0fbb29af2fdf8",
+      "triangles": 1196,
+      "size": [
+        0.45000001788139343,
+        0.3937763273715973,
+        0.4120669662952423
+      ],
+      "materials": [
+        {
+          "name": "restaurant",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_1bfff8f880c5e5e1.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/meal.fbx",
+      "fbx_sha256": "232b939ee093932855f76375189f50943e9e322d21d0966fac16efa248060d71"
+    },
+    {
+      "key": "wheat_crop",
+      "source": "ASSET/Downloaded/kenney_nature_kit/Models/GLTF format/crops_wheatStageB.glb",
+      "source_sha256": "589db4d6fe0bd7616c1f1c2f10a335704b2dad5d24638dc08a5b2e5334c68852",
+      "license": "ASSET/Downloaded/kenney_nature_kit/License.txt",
+      "fingerprint": "f9bb41de7ea2f302e22fbec77253082dd352062593097fa64ad9d840f5ef0e54",
+      "triangles": 360,
+      "size": [
+        0.7061139345169067,
+        0.699999988079071,
+        0.5845364928245544
+      ],
+      "materials": [
+        {
+          "name": "_defaultMat",
+          "color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "texture": ""
+        },
+        {
+          "name": "woodInner",
+          "color": [
+            0.9607843160629272,
+            0.843137264251709,
+            0.7333333492279053,
+            1.0
+          ],
+          "texture": ""
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/wheat_crop.fbx",
+      "fbx_sha256": "31fe403323bb25ce82ac14dbc62fc83ae80546a38a4a12f677def55b0059f09a"
+    },
+    {
+      "key": "crop_soil",
+      "source": "ASSET/Downloaded/kenney_nature_kit/Models/GLTF format/crops_dirtDoubleRow.glb",
+      "source_sha256": "b5c330d81a4efe0944caf5f1d1dd0c0d50227c93f2a4a57ec2425d2c9b7a2d84",
+      "license": "ASSET/Downloaded/kenney_nature_kit/License.txt",
+      "fingerprint": "093cabf38a10a8f082dfcaa4fdd83a7d6435903a5686b02b2bcc4c75d36fe50a",
+      "triangles": 88,
+      "size": [
+        3.9000000953674316,
+        0.14000000059604645,
+        3.400000214576721
+      ],
+      "materials": [
+        {
+          "name": "dirt",
+          "color": [
+            0.886274516582489,
+            0.5137255191802979,
+            0.34117648005485535,
+            1.0
+          ],
+          "texture": ""
+        },
+        {
+          "name": "dirtDark",
+          "color": [
+            0.7098039388656616,
+            0.40784314274787903,
+            0.2705882489681244,
+            1.0
+          ],
+          "texture": ""
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/crop_soil.fbx",
+      "fbx_sha256": "993ce6327d3c610b6153cacf863bb358646f5c65f4b233f593a6e2fae0913fe9"
+    },
+    {
+      "key": "crop_leaves",
+      "source": "ASSET/Downloaded/kenney_nature_kit/Models/GLTF format/crops_leafsStageB.glb",
+      "source_sha256": "aea4fe9a7943e7b2b7df99dc4fa00b85e34d00ea9b8e1b144504cef25d77b98c",
+      "license": "ASSET/Downloaded/kenney_nature_kit/License.txt",
+      "fingerprint": "f88c89e746059d4462ab618816d4fb28ef2da999782589797b027a5226ae29c7",
+      "triangles": 84,
+      "size": [
+        0.28754472732543945,
+        0.5,
+        0.28754472732543945
+      ],
+      "materials": [
+        {
+          "name": "grass",
+          "color": [
+            0.1725490242242813,
+            0.8470588326454163,
+            0.7215686440467834,
+            1.0
+          ],
+          "texture": ""
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/crop_leaves.fbx",
+      "fbx_sha256": "afbf252e6931b9d5dbd9ccd962e6ea10bfc66c4a0b0b2ad5a2c84cf344d388bb"
+    },
+    {
+      "key": "floor_tile",
+      "source": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/gltf/floor_kitchen.gltf",
+      "source_sha256": "a258c6bbc92264a3e163b7d1c01e6d3ccf04ef9fba98a07b0f6dcd7408250f4b",
+      "license": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/LICENSE.txt",
+      "fingerprint": "47906b7fd437b92e77e1ab5bdd55b0df24cbe2a46fa97dfe1a0a4a80ca71fdaa",
+      "triangles": 48,
+      "size": [
+        4.0,
+        0.02800000086426735,
+        4.0
+      ],
+      "materials": [
+        {
+          "name": "FloorCream",
+          "color": [
+            0.3400000035762787,
+            0.3799999952316284,
+            0.30000001192092896,
+            1.0
+          ],
+          "texture": ""
+        },
+        {
+          "name": "FloorSage",
+          "color": [
+            0.10000000149011612,
+            0.14000000059604645,
+            0.10999999940395355,
+            1.0
+          ],
+          "texture": ""
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/floor_tile.fbx",
+      "fbx_sha256": "e961aef88f1de521cd10f82ebe38b10b11e7b3d444e4d3171714e2215502d046"
+    },
+    {
+      "key": "display_counter",
+      "source": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/gltf/kitchentable_B_large.gltf",
+      "source_sha256": "4951b7ff3a7764a03b1188a0e9e836cefff5e17c2f10cb90cde9e70200ebb15c",
+      "license": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/LICENSE.txt",
+      "fingerprint": "82041165fad35b781d2837e2181ea9b9954f9e9f55156cffcf6e0d06bdabf9fe",
+      "triangles": 236,
+      "size": [
+        1.4500000476837158,
+        1.0,
+        4.699999809265137
+      ],
+      "materials": [
+        {
+          "name": "restaurant",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_1bfff8f880c5e5e1.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/display_counter.fbx",
+      "fbx_sha256": "bb28caff7ec5a61d248c2d41b099ae31f2818d993b5c7d701698b9275e5e1fe5"
+    },
+    {
+      "key": "checkout_counter",
+      "source": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/gltf/kitchencounter_straight_A.gltf",
+      "source_sha256": "500afffa4c87a579a046b67f10c8b2b7907a3dd0983544643c581b95153d6008",
+      "license": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/LICENSE.txt",
+      "fingerprint": "68af3747524439a6ef50d664db5d29a0d30d05091ecf94816c19b466cdd66891",
+      "triangles": 168,
+      "size": [
+        2.0999999046325684,
+        1.0,
+        1.100000023841858
+      ],
+      "materials": [
+        {
+          "name": "restaurant",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_1bfff8f880c5e5e1.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/checkout_counter.fbx",
+      "fbx_sha256": "e937e448fe701a949c30799dab4c3c59531f4e589ed3f8c9036fbb4bfd004976"
+    },
+    {
+      "key": "storage_rack",
+      "source": "ASSET/Downloaded/kenney_furniture_kit/Models/GLTF format/bookcaseOpen.glb",
+      "source_sha256": "750702218d68c062b15dfef6ab06a4014d1cfa8bd05f02e57c53b7e13bec157c",
+      "license": "ASSET/Downloaded/kenney_furniture_kit/License.txt",
+      "fingerprint": "24302e7fdd2cf4f05f5bfab145d2ffc852094b650a5a8549ed5252858650ca16",
+      "triangles": 320,
+      "size": [
+        3.0,
+        1.649999976158142,
+        0.8500000238418579
+      ],
+      "materials": [
+        {
+          "name": "wood",
+          "color": [
+            0.8962264060974121,
+            0.6015712022781372,
+            0.39315590262413025,
+            1.0
+          ],
+          "texture": ""
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/storage_rack.fbx",
+      "fbx_sha256": "e512637d70c695c3c58a4e77f11c2a3897336f26463b4bdb23fdec83c632a2c9"
+    },
+    {
+      "key": "supply_crate",
+      "source": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/gltf/crate.gltf",
+      "source_sha256": "f745014f6239147f2528ac24ef988a5833d048bd3aede81085f4c4fc879a8e16",
+      "license": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/LICENSE.txt",
+      "fingerprint": "4b6bf1de2b4bc452f60e63da1cb357d71be4bd03e411012e53e851bd24788da5",
+      "triangles": 132,
+      "size": [
+        1.149999976158142,
+        0.699999988079071,
+        1.1499999165534973
+      ],
+      "materials": [
+        {
+          "name": "restaurant",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_1bfff8f880c5e5e1.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/supply_crate.fbx",
+      "fbx_sha256": "d8deeea8eb1b826bdd07272a4719dbf48007d93106b2ca817308cc2f27391dbc"
+    },
+    {
+      "key": "feed_trough",
+      "source": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/gltf/crate.gltf",
+      "source_sha256": "f745014f6239147f2528ac24ef988a5833d048bd3aede81085f4c4fc879a8e16",
+      "license": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/LICENSE.txt",
+      "fingerprint": "b6d5e5babe1a4da155e96e56e010c1094874b189c04df3a64c07bc263d9915ab",
+      "triangles": 132,
+      "size": [
+        1.899999976158142,
+        0.800000011920929,
+        1.7999998331069946
+      ],
+      "materials": [
+        {
+          "name": "restaurant",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_1bfff8f880c5e5e1.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/feed_trough.fbx",
+      "fbx_sha256": "47023f04efd44123ab3bd9fcea064207ab395d8c2aa8b904d8d3442cf0e70bc9"
+    },
+    {
+      "key": "farm_shelter",
+      "source": "ASSET/Downloaded/buildings/FBX/OpenBarn.fbx",
+      "source_sha256": "c7a6338c9853a8340538e149799f6076ba77288e2d88d443a6ce66eeb052b787",
+      "license": "ASSET/Downloaded/buildings/License.txt",
+      "fingerprint": "e986434de1fb2b8cb665ea97933a13642ff61e0fcd82805899cd554ad2fc1a08",
+      "triangles": 1612,
+      "size": [
+        3.9999998807907104,
+        3.200000047683716,
+        2.200000047683716
+      ],
+      "materials": [
+        {
+          "name": "Brown",
+          "color": [
+            0.28100478649139404,
+            0.09588584303855896,
+            0.046705469489097595,
+            1.0
+          ],
+          "texture": ""
+        },
+        {
+          "name": "DarkRed",
+          "color": [
+            0.2529407739639282,
+            0.05315002426505089,
+            0.04008389264345169,
+            1.0
+          ],
+          "texture": ""
+        },
+        {
+          "name": "LightRed",
+          "color": [
+            0.3423793613910675,
+            0.07004915922880173,
+            0.052458349615335464,
+            1.0
+          ],
+          "texture": ""
+        },
+        {
+          "name": "RoofBlack",
+          "color": [
+            0.09850253909826279,
+            0.09850253909826279,
+            0.09850253909826279,
+            1.0
+          ],
+          "texture": ""
+        },
+        {
+          "name": "White",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": ""
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/farm_shelter.fbx",
+      "fbx_sha256": "726e8773508733fa5fef45dce8efc2dec7275de16d13dad4621ee3f83935c604"
+    },
+    {
+      "key": "oven_asset",
+      "source": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/gltf/oven.gltf",
+      "source_sha256": "bec7709fbf8d2e92269ce5efc4f564769216966720eee35febadcf6f0f42a35a",
+      "license": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/LICENSE.txt",
+      "fingerprint": "10dc8d28726d193993cedf9385d80f313c503b9968a251550da908c747aac6dd",
+      "triangles": 542,
+      "size": [
+        2.25,
+        1.649999976158142,
+        1.7999999523162842
+      ],
+      "materials": [
+        {
+          "name": "restaurant",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_1bfff8f880c5e5e1.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/oven_asset.fbx",
+      "fbx_sha256": "02031b4493d7c96903bb1ae32dea630692f40d457e963338a1557a06cb57de5b"
+    },
+    {
+      "key": "cooking_range",
+      "source": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/gltf/stove_multi.gltf",
+      "source_sha256": "5b197d1dc28b2c4d0e4bf70446451d63e079da9d768835ad6897f41c711c18f9",
+      "license": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/LICENSE.txt",
+      "fingerprint": "9a40333c4d0162d9399e6c80a72b98ff2b0ddb10b5ed27452aef8d53d4564614",
+      "triangles": 1084,
+      "size": [
+        2.4000000953674316,
+        1.0499999523162842,
+        1.7999999523162842
+      ],
+      "materials": [
+        {
+          "name": "restaurant",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_1bfff8f880c5e5e1.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/cooking_range.fbx",
+      "fbx_sha256": "5da8e7e872ff4fd5bdaa634639fb374c61b502ce779bde73284016c7ab52ac5d"
+    },
+    {
+      "key": "prep_table",
+      "source": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/gltf/kitchentable_A_large.gltf",
+      "source_sha256": "dbc7503d534b779eaf2ea0c5bbac233359f8b0ff0fcff73cbbeb688f036d939e",
+      "license": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/LICENSE.txt",
+      "fingerprint": "2ef5685d6d917ec6c2b4ce920ae8ab63233e9f0d8f273b56e4e4971541fcca40",
+      "triangles": 236,
+      "size": [
+        2.200000047683716,
+        0.949999988079071,
+        1.2000000476837158
+      ],
+      "materials": [
+        {
+          "name": "restaurant",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_1bfff8f880c5e5e1.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/prep_table.fbx",
+      "fbx_sha256": "e6869c6aac79d69093f7e78637eb3300eb7b74018ff42ea82916f9a20fa6470d"
+    },
+    {
+      "key": "kitchen_sink",
+      "source": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/gltf/kitchencounter_sink.gltf",
+      "source_sha256": "41e576c8211cd3e6a33d8622e195b583795b47c671f13bf636e344f037d0f56c",
+      "license": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/LICENSE.txt",
+      "fingerprint": "ff20109d0f949190898378be479971e0582d4476fdc24285929d7c52ae37f971",
+      "triangles": 674,
+      "size": [
+        1.600000023841858,
+        1.0,
+        1.100000023841858
+      ],
+      "materials": [
+        {
+          "name": "restaurant",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_1bfff8f880c5e5e1.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/kitchen_sink.fbx",
+      "fbx_sha256": "c9cb1e74472cc30cb369af8b4d6f98ea4ebf4d3afb224fa5152a921b3d5bf6cc"
+    },
+    {
+      "key": "cold_cabinet",
+      "source": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/gltf/fridge_A.gltf",
+      "source_sha256": "a1835597180f9636dd23669900c1f07fd38813fc5a50685e1d4a7ac1b988ae62",
+      "license": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/LICENSE.txt",
+      "fingerprint": "2528d9f5f841d08e9513d6cb6b2b08f51c05cf9f41616cfa7494e053c0808af1",
+      "triangles": 614,
+      "size": [
+        1.300000011920929,
+        1.8000000715255737,
+        1.100000023841858
+      ],
+      "materials": [
+        {
+          "name": "restaurant",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_1bfff8f880c5e5e1.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/cold_cabinet.fbx",
+      "fbx_sha256": "2b3119c5ec465af8d6fe0b53ded7654dde78157eb5d025a58532e9b30778468a"
+    },
+    {
+      "key": "extractor",
+      "source": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/gltf/extractorhood.gltf",
+      "source_sha256": "eef870be46217dcf23c6b644b3505626b302d6ff877fa0165932b65d5c4fccaa",
+      "license": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/LICENSE.txt",
+      "fingerprint": "a1c6bfa2c4dda2fdb4dddea6d80089d8424138fe1a4b0629eaf7dad3512c903e",
+      "triangles": 204,
+      "size": [
+        2.200000047683716,
+        0.5,
+        1.399999976158142
+      ],
+      "materials": [
+        {
+          "name": "restaurant",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_1bfff8f880c5e5e1.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/extractor.fbx",
+      "fbx_sha256": "9e0cc5584ef9046dfbf422f4873f6c3f2b5d403e142bf01cad24b4e15ab5e51b"
+    },
+    {
+      "key": "dining_table",
+      "source": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/gltf/table_round_B.gltf",
+      "source_sha256": "5f3203b0661b4cd0294580d6e671066eb1cc75b40096b8383e0159aef9db741c",
+      "license": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/LICENSE.txt",
+      "fingerprint": "bf15348177756d8bd1fd739ec78ef5c61952964abc411c5ddfe174541e10cd52",
+      "triangles": 300,
+      "size": [
+        1.5,
+        0.8500000238418579,
+        1.5
+      ],
+      "materials": [
+        {
+          "name": "restaurant",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_1bfff8f880c5e5e1.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/dining_table.fbx",
+      "fbx_sha256": "b746c05fe8ddace092ed52aefb22058f9217bd9293319a24d5b83482b4f64e99"
+    },
+    {
+      "key": "dining_chair",
+      "source": "ASSET/Downloaded/kaykit_furniture/KayKit-Furniture-Bits-1.0-main/addons/kaykit_furniture_bits/Assets/gltf/chair_A_wood.gltf",
+      "source_sha256": "e17a16127b9a3e44ef8888c9d52fe7ec09a06b348934627816a538720793af8d",
+      "license": "ASSET/Downloaded/kaykit_furniture/KayKit-Furniture-Bits-1.0-main/addons/kaykit_furniture_bits/Assets/LICENSE.txt",
+      "fingerprint": "20b98a7f2bbecf9c7dc2d462d55e7f6fbc192503df3af736a36dbe61c8544fa4",
+      "triangles": 308,
+      "size": [
+        0.5364270210266113,
+        0.9000000357627869,
+        0.6044663488864899
+      ],
+      "materials": [
+        {
+          "name": "furniture_texture",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_de62db37a80d1801.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/dining_chair.fbx",
+      "fbx_sha256": "840871c41babccc1fadf0d1bbfc1e733601402018ea2a500c5640da558d66366"
+    },
+    {
+      "key": "clean_plate",
+      "source": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/gltf/plate.gltf",
+      "source_sha256": "ba3fce191452ccc3a54351a2969a5942958ced0b3c1e6e005692c946642e58de",
+      "license": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/LICENSE.txt",
+      "fingerprint": "2b34f06ebc4ff3e682dd44ca7580ffd5395b306a46e86bffbe0030102ce59c4b",
+      "triangles": 160,
+      "size": [
+        0.32999996840953827,
+        0.034736838191747665,
+        0.3299999535083771
+      ],
+      "materials": [
+        {
+          "name": "restaurant",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_1bfff8f880c5e5e1.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/clean_plate.fbx",
+      "fbx_sha256": "3ae9a3a8fbf16f5fa72157e89a77073b1e059f46dcfbe7e19739d9ebad2607be"
+    },
+    {
+      "key": "dirty_plate",
+      "source": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/gltf/plate_dirty.gltf",
+      "source_sha256": "a42bb46c8cfd36351332f9e167091cebf5c43f42e3b80bdc367260cbb877d982",
+      "license": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/LICENSE.txt",
+      "fingerprint": "e1ca0eadedae6292d2ca2472c20144cf680c82b89cb3dec0fdebcf6fccb6729d",
+      "triangles": 262,
+      "size": [
+        0.32999996840953827,
+        0.034736838191747665,
+        0.3299999535083771
+      ],
+      "materials": [
+        {
+          "name": "restaurant",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_1bfff8f880c5e5e1.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/dirty_plate.fbx",
+      "fbx_sha256": "f33a45a19ab1c9f60d63f3e3a5c6ce3e54cece137363996b2d4a98012804495c"
+    },
+    {
+      "key": "menu_board",
+      "source": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/gltf/menu.gltf",
+      "source_sha256": "8f71400aa63c18c893dc85144e5ea5fa4f152525510548d68e0f6f5f5d3966fb",
+      "license": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/LICENSE.txt",
+      "fingerprint": "6ffa882d161d01274d591505605ac3cf1c561e7e07e358174d1eb7fb74011ba5",
+      "triangles": 108,
+      "size": [
+        0.34375,
+        0.550000011920929,
+        0.20625001192092896
+      ],
+      "materials": [
+        {
+          "name": "restaurant",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_1bfff8f880c5e5e1.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/menu_board.fbx",
+      "fbx_sha256": "bd0e904e6b9dd90f346726e0fbb1968c5d7bbc14884d0a02a7ded87267104002"
+    },
+    {
+      "key": "rolling_pin",
+      "source": "ASSET/Downloaded/kenney_food_kit/Models/GLB format/rollingPin.glb",
+      "source_sha256": "5be3027c6764a3d09f18113ab5e4714d875f77dfc832a22ab7b42df90643ceed",
+      "license": "ASSET/Downloaded/kenney_food_kit/License.txt",
+      "fingerprint": "0b32afac448418e82e36418e73e6c38c20e764cc0b1cc7b6ff2b8eae11024d87",
+      "triangles": 140,
+      "size": [
+        0.4000000059604645,
+        0.06897076219320297,
+        0.07964057475328445
+      ],
+      "materials": [
+        {
+          "name": "colormap",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_75baf74d9483a0fc.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/rolling_pin.fbx",
+      "fbx_sha256": "4ccb330263a58f0c8d323078d4cdf0492a46229a9d131fc956e1cd92db685fed"
+    },
+    {
+      "key": "cutting_board",
+      "source": "ASSET/Downloaded/kenney_food_kit/Models/GLB format/cutting-board.glb",
+      "source_sha256": "067f8a9331d16c65487a748747de2cddab2a77826f23bd7379e4f5da186c78ea",
+      "license": "ASSET/Downloaded/kenney_food_kit/License.txt",
+      "fingerprint": "35d404913fda1496e1da794d3ba3bc4596f6e07a7a4077e003888f8ed562c59d",
+      "triangles": 120,
+      "size": [
+        0.4597560465335846,
+        0.04756097495555878,
+        0.6500000357627869
+      ],
+      "materials": [
+        {
+          "name": "colormap",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_75baf74d9483a0fc.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/cutting_board.fbx",
+      "fbx_sha256": "dc2bbf7b61a8e31ea1ad97f42d4040c5153b1a7cf679f8321a47e9278742e14c"
+    },
+    {
+      "key": "cooking_pot",
+      "source": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/gltf/pot_A.gltf",
+      "source_sha256": "3dc03eff7a73860aa61f41d49d118811c75ca74113ce49f27446a8f99040df1c",
+      "license": "ASSET/Downloaded/kaykit_restaurant_bits/KayKit-Restaurant-Bits-1.0-main/addons/kaykit_restaurant_bits/Assets/LICENSE.txt",
+      "fingerprint": "2aaea1a463fd8d5244d0d4ad445a51e5e71d9fc2888372bf3478a249ae6287cc",
+      "triangles": 324,
+      "size": [
+        0.48000001907348633,
+        0.17142857611179352,
+        0.34285715222358704
+      ],
+      "materials": [
+        {
+          "name": "restaurant",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_1bfff8f880c5e5e1.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/cooking_pot.fbx",
+      "fbx_sha256": "6a226cea2860fae8786f5e48aed20dddc442f1288818855c4d4ccf002f27f5d2"
+    },
+    {
+      "key": "pos_screen",
+      "source": "ASSET/Downloaded/kenney_furniture_kit/Models/GLTF format/computerScreen.glb",
+      "source_sha256": "5942cbad29a2d2b956619569926e81d50a4174403d592fece6556e57632dc643",
+      "license": "ASSET/Downloaded/kenney_furniture_kit/License.txt",
+      "fingerprint": "6d162d4165b1f8b51339fd70f5bdb4e3cdc47065f45a58bf45036115eb89b8a3",
+      "triangles": 72,
+      "size": [
+        0.5604392290115356,
+        0.42000001668930054,
+        0.1484331637620926
+      ],
+      "materials": [
+        {
+          "name": "metal",
+          "color": [
+            0.7406105399131775,
+            0.8228667378425598,
+            0.8396226167678833,
+            1.0
+          ],
+          "texture": ""
+        },
+        {
+          "name": "metalDark",
+          "color": [
+            0.30588236451148987,
+            0.38823530077934265,
+            0.38823530077934265,
+            1.0
+          ],
+          "texture": ""
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/pos_screen.fbx",
+      "fbx_sha256": "7c1e50455055973ee88f04a3b7f4361d49e848906b1a6e0521504795d6565306"
+    },
+    {
+      "key": "pos_keyboard",
+      "source": "ASSET/Downloaded/kenney_furniture_kit/Models/GLTF format/computerKeyboard.glb",
+      "source_sha256": "9d9135789de2120e9f41ce3f0a56dd1b15f40adcc7888739bb842a2d820da322",
+      "license": "ASSET/Downloaded/kenney_furniture_kit/License.txt",
+      "fingerprint": "0e84e5268317ab6927c31220dbdbed50b8b04d8147b73ef2ec4f23fea9e8841c",
+      "triangles": 32,
+      "size": [
+        0.3799999952316284,
+        0.03710588067770004,
+        0.15915292501449585
+      ],
+      "materials": [
+        {
+          "name": "metalDark",
+          "color": [
+            0.30588236451148987,
+            0.38823530077934265,
+            0.38823530077934265,
+            1.0
+          ],
+          "texture": ""
+        },
+        {
+          "name": "metalMedium",
+          "color": [
+            0.3686274588108063,
+            0.46666666865348816,
+            0.46666666865348816,
+            1.0
+          ],
+          "texture": ""
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/pos_keyboard.fbx",
+      "fbx_sha256": "4837d98800b5d56ac7d1d72d01f261c34a538e41adfc33c45f376a29390b4f7e"
+    },
+    {
+      "key": "coffee_machine",
+      "source": "ASSET/Downloaded/kenney_furniture_kit/Models/GLTF format/kitchenCoffeeMachine.glb",
+      "source_sha256": "063f582c6fa0f00a9f24e3393dac2295491c4becdaf5513c893ab1a2826b6ec3",
+      "license": "ASSET/Downloaded/kenney_furniture_kit/License.txt",
+      "fingerprint": "daf6ec16237fc20b70bdaac178804b8c8c8899b07de52d37dfecfec5798ed069",
+      "triangles": 166,
+      "size": [
+        0.6941331624984741,
+        0.6499999761581421,
+        0.8795394897460938
+      ],
+      "materials": [
+        {
+          "name": "carpetWhite",
+          "color": [
+            0.9725490212440491,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "texture": ""
+        },
+        {
+          "name": "metal",
+          "color": [
+            0.7406105399131775,
+            0.8228667378425598,
+            0.8396226167678833,
+            1.0
+          ],
+          "texture": ""
+        },
+        {
+          "name": "metalMedium",
+          "color": [
+            0.3686274588108063,
+            0.46666666865348816,
+            0.46666666865348816,
+            1.0
+          ],
+          "texture": ""
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/coffee_machine.fbx",
+      "fbx_sha256": "06496f09764be9f897c374d355afb07c01e4f085dcb5c016083387d66010a48b"
+    },
+    {
+      "key": "planter",
+      "source": "ASSET/Downloaded/kenney_furniture_kit/Models/GLTF format/pottedPlant.glb",
+      "source_sha256": "5b760eda2766f75fda36b2c5df652a1662f82981ef64cd8fa7fe7bcd386b3a15",
+      "license": "ASSET/Downloaded/kenney_furniture_kit/License.txt",
+      "fingerprint": "e7349bf96856452b4a31fb4328250295365ebec0cc8b30ebee7ec219fd44726a",
+      "triangles": 60,
+      "size": [
+        0.29181721806526184,
+        0.9000000357627869,
+        0.3322785794734955
+      ],
+      "materials": [
+        {
+          "name": "plant",
+          "color": [
+            0.18195976316928864,
+            0.8207547068595886,
+            0.5758285522460938,
+            1.0
+          ],
+          "texture": ""
+        },
+        {
+          "name": "wood",
+          "color": [
+            0.8962264060974121,
+            0.6015712022781372,
+            0.39315590262413025,
+            1.0
+          ],
+          "texture": ""
+        },
+        {
+          "name": "woodDark",
+          "color": [
+            0.6780000329017639,
+            0.4559476673603058,
+            0.299030601978302,
+            1.0
+          ],
+          "texture": ""
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/planter.fbx",
+      "fbx_sha256": "5d3624c01adbcf8bfb8920e9f45f75d4acacb307f16f3e3df46522ad5022e1c2"
+    },
+    {
+      "key": "tree_oak",
+      "source": "ASSET/Downloaded/kenney_nature_kit/Models/GLTF format/tree_oak.glb",
+      "source_sha256": "d7fd8773674928c50c11b66d12c636d49bdcc15a8b1c7fbb98e6f63a3439a3f3",
+      "license": "ASSET/Downloaded/kenney_nature_kit/License.txt",
+      "fingerprint": "00a339e5dc66074b7a4f663479f3b5f9009ee092ffcde1e985f3c3015fbb3cb7",
+      "triangles": 196,
+      "size": [
+        1.9850155115127563,
+        3.799999952316284,
+        2.2920982837677
+      ],
+      "materials": [
+        {
+          "name": "leafsGreen",
+          "color": [
+            0.16078431904315948,
+            0.7882353067398071,
+            0.6705882549285889,
+            1.0
+          ],
+          "texture": ""
+        },
+        {
+          "name": "woodBark",
+          "color": [
+            0.886274516582489,
+            0.5137255191802979,
+            0.34117648005485535,
+            1.0
+          ],
+          "texture": ""
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/tree_oak.fbx",
+      "fbx_sha256": "edf336189480c1105b1809b6685a1a4234f89006a47c5a146b3b788fbaea9615"
+    },
+    {
+      "key": "tree_pine",
+      "source": "ASSET/Downloaded/kenney_nature_kit/Models/GLTF format/tree_pineRoundD.glb",
+      "source_sha256": "a5051944fbfae7900cef8314c4a5d977b6b29bcd4e4ae5dea9d80980e65a411a",
+      "license": "ASSET/Downloaded/kenney_nature_kit/License.txt",
+      "fingerprint": "ece2363d9666f0109df61ef3dd9343484fbc7c5758c14e6ff953ee4d802fc334",
+      "triangles": 170,
+      "size": [
+        1.8651964664459229,
+        4.199999809265137,
+        2.1537435054779053
+      ],
+      "materials": [
+        {
+          "name": "leafsDark",
+          "color": [
+            0.16862745583057404,
+            0.6509804129600525,
+            0.6666666865348816,
+            1.0
+          ],
+          "texture": ""
+        },
+        {
+          "name": "woodBarkDark",
+          "color": [
+            0.800000011920929,
+            0.4627451002597809,
+            0.3686274588108063,
+            1.0
+          ],
+          "texture": ""
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/tree_pine.fbx",
+      "fbx_sha256": "8e1855567b17288070717d6d177232bf22b36af2aeb8e478c8d32fcb8369b524"
+    },
+    {
+      "key": "tree_small",
+      "source": "ASSET/Downloaded/kenney_nature_kit/Models/GLTF format/tree_small.glb",
+      "source_sha256": "d26c0eeed65cc681667f50042ef23ec72ce47ae3b39837bfeec170b05ba6ab6a",
+      "license": "ASSET/Downloaded/kenney_nature_kit/License.txt",
+      "fingerprint": "b471f51c93a1c187f40c6758c35f6d1617a7da8ceba9437f41fd8c31f7eb0664",
+      "triangles": 62,
+      "size": [
+        0.8945505023002625,
+        2.799999952316284,
+        1.032938003540039
+      ],
+      "materials": [
+        {
+          "name": "leafsGreen",
+          "color": [
+            0.16078431904315948,
+            0.7882353067398071,
+            0.6705882549285889,
+            1.0
+          ],
+          "texture": ""
+        },
+        {
+          "name": "woodBark",
+          "color": [
+            0.886274516582489,
+            0.5137255191802979,
+            0.34117648005485535,
+            1.0
+          ],
+          "texture": ""
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/tree_small.fbx",
+      "fbx_sha256": "0c948bf9fd993c9b13c81e43fc40daf32b0c093afb5a3079f2dc7eb104e53035"
+    },
+    {
+      "key": "garden_bush",
+      "source": "ASSET/Downloaded/kenney_nature_kit/Models/GLTF format/plant_bushLarge.glb",
+      "source_sha256": "10e1d9fbf29d96d1d1a56fb2ce25ae66537505101759229afe01ae22c6c45e02",
+      "license": "ASSET/Downloaded/kenney_nature_kit/License.txt",
+      "fingerprint": "d739934886f766ba0e320c455779a401baa27101b7677d28d76fb22e9f96bf84",
+      "triangles": 60,
+      "size": [
+        1.1555962562561035,
+        0.75,
+        1.0363590717315674
+      ],
+      "materials": [
+        {
+          "name": "grass",
+          "color": [
+            0.1725490242242813,
+            0.8470588326454163,
+            0.7215686440467834,
+            1.0
+          ],
+          "texture": ""
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/garden_bush.fbx",
+      "fbx_sha256": "16655c0eec0179cde8d79f02ea9c903066a84369586e8bcb370ca090c045e9c3"
+    },
+    {
+      "key": "garden_rock",
+      "source": "ASSET/Downloaded/kenney_nature_kit/Models/GLTF format/rock_smallA.glb",
+      "source_sha256": "df9fff9d711e61370e8df0caa2514c89b8f8a8dc6c6fafaf4eb2ec79c5ae07c1",
+      "license": "ASSET/Downloaded/kenney_nature_kit/License.txt",
+      "fingerprint": "cd863d40f512e6258f58485145ff963da6ca36fa64f10cb48933408d6aba2d28",
+      "triangles": 16,
+      "size": [
+        0.699999988079071,
+        0.3710000216960907,
+        0.699999988079071
+      ],
+      "materials": [
+        {
+          "name": "dirt",
+          "color": [
+            0.886274516582489,
+            0.5137255191802979,
+            0.34117648005485535,
+            1.0
+          ],
+          "texture": ""
+        },
+        {
+          "name": "grass",
+          "color": [
+            0.1725490242242813,
+            0.8470588326454163,
+            0.7215686440467834,
+            1.0
+          ],
+          "texture": ""
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/garden_rock.fbx",
+      "fbx_sha256": "ed0367c36d1edaf33e67e8e4782823603a6637e0d5dfaceaa08ce6bf1fbbcfd5"
+    },
+    {
+      "key": "farm_fence",
+      "source": "ASSET/Downloaded/kenney_nature_kit/Models/GLTF format/fence_planksDouble.glb",
+      "source_sha256": "0bbc8fe43f7a1d20de8ff2d687b5b08675beacb431e43ebbb0b1705b9c684f55",
+      "license": "ASSET/Downloaded/kenney_nature_kit/License.txt",
+      "fingerprint": "7aace58dc8df16771203303124e80e147278e09d9b6efa089d137ab15ed43b1a",
+      "triangles": 152,
+      "size": [
+        2.200000047683716,
+        0.8499999642372131,
+        0.21999990940093994
+      ],
+      "materials": [
+        {
+          "name": "wood",
+          "color": [
+            1.0,
+            0.5568627715110779,
+            0.3843137323856354,
+            1.0
+          ],
+          "texture": ""
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/farm_fence.fbx",
+      "fbx_sha256": "ebe49c16f57802d38b0e679fe34dda01e04e22fa999f3206ee64bcf50ba8d46e"
+    },
+    {
+      "key": "street_lamp",
+      "source": "ASSET/Downloaded/kaykit_city_builder/KayKit-City-Builder-Bits-1.0-main/addons/kaykit_city_builder_bits/Assets/gltf/streetlight.gltf",
+      "source_sha256": "4399e9023844319e0f74311779a2c0ebecacec16f5dfd8123b6141a3af903c6a",
+      "license": "ASSET/Downloaded/kaykit_city_builder/KayKit-City-Builder-Bits-1.0-main/addons/kaykit_city_builder_bits/Assets/LICENSE.txt",
+      "fingerprint": "0f465073fb5cc73cb753bc5789261dadf2430ff4f377d0ecb7a9ee89fce6372c",
+      "triangles": 176,
+      "size": [
+        0.9258248805999756,
+        3.3000001907348633,
+        0.23728588223457336
+      ],
+      "materials": [
+        {
+          "name": "citybits_texture",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_6d2d9a5a13bce322.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/street_lamp.fbx",
+      "fbx_sha256": "fe11187e71b79608f5bf4905f6ab4a1dd828d1b4c580a79b31e86d59679261ea"
+    },
+    {
+      "key": "park_bench",
+      "source": "ASSET/Downloaded/kaykit_city_builder/KayKit-City-Builder-Bits-1.0-main/addons/kaykit_city_builder_bits/Assets/gltf/bench.gltf",
+      "source_sha256": "f3b731470c30ed21d7e03f15d28f1937b3e4881efcca57a48e4c82ae582e51e1",
+      "license": "ASSET/Downloaded/kaykit_city_builder/KayKit-City-Builder-Bits-1.0-main/addons/kaykit_city_builder_bits/Assets/LICENSE.txt",
+      "fingerprint": "2168bcb4aafd56884adb8976858ca3e2190ee9c75bfbad6c40275b1f8852c13c",
+      "triangles": 44,
+      "size": [
+        1.6999999284744263,
+        0.8500000238418579,
+        0.699999988079071
+      ],
+      "materials": [
+        {
+          "name": "citybits_texture",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_6d2d9a5a13bce322.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/park_bench.fbx",
+      "fbx_sha256": "c9c27f2d270da5c6850e95efe0cc96c25c239f873b218bcc83040aa136fb329b"
+    },
+    {
+      "key": "trash_bin",
+      "source": "ASSET/Downloaded/kaykit_city_builder/KayKit-City-Builder-Bits-1.0-main/addons/kaykit_city_builder_bits/Assets/gltf/trash_A.gltf",
+      "source_sha256": "dcd3a27821a9d8a781a40a393e167d51c1cdb743edf95edc59236fe32238b464",
+      "license": "ASSET/Downloaded/kaykit_city_builder/KayKit-City-Builder-Bits-1.0-main/addons/kaykit_city_builder_bits/Assets/LICENSE.txt",
+      "fingerprint": "03326dbb570f38985efa9decf5fd1fee306a98d9b03baa0eb6199b9b7cd3d7fc",
+      "triangles": 18,
+      "size": [
+        1.6942883133888245,
+        0.7000000476837158,
+        1.7814675569534302
+      ],
+      "materials": [
+        {
+          "name": "citybits_texture",
+          "color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "texture": "Assets/_Game/Art/Library/Textures/palette_6d2d9a5a13bce322.png"
+        }
+      ],
+      "fbx": "Assets/_Game/Art/Library/Models/trash_bin.fbx",
+      "fbx_sha256": "693d9e090325f52c7911ac06e6a979adb816c6931c9913f5167b2aa01d7ef34c"
+    }
+  ]
+}
