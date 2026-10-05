@@ -11,6 +11,9 @@ Chat Codex tiếp theo phải đọc file này trước khi làm việc. Tiếp 
 - Công đoạn 05 — PURCHASE & PROGRESSION: HOÀN THÀNH VỀ IMPLEMENTATION. Purchase góp dở, state hiển thị và progression gates/upgrade axes riêng đã được tích hợp; chưa nghiệm thu trọn chuỗi unlock bằng một phiên Player.
 - Công đoạn 06 — FARM LIVESTOCK VERTICAL SLICE: HOÀN THÀNH VỀ IMPLEMENTATION. Tuyến thịt bò 500 xu được chơi từ ví 0 đến sản xuất, giao, payment và collect trên Windows Player; tuyến sữa/trứng thay thế chưa chạy Player.
 - Công đoạn 07 — LOGISTICS VÀ EMPLOYEES: HOÀN THÀNH VỀ IMPLEMENTATION. Kho theo area/SKU, reservation, crew theo nghề/khu, cổng tuyển và worker AI đã được nối; chưa nghiệm thu trọn vòng đời nhân viên đã tuyển bằng Player.
+- Công đoạn 08 — SAVE V2: HOÀN THÀNH VỀ IMPLEMENTATION. Save độc lập, transaction marker v2, nạp save cũ có chuẩn hóa, khóa input tới khi restore xong; chưa xác nhận Player đóng/mở lại.
+- Công đoạn 09 — FARM SHOP: HOÀN THÀNH VỀ IMPLEMENTATION. Quầy/catalog/khách riêng và gate 2.000 xu + 50 đơn với Farm cấp 3 hoặc Animal cấp 3; chưa nghiệm thu trên Player.
+- Công đoạn 10 — PROCESSING AREA: HOÀN THÀNH VỀ IMPLEMENTATION. Gate 12.000 xu + Farm Shop + Animal cấp 3 + 200 đơn, các recipe và conveyor có ownership/reservation/save; chưa nghiệm thu trọn tuyến trên Player.
 - Cập nhật bàn giao: 2026-10-05, múi giờ Asia/Bangkok.
 
 ## Môi trường và Git
@@ -25,6 +28,9 @@ Chat Codex tiếp theo phải đọc file này trước khi làm việc. Tiếp 
 - Công đoạn 04/05 đã commit và push: e909605 — feat: add farm starter and progression systems.
 - Công đoạn 06 đã commit/push: e580495 — feat: add farm livestock route transactions.
 - Công đoạn 07 đã commit/push: e0783e3 — feat: add area logistics and crew automation.
+- Công đoạn 08 đã commit/push: c035cae — feat: finalize save v2 envelope and gated restore.
+- Công đoạn 09 đã commit/push: 45c535c — feat: add Farm Shop progression and dedicated checkout.
+- Công đoạn 10 đã commit/push: 1ba7b9d — feat: add saved logistics conveyors for processing.
 - Chỉnh sửa interaction có trước nhiệm vụ trong Art, FollowCamera, GameHud, GameSession, PlayerController, Station và PlayerInteraction đã được rà soát, tích hợp vào Công đoạn 03, theo xác nhận của người dùng trước khi commit. QualitySettings.asset và ProjectSettings/ProjectSettings.asset không nằm trong commit nhiệm vụ.
 
 ## Phần đã thực hiện
@@ -58,9 +64,10 @@ Chat Codex tiếp theo phải đọc file này trước khi làm việc. Tiếp 
 | Customer/order | OrderState giữ SKU/giá/đã giao/hạn/trạng thái; giao từng phần đưa hàng vào owner customer; complete/fail loại trừ nhau. |
 | Giao hàng | Serve chỉ lấy từ player/worker và đúng đơn; quá hạn giữ phần hàng khách đã nhận, không hoàn trả vào kho. |
 | Payment/cash | Tạo payment theo order một lần; tiền ở quầy là payment chưa thu; command collect đưa tiền vào player một lần. |
-| Machine | Input tiêu thụ sang owner escrow khi operator khởi động; output được giữ chỗ; chạy, tiến độ, hoàn tất, hỏng và sửa đi qua core. |
-| Purchase/unlock | Góp dở, hoàn tất, grant và sức mang worker/player nằm trong core; điều kiện/capacity được xác minh trong runtime test. |
-| Save/load | SaveData v2 có marker core; core projection, ownership, cash, order, route/reservation worker và machine lưu nguyên tử trong một file. |
+| Farm Shop | `shelf_farm_2` và `checkout_farm_shop` là lane riêng; khách/cashier route theo shop ID. Mở từ Farm cấp 3 hoặc Animal cấp 3 sau 50 đơn và góp đủ 2.000 xu. |
+| Machine/logistics | Input tiêu thụ sang owner escrow khi operator khởi động; output được giữ chỗ; progress, hỏng/sửa đi qua core. Conveyor dùng owner thật và source/destination reservation; hàng đã lên belt vẫn tồn tại khi đích nghẽn và sau load. |
+| Purchase/unlock | Góp dở, hoàn tất, grant và sức mang worker/player nằm trong core. Gate Farm Shop hỗ trợ hai hướng Farm/Livestock; Processing yêu cầu Farm Shop, Animal cấp 3, 200 đơn và 12.000 xu. |
+| Save/load | `save-v2.json` độc lập với prototype save; core state, inventories theo owner, customer/order, machine, crew, purchase, payment và belt/reservation ghi nguyên tử. Input bị khóa tới khi restore/core init xong; không chạy offline. |
 | NPC navigation | NavMesh, khách đến hàng chờ, cashier đến vùng phục vụ và worker chờ khu thiếu kho đã được kiểm tra trong Windows Player. |
 | Upgrade | ItemDefinition/RecipeDefinition/UpgradeDefinition giữ stable ID/version; CrewState và PurchaseProgress là state core. |
 | Worker | Crew/profession/area/capacity là core; route mang hàng dùng reservation bền vững xuyên owner worker. |
@@ -239,6 +246,31 @@ Cập nhật này là ghi chép lịch sử tại mốc bàn giao Công đoạn 
 - HUD có mục Quản lý đội. State trạm, player job count, crew và reservation được persist trong transaction save.
 - File chính: `Inventory.cs`, `ProgressionTracker.cs`, `WorkerAgent.cs`, `NavigationWorld.cs`, `GameHud.cs`; cùng cập nhật trong `Station.cs`, `TransactionCore.cs`, `RuntimeTransactions.cs`.
 
+## Công đoạn 08 — SAVE V2
+
+- Marker transaction save hiện là v2, tách khỏi prototype file; transaction marker v1 được normalize khi đọc. Save V2 dùng atomic replace, không tạo `.bak`.
+- Load nạp projection, order/customer, crew, trạm, tồn kho và cash trước khi mở lại input; simulation clock nối từ thời điểm lưu nên không có offline progression.
+- Khi scene thêm owner/station mới, load bổ sung projection/runtime state mà giữ nguyên stack, reservation, revision và journal cũ.
+- Hàng khách, worker, storage/counter/machine, payment, purchase contribution, order snapshot và machine state nằm trong transaction state authoritative; Events cùng nằm trong envelope.
+- File chính: `SaveData.cs`, `RuntimeTransactions.cs`, `GameSession.cs`, `PlayerController.cs`; seed: `mod/test/stage08-save-v2-seed.json`.
+
+## Công đoạn 09 — FARM SHOP
+
+- Farm Shop có shelf và checkout riêng, khách được route riêng, Cashier đi tới đúng shop; worker Transporter có purchase riêng để đưa hàng từ Farm tới shelf Farm Shop. Người chơi vẫn tự chở/stock/serve được.
+- Gate Farm Shop: góp 2.000 xu, đạt 50 đơn thành công và có Farm cấp 3 **hoặc** Animal cấp 3; HUD đọc cùng progression state.
+- Load reconcile bổ sung counter/shelf mới vào save cũ trước validate, không bỏ stack/queue cũ.
+- Seed sát ngưỡng 1.990/2.000 và 49/50 cho hai hướng: `mod/test/stage09-crop-near-farm-shop.json`, `mod/test/stage09-livestock-near-farm-shop.json`.
+- File chính: `Definitions.cs`, `ProgressionTracker.cs`, `CommerceDirector.cs`, `WorkerAgent.cs`, `WorldFactory.cs`, `GameSession.cs`, `RuntimeTransactions.cs`.
+
+## Công đoạn 10 — PROCESSING AREA
+
+- Processing gate giữ điều kiện Farm Shop, Animal cấp 3, 200 đơn và 12.000 xu. `processor` dùng worker role/machine operator hiện có.
+- Wheat → Flour, Milk → Cheese, Tomato → Sauce dùng recipe/machine state hiện có. Máy phô mai và sốt vẫn có **purchase `dairy` hiển thị riêng 1.800 xu** sau khi mở Processing.
+- Ba conveyor route cố định dùng owner `Conveyor`, reservation từ kho Farm/Farm Shop đến input machine, hàng đang trung chuyển là stack thật; route không cấp thêm khi đích không đủ chỗ. Cargo và reservation tiếp tục sau Save v2/load.
+- Worker Transporter Farm Shop hoàn thiện tuyến Farm → Farm Shop; conveyor nối nguồn Farm/Farm Shop tới Processing.
+- Seed test: `mod/test/stage10-near-processing.json`, bắt đầu ở 11.990/12.000 và 199/200.
+- File chính: `ConveyorStation.cs`, `RuntimeTransactions.cs`, `TransactionCore.cs`, `TransactionState.cs`, `WorldFactory.cs`, `Definitions.cs`.
+
 ## Kiểm chứng Công đoạn 06/07
 
 - Unity EditMode cuối: Passed 92/92, Failed 0, Skipped 0 — `QA/editmode-results.xml`. Bao gồm machine phase/pause/output reservation, meat trừ đàn, restock từ population 0, order timeout/loss, location và reservation kho, hire gate theo player job, upgrade crew cô lập theo nghề/khu và Baker/Cook gate.
@@ -247,13 +279,22 @@ Cập nhật này là ghi chép lịch sử tại mốc bàn giao Công đoạn 
 - Tuyến thực chơi trên Player: ví 0 → trồng/bán cà rốt và Collect → mua gói bò 500 → cho ăn → chờ chu kỳ → thu thịt (đàn giảm) → giao đơn bò → payment ở quầy → player Collect. Cũng xác minh kho theo area/SKU và reservation nguồn/đích.
 - Ảnh QA cuối: `work/stage06-07/player-stage67-20261005T044650212Z/farm-livestock-sale.png`.
 
-### GitHub Công đoạn 06/07
+## Kiểm chứng Công đoạn 08–10
+
+- Save V2 EditMode suite: Passed 6/6, Failed 0 — `work/stage08/editmode-results.xml`; có đọc lặp envelope và transaction v1→v2.
+- Gate Farm Shop EditMode: Passed 2/2 — `work/stage09/editmode-results.xml`; seed crop/livestock đạt lần lượt 49→50 đơn và top-up 1.990→2.000.
+- Gate + conveyor EditMode: Passed 4/4 — `work/stage10/editmode-results.xml`; gồm hai seed Farm Shop, gate Processing 199→200/top-up 11.990→12.000, conveyor cargo save/load và giao đúng một lần.
+- Windows BuildPipeline: Succeeded, 0 errors, 2 warnings, 115,447,079 bytes — `work/stage10/Build/build-report.json`. Bản build kiểm chứng nằm ở `work/stage10/Build/TYCOON2.exe`, không ghi đè `Builds/Windows/TYCOON2.exe`.
+- Chưa chạy Player acceptance mới cho Stage 08–10. Build và EditMode pass chưa chứng minh Player đóng/mở lại, customer routing Farm Shop, worker/conveyor trong scene hoặc đủ ba production chain end-to-end.
+
+### GitHub Công đoạn 06–10
 
 - `e580495` — `feat: add farm livestock route transactions`; đã push lên `origin/main`.
 - `e0783e3` — `feat: add area logistics and crew automation`; đã push lên `origin/main`.
-- Handoff này được cập nhật sau các commit mã trên và sẽ được push bằng commit tài liệu riêng. `ProjectSettings/QualitySettings.asset` (`antiAliasing: 0` → `2`) là thay đổi người dùng có sẵn và nằm ngoài commit/push của nhiệm vụ.
+- Các commit 08–10 (`c035cae`, `45c535c`, `1ba7b9d`) cũng đã push lên `origin/main`; handoff này ghi lại bằng chứng và backlog sau các mốc đó.
+- `ProjectSettings/QualitySettings.asset` (`antiAliasing: 0` → `2`) là thay đổi người dùng có sẵn, được giữ nguyên và nằm ngoài commit/push của nhiệm vụ.
 
-## Chưa làm hoặc chưa nghiệm thu sau Công đoạn 06/07
+## Chưa thực hiện được / chưa nghiệm thu sau Công đoạn 01–10
 
 - Chưa chơi hết gói sữa 1000 xu hoặc gói trứng 1000 xu trên Windows Player; đã chạy tuyến thịt bò làm vertical slice đại diện.
 - Tái đàn từ population 0 và timeout/loss chỉ theo lượng khách nhận có EditMode coverage; Player Stage67 không ép hết patience để kiểm tra nhánh timeout.
@@ -262,3 +303,20 @@ Cập nhật này là ghi chép lịch sử tại mốc bàn giao Công đoạn 
 - Chưa soak 3–4 giờ hoặc nghiệm thu mục tiêu 165 FPS ở 1080p.
 - QA Stage67 có nhiều lượt trung gian thất bại ở harness (spawn khách quá dày, đích pad sát ranh va chạm, và một đơn 3 cà rốt hết 90 giây sau khi khách nhận 2). Harness được chỉnh để tạo khách FIFO có kiểm soát, dùng vùng pad thực và ghi nhận timeout/loss đúng quy tắc; Editor cuối pass 268 checks và Player cuối pass 285. Không còn acceptance check thất bại ở lượt cuối.
 - Thư mục report tạm của các lượt QA trung gian còn trong `work/stage06-07/`; lệnh xóa bị PowerShell command policy chặn. Chúng không được track và đã xác minh không còn Unity/Player process sử dụng; report Player cuối được giữ làm bằng chứng.
+- Công đoạn 08: chưa chạy Windows Player tắt hẳn rồi khởi động lại để nghiệm thu save/load xuyên process; chưa gom toàn bộ state categories vào một phiên Player. EditMode đã pass envelope, migration marker, read lặp và save/read.
+- Công đoạn 09: chưa nghiệm thu Player route khách FIFO vào checkout Farm Shop, stocker/cashier/transport worker và giao đơn thực. Đã pass gate hai hướng crop/livestock trong EditMode.
+- Công đoạn 10: chưa nghiệm thu Player đủ ba tuyến Wheat→Flour, Milk→Cheese, Tomato→Sauce hoặc hành vi conveyor khi destination full. EditMode đã xác nhận gate, cargo ownership, save/load và giao idempotent; BuildPipeline pass.
+- Công đoạn 10: purchase `dairy` hiển thị riêng với giá 1.800 xu vẫn cần để mở hai máy cheese/sauce sau Processing; chưa gộp chi phí này vào purchase Processing 12.000 xu.
+- Công đoạn 04/05: các lần thử Player hoàn tất purchase progression trước đây chưa đạt bằng chứng ổn định; one-shot completion chỉ có Editor/core và Stage23 integration coverage, chưa có Player end-to-end purchase gate.
+- Bản kiểm chứng `work/stage10/Build/TYCOON2.exe` được giữ để chạy Player acceptance sau; ở lần làm việc liên quan tiếp theo cần kiểm tra file/process trước khi dùng và xóa khi không còn cần.
+
+### Đã thử nhiều lần nhưng vẫn chưa pass
+
+- Công đoạn 04/05: chưa có lượt Player chứng minh hoàn tất purchase progression trong cùng tuyến chơi; các lần thử bị FIFO/patience làm mất bằng chứng ổn định. Đây vẫn là acceptance chưa pass.
+- Công đoạn 02/03 và 04/05: dọn report tạm bằng `Remove-Item` đã thử nhiều lần nhưng command policy chặn; artifact không được track và không còn process dùng. Chưa xử lý được việc dọn thư mục vì không được lách policy.
+
+### Lượt thử lỗi đã sửa; kết quả cuối pass
+
+- Công đoạn 08: lượt SaveV2 mới đầu dùng seed stack storage chưa normalize location nên validation thất bại; dùng state qua `TransactionCore` trước khi lưu, lượt cuối 6/6 pass.
+- Công đoạn 10: lượt đầu lọc nhiều test class trả 0 test nên không tính là pass; chuyển sang suite StageProgressionTests. Một assertion sau load yêu cầu một wheat stack duy nhất trong khi transfer giữ hai stack hợp lệ; đổi sang tổng lượng theo owner/item, lượt cuối 4/4 pass.
+- Công đoạn 10: compile đầu dùng nhầm `Inventory.AvailableAboveReserve`; sửa sang API của `StorageStation`, BuildPipeline cuối succeeded với 0 errors.
