@@ -136,6 +136,7 @@ namespace Tycoon
                     Require(c.actor == "simulation", "authority", "Chỉ mô phỏng làm hỏng máy.");
                     var broken = Station(s, c.target); Require(broken.kind == "machine", "station", "Không phải máy.");
                     if (broken.progress.broken) return 0;
+                    Require(!s.stations.Any(x=>x.kind=="machine"&&x.progress.broken), "breakdown", "Đã có một máy hỏng.");
                     broken.progress.broken = true; broken.progress.repairFee = Math.Clamp(c.quantity, 10, 100);
                     broken.progress.repairRemaining = 8; broken.progress.repairPaid = false; return 1;
                 case TransactionKind.RepairMachine: return RepairMachine(s, c);
@@ -674,6 +675,7 @@ namespace Tycoon
                 if (m.running) Require(s.reservations.Any(x => x.id == m.reservationId && x.status == ReservationStatus.Active && x.destination == m.output && x.item == recipe.output && x.quantity == recipe.yield), "station", "Job mất reservation.");
                 if(m.running&&!string.IsNullOrEmpty(m.escrow))Require(Owner(s,m.escrow).kind==OwnerKind.Escrow&&recipe.inputs.All(i=>s.stacks.Where(x=>x.owner==m.escrow&&x.item==i.id).Sum(x=>x.quantity)==i.count),"escrow","Job thiếu nguyên liệu đang xử lý.");
             }
+            Require(s.stations.Count(x=>x.kind=="machine"&&x.progress.broken)<=1,"breakdown","Chỉ một máy được phép hỏng cùng lúc.");
             Require(s.receipts.Count == s.outbox.Count && s.receipts.Count == s.revision, "journal", "Mutation thiếu receipt hoặc outbox.");
             foreach (var r in s.receipts) Require(r.revision > 0 && r.revision <= s.revision && !string.IsNullOrEmpty(r.fingerprint) && !string.IsNullOrEmpty(r.effectFingerprint) && s.outbox.Any(e => e.id == r.eventId && e.receiptId == r.id && e.effectId == r.effectId && e.revision == r.revision), "journal", "Receipt không khớp event.");
         }

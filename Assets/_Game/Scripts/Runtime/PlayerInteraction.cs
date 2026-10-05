@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Tycoon
 {
-    public enum InteractionKind { Pickup, Drop, Operate, Serve, Collect, Purchase, Restock }
+    public enum InteractionKind { Pickup, Drop, Operate, Serve, Collect, Purchase, Restock, Repair }
     public readonly struct InteractionResult
     {
         public readonly bool Worked;
@@ -70,7 +70,7 @@ namespace Tycoon
         public static bool Supports(Station target,InteractionKind kind)=>target switch
         {
             ProductionStation p=>kind is InteractionKind.Pickup or InteractionKind.Operate||p.Animal&&kind is InteractionKind.Drop or InteractionKind.Restock,
-            MachineStation=>kind is InteractionKind.Pickup or InteractionKind.Drop or InteractionKind.Operate,
+            MachineStation=>kind is InteractionKind.Pickup or InteractionKind.Drop or InteractionKind.Operate or InteractionKind.Repair,
             StorageStation or ShelfStation=>kind is InteractionKind.Pickup or InteractionKind.Drop,
             CheckoutStation=>kind is InteractionKind.Drop or InteractionKind.Serve or InteractionKind.Collect,
             TableStation=>kind is InteractionKind.Serve or InteractionKind.Operate,
@@ -121,11 +121,7 @@ namespace Tycoon
                 if(target is ProductionStation production)return production.OperatePlayer(delta,context.Actor);
                 if(target is MachineStation machine)
                 {
-                    if(machine.Broken)
-                    {
-                        if(!machine.RepairPaid&&GameSession.Instance.Economy.Money<machine.RepairFee)return InteractionResult.Reject("Không đủ tiền sửa máy.");
-                        return new InteractionResult(machine.Repair(GameSession.Instance.Economy,delta,context.Actor));
-                    }
+                    if(machine.Broken)return InteractionResult.Reject("Máy hỏng; hãy đứng trong Vùng Sửa máy.");
                     if(!machine.Running)
                     {
                         if(machine.Inventory.FreeFor(machine.Recipe.output)<machine.Recipe.yield)return InteractionResult.Reject("Đầu ra máy đầy; hãy lấy hàng.");
@@ -135,6 +131,12 @@ namespace Tycoon
                 }
                 if(target is TableStation cleaning)
                     return cleaning.Cleaning>0&&cleaning.Occupant==null?new InteractionResult(cleaning.Work(carry,delta,context.Actor)):InteractionResult.Reject("Bàn chưa cần dọn.");
+            }
+            if(kind==InteractionKind.Repair&&target is MachineStation repair)
+            {
+                if(!repair.Broken)return InteractionResult.Reject("Máy chưa cần sửa.");
+                if(!repair.RepairPaid&&GameSession.Instance.Economy.Money<repair.RepairFee)return InteractionResult.Reject("Không đủ tiền sửa máy.");
+                return new InteractionResult(repair.Repair(GameSession.Instance.Economy,delta,context.Actor));
             }
             if(kind==InteractionKind.Restock&&target is ProductionStation livestock)
             {

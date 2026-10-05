@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('Import','Tests','Build','Scene','Baseline','Stage23','Stage45','Stage67','Stage08','Stage09','Stage10')] [string]$Task = 'Import',
+    [ValidateSet('Import','Tests','Build','Scene','Baseline','Stage23','Stage45','Stage67','Stage08','Stage09','Stage10','Stage11','Stage12','Stage13')] [string]$Task = 'Import',
     [string]$BuildPath = ''
 )
 $ErrorActionPreference = 'Stop'
@@ -14,13 +14,13 @@ if (!(Test-Path -LiteralPath $baselinePath)) {
 }
 $logPath = Join-Path $logDirectory ($Task.ToLower() + '.log')
 $arguments = @('-batchmode','-nographics','-projectPath',('"' + $taskRoot + '"'),'-logFile',('"' + $logPath + '"'))
-if ($Task -in @('Tests','Stage08','Stage09','Stage10')) {
-    $stage=if($Task -eq 'Stage08'){'stage08'}elseif($Task -eq 'Stage09'){'stage09'}elseif($Task -eq 'Stage10'){'stage10'}else{$null}
+if ($Task -in @('Tests','Stage08','Stage09','Stage10','Stage11','Stage12','Stage13')) {
+    $stage=if($Task -match '^Stage(\d+)$'){'stage'+$Matches[1]}else{$null}
     $results=if($stage){Join-Path $taskRoot ('work\'+$stage+'\editmode-results.xml')}else{Join-Path $taskRoot 'QA\editmode-results.xml'}
     $arguments += @('-runTests','-testPlatform','EditMode','-testResults',('"' + $results + '"'))
     if($Task -eq 'Stage08'){$arguments += @('-testFilter','Tycoon.Tests.SaveV2Tests')}
-    if($Task -eq 'Stage09'){$arguments += @('-testFilter','Tycoon.Tests.StageProgressionTests')}
-    if($Task -eq 'Stage10'){$arguments += @('-testFilter','Tycoon.Tests.StageProgressionTests')}
+    if($Task -in @('Stage09','Stage10')){$arguments += @('-testFilter','Tycoon.Tests.StageProgressionTests')}
+    if($Task -in @('Stage11','Stage12','Stage13')){$arguments += @('-testFilter',('Tycoon.Tests.'+$Task+'Tests'))}
 } else {
     if($Task -notin @('Baseline','Stage23','Stage45','Stage67')) { $arguments += '-quit' }
     if($Task -eq 'Baseline') {

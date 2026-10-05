@@ -24,6 +24,7 @@ namespace Tycoon
         {
             get
             {
+                if(Broken)return "Máy đang hỏng • chờ người chơi sửa tại Vùng Sửa máy.";
                 if(Recipe==null)return "Sai recipe";
                 foreach(var input in Recipe.inputs)if(Input.Available(input.id)<input.count)return "Thiếu "+Definitions.Item(input.id).label;
                 if(Inventory!=null&&Inventory.FreeFor(Recipe.output)<Recipe.yield)return "Đầu ra đầy • lấy "+Definitions.Item(Recipe.output).label;
@@ -62,7 +63,12 @@ namespace Tycoon
             }
             return true;
         }
-        public void BreakDown(int fee){if(Broken)return;if(Authority!=null){var command=Authority.Command(TransactionKind.BreakMachine,"simulation",Id);command.quantity=fee;Authority.TryExecute(command,out _);return;}Broken=true;RepairFee=Mathf.Clamp(fee,10,100);RepairRemaining=8;RepairPaid=false;}
+        public void BreakDown(int fee)
+        {
+            if(Broken||GameSession.Instance&&GameSession.Instance.Machines.Exists(x=>x&&x!=this&&x.Broken))return;
+            if(Authority!=null){var command=Authority.Command(TransactionKind.BreakMachine,"simulation",Id);command.quantity=fee;Authority.TryExecute(command,out _);return;}
+            Broken=true;RepairFee=Mathf.Clamp(fee,10,100);RepairRemaining=8;RepairPaid=false;
+        }
         public bool Repair(Economy economy,float delta,EntityId actorId)
         {
             if(!IsUnlocked||!Broken||economy==null||delta<=0||float.IsNaN(delta)||float.IsInfinity(delta))return false;
@@ -76,7 +82,7 @@ namespace Tycoon
         {
             if(!IsUnlocked||carrier==null||Recipe==null||delta<=0)return false;
             ConfigureInputLimits();
-            if(Broken)return Repair(GameSession.Instance.Economy,delta,actorId);
+            if(Broken)return false;
             foreach(var input in Recipe.inputs)if(carrier.Count(input.id)>0&&Inventory.Transfer(carrier,Input,input.id,1)>0)return true;
             if(Inventory.Count(Recipe.output)>0&&Inventory.Transfer(Inventory,carrier,Recipe.output,1)>0)return true;
             return Operate(delta,actorId);

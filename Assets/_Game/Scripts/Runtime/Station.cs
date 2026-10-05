@@ -34,7 +34,7 @@ namespace Tycoon
     {
         public Station Target;public string Mode;
         float nextTransfer,operationDelta;
-        public InteractionKind Kind=>Mode switch{"withdraw"=>InteractionKind.Pickup,"deposit"=>InteractionKind.Drop,"operate"=>InteractionKind.Operate,"restock"=>InteractionKind.Restock,"serve"=>InteractionKind.Serve,"cash"=>InteractionKind.Collect,_=>throw new InvalidOperationException("Unknown interaction zone: "+Mode)};
+        public InteractionKind Kind=>Mode switch{"withdraw"=>InteractionKind.Pickup,"deposit"=>InteractionKind.Drop,"operate"=>InteractionKind.Operate,"restock"=>InteractionKind.Restock,"serve"=>InteractionKind.Serve,"cash"=>InteractionKind.Collect,"repair"=>InteractionKind.Repair,_=>throw new InvalidOperationException("Unknown interaction zone: "+Mode)};
         public Vector3 Center=>InteractionPoint;
         public bool Available=>this&&isActiveAndEnabled&&Target&&Target.IsUnlocked;
         public bool Contains(Vector3 point)=>ContainsInteractionPoint(point);
@@ -52,7 +52,7 @@ namespace Tycoon
             return result;
         }
         public void Exit(EntityId actor){nextTransfer=operationDelta=0;if(Target)Target.EndInteraction(actor);}
-        public override string Prompt=>!Target?"":(Mode=="deposit"?Target is ProductionStation livestock&&livestock.Animal?"Cho ăn "+Definitions.Item(livestock.FeedItem)?.label+" • "+Target.Label:"Đặt hàng • "+Target.Label:Mode=="withdraw"?"Lấy hàng • "+Target.Label:Mode=="restock"?"Tái đàn • "+Target.Label:Mode=="serve"?"Giao hàng • "+Target.Label:Mode=="cash"?"Thu "+(Target as CheckoutStation)?.Cash+" xu":Target.Prompt)+(Target is StorageStation storage?storage.ReservationSummary:"");
+        public override string Prompt=>!Target?"":(Mode=="deposit"?Target is ProductionStation livestock&&livestock.Animal?"Cho ăn "+Definitions.Item(livestock.FeedItem)?.label+" • "+Target.Label:"Đặt hàng • "+Target.Label:Mode=="withdraw"?"Lấy hàng • "+Target.Label:Mode=="restock"?"Tái đàn • "+Target.Label:Mode=="serve"?"Giao hàng • "+Target.Label:Mode=="cash"?"Thu "+(Target as CheckoutStation)?.Cash+" xu":Mode=="repair"?"Sửa máy • "+(Target as MachineStation)?.RepairFee+" xu":Target.Prompt)+(Target is StorageStation storage?storage.ReservationSummary:"");
         protected override void LateUpdate()
         {if(StatusLabel){StatusLabel.text=Prompt;StatusLabel.gameObject.SetActive(Available&&GameSession.Instance.Player&&Contains(GameSession.Instance.Player.transform.position));}}
         public override bool Interact(PlayerController player,bool withdraw)

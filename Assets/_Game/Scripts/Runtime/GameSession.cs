@@ -129,7 +129,7 @@ namespace Tycoon
         {
             if (!Player || !NavigationReady || !CanSimulate) return;
             SyncWorkers();
-            TickEvents();
+            TickEvents(Time.deltaTime);
             if (!IsQa && Time.time > nextAutosave) { nextAutosave = Time.time + 60; SaveGame(); }
         }
         public void SyncWorkers()

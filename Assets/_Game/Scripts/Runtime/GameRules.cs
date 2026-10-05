@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Tycoon
@@ -12,7 +13,8 @@ namespace Tycoon
     }
     [Serializable] public sealed class EventState
     {
-        public float untilRush = 480, warning, rushRemaining;
+        public float untilRush = 480, warning, rushRemaining, breakdownWarning;
+        public string breakdownMachine;
         public int lastBreakBatch;
     }
     public sealed partial class GameSession
@@ -101,18 +103,39 @@ namespace Tycoon
                 if(s is ProductionStation crop&&!crop.Animal&&crop.Inventory!=null)crop.Inventory.Capacity=Progression.AxisCapacity("farm",24);
             }
         }
-        void TickEvents()
+        public void TickEvents(float delta)
         {
-            if (CrewStates.Count == 0) return;
-            if (Events.rushRemaining > 0) Events.rushRemaining = Mathf.Max(0, Events.rushRemaining - Time.deltaTime);
-            else if (Events.warning > 0) { Events.warning -= Time.deltaTime; if (Events.warning <= 0) { Events.rushRemaining = 90; Say("Giờ cao điểm • 90 giây"); } }
-            else { Events.untilRush -= Time.deltaTime; if (Events.untilRush <= 0) { Events.warning = 15; Events.untilRush = 480; Say("15 giây nữa bắt đầu giờ cao điểm"); } }
-            int batches = 0; foreach (var m in Machines) { if (m.Broken) return; batches += m.Batches; }
-            if (batches - Events.lastBreakBatch >= 40)
+            if(delta<=0||float.IsNaN(delta)||float.IsInfinity(delta))return;
+            if(CrewStates.Count>0)
             {
-                var machine = Machines.Find(x => x.IsUnlocked && x.Batches > 0);
-                if (machine) { machine.BreakDown(Mathf.Clamp(machine.Level * 20, 10, 100)); Events.lastBreakBatch = batches; Say(machine.Label + " cần sửa chữa"); }
+                if (Events.rushRemaining > 0) Events.rushRemaining = Mathf.Max(0, Events.rushRemaining - delta);
+                else if (Events.warning > 0) { Events.warning = Mathf.Max(0,Events.warning-delta); if (Events.warning == 0) { Events.rushRemaining = 90; Say("Giờ cao điểm • 90 giây"); } }
+                else { Events.untilRush -= delta; if (Events.untilRush <= 0) { Events.warning = 15; Events.untilRush = 480; Say("15 giây nữa bắt đầu giờ cao điểm"); } }
             }
+            TickBreakdown(delta);
+        }
+        void TickBreakdown(float delta)
+        {
+            int batches=Machines.Sum(x=>x.Batches);
+            if(!string.IsNullOrEmpty(Events.breakdownMachine))
+            {
+                var target=Machines.Find(x=>x.Id==Events.breakdownMachine);
+                if(!target||target.Broken||Machines.Exists(x=>x!=target&&x.Broken))
+                {Events.breakdownMachine=null;Events.breakdownWarning=0;return;}
+                Events.breakdownWarning=Mathf.Max(0,Events.breakdownWarning-delta);
+                if(Events.breakdownWarning==0)
+                {
+                    Events.breakdownMachine=null;Events.lastBreakBatch=batches;
+                    target.BreakDown(Mathf.Clamp(target.Level*20,10,100));
+                    Say(target.Label+" bị hỏng • dùng vùng Sửa máy");
+                }
+                return;
+            }
+            if(Machines.Exists(x=>x.Broken)||batches-Events.lastBreakBatch<40)return;
+            var machine=Machines.Find(x=>x.IsUnlocked&&x.Batches>0&&!x.Broken);
+            if(!machine)return;
+            Events.breakdownMachine=machine.Id;Events.breakdownWarning=15;
+            Say(machine.Label+" có dấu hiệu quá tải • hỏng sau 15 giây");
         }
     }
 }

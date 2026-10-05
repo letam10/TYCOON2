@@ -215,12 +215,12 @@ namespace Tycoon
         }
         public static void Zone(GameSession game, Transform parent, Station target, string mode, Vector3 point)
         {
-            string label = mode switch { "withdraw" => "LẤY HÀNG", "deposit" => "ĐẶT HÀNG", "operate" => "VẬN HÀNH", "serve" => "GIAO HÀNG", "cash" => "THU TIỀN", _ => mode };
+            string label = mode switch { "withdraw" => "LẤY HÀNG", "deposit" => "ĐẶT HÀNG", "operate" => "VẬN HÀNH", "serve" => "GIAO HÀNG", "cash" => "THU TIỀN", "repair" => "SỬA MÁY", _ => mode };
             var zone = Register<StationZone>(game, parent, target.Id + "_" + mode, label, point);
             zone.Target = target; zone.Mode = mode; zone.AreaId = target.AreaId; zone.Requirement = target.Requirement; zone.InteractionPoint = point;
             target.PlayerUsesZones = true; zone.InteractionRadius = .85f;
             if (target is CheckoutStation checkout && mode == "cash") checkout.CashZone = zone;
-            string color = mode switch { "serve" => "#73CF4F", "withdraw" => "#39A4D8", "deposit" => "#F5AB3D", "operate" => "#9A72D8", _ => "#FFD63E" };
+            string color = mode switch { "serve" => "#73CF4F", "withdraw" => "#39A4D8", "deposit" => "#F5AB3D", "operate" => "#9A72D8", "repair"=>"#E65D43", _ => "#FFD63E" };
             Art.Box("InteractionZone", new Vector3(0, .035f, 0), new Vector3(1.8f, .07f, 1.8f), color, zone.transform);
             Locked(zone);
         }
@@ -234,6 +234,7 @@ namespace Tycoon
             Zone(game, parent, station, "operate", station.InteractionPoint + Vector3.back * 1.25f);
             Zone(game, parent, station, "withdraw", station.InteractionPoint + Vector3.right * 1.55f + Vector3.back * .35f);
             Zone(game, parent, station, "deposit", station.InteractionPoint + Vector3.left * 1.55f + Vector3.back * .35f);
+            Zone(game,parent,station,"repair",station.InteractionPoint+Vector3.left*3.4f+Vector3.back*1.55f);
             return station;
         }
         static void Conveyor(GameSession game,Transform parent,string id,string item,StorageStation primary,StorageStation alternate,MachineStation target,float laneOffset)
