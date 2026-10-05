@@ -157,7 +157,7 @@ namespace Tycoon
                     if (broken.progress.broken) return 0;
                     Require(!s.stations.Any(x=>x.kind=="machine"&&x.progress.broken), "breakdown", "Đã có một máy hỏng.");
                     broken.progress.broken = true; broken.progress.repairFee = Math.Clamp(c.quantity, 10, 100);
-                    broken.progress.repairRemaining = 8; broken.progress.repairPaid = false; return 1;
+                    broken.progress.repairRemaining = 5;broken.progress.repairProgress=0;broken.progress.repairVersion=1;broken.progress.repairIncident++;broken.progress.playerOnlyRepair=true;broken.operatorId=null;broken.operatorUntil=0;broken.progress.repairPaid = false; return 1;
                 case TransactionKind.RepairMachine: return RepairMachine(s, c);
                 case TransactionKind.UpgradeCrew: return UpgradeCrew(s, c);
                 case TransactionKind.CleanTable: return CleanTable(s, c);
@@ -530,12 +530,7 @@ namespace Tycoon
         }
         int RepairMachine(TransactionState s, TransactionCommand c)
         {
-            Player(s, c.actor); var m = Machine(s, c); var p = m.progress;
-            Require(p.broken && double.IsFinite(c.duration) && c.duration > 0, "repair", "Máy chưa cần sửa.");
-            Lease(m, c.actor, clock());
-            if (!p.repairPaid) { Require(s.money >= p.repairFee, "funds", "Không đủ tiền sửa máy."); s.money -= p.repairFee; p.repairPaid = true; }
-            p.repairRemaining = Math.Max(0, p.repairRemaining - (float)c.duration);
-            if (p.repairRemaining == 0) { p.broken = false; p.repairPaid = false; } return 1;
+            return AdvanceRepair(s,c);
         }
         static int UpgradeCrew(TransactionState s, TransactionCommand c)
         {
@@ -612,7 +607,10 @@ namespace Tycoon
                 if(machine.recipeOptions.Count==0)machine.recipeOptions.Add(machine.definitionId);
                 if(s.contentVersion<2 && machine.definitionId is "oven" or "cakeoven")machine.legacyInput=s.stacks.Any(x=>x.owner==machine.input && x.item is "flour" or "milk" or "egg");
             }
-            s.contentVersion=Math.Max(2,s.contentVersion);
+            foreach(var machine in s.stations.Where(x=>x.kind=="machine"))
+                if(machine.progress.repairVersion==0)
+                {var p=machine.progress;p.repairProgress=p.broken?Math.Clamp(1-p.repairRemaining/8f,0,1):0;p.repairRemaining=(1-p.repairProgress)*5;p.repairVersion=1;p.playerOnlyRepair=true;}
+            s.contentVersion=Math.Max(3,s.contentVersion);
             foreach(var station in s.stations)if(station.batchYield==0)station.batchYield=1;
             foreach(var station in s.stations.Where(x=>x.kind=="producer" && x.progress.phase>0 && x.progress.cycleYield==0))
                 station.progress.cycleYield=station.batchYield+ProgressionTracker.AxisLevel(s,"farm",UpgradeAxis.Capacity)-1;

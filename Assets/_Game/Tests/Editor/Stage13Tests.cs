@@ -85,10 +85,10 @@ namespace Tycoon.Tests
 
             var repair=CoreCommand(core,TransactionKind.RepairMachine,"player","repair-one","mill");repair.duration=3;core.Execute(repair);
             var mid=core.Snapshot();Assert.That(mid.money,Is.EqualTo(160));
-            Assert.That(mid.stations.Single(x=>x.id=="mill").progress.repairRemaining,Is.EqualTo(5));
+            Assert.That(mid.stations.Single(x=>x.id=="mill").progress.repairRemaining,Is.EqualTo(2).Within(.001));
             Assert.That(mid.stations.Single(x=>x.id=="mill").remaining,Is.EqualTo(6));
             core=new TransactionCore(mid,null,()=>100);
-            repair=CoreCommand(core,TransactionKind.RepairMachine,"player","repair-finish","mill");repair.duration=5;core.Execute(repair);
+            repair=CoreCommand(core,TransactionKind.RepairMachine,"player","repair-finish","mill");repair.duration=2;core.Execute(repair);
             var resumed=core.Snapshot();var machine=resumed.stations.Single(x=>x.id=="mill");
             Assert.That(resumed.money,Is.EqualTo(160));Assert.That(machine.progress.broken,Is.False);
             Assert.That(machine.running,Is.True);Assert.That(machine.remaining,Is.EqualTo(6));

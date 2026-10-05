@@ -65,6 +65,17 @@ namespace Tycoon
             if(working)
             {
                 if(!working.IsUnlocked){StopWorking();return;}
+                if(Role=="Repairer" && working is MachineStation brokenMachine)
+                {
+                    if(!brokenMachine.Broken){StopWorking();return;}
+                    if(g.Player.ActiveInteraction is ProximityTarget p && p.Target==brokenMachine && p.Kind==InteractionKind.Repair)
+                    {Reason="Người chơi đang sửa • nhường chỗ";brokenMachine.ReleaseOperator(GetEntityId());Navigation.Go(Agent,brokenMachine.WaitingPoint);return;}
+                    if((transform.position-brokenMachine.WorkPoint).sqrMagnitude>1.3f){Navigation.Go(Agent,brokenMachine.WorkPoint);Reason="Đến sửa "+brokenMachine.Label;return;}
+                    Agent.ResetPath();
+                    bool repaired=brokenMachine.Repair(g.Economy,Time.deltaTime,GetEntityId());
+                    Reason=repaired?"Đang sửa • "+RepairTiming.Employee(crew.speedLevel)+"s":g.Transactions.LastReason;
+                    if(repaired)View.Work(ActorView.WorkState(brokenMachine,InteractionKind.Repair));return;
+                }
                 if(Role=="Farmer"&&working is ProductionStation stockedCrop&&FarmStockEnough(stockedCrop,g.StorageFor(crew.area)))
                 {StopWorking();Reason="Chờ nhu cầu • kho đã đủ loại hàng này";return;}
                 if(working is ProductionStation waitingCrop&&!waitingCrop.Animal&&waitingCrop.Phase==2)
@@ -161,6 +172,12 @@ namespace Tycoon
                 return;
             }
             if(Carry.Total>0){BeginDrop(g.StorageFor(crew.area));return;}
+            if(Role=="Repairer")
+            {
+                working=g.Machines.Find(m=>m.IsUnlocked&&m.Broken&&m.AreaId==crew.area&&!g.Workers.Exists(w=>w!=this&&w.working==m));
+                if(working)Navigation.Go(Agent,working.WorkPoint);else{Reason="Chờ máy cần sửa trong khu";Navigation.Go(Agent,g.StorageFor(crew.area).WaitingPoint);}
+                return;
+            }
             if(Role is "Farmer" or "AnimalWorker")
             {
                 var list=g.Producers.FindAll(x=>x.IsUnlocked&&x.AreaId==crew.area&&(Role=="Farmer"?!x.Animal:x.Animal));

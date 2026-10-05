@@ -9,7 +9,7 @@ namespace Tycoon
         public string[] Options=>RecipeOptions??new[]{recipe.id};
         public RecipeDefinition Recipe {get=>Runtime==null?recipe:Definitions.Recipe(Runtime.definitionId);set=>recipe=value;}
         [System.NonSerialized] public Inventory Input=new(36);
-        bool running,broken,repairPaid;float remaining,repairRemaining=8;int batches,playerBatches,repairFee=20;
+        bool running,broken,repairPaid;float remaining,repairRemaining=5;int batches,playerBatches,repairFee=20;
         public bool Running {get=>Runtime?.running??running;set{GuardState();running=value;}}
         public bool Broken {get=>Runtime?.progress.broken??broken;set{GuardState();broken=value;}}
         public bool RepairPaid {get=>Runtime?.progress.repairPaid??repairPaid;set{GuardState();repairPaid=value;}}
@@ -79,7 +79,7 @@ namespace Tycoon
         {
             if(Broken||GameSession.Instance&&GameSession.Instance.Machines.Exists(x=>x&&x!=this&&x.Broken))return;
             if(Authority!=null){var command=Authority.Command(TransactionKind.BreakMachine,"simulation",Id);command.quantity=fee;Authority.TryExecute(command,out _);return;}
-            Broken=true;RepairFee=Mathf.Clamp(fee,10,100);RepairRemaining=8;RepairPaid=false;
+            Broken=true;RepairFee=Mathf.Clamp(fee,10,100);RepairRemaining=5;RepairPaid=false;
         }
         public bool Repair(Economy economy,float delta,EntityId actorId)
         {

@@ -2,7 +2,7 @@
   "batchesBeforeBreakdownWarning": 39,
   "batchesAtBreakdownWarning": 40,
   "warningSeconds": 15,
-  "repairSeconds": 8,
+  "repairSeconds": 5,
   "minimumRepairFee": 10,
   "maximumRepairFee": 100,
   "purpose": "Exercise a single batch threshold, persisted warning, one broken machine, and interrupted repair progress."

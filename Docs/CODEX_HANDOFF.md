@@ -496,6 +496,13 @@ Build để chơi: `work/art-refresh/Build/TYCOON2.exe`. Audit/mapping/license: 
 - Compile/EditMode: 122/122 pass. Các model bổ sung đang dùng hình dựng local URP; hình ảnh và player loop mới sẽ kiểm chứng tại mốc polish.
 - Mốc 1: `9a13764`, đã push. Commit mốc 2: `feat: add automatic production chains and restaurant recipes`.
 
+## Thiết kế thị trấn mới — mốc 3 — 2026-10-06
+
+- Repairer riêng cho Farm/Processing/Bakery/Restaurant; gate station cấp 3 + 30 lần sửa chỉ bằng player, không dùng job sản xuất thay thế.
+- Player 5 s, Repairer 30/20/10 s. Player tiếp quản work slot; progress theo tỷ lệ, fee mỗi incident thu một lần, pause/load giữ nguyên input/progress máy.
+- Compile/EditMode: 127/127 pass, gồm takeover, ba mức thời gian, save/load và worker sai nghề bị từ chối. Đã cập nhật fixture sửa 8 s cũ thành 5 s.
+- Mốc 2: `1b25892`, đã push. Commit mốc 3: `feat: add specialist repair crews and persistent repair progress`.
+
 ## Những gì chưa thực hiện được / chưa nghiệm thu — cập nhật cuối Công đoạn 14
 
 - **Công đoạn 14: chưa pass lượt liên tục new game 0 → Restaurant bằng sản xuất/thu tiền thực tế, không nạp state. Chưa pass mục tiêu mở toàn chuỗi trong 180–240 phút.** Preset sát ngưỡng xác nhận từng gate/gameplay nhưng không thay thế hai tiêu chí này; chưa chốt acceptance toàn Công đoạn 14.
