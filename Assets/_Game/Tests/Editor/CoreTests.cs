@@ -75,11 +75,11 @@ namespace Tycoon.Tests
         {
             var inventory = new Inventory(20);
             inventory.TryAdd("flour", 4); inventory.TryAdd("egg", 2);
-            Assert.IsFalse(Definitions.Recipe("oven").Consume(inventory));
+            Assert.IsFalse(Definitions.Recipe("breadmixer").Consume(inventory));
             Assert.AreEqual(4, inventory.Count("flour"));
             Assert.AreEqual(2, inventory.Count("egg"));
             inventory.TryAdd("milk", 1);
-            Assert.IsTrue(Definitions.Recipe("oven").Consume(inventory));
+            Assert.IsTrue(Definitions.Recipe("breadmixer").Consume(inventory));
             Assert.AreEqual(2, inventory.Count("flour"));
             Assert.AreEqual(1, inventory.Count("egg"));
             Assert.AreEqual(0, inventory.Count("milk"));
@@ -93,7 +93,7 @@ namespace Tycoon.Tests
             {
                 var game=root.AddComponent<GameSession>();GameSession.Instance=game;
                 game.Player=root.AddComponent<PlayerController>();game.Economy=new Economy(500);
-                var upgrade=Definitions.Upgrade("barn");
+                game.Economy.Unlock("farm_level2");var upgrade=Definitions.Upgrade("barn");
                 Assert.That(game.Contribute(Definitions.Upgrade("supermarket"),500),Is.Zero);
                 Assert.That(game.Contribute(Definitions.Upgrade("farmer"),500),Is.Zero);
                 Assert.That(game.Contribute(upgrade,200),Is.EqualTo(200));

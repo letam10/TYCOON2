@@ -42,8 +42,8 @@ namespace Tycoon
                     p.Herd==0?InteractionKind.Restock:p.Cycle<=0&&p.Feed>0?InteractionKind.Pickup:InteractionKind.Operate;
             }
             else if(Target is MachineStation m)
-                kind=m.Broken?InteractionKind.Repair:context.Carry.Total>0?InteractionKind.Drop:m.Inventory.Total>0?InteractionKind.Pickup:InteractionKind.Operate;
-            else if(Target is CheckoutStation)kind=InteractionKind.Serve;
+                kind=m.Broken?InteractionKind.Repair:context.Carry.Total>0&&System.Array.Exists(m.Recipe.inputs,x=>context.Carry.Count(x.id)>0)?InteractionKind.Drop:m.Inventory.Total>0?InteractionKind.Pickup:context.Carry.Total>0?InteractionKind.Drop:InteractionKind.Operate;
+            else if(Target is CheckoutStation counter)kind=counter.FrontOrder==null&&context.Carry.Total>0?InteractionKind.Drop:InteractionKind.Serve;
             else if(Target is TableStation t)kind=t.Cleaning>0&&t.Occupant==null?InteractionKind.Operate:InteractionKind.Serve;
             else if(!directionChosen){kind=context.Carry.Total>0?InteractionKind.Drop:InteractionKind.Pickup;directionChosen=true;}
             elapsed+=delta;if(elapsed<.1f)return InteractionResult.Waiting;

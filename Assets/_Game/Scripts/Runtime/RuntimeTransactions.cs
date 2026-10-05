@@ -7,7 +7,7 @@ using UnityEngine;
 namespace Tycoon
 {
     // Component Unity chỉ đọc projection và gửi command; core là writer của tài sản/state.
-    public sealed class RuntimeTransactions
+    public sealed partial class RuntimeTransactions
     {
         readonly GameSession game;
         readonly TransactionCore core;
@@ -137,6 +137,7 @@ namespace Tycoon
         }
         public bool OperateMachine(MachineStation machine, float delta, EntityId actor)
         {
+            if(Station(machine.Id).autonomous)return false;
             var m = Station(machine.Id); string actorId = Actor(actor);
             if (!m.running)
             {
@@ -203,7 +204,7 @@ namespace Tycoon
             if (create)
             {
                 var counter = game.Checkouts.Find(x => x.ShopId == "restaurant");
-                CreateOrder(saved.receipt, counter.Id, id, new() { new OrderLine("meal", 1, saved.price) }, saved.remaining, saved.table,owner);
+                CreateOrder(saved.receipt, counter.Id, id, new() { new OrderLine(saved.item??"meal", 1, saved.price) }, saved.remaining, saved.table,owner);
             }
             Bind(diner.Basket, id);
         }
@@ -282,7 +283,7 @@ namespace Tycoon
 
         public static TransactionState Migrate(GameSession game, SaveData data)
         {
-            var s = new TransactionState { money = data.money, revenue = data.revenue, cashCollected=data.cashCollected, legacyRevenue = data.revenue,
+            var s = new TransactionState { contentVersion=data.contentVersion,money = data.money, revenue = data.revenue, cashCollected=data.cashCollected, legacyRevenue = data.revenue,
                 legacyTransactions = data.transactions, legacyPaid = data.receipts, legacyLosses = data.losses, legacyCash = data.cash,
                 simulationTime = Time.timeAsDouble, unlocked = data.unlocked, crews = data.crews };
             void Owner(string id, Inventory inventory, OwnerKind kind, string actor = "simulation", List<ItemAmount> items = null, string location = null)
@@ -304,8 +305,8 @@ namespace Tycoon
                 if(station is CheckoutStation checkout)s.owners[^1].accepts=new(checkout.AcceptedItems);
                 if(station is MachineStation machine)
                 {
-                    s.owners[^1].accepts=new(){machine.Recipe.output};Owner(station.Id + "_input", machine.Input, OwnerKind.Machine);
-                    s.owners[^1].accepts=machine.Recipe.inputs.Select(x=>x.id).ToList();
+                    s.owners[^1].accepts=machine.Options.Select(id=>Definitions.Recipe(id).output).Distinct().ToList();Owner(station.Id + "_input", machine.Input, OwnerKind.Machine);
+                    s.owners[^1].accepts=machine.Options.SelectMany(id=>Definitions.Recipe(id).inputs).Select(x=>x.id).Concat(machine.Input.Snapshot().Select(x=>x.id)).Distinct().ToList();
                 }
                 var progress = station.CaptureProgress();
                 var m = new StationRuntimeState { id = station.Id, area = station.AreaId, requirement = station.Requirement, level = progress.level, workCount = progress.workCount, playerWorkCount=progress.playerWorkCount,
@@ -314,9 +315,10 @@ namespace Tycoon
                     definitionId = station is MachineStation machine2 ? machine2.Recipe.id : station is PurchasePad pad ? pad.Upgrade.id : station.Id,
                     item = (station as ProductionStation)?.ItemId,batchYield=(station as ProductionStation)?.Yield??1,cycleSeconds=(station as ProductionStation)?.Interval??0, running = progress.running, remaining = station is MachineStation ? progress.remaining : 0, batches = progress.batches,playerBatches=progress.playerBatches };
                 s.stations.Add(m);
+                if(station is MachineStation auto){m.autonomous=true;m.recipeOptions=new(auto.Options);m.definitionVersion=auto.Recipe.version;}
                 if (m.running)
                 {
-                    var recipe = Definitions.Recipe(m.definitionId); m.jobId = "migrated-job:" + m.id + ":" + m.batches;
+                    var recipe = data.contentVersion<2?Definitions.LegacyRecipe(m.definitionId):Definitions.Recipe(m.definitionId);m.batch=RecipeBatchSnapshot.From(recipe,"simulation"); m.jobId = "migrated-job:" + m.id + ":" + m.batches;
                     m.reservationId = "output:" + m.jobId; s.jobIds.Add(m.id + ":" + m.jobId);
                     s.reservations.Add(new ReservationState { id = m.reservationId, holder = "simulation", destination = m.output, item = recipe.output, quantity = recipe.yield, expiresAt = double.MaxValue });
                     m.escrow="escrow:"+m.jobId;
@@ -343,7 +345,7 @@ namespace Tycoon
                 Owner(CustomerId(diner.receipt), new Inventory(1), OwnerKind.Customer, CustomerId(diner.receipt), diner.basket); s.owners[^1].diner = diner;
                 s.orders.Add(new OrderRuntimeState { id = OrderId(diner.receipt), customer = CustomerId(diner.receipt), counter = game.Checkouts.Find(x => x.ShopId == "restaurant").Id,
                     table = diner.table, dinerPhase = diner.phase, eatingRemaining = diner.phase == 2 ? diner.remaining : 0,
-                    deadline = s.simulationTime + diner.remaining, lines = new() { new OrderLine("meal", 1, diner.price) { delivered = diner.phase >= 2 ? 1 : 0 } },
+                    deadline = s.simulationTime + diner.remaining, lines = new() { new OrderLine(diner.item??"meal", 1, diner.price) { delivered = diner.phase >= 2 ? 1 : 0 } },
                     status = diner.phase >= 2 ? OrderStatus.Complete : OrderStatus.Open });
             }
             foreach(var worker in data.workers.Where(x=>x.phase is 1 or 2))
@@ -419,6 +421,19 @@ namespace Tycoon
 
         internal static void UpgradeCounterOwners(TransactionState state,GameSession game)
         {
+            foreach(var machine in game.Machines)
+            {
+                var runtime=state.stations.Find(x=>x.id==machine.Id);if(runtime==null)continue;
+                runtime.autonomous=true;runtime.recipeOptions=new(machine.Options);
+                var input=state.owners.Find(x=>x.id==runtime.input);var output=state.owners.Find(x=>x.id==runtime.output);
+                foreach(var i in machine.Input.Limits){var limit=input.limits.Find(x=>x.id==i.id);if(limit==null)input.limits.Add(new ItemAmount(i.id,i.count));else limit.count=Math.Max(limit.count,i.count);}
+                foreach(string key in machine.Options)
+                {
+                    var d=Definitions.Recipe(key);if(!output.accepts.Contains(d.output))output.accepts.Add(d.output);
+                    foreach(var i in d.inputs)if(!input.accepts.Contains(i.id))input.accepts.Add(i.id);
+                }
+                runtime.requirement=machine.Requirement;
+            }
             foreach(var producer in game.Producers)
             {
                 var runtime=state.stations.Find(s=>s.id==producer.Id);if(runtime==null)continue;
@@ -489,7 +504,7 @@ namespace Tycoon
                     var diner = data.diners.Find(x => x.receipt == receipt);
                     if (diner == null && order.dinerPhase < 3) { diner = TransactionCore.Copy(owner.diner); data.diners.Add(diner); }
                     if (diner == null) continue;
-                    diner.phase = order.dinerPhase; diner.remaining = (float)(diner.phase == 2 ? order.eatingRemaining : Math.Max(0, order.deadline - state.simulationTime)); diner.basket = Items(state, owner.id);
+                    diner.item=order.lines[0].id;diner.phase = order.dinerPhase; diner.remaining = (float)(diner.phase == 2 ? order.eatingRemaining : Math.Max(0, order.deadline - state.simulationTime)); diner.basket = Items(state, owner.id);
                 }
             }
             return data;

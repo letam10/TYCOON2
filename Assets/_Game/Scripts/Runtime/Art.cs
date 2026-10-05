@@ -46,8 +46,9 @@ namespace Tycoon
         public static GameObject Model(string key, Vector3 position, Transform parent = null, float scale = 1, float yaw = 0)
         {
             var prefab = Catalog.Model(key);
-            if (prefab == null) throw new System.InvalidOperationException("Thiếu model: " + key);
-            var go = Object.Instantiate(prefab, parent);
+            if (prefab == null && !TownArt.Supports(key)) throw new System.InvalidOperationException("Thiếu model: " + key);
+            var go = prefab ? Object.Instantiate(prefab,parent) : TownArt.Build(key);
+            if(!prefab)go.transform.SetParent(parent,false);
             go.name = key; go.transform.localPosition = position;
             go.transform.localRotation = Quaternion.Euler(0, yaw, 0);
             go.transform.localScale = Vector3.one * scale;

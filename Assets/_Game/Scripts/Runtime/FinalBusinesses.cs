@@ -8,15 +8,17 @@ namespace Tycoon
         {
             var market = WorldFactory.Floor(world, "04  SIÊU THỊ", new Vector3(28,0,33), new Vector2(22,22));
             market.gameObject.AddComponent<UnlockVisual>().Requirement = "supermarket";
-            WorldFactory.Shelf(game,world,"shelf_market_1","RAU CỦ",new Vector3(36.8f,0,38),new[]{"carrot","tomato","wheat"},"market","supermarket");
+            WorldFactory.Shelf(game,world,"shelf_market_1","RAU CỦ",new Vector3(36.8f,0,38),new[]{"carrot","tomato","wheat","corn","soybean"},"market","supermarket");
             WorldFactory.Shelf(game,world,"shelf_market_2","THỊT & SỮA",new Vector3(36.8f,0,33),new[]{"milk","egg","cheese","beef"},"market","supermarket");
-            WorldFactory.Shelf(game,world,"shelf_market_3","CHẾ BIẾN",new Vector3(36.8f,0,28),new[]{"flour","sauce","bread","cake"},"market","supermarket");
+            WorldFactory.Shelf(game,world,"shelf_market_3","CHẾ BIẾN",new Vector3(36.8f,0,28),new[]{"flour","sauce","soy_sauce","bottled_milk","wool","yarn","cloth","bread","cake"},"market","supermarket");
             WorldFactory.Checkout(game,world,"checkout_market",new Vector3(29,0,23),"market","supermarket");
             WorldFactory.Checkout(game,world,"checkout_market_2",new Vector3(20,0,23),"market","supermarket");
             var bakery = WorldFactory.Floor(world,"05  TIỆM BÁNH",new Vector3(4,0,38),new Vector2(20,20));
             bakery.gameObject.AddComponent<UnlockVisual>().Requirement="bakery";
             WorldFactory.Machine(game,world,"oven",new Vector3(0,0,38),"bakery");
             WorldFactory.Machine(game,world,"cakeoven",new Vector3(6,0,38),"bakery");
+            WorldFactory.Machine(game,world,"breadmixer",new Vector3(0,0,44),"bakery");
+            WorldFactory.Machine(game,world,"cakemixer",new Vector3(6,0,44),"bakery");
             WorldFactory.Shelf(game,world,"shelf_bakery","BÁNH MÌ & BÁNH NGỌT",new Vector3(11.8f,0,37),new[]{"bread","cake"},"bakery","bakery");
             WorldFactory.Checkout(game,world,"checkout_bakery",new Vector3(7,0,27),"bakery","bakery");
             var restaurant = WorldFactory.Floor(world,"05  NHÀ HÀNG",new Vector3(-20,0,39),new Vector2(22,20));

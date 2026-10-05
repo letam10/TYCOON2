@@ -27,6 +27,7 @@ namespace Tycoon
     {
         public TransactionState transactionState;
         public int transactionVersion;
+        public int contentVersion;
         public int version = 2;
         public int money;
         public int revenue;
@@ -56,7 +57,7 @@ namespace Tycoon
         public EventState events = new();
     }
     [Serializable] public sealed class CashSave { public string id; public int amount; }
-    [Serializable] public sealed class DinerSave { public string table; public long receipt; public int phase; public float remaining,x,z; public int price; public List<ItemAmount> basket = new(); }
+    [Serializable] public sealed class DinerSave { public string table,item; public long receipt; public int phase; public float remaining,x,z; public int price; public List<ItemAmount> basket = new(); }
 
     public static class SaveStore
     {

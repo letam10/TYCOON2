@@ -73,7 +73,7 @@ namespace Tycoon
                     Art.Model("extractor", new Vector3(0, 2.1f, .10f), root);
                     Art.Model("rolling_pin", new Vector3(.3f, 1.65f, -.3f), root);
                     break;
-                case "kitchen":
+                case "kitchen":case "cook_beef":case "cook_soup":case "cook_pasta":case "cook_sandwich":case "cook_vegetables":
                     Art.Model("cooking_range", Vector3.zero, root);
                     Art.Model("extractor", new Vector3(0, 2.1f, .10f), root);
                     Art.Model("cooking_pot", new Vector3(.48f, 1.05f, .10f), root);
@@ -132,7 +132,7 @@ namespace Tycoon
         void LateUpdate()
         {
             // Món chỉ hiện khi basket thật đã nhận; không tạo thêm inventory hoặc payment.
-            bool occupied = Table.IsUnlocked && Table.Occupant && Table.Occupant.Phase == 2 && Table.Occupant.Basket.Count("meal") > 0;
+            bool occupied = Table.IsUnlocked && Table.Occupant && Table.Occupant.Phase == 2 && Table.Occupant.Basket.Total > 0;
             Meal.SetActive(occupied); Dirty.SetActive(Table.IsUnlocked && Table.Cleaning > 0);
             Empty.SetActive(Table.IsUnlocked && Table.Occupant && Table.Occupant.Phase == 1);
         }

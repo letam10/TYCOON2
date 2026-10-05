@@ -82,9 +82,9 @@ namespace Tycoon
         public float Action {get=>Runtime?.progress.action??action;set{GuardState();action=value;}}
         public float Cycle {get=>Runtime?.progress.cycle??cycle;set{GuardState();cycle=value;}}
         public float Breeding {get=>Runtime?.progress.breeding??breeding;set{GuardState();breeding=value;}}
-        public string FeedItem=>Animal?"carrot":null;
+        public string FeedItem=>Animal?"animal_feed":null;
         void GuardState(){if(Runtime!=null)throw new InvalidOperationException("Producer chỉ được cập nhật qua transaction.");}
-        public bool Animal=>ItemId is "milk" or "egg" or "beef";
+        public bool Animal=>Definitions.IsAnimal(ItemId);
         public int HarvestQuantity=>Animal?1:Mathf.Max(1,Runtime?.progress.cycleYield > 0 ? Runtime.progress.cycleYield : Yield+Level-1);
         public override string Prompt=>!IsUnlocked?Label+" • chưa mở":Animal?Label+" • đàn "+Herd+"/"+MaximumHerd+" • thức ăn "+Feed+"/"+MaximumFeed+" • "+(Feed<MaximumFeed?"Cần "+Definitions.Item(FeedItem)?.label:Herd==0?"Đang tái đàn":Cycle.ToString("0")+"s"):Label+" • "+(Phase==0?"Đứng gieo hạt":Phase==1?"Đứng tưới":Phase==2?"Đang lớn "+Remaining.ToString("0.0")+"s":"Đứng thu hoạch")+" • cấp "+Level;
         void Update(){Tick(Time.deltaTime);}

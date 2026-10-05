@@ -28,7 +28,7 @@ namespace Tycoon.Tests
             game = root.AddComponent<GameSession>(); GameSession.Instance = game;
             game.Player = Add<PlayerController>("Player"); game.Economy = new Economy(1000);
             storage = Add<StorageStation>("Storage"); storage.Id = "storage"; storage.Inventory = new Inventory(20); game.Stations.Add(storage);
-            storage.Inventory.TryAdd("carrot", 6);
+            storage.Inventory.TryAdd("carrot", 6);storage.Inventory.TryAdd("animal_feed",6);
             shopStorage=Add<StorageStation>("FarmShopStorage");shopStorage.Id="storage_farm_shop";shopStorage.AreaId="farm_shop";shopStorage.Inventory=new Inventory(20);game.Stations.Add(shopStorage);
             counter = Add<CheckoutStation>("Counter"); counter.Id = "counter"; counter.ShopId = "farm"; counter.Inventory=new Inventory(36); game.Stations.Add(counter); game.Checkouts.Add(counter);
             livestockShelf=Add<ShelfStation>("LivestockShelf");livestockShelf.Id="shelf_livestock";livestockShelf.ShopId="farm";livestockShelf.AreaId="farm_shop";livestockShelf.AllowedItems=new[]{"carrot","milk","egg","beef"};livestockShelf.Inventory=new Inventory(36);game.Stations.Add(livestockShelf);game.Shelves.Add(livestockShelf);
@@ -125,16 +125,16 @@ namespace Tycoon.Tests
             Assert.That(game.Transactions.Collect(counter.Id),Is.EqualTo(20));Assert.That(game.Transactions.Collect(counter.Id),Is.Zero);
             Assert.That(game.Economy.Money,Is.EqualTo(1020));TransactionCore.Validate(game.Transactions.Snapshot());
         }
-        [Test] public void MachineHandsOffOperatorAndRecoversJobReservationAndOutputOnce()
+        [Test] public void AutonomousMachineKeepsRunningAndRecoversJobReservationAndOutputOnce()
         {
             Assert.That(machine.Phase,Is.EqualTo(MachinePhase.Ready));
-            Assert.That(machine.Operate(.1f, game.Player.GetEntityId()), Is.True); string job = game.Transactions.Snapshot().stations.Find(x => x.id == machine.Id).jobId;
+            Assert.That(game.Transactions.TickMachine(machine,.1f), Is.True); string job = game.Transactions.Snapshot().stations.Find(x => x.id == machine.Id).jobId;
             Assert.That(machine.Phase,Is.EqualTo(MachinePhase.Operating));
             machine.ReleaseOperator(game.Player.GetEntityId()); float remaining = machine.Remaining;
             Assert.That(machine.Phase,Is.EqualTo(MachinePhase.Operating));Assert.That(machine.HasOperator,Is.False);
             game.SaveGame(); game.LoadGame(); Assert.That(game.SaveBlocked, Is.False); Assert.That(machine.Remaining, Is.EqualTo(remaining));
             Assert.That(machine.Input.Count("wheat"), Is.EqualTo(4)); Assert.That(machine.Inventory.ReservedSpace("flour"), Is.EqualTo(3));
-            Assert.That(machine.Operate(6, game.Player.GetEntityId()), Is.True); Assert.That(machine.Inventory.Count("flour"), Is.EqualTo(3));
+            Assert.That(game.Transactions.TickMachine(machine,6), Is.True); Assert.That(machine.Inventory.Count("flour"), Is.EqualTo(3));
             Assert.That(machine.Phase,Is.EqualTo(MachinePhase.CompletedWaitingPickup));
             var finish = game.Transactions.Command(TransactionKind.CompleteMachine, "player", machine.Id); finish.secondary = job;
             Assert.That(game.Transactions.Execute(finish).amount, Is.Zero); Assert.That(machine.Batches, Is.EqualTo(1));
@@ -149,6 +149,7 @@ namespace Tycoon.Tests
         }
         [Test] public void MeatBundleOpensFullRouteAndRestockStartsAtZeroPopulation()
         {
+            var ready=game.Transactions.Snapshot();ready.unlocked.Add("farm_level2");game.Transactions.Detach();game.InitializeTransactions(ready,false);
             var bundle=Definitions.Upgrade("barn");Assert.That(game.Contribute(bundle,500),Is.EqualTo(500));
             Assert.That(beef.IsUnlocked,Is.True);Assert.That(livestockShelf.IsUnlocked,Is.True);Assert.That(counter.AcceptsItem("beef"),Is.True);
             var customer=Add<CustomerAgent>("BeefCustomer");customer.Restore(new CustomerSave{receipt=game.NextReceipt++,shop="farm",lane=counter.Id,
@@ -157,7 +158,7 @@ namespace Tycoon.Tests
             int requested=customer.Order.Lines.Single().requested;
             for(int i=0;i<requested;i++)
             {
-                Assert.That(Inventory.Transfer(storage.Inventory,game.Player.Carry,"carrot",1),Is.EqualTo(1));
+                Assert.That(Inventory.Transfer(storage.Inventory,game.Player.Carry,"animal_feed",1),Is.EqualTo(1));
                 Assert.That(beef.FeedPlayer(game.Player.Carry,game.Player.GetEntityId()).Worked,Is.True);
                 if(beef.Cycle>0)Assert.That(game.Transactions.TickProducer(beef,beef.Cycle),Is.True);
                 Assert.That(beef.Cycle,Is.Zero);
@@ -172,14 +173,14 @@ namespace Tycoon.Tests
             Assert.That(game.Economy.Money,Is.EqualTo(1000-500+expectedCash));
             while(beef.Herd>0)
             {
-                Assert.That(Inventory.Transfer(storage.Inventory,game.Player.Carry,"carrot",1),Is.EqualTo(1));
+                Assert.That(Inventory.Transfer(storage.Inventory,game.Player.Carry,"animal_feed",1),Is.EqualTo(1));
                 Assert.That(beef.FeedPlayer(game.Player.Carry,game.Player.GetEntityId()).Worked,Is.True);
                 if(beef.Cycle>0)game.Transactions.TickProducer(beef,beef.Cycle);
                 Assert.That(beef.PickupPlayer(game.Player.Carry,1,game.Player.GetEntityId()).Worked,Is.True);
                 Assert.That(Inventory.Transfer(game.Player.Carry,storage.Inventory,"beef",1),Is.EqualTo(1));
             }
             Assert.That(beef.Herd,Is.Zero);
-            Assert.That(Inventory.Transfer(storage.Inventory,game.Player.Carry,"carrot",1),Is.EqualTo(1));
+            Assert.That(Inventory.Transfer(storage.Inventory,game.Player.Carry,"animal_feed",1),Is.EqualTo(1));
             Assert.That(beef.FeedPlayer(game.Player.Carry,game.Player.GetEntityId()).Worked,Is.True);
             Assert.That(beef.RestockPlayer(game.Player.GetEntityId()).Worked,Is.True);
             Assert.That(beef.Herd,Is.Zero);Assert.That(beef.Breeding,Is.EqualTo(60));

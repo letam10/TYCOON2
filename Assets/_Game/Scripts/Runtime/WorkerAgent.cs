@@ -98,7 +98,7 @@ namespace Tycoon
                 if(working is MachineStation machine)
                 {
                     Reason=machine.Phase==MachinePhase.Operating?"Đang vận hành":"Đang khởi động máy";
-                    if(!machine.Broken&&machine.Operate(Time.deltaTime*(1+.2f*(crew.speedLevel-1)),GetEntityId()))View.Work(ActorView.WorkState(machine,InteractionKind.Operate));
+                    StopWorking();Reason="Máy tự chạy • tìm việc nạp/lấy hàng";
                     return;
                 }
                 if(working is TableStation table)
@@ -163,7 +163,7 @@ namespace Tycoon
             if(Carry.Total>0){BeginDrop(g.StorageFor(crew.area));return;}
             if(Role is "Farmer" or "AnimalWorker")
             {
-                var list=g.Producers.FindAll(x=>x.IsUnlocked&&x.AreaId==crew.area&&(Role=="Farmer"?x.ItemId is "carrot" or "wheat" or "tomato":x.ItemId is "milk" or "egg" or "beef"));
+                var list=g.Producers.FindAll(x=>x.IsUnlocked&&x.AreaId==crew.area&&(Role=="Farmer"?!x.Animal:x.Animal));
                 list.RemoveAll(x=>!x.Animal&&x.Phase==2||g.Workers.Exists(w=>w!=this&&w.working==x)||x.IsOperatedByOther(GetEntityId()));
                 if(Role=="Farmer")
                 {
@@ -185,7 +185,7 @@ namespace Tycoon
                 var dirty=g.Tables.Find(x=>x.IsUnlocked&&x.AreaId==crew.area&&x.Cleaning>0&&!g.Workers.Exists(w=>w!=this&&w.working==x));
                 if(dirty){working=dirty;Navigation.Go(Agent,dirty.WorkPoint);return;}
                 var table=g.Tables.Find(x=>x.AreaId==crew.area&&x.NeedsMeal&&!g.Workers.Exists(w=>w!=this&&w.destination==x&&w.phase>0));
-                if(table){var food=g.Machines.Find(x=>x.AreaId=="restaurant"&&x.Inventory.Available("meal")>0) as Station??g.StorageFor("restaurant");BeginMove(food,table,"meal",1,false);}
+                if(table){string wanted=table.Occupant.WantedItem;var food=g.Machines.Find(x=>x.AreaId=="restaurant"&&x.Inventory.Available(wanted)>0) as Station??g.StorageFor("restaurant");BeginMove(food,table,wanted,1,false);}
                 return;
             }
             FindRoute();
@@ -307,7 +307,7 @@ namespace Tycoon
                 if(destination is ProductionStation animal&&animal.Animal)working=animal;
             }
         }
-        static string SupplyArea(string sku)=>sku is "flour" or "cheese" or "sauce"?"processing":sku is "bread" or "cake"?"bakery":sku=="meal"?"restaurant":"farm";
+        static string SupplyArea(string sku)=>sku is "flour" or "cheese" or "sauce" or "soy_sauce" or "bottled_milk" or "yarn" or "cloth"?"processing":sku is "bread" or "cake" or "bread_dough" or "cake_batter"?"bakery":sku is "meal" or "beef_soy" or "corn_soup" or "pasta" or "egg_sandwich" or "soy_vegetables"?"restaurant":"farm";
         static int SaleAvailable(Station source,string sku)
         {
             return source is StorageStation storage?storage.AvailableAboveReserve(sku):source.Inventory.Available(sku);

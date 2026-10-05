@@ -86,13 +86,23 @@ namespace Tycoon
         public int Phase {get=>Runtime?.dinerPhase??phase;set{if(Runtime!=null)throw new System.InvalidOperationException("Diner chỉ được cập nhật qua transaction.");phase=value;}}
         public float Remaining {get=>Runtime==null?remaining:Phase==2?(float)Runtime.eatingRemaining:(float)System.Math.Max(0,Runtime.deadline-GameSession.Instance.Transactions.Now);set{if(Runtime!=null)throw new System.InvalidOperationException("Diner chỉ được cập nhật qua transaction.");remaining=value;}}
         public int Price;
+        string wantedItem="meal";
+        public string WantedItem=>Runtime?.lines[0].id??wantedItem;
+        string PickDish()
+        {
+            var game=GameSession.Instance;var choices=new List<string>();
+            foreach(string id in Definitions.KitchenRecipes){var d=Definitions.Recipe(id);if(d.output!="meal"&&game.Progression.CanProduce(d.output))choices.Add(d.output);}
+            return choices.Count>0?choices[Random.Range(0,choices.Count)]:"meal";
+        }
         float lastTickTime;
         public float PatienceLeft=>Phase<2?Runtime!=null?Remaining:Mathf.Max(0,Remaining-Mathf.Max(0,Time.time-lastTickTime)):0;
         public void Initialize(){Agent=Navigation.Agent(gameObject,true);View=GetComponentInChildren<ActorView>();View.Initialize();}
         public void Begin(TableStation table,DinerSave saved)
         {
             Table=table;if(Basket.Authority!=null)Basket.Unbind();Basket.Restore(saved?.basket);Receipt=saved?.receipt??GameSession.Instance.NextReceipt++;
-            phase=saved?.phase??0;remaining=saved?.remaining??90;Price=saved?.price??GameSession.Instance.ItemPrice("meal");lastTickTime=Time.time;
+            wantedItem=saved?.item;
+            if(string.IsNullOrEmpty(wantedItem))wantedItem=saved!=null?"meal":PickDish();
+            phase=saved?.phase??0;remaining=saved?.remaining??90;Price=saved?.price??GameSession.Instance.ItemPrice(wantedItem);lastTickTime=Time.time;
             if(GameSession.Instance.Transactions!=null)GameSession.Instance.Transactions.BindDiner(this,saved??Snapshot(),saved==null);
             if(Phase<3)table.Occupant=this;
             if(Agent){if(Phase<3)Navigation.Go(Agent,table.Seat);else Navigation.Go(Agent,new Vector3(-20,0,25));}
@@ -102,7 +112,7 @@ namespace Tycoon
             if(Phase!=1||Table==null||Table.Occupant!=this||carrier==null)return false;
             if(PatienceLeft<=0){FailOrder();return false;}
             if(Runtime!=null)return GameSession.Instance.Transactions.Deliver(Receipt,carrier)>0;
-            if(Inventory.Transfer(carrier,Basket,"meal",1)!=1)return false;
+            if(Inventory.Transfer(carrier,Basket,WantedItem,1)!=1)return false;
             // Nhận món và bắt đầu ăn là cùng một giao dịch, tránh giao trùng trong một frame.
             Phase=2;Remaining=6;lastTickTime=Time.time;return true;
         }
@@ -121,7 +131,7 @@ namespace Tycoon
             if(Runtime!=null)
             {
                 if(Phase<2&&PatienceLeft<=0){FailOrder();return;}
-                if(Phase==1&&Table.Inventory.Count("meal")>0)ReceiveMeal(Table.Inventory);
+                if(Phase==1&&Table.Inventory.Count(WantedItem)>0)ReceiveMeal(Table.Inventory);
                 if(Phase==2)
                 {
                     var command=game.Transactions.Command(TransactionKind.AdvanceDiner,"simulation",RuntimeTransactions.OrderId(Receipt));command.duration=delta;
@@ -135,7 +145,7 @@ namespace Tycoon
                 Remaining=Mathf.Max(0,Remaining-delta);
                 if(Remaining<=0){FailOrder();return;}
             }
-            if(Phase==1&&Table.Inventory.Count("meal")>0)ReceiveMeal(Table.Inventory);
+            if(Phase==1&&Table.Inventory.Count(WantedItem)>0)ReceiveMeal(Table.Inventory);
             else if(Phase==2)
             {
                 Remaining=Mathf.Max(0,Remaining-delta);
@@ -161,7 +171,7 @@ namespace Tycoon
             else if(Phase==3&&Navigation.Arrived(Agent))game.Restaurant.Recycle(this);
             if(Phase is 1 or 2 && View.Animator.HasState(0,Animator.StringToHash("Sit")) && !View.Animator.IsInTransition(0) && !View.Animator.GetCurrentAnimatorStateInfo(0).IsName("Sit"))View.Animator.CrossFadeInFixedTime("Sit",.2f);
         }
-        public DinerSave Snapshot()=>new(){table=Table.Id,receipt=Receipt,phase=Phase,remaining=Phase<2?PatienceLeft:Remaining,price=Price,x=transform.position.x,z=transform.position.z,basket=Basket.Snapshot()};
+        public DinerSave Snapshot()=>new(){table=Table.Id,item=WantedItem,receipt=Receipt,phase=Phase,remaining=Phase<2?PatienceLeft:Remaining,price=Price,x=transform.position.x,z=transform.position.z,basket=Basket.Snapshot()};
     }
 }
 

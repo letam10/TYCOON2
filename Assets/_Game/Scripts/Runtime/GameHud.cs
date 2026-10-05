@@ -19,6 +19,7 @@ namespace Tycoon
         readonly StringBuilder stockLines=new();
         GameObject menu,crewPanel;
         Button continueButton;
+        Button recipeButton;
         Transform crewContent;
         Text crewSummary;
         bool paused;
@@ -50,7 +51,7 @@ namespace Tycoon
             prompt = Text("ActionText", action.transform, "", 22, TextAnchor.MiddleCenter, "#FFFFFF"); Rect(prompt.rectTransform, Vector2.zero, Vector2.one, new Vector2(10,0), new Vector2(-10,0));
             var toastRoot = Panel("Toast", root.transform, new Vector2(.5f,1), new Vector2(.5f,1), new Vector2(-500,-100), new Vector2(500,-36), "#275D34", .9f);
             toast = Text("ToastText", toastRoot.transform, "", 22, TextAnchor.MiddleCenter, "#FFFFFF"); Rect(toast.rectTransform, Vector2.zero, Vector2.one, new Vector2(12,0), new Vector2(-12,0));
-            var help = Text("Help", root.transform, "WASD / cần trái: di chuyển • Đứng trong vùng để thao tác • Q / RB: chọn hàng • F5 / Start: lưu • Esc / Back: menu", 18, TextAnchor.MiddleCenter, "#FFFFFF");
+            var help = Text("Help", root.transform, "WASD / cần trái: di chuyển • Dừng gần vật thể để thao tác • Q / RB: chọn hàng • F5 / Start: lưu • Esc / Back: menu", 18, TextAnchor.MiddleCenter, "#FFFFFF");
             Rect(help.rectTransform, Vector2.zero, new Vector2(1,0), new Vector2(10,10), new Vector2(-10,42));
             menu = Panel("Pause", root.transform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, "#143627", .95f);
             var heading = Text("PauseHeading", menu.transform, "TYCOON2\nNông trại → Đế chế kinh doanh", 40, TextAnchor.MiddleCenter, "#FFFFFF");
@@ -60,6 +61,9 @@ namespace Tycoon
             Button(menu.transform,"Lưu trò chơi",-85,()=>game.SaveGame());
             Button(menu.transform,"Lưu & thoát",-165,()=> { game.SaveGame(); Application.Quit(); });
             menu.SetActive(false);
+            recipeButton=Button(root.transform,"Đổi món",0,CycleRecipe);
+            Rect(recipeButton.GetComponent<RectTransform>(),new Vector2(.5f,0),new Vector2(.5f,0),new Vector2(-260,130),new Vector2(260,210));
+            recipeButton.gameObject.SetActive(false);
             if(DevelopmentAssistance.Enabled)
             {
                 var support=Button(root.transform,"Hỗ trợ +999.999 / mở khu",0,()=>{if(DevelopmentAssistance.Apply(game))game.Say("Đã cộng 999.999 xu và mở tuyến cơ bản.");});
@@ -83,6 +87,8 @@ namespace Tycoon
         {
             if (Keyboard.current?.escapeKey.wasPressedThisFrame == true || Gamepad.current?.selectButton.wasPressedThisFrame == true) TogglePause();
             money.text = game.Economy.Money.ToString("N0");
+            var active=game.Player.ActiveInteraction as ProximityTarget;
+            recipeButton.gameObject.SetActive(active?.Target is MachineStation m && m.Options.Length>1);
             string area = game.BusinessStage switch { 5 => "Nhà hàng & tiệm bánh", 4 => "Tiệm bánh", 3 => "Siêu thị", 2 => game.Economy.Has("mill")?"Chế biến":"Cửa hàng nông sản", _ => "Nông trại & cửa hàng" };
             progress.text = area + "\n" + game.Workers.Count + " nhân viên • " + game.Economy.Transactions + " lượt bán";
             objective.text=game.ObjectiveText;
@@ -120,6 +126,12 @@ namespace Tycoon
             stock.text=stockLines.ToString();
             if(crewPanel.activeSelf)foreach(var row in crewStatuses)
                 row.Value.text=string.Join(" • ",game.Workers.Where(x=>x&&x.UpgradeId==row.Key).Select(x=>x.Reason).Distinct().Take(3));
+        }
+        void CycleRecipe()
+        {
+            if(game.Player.ActiveInteraction is not ProximityTarget target || target.Target is not MachineStation machine || machine.Running)return;
+            int i=System.Array.IndexOf(machine.Options,machine.Recipe.id);
+            if(game.Transactions.SelectRecipe(machine,machine.Options[(i+1)%machine.Options.Length]))game.Say("Chuẩn bị: "+machine.Recipe.label);
         }
         public void TogglePause()
         {

@@ -488,6 +488,14 @@ Build để chơi: `work/art-refresh/Build/TYCOON2.exe`. Audit/mapping/license: 
 - EditMode/compile: 120/120 pass. Chưa nghiệm thu hình ảnh/Windows Player của mốc này; tiếp tục máy tự động, repair, logistics và polish.
 - Commit/push mốc: `feat: add proximity interaction and expanding farm foundation` (hash sẽ được ghi khi chốt các mốc).
 
+## Thiết kế thị trấn mới — mốc 2 — 2026-10-06
+
+- Máy runtime tự chạy do simulation cập nhật; nạp liệu ghi actor khởi tạo, batch chỉ ghi một lần. Recipe snapshot/escrow giữ mẻ Bakery cũ khi đổi sang mixer → dough → oven.
+- Thêm feed từ lúa mì/ngô/đậu nành, tương đậu nành, chiết sữa, cừu/len/sợi/vải, mixer và 5 món Restaurant có SKU riêng. Kitchen chọn recipe tự động theo nhu cầu bàn hoặc nút Đổi món.
+- Crew chế biến chuyển sang nạp/lấy hàng. Đã cập nhật các fixture/test prototype về prerequisite Farm cấp 2, feed và mixer; không bỏ các assert bảo toàn/idempotency.
+- Compile/EditMode: 122/122 pass. Các model bổ sung đang dùng hình dựng local URP; hình ảnh và player loop mới sẽ kiểm chứng tại mốc polish.
+- Mốc 1: `9a13764`, đã push. Commit mốc 2: `feat: add automatic production chains and restaurant recipes`.
+
 ## Những gì chưa thực hiện được / chưa nghiệm thu — cập nhật cuối Công đoạn 14
 
 - **Công đoạn 14: chưa pass lượt liên tục new game 0 → Restaurant bằng sản xuất/thu tiền thực tế, không nạp state. Chưa pass mục tiêu mở toàn chuỗi trong 180–240 phút.** Preset sát ngưỡng xác nhận từng gate/gameplay nhưng không thay thế hai tiêu chí này; chưa chốt acceptance toàn Công đoạn 14.

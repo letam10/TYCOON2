@@ -21,6 +21,7 @@ namespace Tycoon.Tests
             Stage11To13Fixtures.Producer(state,"egg","egg_line");
             Stage11To13Fixtures.Machine(state,"oven","bakery",area:"bakery");
             Stage11To13Fixtures.Machine(state,"cakeoven","bakery",area:"bakery");
+            Stage11To13Fixtures.Machine(state,"breadmixer","bakery",area:"bakery");Stage11To13Fixtures.Machine(state,"cakemixer","bakery",area:"bakery");
             Assert.That(ProgressionTracker.CanProduce(state,"bread"),Is.True);
             Assert.That(ProgressionTracker.CanProduce(state,"cake"),Is.True);
 

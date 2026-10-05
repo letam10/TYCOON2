@@ -75,9 +75,12 @@ namespace Tycoon
             if(!available)
                 foreach(var machine in state.stations.Where(s=>s.kind=="machine"&&(string.IsNullOrEmpty(s.requirement)||state.unlocked.Contains(s.requirement))))
                 {
-                    var recipe=Definitions.Recipe(machine.definitionId);
-                    var path=new HashSet<string>(visiting);
-                    if(recipe!=null&&recipe.output==item&&recipe.inputs.All(x=>CanProduce(state,x.id,path))){available=true;break;}
+                    foreach(string id in machine.recipeOptions.Count>0?machine.recipeOptions:new List<string>{machine.definitionId})
+                    {
+                        var recipe=Definitions.Recipe(id);
+                        if(recipe!=null&&recipe.output==item&&recipe.inputs.All(x=>CanProduce(state,x.id,new HashSet<string>(visiting)))){available=true;break;}
+                    }
+                    if(available)break;
                 }
             if(!available)visiting.Remove(item);
             return available;
@@ -88,10 +91,10 @@ namespace Tycoon
             if(!visiting.Add(item))return false;
             bool available=game.Producers.Any(x=>x.IsUnlocked&&x.ItemId==item);
             if(!available)
-                foreach(var machine in game.Machines.Where(x=>x.IsUnlocked&&x.Recipe!=null&&x.Recipe.output==item))
+                foreach(var machine in game.Machines.Where(x=>x.IsUnlocked&&x.Recipe!=null))
                 {
                     var path=new HashSet<string>(visiting);
-                    if(machine.Recipe.inputs.All(x=>CanProduce(game,x.id,path))){available=true;break;}
+                    if(machine.Options.Any(id=>Definitions.Recipe(id).output==item&&Definitions.Recipe(id).inputs.All(x=>CanProduce(game,x.id,new HashSet<string>(path))))){available=true;break;}
                 }
             if(!available)visiting.Remove(item);
             return available;
@@ -168,7 +171,7 @@ namespace Tycoon
                         reasons.Add("Mẻ " + (Definitions.Recipe(batch.recipeId)?.label ?? batch.recipeId) + " • " +
                             game.Progression.RecipeBatches(batch.recipeId) + "/" + batch.batches + ".");
                 AddPlayerTraining(reasons,requirement,
-                    game.Machines.Where(x=>x.AreaId=="restaurant"&&x.Recipe?.id=="kitchen").Sum(x=>x.PlayerBatches),
+                    game.Machines.Where(x=>x.AreaId=="restaurant").Sum(x=>x.PlayerBatches),
                     game.Tables.Sum(x=>x.PlayerServeCount),game.Tables.Sum(x=>x.PlayerCleanCount));
             }
             if (upgrade.kind == "worker")
@@ -222,7 +225,7 @@ namespace Tycoon
                     if (count < batch.batches) reasons.Add("Mẻ " + (Definitions.Recipe(batch.recipeId)?.label ?? batch.recipeId) + " • " + count + "/" + batch.batches + ".");
                 }
                 AddPlayerTraining(reasons,requirement,
-                    state.stations.Where(s=>s.kind=="machine"&&s.area=="restaurant"&&s.definitionId=="kitchen").Sum(s=>s.playerBatches),
+                    state.stations.Where(s=>s.kind=="machine"&&s.area=="restaurant").Sum(s=>s.playerBatches),
                     state.stations.Where(s=>s.kind=="table"&&s.area=="restaurant").Sum(s=>s.progress.playerServeCount),
                     state.stations.Where(s=>s.kind=="table"&&s.area=="restaurant").Sum(s=>s.progress.playerCleanCount));
             }
@@ -280,7 +283,7 @@ namespace Tycoon
 
         internal static string Family(StationRuntimeState station)
         {
-            if (station.kind == "producer") return station.item is "milk" or "egg" or "beef" ? "animal" : "farm";
+            if (station.kind == "producer") return Definitions.IsAnimal(station.item) ? "animal" : "farm";
             return station.area switch
             {
                 "processing" => "mill", "supermarket" => "market", "bakery" => "oven", "restaurant" => "kitchen",
@@ -302,8 +305,8 @@ namespace Tycoon
         }
         static bool PlayerJobStation(StationRuntimeState station,string role)=>role switch
         {
-            "Farmer"=>station.kind=="producer"&&station.item is "carrot" or "tomato" or "wheat",
-            "AnimalWorker"=>station.kind=="producer"&&station.item is "milk" or "egg" or "beef",
+            "Farmer"=>station.kind=="producer"&&Definitions.IsCrop(station.item),
+            "AnimalWorker"=>station.kind=="producer"&&Definitions.IsAnimal(station.item),
             "Restocker"=>station.kind=="shelf",
             "Cashier"=>station.kind=="counter",
             "Processor" or "Baker" or "Cook"=>station.kind=="machine",

@@ -204,6 +204,7 @@ namespace Tycoon
         public SaveData CaptureSaveData()
         {
             var data = new SaveData {
+                contentVersion=2,
                 money = Economy.Money, revenue = Economy.Revenue, cashCollected=Economy.CashCollected,transactions = Economy.Transactions,
                 nextReceipt = NextReceipt, savedAt = DateTime.UtcNow.ToString("o"),
                 pendingCash = Economy.PendingCash, businessStage = BusinessStage, bakerySales = BakerySales, restaurantMeals = RestaurantMeals,

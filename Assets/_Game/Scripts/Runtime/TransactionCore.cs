@@ -141,6 +141,9 @@ namespace Tycoon
                 case TransactionKind.OperateProducer: return OperateProducer(s, c);
                 case TransactionKind.RestockProducer: return RestockProducer(s, c);
                 case TransactionKind.GrantAssistance: return GrantAssistance(s, c);
+                case TransactionKind.SelectRecipe:
+                    var selected=Machine(s,c);Require(!selected.running && selected.recipeOptions.Contains(c.secondary),"recipe","Recipe không thuộc máy hoặc mẻ đang chạy.");
+                    selected.definitionId=c.secondary;selected.definitionVersion=Definitions.Recipe(c.secondary).version;selected.manualRecipe=c.actor=="player";return 1;
                 case TransactionKind.TickProducer: return TickProducer(s, c);
                 case TransactionKind.HarvestProducer: return HarvestProducer(s, c);
                 case TransactionKind.FeedProducer: return FeedProducer(s, c);
@@ -198,7 +201,7 @@ namespace Tycoon
             s.stacks.Add(new ItemStackState { id = id, owner = owner, location = StackLocation(location,item), item = item, quantity = count });
         }
         static string StackLocation(OwnerState owner,string item) => owner.kind==OwnerKind.Storage?owner.location+"/"+item:owner.location;
-        static string FeedItem(string livestock) => livestock is "milk" or "egg" or "beef"?"carrot":null;
+        static string FeedItem(string livestock) => Definitions.IsAnimal(livestock)?"animal_feed":null;
         static List<StackAllocation> Allocate(TransactionState s, string owner, string item, int quantity)
         {
             var result = new List<StackAllocation>();
@@ -405,12 +408,12 @@ namespace Tycoon
         }
         int StartMachine(TransactionState s, TransactionCommand c)
         {
-            var m = Machine(s, c); var recipe = Array.Find(Definitions.Recipes, x => x.id == m.definitionId);
+            var m = Machine(s, c); var recipe = MachineRecipe(s,m);
             Require(recipe != null && !m.running && !m.progress.broken, "machine", "Máy đang chạy hoặc bị hỏng.");
             Lease(m, c.actor, clock());
             Require(!string.IsNullOrWhiteSpace(c.secondary), "job", "Thiếu job ID.");
             Require(!s.jobIds.Contains(m.id + ":" + c.secondary), "job", "Job ID đã dùng.");
-            Require(m.machinePhase == MachinePhase.Ready, "machine", "Máy chưa sẵn sàng hoặc đang chờ lấy hàng.");
+            Require(m.machinePhase == MachinePhase.Ready || m.autonomous && !m.running,"machine","Máy chưa sẵn sàng.");
             Require(Free(s, Owner(s, m.output), recipe.output) >= recipe.yield, "capacity", "Đầu ra đầy.");
             m.escrow="escrow:"+m.id+":"+c.secondary;
             s.owners.Add(new OwnerState{id=m.escrow,actor="simulation",location=m.escrow,kind=OwnerKind.Escrow,capacity=recipe.inputs.Sum(x=>x.count)});
@@ -420,6 +423,7 @@ namespace Tycoon
                 AddStack(s,"job-input:"+m.id+":"+c.secondary+":"+input.id,m.escrow,input.id,input.count);
             }
             m.jobId = c.secondary; m.reservationId = "output:" + m.id + ":" + c.secondary; m.operatorId = c.actor;
+            m.batch=RecipeBatchSnapshot.From(recipe,c.actor=="simulation"?m.lastInputActor??"simulation":c.actor);
             s.jobIds.Add(m.id + ":" + c.secondary);
             s.reservations.Add(new ReservationState { id = m.reservationId, holder = c.actor, destination = m.output, item = recipe.output, quantity = recipe.yield, expiresAt = double.MaxValue });
             m.running = true; m.machinePhase = MachinePhase.Operating; m.remaining = recipe.seconds; return 1;
@@ -427,7 +431,7 @@ namespace Tycoon
         int AdvanceMachine(TransactionState s, TransactionCommand c)
         {
             var m = Machine(s, c); Require(m.running && !m.progress.broken && m.jobId == c.secondary, "lease", "Sai job hoặc máy đang hỏng.");
-            Lease(m, c.actor, clock());
+            if(m.autonomous)Require(c.actor=="simulation","authority","Chỉ simulation cập nhật máy tự động.");else Lease(m, c.actor, clock());
             Require(double.IsFinite(c.duration) && c.duration > 0, "duration", "Delta không hợp lệ.");
             m.remaining = Math.Max(0, m.remaining - c.duration); return 1;
         }
@@ -435,14 +439,14 @@ namespace Tycoon
         {
             var m = Machine(s, c);
             if (!m.running && m.jobId == c.secondary) return 0;
-            Require(m.running && m.jobId == c.secondary && m.operatorId == c.actor && m.remaining == 0, "machine", "Job chưa sẵn sàng.");
-            var recipe = Array.Find(Definitions.Recipes, x => x.id == m.definitionId);
+            Require(m.running && m.jobId == c.secondary && (m.autonomous?c.actor=="simulation":m.operatorId == c.actor) && m.remaining == 0, "machine", "Job chưa sẵn sàng.");
+            var recipe=m.batch??RecipeBatchSnapshot.From(Definitions.Recipe(m.definitionId),c.actor);
             var reservation = Reservation(s, m.reservationId); Require(reservation.status == ReservationStatus.Active, "reservation", "Mất chỗ đầu ra.");
             reservation.status = ReservationStatus.Used;
             Require(Free(s, Owner(s, m.output), recipe.output) >= recipe.yield, "capacity", "Đầu ra không còn chỗ.");
             if(!string.IsNullOrEmpty(m.escrow)){s.stacks.RemoveAll(x=>x.owner==m.escrow);s.owners.RemoveAll(x=>x.id==m.escrow);m.escrow=null;}
             AddStack(s, "job-output:" + m.id + ":" + m.jobId, m.output, recipe.output, recipe.yield);
-            m.running = false; m.machinePhase = MachinePhase.CompletedWaitingPickup; m.batches++; m.workCount++; if(c.actor=="player"){m.playerWorkCount++;m.playerBatches++;} m.remaining = 0; return recipe.yield;
+            m.running = false; m.manualRecipe=false;m.machinePhase = MachinePhase.CompletedWaitingPickup; m.batches++; m.workCount++; if(recipe.initiator=="player"){m.playerWorkCount++;m.playerBatches++;} m.remaining = 0; return recipe.yield;
         }
         static StationRuntimeState Station(TransactionState s, string id)
         { var m = s.stations.Find(x => x.id == id); Require(m != null, "station", "Station không tồn tại: " + id); return m; }
@@ -450,6 +454,7 @@ namespace Tycoon
         {
             var station = s.stations.Find(x => x.output == c.destination || x.input == c.destination);
             if(station==null)return;
+            if(station.kind=="machine" && station.input==c.destination)station.lastInputActor=c.actor;
             if(c.kind==TransactionKind.Place)station.workCount++;
             if(c.actor=="player")station.playerWorkCount++;
         }
@@ -469,7 +474,7 @@ namespace Tycoon
         {
             var m = Producer(s, c); var p = m.progress;
             Require(double.IsFinite(c.duration) && c.duration > 0, "duration", "Delta không hợp lệ.");
-            if (m.item is "milk" or "egg" or "beef")
+            if (Definitions.IsAnimal(m.item))
             {
                 Require(p.feed > 0, "feed", "Hãy đặt "+Definitions.Item(FeedItem(m.item)).label+" vào vùng Cho ăn.");
                 return 1;
@@ -483,7 +488,7 @@ namespace Tycoon
         int RestockProducer(TransactionState s, TransactionCommand c)
         {
             var m=Producer(s,c);var p=m.progress;
-            Require(m.item is "milk" or "egg" or "beef"&&p.herd<ProductionStation.MaximumHerd&&p.breeding==0,"restock","Đàn đã đủ hoặc đang tái đàn.");
+            Require(Definitions.IsAnimal(m.item)&&p.herd<ProductionStation.MaximumHerd&&p.breeding==0,"restock","Đàn đã đủ hoặc đang tái đàn.");
             Require(p.feed>0,"feed","Cần thức ăn để bắt đầu tái đàn.");
             p.feed--;p.breeding=60;m.workCount++;if(c.actor=="player")m.playerWorkCount++;return 1;
         }
@@ -491,7 +496,7 @@ namespace Tycoon
         {
             Require(c.actor == "simulation" && double.IsFinite(c.duration) && c.duration > 0, "authority", "Tick không hợp lệ.");
             var m = Producer(s, c, false); var p = m.progress;
-            if (m.item is not ("milk" or "egg" or "beef"))
+            if (!Definitions.IsAnimal(m.item))
             { if (p.phase == 2) { p.remaining = Math.Max(0, p.remaining - (float)c.duration); if (p.remaining == 0) p.phase = 3; } return 1; }
             if (p.breeding > 0) { p.breeding = Math.Max(0, p.breeding - (float)c.duration); if (p.breeding == 0) p.herd++; }
             if (p.herd > 0 && p.feed > 0) { p.cycle = Math.Max(0, p.cycle - (float)c.duration * (clock() < m.operatorUntil ? 2 : 1)); p.remaining = p.cycle; }
@@ -501,7 +506,7 @@ namespace Tycoon
         {
             var m = Producer(s, c); var p = m.progress; var carrier = Owner(s, c.destination); WriteAccess(carrier, c.actor);
             Require(carrier.actor == c.actor && carrier.kind is OwnerKind.Player or OwnerKind.Worker, "authority", "Chỉ lấy vào giỏ người thao tác.");
-            bool animal = m.item is "milk" or "egg" or "beef";
+            bool animal = Definitions.IsAnimal(m.item);
             int count=animal?1:Math.Max(1,p.cycleYield > 0 ? p.cycleYield : m.batchYield);
             Require(double.IsFinite(c.duration) && c.duration > 0 && Free(s, carrier, m.item) >= count, "capacity", "Giỏ cần đủ chỗ cho cả lượt thu "+count+" "+Definitions.Item(m.item).label+".");
             Require(animal ? p.herd > 0 && p.feed > 0 && p.cycle == 0 : p.phase == 3, "phase", "Chưa đến lúc thu hoạch.");
@@ -599,7 +604,15 @@ namespace Tycoon
                 foreach(var stack in s.stacks.Where(x=>x.owner==owner.id))stack.location=StackLocation(owner,stack.item);
             }
             s.schemaVersion=2;
-            UnlockCrops(s,true);s.contentVersion=Math.Max(1,s.contentVersion);
+            UnlockCrops(s,true);
+            foreach(var machine in s.stations.Where(x=>x.kind=="machine"))
+            {
+                if(machine.running && machine.batch==null)machine.batch=RecipeBatchSnapshot.From(s.contentVersion<2?Definitions.LegacyRecipe(machine.definitionId):Definitions.Recipe(machine.definitionId),machine.operatorId??"simulation");
+                machine.definitionVersion=Definitions.Recipe(machine.definitionId).version;
+                if(machine.recipeOptions.Count==0)machine.recipeOptions.Add(machine.definitionId);
+                if(s.contentVersion<2 && machine.definitionId is "oven" or "cakeoven")machine.legacyInput=s.stacks.Any(x=>x.owner==machine.input && x.item is "flour" or "milk" or "egg");
+            }
+            s.contentVersion=Math.Max(2,s.contentVersion);
             foreach(var station in s.stations)if(station.batchYield==0)station.batchYield=1;
             foreach(var station in s.stations.Where(x=>x.kind=="producer" && x.progress.phase>0 && x.progress.cycleYield==0))
                 station.progress.cycleYield=station.batchYield+ProgressionTracker.AxisLevel(s,"farm",UpgradeAxis.Capacity)-1;
@@ -611,7 +624,7 @@ namespace Tycoon
             foreach(var machine in s.stations.Where(x=>x.kind=="machine"))
             {
                 if(machine.running){machine.machinePhase=MachinePhase.Operating;continue;}
-                var recipe=Definitions.Recipe(machine.definitionId);
+                var recipe=MachineRecipe(s,machine);
                 if(recipe==null){machine.machinePhase=MachinePhase.WaitingInput;continue;}
                 if(s.stacks.Any(x=>x.owner==machine.output&&x.item==recipe.output&&x.quantity>0))
                 {machine.machinePhase=MachinePhase.CompletedWaitingPickup;continue;}
@@ -697,8 +710,9 @@ namespace Tycoon
                 Require(recipe != null && m.definitionVersion == recipe.version, "station", "Recipe version sai: " + m.id);
                 Require(Enum.IsDefined(typeof(MachinePhase),m.machinePhase)&&
                     (m.running?m.machinePhase==MachinePhase.Operating:m.machinePhase!=MachinePhase.Operating),"machine-phase","Machine phase không khớp job.");
-                if (m.running) Require(s.reservations.Any(x => x.id == m.reservationId && x.status == ReservationStatus.Active && x.destination == m.output && x.item == recipe.output && x.quantity == recipe.yield), "station", "Job mất reservation.");
-                if(m.running&&!string.IsNullOrEmpty(m.escrow))Require(Owner(s,m.escrow).kind==OwnerKind.Escrow&&recipe.inputs.All(i=>s.stacks.Where(x=>x.owner==m.escrow&&x.item==i.id).Sum(x=>x.quantity)==i.count),"escrow","Job thiếu nguyên liệu đang xử lý.");
+                var batch=m.batch??RecipeBatchSnapshot.From(recipe,"simulation");
+                if (m.running) Require(s.reservations.Any(x => x.id == m.reservationId && x.status == ReservationStatus.Active && x.destination == m.output && x.item == batch.output && x.quantity == batch.yield), "station", "Job mất reservation.");
+                if(m.running&&!string.IsNullOrEmpty(m.escrow))Require(Owner(s,m.escrow).kind==OwnerKind.Escrow&&batch.inputs.All(i=>s.stacks.Where(x=>x.owner==m.escrow&&x.item==i.id).Sum(x=>x.quantity)==i.count),"escrow","Job thiếu nguyên liệu đang xử lý.");
             }
             Require(s.stations.Count(x=>x.kind=="machine"&&x.progress.broken)<=1,"breakdown","Chỉ một máy được phép hỏng cùng lúc.");
             Require(s.receipts.Count == s.outbox.Count && s.receipts.Count == s.revision, "journal", "Mutation thiếu receipt hoặc outbox.");

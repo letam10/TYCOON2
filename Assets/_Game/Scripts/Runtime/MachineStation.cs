@@ -4,7 +4,10 @@ namespace Tycoon
 {
     public sealed class MachineStation : Station
     {
-        public RecipeDefinition Recipe;
+        RecipeDefinition recipe;
+        public string[] RecipeOptions;
+        public string[] Options=>RecipeOptions??new[]{recipe.id};
+        public RecipeDefinition Recipe {get=>Runtime==null?recipe:Definitions.Recipe(Runtime.definitionId);set=>recipe=value;}
         [System.NonSerialized] public Inventory Input=new(36);
         bool running,broken,repairPaid;float remaining,repairRemaining=8;int batches,playerBatches,repairFee=20;
         public bool Running {get=>Runtime?.running??running;set{GuardState();running=value;}}
@@ -20,12 +23,12 @@ namespace Tycoon
         public MachinePhase Phase=>Runtime?.machinePhase??(Recipe==null?MachinePhase.WaitingInput:Running?MachinePhase.Operating:
             Inventory!=null&&Inventory.Count(Recipe.output)>0?MachinePhase.CompletedWaitingPickup:
             Recipe.CanMake(Input)&&Inventory!=null&&Inventory.FreeFor(Recipe.output)>=Recipe.yield?MachinePhase.Ready:MachinePhase.WaitingInput);
-        public bool HasOperator=>Runtime!=null?!string.IsNullOrEmpty(Runtime.operatorId)&&Runtime.operatorUntil>Authority.Now:Time.time<operatorUntil;
+        public bool HasOperator=>Runtime!=null?!Runtime.autonomous&&!string.IsNullOrEmpty(Runtime.operatorId)&&Runtime.operatorUntil>Authority.Now:Time.time<operatorUntil;
         public string WaitReason
         {
             get
             {
-                if(Broken)return "Máy đang hỏng • chờ người chơi sửa tại Vùng Sửa máy.";
+                if(Broken)return "Máy đang hỏng • chờ sửa chữa.";
                 if(Recipe==null)return "Sai recipe";
                 foreach(var input in Recipe.inputs)if(Input.Available(input.id)<input.count)return "Thiếu "+Definitions.Item(input.id).label;
                 if(Inventory!=null&&Inventory.FreeFor(Recipe.output)<Recipe.yield)return "Đầu ra đầy • lấy "+Definitions.Item(Recipe.output).label;
@@ -34,14 +37,21 @@ namespace Tycoon
         }
         public override string Prompt=>Broken?Label+" • máy hỏng, sửa "+RepairFee+" xu • "+RepairRemaining.ToString("0.0")+"s":Label+" • "+(Phase switch
         {
-            MachinePhase.Ready=>"Sẵn sàng • đứng vận hành",
-            MachinePhase.Operating=>(HasOperator?"Đang chạy • "+Remaining.ToString("0.0")+"s":"Tạm dừng • "+Remaining.ToString("0.0")+"s")+" • giữ đầu ra "+Inventory.ReservedSpace(Recipe.output),
+            MachinePhase.Ready=>"Sẵn sàng • tự chạy khi đủ nguyên liệu",
+            MachinePhase.Operating=>"Đang chạy • "+Remaining.ToString("0.0")+"s • giữ đầu ra "+Inventory.ReservedSpace(Recipe.output),
             MachinePhase.CompletedWaitingPickup=>"Hoàn tất • chờ lấy "+Recipe?.label,
             _=>WaitReason
         });
         bool outputReserved;
+        float tick;
+        void Update()
+        {
+            if(!IsUnlocked || Authority==null)return;
+            tick+=Time.deltaTime;if(tick<.2f)return;float elapsed=tick;tick=0;
+            if(Authority.TickMachine(this,elapsed)&&Rotor)Rotor.Rotate(Vector3.up,130*elapsed,Space.Self);
+        }
         void Start()=>ConfigureInputLimits();
-        public void ConfigureInputLimits(){if(Recipe!=null&&Recipe.inputs.Length>0)foreach(var item in Recipe.inputs)Input.SetLimit(item.id,Mathf.Max(item.count,Input.Capacity/Recipe.inputs.Length));}
+        public void ConfigureInputLimits(){if(recipe==null||Input.Authority!=null)return;var items=new System.Collections.Generic.Dictionary<string,int>();foreach(string id in Options)foreach(var i in Definitions.Recipe(id).inputs)items[i.id]=Mathf.Max(items.TryGetValue(i.id,out int old)?old:0,i.count);foreach(var i in items)Input.SetLimit(i.Key,Mathf.Max(i.Value,Input.Capacity/Mathf.Max(1,items.Count)));}
         public bool Operate(float delta,EntityId actorId)
         {
             if(!IsUnlocked||Broken||delta<=0||float.IsNaN(delta)||float.IsInfinity(delta)||Recipe==null||Inventory==null)return false;

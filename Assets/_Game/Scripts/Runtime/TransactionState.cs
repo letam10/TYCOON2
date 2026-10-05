@@ -12,7 +12,7 @@ namespace Tycoon
         StartMachine, AdvanceMachine, CompleteMachine, AcknowledgeEvent,
         RegisterOwner, OperateProducer, TickProducer, HarvestProducer, FeedProducer,
         ReleaseOperator, BreakMachine, RepairMachine, UpgradeCrew, CleanTable, AdvanceDiner, Checkpoint, RestockProducer,
-        GrantAssistance
+        GrantAssistance, SelectRecipe
     }
     public enum OrderStatus { Open, Complete, Failed }
     public enum ReservationStatus { Active, Used, Released, Expired }
@@ -85,6 +85,10 @@ namespace Tycoon
         public MachinePhase machinePhase;
         public double remaining;
         public bool running;
+        public bool autonomous, manualRecipe, legacyInput;
+        public string lastInputActor;
+        public List<string> recipeOptions=new();
+        public RecipeBatchSnapshot batch;
         public string kind = "machine", item, area, requirement;
         public double operatorUntil;
         public StationProgressSave progress = new();

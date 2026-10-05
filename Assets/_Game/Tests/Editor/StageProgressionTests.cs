@@ -23,7 +23,7 @@ namespace Tycoon.Tests
 
             state.legacyTransactions=fixture.ordersAtThreshold;
             Assert.That(ProgressionTracker.MissingRequirements(state,upgrade),Is.Empty);
-            var core=new TransactionCore(state,null,()=>100);
+            state.unlocked=state.unlocked.Distinct().ToList();var core=new TransactionCore(state,null,()=>100);
             var contribute=new TransactionCommand{kind=TransactionKind.ContributePurchase,actor="player",target="farm_shop",
                 key="stage09-top-up",effectId="stage09-top-up-effect",expectedRevision=core.Revision,quantity=fixture.finalContribution};
             Assert.That(core.Execute(contribute).amount,Is.EqualTo(fixture.finalContribution));
@@ -48,7 +48,7 @@ namespace Tycoon.Tests
             Assert.That(ProgressionTracker.MissingRequirements(state,upgrade),Has.Some.Contains("Cần mở Mở rộng Farm Shop."));
             state.unlocked.Add("farm_shop");
             Assert.That(ProgressionTracker.MissingRequirements(state,upgrade),Is.Empty);
-            var core=new TransactionCore(state,null,()=>100);
+            state.unlocked=state.unlocked.Distinct().ToList();var core=new TransactionCore(state,null,()=>100);
             var contribute=new TransactionCommand{kind=TransactionKind.ContributePurchase,actor="player",target="mill",
                 key="stage10-top-up",effectId="stage10-top-up-effect",expectedRevision=core.Revision,quantity=fixture.finalContribution};
             Assert.That(core.Execute(contribute).amount,Is.EqualTo(fixture.finalContribution));

@@ -47,12 +47,16 @@ namespace Tycoon
             AnimalProducer(game, world, "ranch_beef", "beef", "THỊT BÒ", new Vector3(-26, 0, 12), 45, "barn");
             cows.Bind(game.Producers.FindAll(x=>x.ItemId is "milk" or "beef").ToArray());
             chickens.Bind(game.Producers.FindAll(x=>x.ItemId=="egg").ToArray());
+            var sheep=Pen(world,new Vector3(-38,0,39),new Vector2(8,8),"user_sheep",3,1,"sheep_line");
+            AnimalProducer(game,world,"sheep_wool","wool","LEN CỪU",new Vector3(-32,0,39),18,"sheep_line");
+            sheep.Bind(game.Producers.FindAll(x=>x.ItemId=="wool").ToArray());
+            Machine(game,world,"feedmill",new Vector3(-24,0,25),"farm_level2");
             game.Storage = Warehouse(game, world, new Vector3(-6, 0, 14), "storage_farm", "farm", 72);
             var farmShopStorage=Warehouse(game, world, new Vector3(3, 0, 13), "storage_farm_shop", "farm_shop", 72);farmShopStorage.Requirement="farm_shop";Locked(farmShopStorage);
             Shelf(game, world, "shelf_farm_1", "CÀ RỐT", new Vector3(-4, 0, 0), new[] { "carrot" }, "farm");
             // Quầy này nằm trong tuyến cơ bản, không phụ thuộc gói mở Farm Shop.
-            Shelf(game, world, "shelf_livestock", "SẢN PHẨM CHĂN NUÔI", new Vector3(-1,0,8), new[] { "milk", "egg", "beef" }, "farm");
-            Shelf(game, world, "shelf_farm_2", "NÔNG SẢN", new Vector3(14.8f, 0, 6), new[] { "carrot", "tomato", "wheat", "milk", "egg", "beef", "flour", "cheese", "sauce" }, "farm_shop", "farm_shop");
+            Shelf(game, world, "shelf_livestock", "SẢN PHẨM CHĂN NUÔI", new Vector3(-1,0,8), new[] { "milk", "egg", "beef","wool" }, "farm");
+            Shelf(game, world, "shelf_farm_2", "NÔNG SẢN", new Vector3(14.8f, 0, 6), new[] { "carrot", "tomato", "wheat","corn","soybean", "milk", "egg", "beef","wool", "flour", "cheese", "sauce" }, "farm_shop", "farm_shop");
             Checkout(game, world, "checkout_farm", new Vector3(-13, 0, 0), "farm");
             Checkout(game, world, "checkout_farm_shop", new Vector3(7,0,0), "farm_shop", "farm_shop");
             var processFloor=Floor(world, "03  CHẾ BIẾN", new Vector3(28, 0, 7), new Vector2(18, 18));
@@ -60,6 +64,10 @@ namespace Tycoon
             Machine(game, world, "mill", new Vector3(23, 0, 12), "mill");
             Machine(game, world, "cheesemaker", new Vector3(28, 0, 12), "dairy");
             Machine(game, world, "saucemaker", new Vector3(33, 0, 12), "dairy");
+            Machine(game,world,"soyextractor",new Vector3(23,0,5),"mill");
+            Machine(game,world,"milkbottler",new Vector3(28,0,5),"mill");
+            Machine(game,world,"spinner",new Vector3(33,0,5),"mill");
+            Machine(game,world,"loom",new Vector3(23,0,-1),"mill");
             FinalBusinesses.Build(game, world);
             var processingStorage=Warehouse(game,world,new Vector3(36,0,2),"storage_processing","processing",72);processingStorage.Requirement="mill";Locked(processingStorage);
             var shopStorage=game.Stations.Find(x=>x.Id=="storage_farm_shop") as StorageStation;
@@ -258,6 +266,10 @@ namespace Tycoon
         public static MachineStation Machine(GameSession game, Transform parent, string key, Vector3 point, string requirement)
         {
             var recipe = Definitions.Recipe(key); var station = Register<MachineStation>(game, parent, "machine_" + key, recipe.label, point, 36); station.Recipe = recipe; station.Requirement = requirement; station.AreaId = key is "oven" or "cakeoven" ? "bakery" : key == "kitchen" ? "restaurant" : "processing";
+            if(key is "breadmixer" or "cakemixer")station.AreaId="bakery";
+            if(key=="feedmill")station.AreaId="farm";
+            if(key=="kitchen"){station.RecipeOptions=Definitions.KitchenRecipes;station.Recipe=Definitions.Recipe("cook_beef");station.Label="BẾP NHÀ HÀNG";}
+            station.ConfigureInputLimits();
             WorldDressing.Machine(station);
             if(key is "oven" or "cakeoven" or "kitchen")station.StatusLabel.transform.localPosition=new Vector3(0,3.0f,0);
             Art.Box("MachineCollision", new Vector3(0, .9f, 0), new Vector3(2.65f, 1.8f, 2.25f), "#039BDD", station.transform, true).GetComponent<Renderer>().enabled = false;

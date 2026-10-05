@@ -38,7 +38,7 @@ namespace Tycoon
         public int ItemPrice(string id)
         {
             var item = Definitions.Item(id); if (item == null) return 0;
-            int quality = id is "carrot" or "wheat" or "tomato" ? Progression.AxisLevel("farm", UpgradeAxis.QualityValue) : 1;
+            int quality = Definitions.IsCrop(id) ? Progression.AxisLevel("farm", UpgradeAxis.QualityValue) : 1;
             int price = Mathf.CeilToInt(item.price * (1 + .25f * (quality - 1)));
             // Thành phẩm luôn có lãi so với bán trực tiếp lượng nguyên liệu tương ứng.
             var recipe = Array.Find(Definitions.Recipes, x => x.output == id);
@@ -97,7 +97,7 @@ namespace Tycoon
             Player.Carry.Capacity = Progression.AxisCapacity("player", 6);
             foreach (var s in Stations)
             {
-                string family = s is ProductionStation p ? (p.ItemId is "milk" or "egg" or "beef" ? "animal" : "farm") : s.AreaId switch
+                string family = s is ProductionStation p ? (p.Animal ? "animal" : "farm") : s.AreaId switch
                 { "processing" => "mill", "supermarket" => "market", "bakery" => "oven", "restaurant" => "kitchen", "farm_shop" => "counter", _ => s.AreaId };
                 s.Level = Tier(family);
                 if(s is ProductionStation crop&&!crop.Animal&&crop.Inventory!=null)crop.Inventory.Capacity=Progression.AxisCapacity("farm",24);

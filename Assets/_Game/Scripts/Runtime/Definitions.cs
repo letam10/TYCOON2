@@ -39,7 +39,7 @@ namespace Tycoon
         public readonly string output;
         public readonly int yield;
         public readonly float seconds;
-        public int version => 1;
+        public int version => id is "oven" or "cakeoven" ? 2 : 1;
         public RecipeDefinition(string id, string label, string output, int yield, float seconds, params ItemAmount[] inputs)
         {
             this.id = id; this.label = label; this.output = output;
@@ -104,8 +104,8 @@ namespace Tycoon
             new("carrot", "Cà rốt", 10, "#F68D4C"),
             new("tomato", "Cà chua", 14, "#EF6461"),
             new("wheat", "Lúa mì", 12, "#E9C26A"),
-            new("corn", "Ngô", 14, "#F5D64F", "wheat"),
-            new("soybean", "Đậu nành", 16, "#B8BD70", "tomato"),
+            new("corn", "Ngô", 14, "#F5D64F"),
+            new("soybean", "Đậu nành", 16, "#B8BD70"),
             new("milk", "Sữa", 35, "#E3F2F5"),
             new("egg", "Trứng", 25, "#F6E5BA"),
             new("flour", "Bột mì", 120, "#EED9AD"),
@@ -115,15 +115,40 @@ namespace Tycoon
             new("cake", "Bánh kem", 600, "#F4ABC5"),
             new("meal", "Suất ăn", 600, "#AFC986"),
             new("beef", "Thịt bò", 60, "#F4654E")
+            ,new("animal_feed","Thức ăn vật nuôi",20,"#C6AD75")
+            ,new("soy_sauce","Tương đậu nành",120,"#6F3C25")
+            ,new("bottled_milk","Sữa đóng chai",80,"#F1EFE1")
+            ,new("wool","Len thô",35,"#F3EBDE")
+            ,new("yarn","Sợi len",120,"#E5C792")
+            ,new("cloth","Vải len",240,"#71A5B3")
+            ,new("bread_dough","Bột bánh mì",180,"#E0C695")
+            ,new("cake_batter","Bột bánh kem",300,"#E8C58B")
+            ,new("beef_soy","Bò sốt tương",720,"#94613D")
+            ,new("corn_soup","Súp ngô sữa",650,"#E2C05A")
+            ,new("pasta","Mì sốt cà phô mai",720,"#DC824E")
+            ,new("egg_sandwich","Bánh mì kẹp trứng",650,"#D9AD6D")
+            ,new("soy_vegetables","Đậu nành xào rau",650,"#87B85D")
         };
         public static RecipeDefinition[] Recipes => (RecipeDefinition[])recipes.Clone();
         static readonly RecipeDefinition[] recipes = {
             new("mill", "Xay bột mì", "flour", 3, 6, new ItemAmount("wheat", 4)),
             new("cheesemaker", "Làm phô mai", "cheese", 2, 8, new ItemAmount("milk", 3)),
             new("saucemaker", "Nấu sốt", "sauce", 3, 7, new ItemAmount("tomato", 4)),
-            new("oven", "Nướng bánh mì", "bread", 3, 9, new("flour", 2), new("egg", 1), new("milk", 1)),
-            new("cakeoven", "Làm bánh kem", "cake", 2, 11, new("flour", 2), new("egg", 2), new("milk", 2)),
-            new("kitchen", "Nấu suất ăn", "meal", 2, 10, new("carrot", 2), new("tomato", 2), new("cheese", 1), new("bread", 1))
+            new("oven", "Nướng bánh mì", "bread", 3, 6, new ItemAmount("bread_dough", 3)),
+            new("cakeoven", "Nướng bánh kem", "cake", 2, 7, new ItemAmount("cake_batter", 2)),
+            new("breadmixer", "Trộn bột bánh mì", "bread_dough", 3, 3, new ItemAmount("flour", 2),new ItemAmount("egg",1),new ItemAmount("milk",1)),
+            new("cakemixer", "Trộn bột bánh kem", "cake_batter", 2, 4, new ItemAmount("flour",2),new ItemAmount("egg",2),new ItemAmount("milk",2)),
+            new("feedmill","Trộn thức ăn vật nuôi","animal_feed",3,6,new ItemAmount("wheat",1),new ItemAmount("corn",1),new ItemAmount("soybean",1)),
+            new("soyextractor","Làm tương đậu nành","soy_sauce",3,7,new ItemAmount("soybean",4)),
+            new("milkbottler","Chiết sữa","bottled_milk",2,5,new ItemAmount("milk",2)),
+            new("spinner","Kéo sợi len","yarn",2,6,new ItemAmount("wool",3)),
+            new("loom","Dệt vải len","cloth",2,8,new ItemAmount("yarn",2)),
+            new("cook_beef","Nấu bò sốt tương","beef_soy",2,10,new ItemAmount("beef",1),new ItemAmount("soy_sauce",1),new ItemAmount("tomato",1),new ItemAmount("carrot",1)),
+            new("cook_soup","Nấu súp ngô sữa","corn_soup",2,10,new ItemAmount("corn",2),new ItemAmount("milk",1),new ItemAmount("flour",1),new ItemAmount("carrot",1)),
+            new("cook_pasta","Nấu mì sốt cà","pasta",2,10,new ItemAmount("flour",2),new ItemAmount("egg",1),new ItemAmount("sauce",1),new ItemAmount("cheese",1)),
+            new("cook_sandwich","Làm bánh mì kẹp trứng","egg_sandwich",2,10,new ItemAmount("bread",1),new ItemAmount("egg",1),new ItemAmount("tomato",1)),
+            new("cook_vegetables","Xào đậu nành rau","soy_vegetables",2,10,new ItemAmount("soybean",2),new ItemAmount("corn",1),new ItemAmount("carrot",1),new ItemAmount("sauce",1)),
+            new("kitchen", "Nấu suất ăn", "meal", 2, 10, new ItemAmount("carrot", 2), new ItemAmount("tomato", 2), new ItemAmount("cheese", 1), new ItemAmount("bread", 1))
         };
         public static UpgradeDefinition[] Upgrades => (UpgradeDefinition[])upgrades.Clone();
         static readonly UpgradeDefinition[] upgrades = {
@@ -131,9 +156,10 @@ namespace Tycoon
             new("restocker", "Thuê xếp hàng Farm Shop", 200, "", "worker", "Restocker"),
             new("cashier", "Thuê bán hàng Farm Shop", 250, "", "worker", "Cashier"),
             new("transport_farm_shop", "Thuê vận chuyển Farm Shop", 350, "farm_shop", "worker", "Transporter"),
-            new("barn", "Tuyến thịt bò: chuồng, đàn, trạm và quầy", 500),
-            new("milk_line", "Tuyến sữa: chuồng, đàn, trạm và quầy", 1000),
-            new("egg_line", "Tuyến trứng: chuồng, đàn, trạm và quầy", 1000),
+            new("barn", "Tuyến thịt bò: chuồng, đàn, trạm và quầy", 500,"farm_level2"),
+            new("milk_line", "Tuyến sữa: chuồng, đàn, trạm và quầy", 1000,"farm_level2"),
+            new("egg_line", "Tuyến trứng: chuồng, đàn, trạm và quầy", 1000,"farm_level2"),
+            new("sheep_line", "Tuyến cừu: chuồng, đàn, len và quầy",1000,"farm_level2"),
             new("animal_worker", "Thuê chăm vật nuôi", 300, "", "worker", "Animal"),
             new("farm_shop", "Mở rộng Farm Shop", 2000, progression:new ProgressionRequirement { anyStationFamilies=new[]{"farm","animal"}, anyStationLevel=3, successfulOrders=50 }),
             new("mill", "Mở khu Processing", 12000, "farm_shop", progression:new ProgressionRequirement { stationFamily="animal", stationLevel=3, successfulOrders=200 }),
@@ -189,6 +215,11 @@ namespace Tycoon
             new("machine_upgrade", "Nâng cấp cũ", 320, "processor", "legacy"),
         };
         static readonly Dictionary<string, ItemDefinition> byItem = new();
+        public static bool IsCrop(string id)=>id is "carrot" or "tomato" or "wheat" or "corn" or "soybean";
+        public static bool IsAnimal(string id)=>id is "milk" or "egg" or "beef" or "wool";
+        public static string[] KitchenRecipes=>new[]{"cook_beef","cook_soup","cook_pasta","cook_sandwich","cook_vegetables","kitchen"};
+        public static RecipeDefinition LegacyRecipe(string id)=>id=="oven"?new("legacy_bread","Mẻ bánh mì cũ","bread",3,9,new ItemAmount("flour",2),new ItemAmount("egg",1),new ItemAmount("milk",1)):
+            id=="cakeoven"?new("legacy_cake","Mẻ bánh kem cũ","cake",2,11,new ItemAmount("flour",2),new ItemAmount("egg",2),new ItemAmount("milk",2)):Recipe(id);
         static readonly Dictionary<string, RecipeDefinition> byRecipe = new();
         static readonly Dictionary<string, UpgradeDefinition> byUpgrade = new();
         static Definitions()

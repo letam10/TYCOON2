@@ -85,7 +85,7 @@ namespace Tycoon
         {
             if(!target||!target.IsUnlocked)return InteractionResult.Reject("Khu vực chưa được mở.");
             if(context.Carry==null||delta<=0||float.IsNaN(delta)||float.IsInfinity(delta))return InteractionResult.Waiting;
-            if(!Supports(target,kind))return InteractionResult.Reject("Vùng này không hỗ trợ thao tác đã chọn.");
+            if(!Supports(target,kind))return InteractionResult.Reject("Vật thể này không hỗ trợ thao tác đã chọn.");
             var carry=context.Carry;
             if(kind==InteractionKind.Purchase&&target is PurchasePad pad)
             {
@@ -115,7 +115,7 @@ namespace Tycoon
                 {
                     if(carry.Total==0)return InteractionResult.Reject("Giỏ đang trống.");
                     if(!table.NeedsMeal)return InteractionResult.Reject("Bàn chưa cần phục vụ.");
-                    if(carry.Available("meal")==0)return InteractionResult.Reject("Bàn chỉ nhận món ăn.");
+                    if(carry.Available(table.Occupant.WantedItem)==0)return InteractionResult.Reject("Bàn chỉ nhận món ăn.");
                     return new InteractionResult(table.DeliverMeal(carry));
                 }
             }
@@ -125,13 +125,13 @@ namespace Tycoon
                 if(target is ProductionStation production)return production.OperatePlayer(delta,context.Actor);
                 if(target is MachineStation machine)
                 {
-                    if(machine.Broken)return InteractionResult.Reject("Máy hỏng; hãy đứng trong Vùng Sửa máy.");
+                    if(machine.Broken)return InteractionResult.Reject("Máy hỏng; dừng gần máy để sửa.");
                     if(!machine.Running)
                     {
                         if(machine.Inventory.FreeFor(machine.Recipe.output)<machine.Recipe.yield)return InteractionResult.Reject("Đầu ra máy đầy; hãy lấy hàng.");
-                        foreach(var item in machine.Recipe.inputs)if(machine.Input.Available(item.id)<item.count)return InteractionResult.Reject("Thiếu "+Name(item.id)+"; hãy đặt nguyên liệu vào vùng Drop.");
+                        foreach(var item in machine.Recipe.inputs)if(machine.Input.Available(item.id)<item.count)return InteractionResult.Reject("Thiếu "+Name(item.id)+"; hãy đặt nguyên liệu vào máy.");
                     }
-                    return new InteractionResult(machine.Operate(delta,context.Actor));
+                    return InteractionResult.Reject(machine.Running?"Máy đang tự chạy • còn "+machine.Remaining.ToString("0.0")+"s":"Máy tự chạy khi đủ nguyên liệu.");
                 }
                 if(target is TableStation cleaning)
                     return cleaning.Cleaning>0&&cleaning.Occupant==null?new InteractionResult(cleaning.Work(carry,delta,context.Actor)):InteractionResult.Reject("Bàn chưa cần dọn.");
@@ -149,7 +149,13 @@ namespace Tycoon
             }
             if(kind==InteractionKind.Pickup)
             {
-                string item=target is ProductionStation producer?producer.ItemId:target is MachineStation machine?machine.Recipe.output:context.SelectedItem;
+                string item=target is ProductionStation producer?producer.ItemId:context.SelectedItem;
+                if(target is MachineStation output)
+                {
+                    string held=carry.Total>0?carry.Snapshot()[0].id:null;
+                    if(held!=null&&output.Inventory.Available(held)>0)item=held;
+                    else if(output.Inventory.Available(item)==0)item=output.Inventory.Total>0?output.Inventory.Snapshot()[0].id:output.Recipe.output;
+                }
                 if(target is ShelfStation shelf&&!shelf.Accepts(item))
                     return InteractionResult.Reject("Quầy không chứa "+Name(item)+"; nhấn Q / RB để chọn loại cần lấy.");
                 if(string.IsNullOrEmpty(item)||Definitions.Item(item)==null)return InteractionResult.Reject("Chưa có hàng để lấy.");

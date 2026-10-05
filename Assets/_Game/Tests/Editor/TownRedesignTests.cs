@@ -6,6 +6,23 @@ namespace Tycoon.Tests
     public sealed class TownRedesignTests
     {
         static TransactionCommand C(TransactionCore core,TransactionKind kind,string key,string target=null)=>new(){kind=kind,key=key,effectId="effect:"+key,actor="player",expectedRevision=core.Revision,target=target};
+        [Test] public void AutonomousBatchContinuesWithoutOperatorAndCreditsInitiatorOnce()
+        {
+            var seed=TransactionCoreTests.Seed();seed.stations[0].autonomous=true;seed.stations[0].lastInputActor="player";
+            var core=new TransactionCore(seed,null,()=>100);
+            var start=C(core,TransactionKind.StartMachine,"auto-start","mill");start.actor="simulation";start.secondary="auto-job";core.Execute(start);
+            core=new TransactionCore(core.Snapshot(),null,()=>101);
+            var advance=C(core,TransactionKind.AdvanceMachine,"auto-advance","mill");advance.actor="simulation";advance.secondary="auto-job";advance.duration=6;core.Execute(advance);
+            var finish=C(core,TransactionKind.CompleteMachine,"auto-finish","mill");finish.actor="simulation";finish.secondary="auto-job";core.Execute(finish);core.Execute(finish);
+            var s=core.Snapshot();Assert.That(s.stations[0].playerBatches,Is.EqualTo(1));Assert.That(s.stacks.Where(x=>x.owner=="mill-output").Sum(x=>x.quantity),Is.EqualTo(3));
+            Assert.That(s.stacks.Where(x=>x.owner=="mill-input").Sum(x=>x.quantity),Is.EqualTo(4));TransactionCore.Validate(s);
+        }
+        [Test] public void BakeryRecipeUsesRealMixerOutput()
+        {
+            Assert.That(Definitions.Recipe("oven").inputs[0].id,Is.EqualTo("bread_dough"));
+            Assert.That(Definitions.Recipe("cakeoven").inputs[0].id,Is.EqualTo("cake_batter"));
+            Assert.That(Definitions.Recipe("feedmill").inputs.Select(x=>x.id),Is.EquivalentTo(new[]{"wheat","corn","soybean"}));
+        }
         [Test] public void AssistanceRetriesOnceAndDoesNotBecomeSalesOrCollectedCash()
         {
             var core=new TransactionCore(TransactionCoreTests.Seed());var command=C(core,TransactionKind.GrantAssistance,"assist");
@@ -17,7 +34,7 @@ namespace Tycoon.Tests
         }
         [Test] public void FarmTierTwoOpensFeedCropsWithoutOpeningTomatoOrChangingActiveYield()
         {
-            var seed=TransactionCoreTests.Seed();seed.contentVersion=1;
+            var seed=TransactionCoreTests.Seed();seed.contentVersion=1;seed.unlocked.Remove("farm_level2");
             seed.stations.Add(new(){id="plot",kind="producer",item="carrot",input="storage",output="storage",batchYield=2,progress=new(){herd=0}});
             var core=new TransactionCore(seed);
             var sow=C(core,TransactionKind.OperateProducer,"sow","plot");sow.duration=1;core.Execute(sow);
