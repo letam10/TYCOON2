@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('Probe','Foundation','Vertical','Progression','Load','Diagnostic','Visual','Stage23','Stage45','Stage67','Stage14','Stage14Layout','Stage14Visual','Stage14Milestones')] [string]$Task = 'Foundation',
+    [ValidateSet('Probe','Foundation','Vertical','Progression','Load','Diagnostic','Visual','Assets','Stage23','Stage45','Stage67','Stage14','Stage14Layout','Stage14Visual','Stage14Milestones')] [string]$Task = 'Foundation',
     [string]$LoadFrom = 'Vertical',
     [string]$BuildPath = '',
     [string]$LoadPath = '',
@@ -13,11 +13,12 @@ if($LoadPath){
     $LoadPath=[System.IO.Path]::GetFullPath($LoadPath)
     if(!(Test-Path -LiteralPath $LoadPath -PathType Leaf)){throw 'Load save missing; refusing to silently start a new game.'}
 }
-$mode = @{ Probe='--qa-gpu-probe'; Foundation='--qa-m0'; Vertical='--qa-vertical'; Progression='--qa-progression'; Load='--qa-load'; Diagnostic='--qa-resume'; Visual='--qa-art'; Stage23='--qa-stage23'; Stage45='--qa-stage45'; Stage67='--qa-stage67'; Stage14='--qa-stage14'; Stage14Layout='--qa-stage14-layout'; Stage14Visual='--qa-stage14-visual'; Stage14Milestones='--qa-stage14-milestones' }[$Task]
+$mode = @{ Probe='--qa-gpu-probe'; Foundation='--qa-m0'; Vertical='--qa-vertical'; Progression='--qa-progression'; Load='--qa-load'; Diagnostic='--qa-resume'; Visual='--qa-art'; Assets='--qa-assets'; Stage23='--qa-stage23'; Stage45='--qa-stage45'; Stage67='--qa-stage67'; Stage14='--qa-stage14'; Stage14Layout='--qa-stage14-layout'; Stage14Visual='--qa-stage14-visual'; Stage14Milestones='--qa-stage14-milestones' }[$Task]
 $outputRoot = if($Task -eq 'Stage23'){Join-Path (Join-Path $taskRoot 'work\stage02-03') ('player-stage23-' + [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'))}elseif($Task -eq 'Stage45'){Join-Path (Join-Path $taskRoot 'work\stage04-05') ('player-stage45-' + [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'))}elseif($Task -eq 'Stage67'){Join-Path (Join-Path $taskRoot 'work\stage06-07') ('player-stage67-' + [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'))}else{Join-Path $taskRoot ('QA\Evidence\' + $Task.ToLower())}
 if($Task.StartsWith('Stage14')){
     $outputRoot=Join-Path $taskRoot ('work\stage14\player-'+$Task.ToLower()+'-'+[DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'))
 }
+if($Task -eq 'Assets'){$outputRoot=Join-Path $taskRoot ('work\art-refresh\player-assets-'+[DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'))}
 New-Item -ItemType Directory -Path $outputRoot -Force | Out-Null
 if ($Task -notin @('Probe','Load')) {
     $qaSavePath = [System.IO.Path]::GetFullPath((Join-Path $outputRoot 'qa-save.json'))
@@ -41,7 +42,8 @@ $arguments = @('-force-d3d11','-force-device-index','0','-screen-width','1920','
 if($Task -in @('Stage14','Stage14Layout','Stage14Milestones')){$arguments=@('-batchmode','-nographics','-logFile',('"'+$logPath+'"'),$mode,'--qa-output',('"'+$outputRoot+'"'))}
 if($Task -eq 'Stage14'){$arguments+=@('--qa-fixture',('"'+(Join-Path $taskRoot 'mod\test\stage14-balance.json')+'"'))}
 if($Task -eq 'Stage14Milestones'){$arguments+=@('--qa-fixture',('"'+(Join-Path $taskRoot 'mod\test\stage14-player-near-thresholds.json')+'"'))}
-if($LoadPath){$arguments+=@('--qa-load','--qa-load-from',('"'+[System.IO.Path]::GetFullPath($LoadPath)+'"'));if($Task -eq 'Stage14'){$arguments+='--qa-stage14-resume'}}
+if($Task -eq 'Assets'){$arguments+=@('--qa-fixture',('"'+(Join-Path $taskRoot 'mod\test\asset-preview.json')+'"'))}
+if($LoadPath){if($Task -eq 'Assets'){$arguments+=@('--qa-preview-fixture',('"'+$LoadPath+'"'))}else{$arguments+=@('--qa-load','--qa-load-from',('"'+$LoadPath+'"'));if($Task -eq 'Stage14'){$arguments+='--qa-stage14-resume'}}}
 if ($Task -eq 'Load') { $arguments += @('--qa-load-from', ('"' + (Join-Path $taskRoot ('QA\Evidence\' + $LoadFrom.ToLower() + '\qa-save.json')) + '"'), '--qa-mode', 'load') }
 if ($Task -eq 'Diagnostic') { $arguments += @('--qa-resume-from', ('"' + (Join-Path $taskRoot ('QA\Evidence\' + $LoadFrom.ToLower() + '\qa-save.json')) + '"')) }
 $windowStyle=if($Visible){'Normal'}else{'Hidden'}

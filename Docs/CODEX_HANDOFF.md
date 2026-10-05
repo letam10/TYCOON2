@@ -432,15 +432,53 @@ Regression Player cuối còn xác nhận: rời máy giữ input/job/progress, 
 
 ## Công đoạn 14 — audit và tích hợp ASSET local — 2026-10-05
 
-**Mốc thư viện đã kiểm chứng; world dressing và kiểm tra cuối đang chốt trong commit tiếp theo.** Làm trực tiếp project hiện có, không thêm nội dung/gameplay khu mới.
+**Mốc thư viện đã kiểm chứng; mốc world dressing/QA đã hoàn tất như phần tiếp theo.** Làm trực tiếp project hiện có, không thêm nội dung/gameplay khu mới.
 
 - Rà soát/hash toàn bộ 7.553 file ASSET (409,5 MiB), 3.668 file model gồm các định dạng khác nhau; 177 nhóm SHA trùng. Kiểm tra GLB/glTF metadata và dependencies, OBJ geometry counts, FBX header; không phát hiện lỗi trong phạm vi đó. Không tuyên bố đã kiểm tra deformation của toàn bộ rig.
 - Chọn 48 model phù hợp từ Kenney/KayKit/Quaternius; 12.372 triangles tổng thư viện, tối đa 1.612/model, 58 renderers/73 material slots trong Unity. Model tĩnh không có collider, pivot sát đất và bounds khớp manifest. Texture/material dùng URP; giữ license CC0 và SHA nguồn.
 - Giữ nhân vật/vật nuôi đang có rig, stable IDs, Input System, pooling, inventory/transaction/save. Thư viện fantasy, xe/nhà công nghiệp và character Sushi không được dùng khi không hợp chức năng/style hoặc thiếu license cục bộ.
 - File chính: `Assets/_Game/Art/Library/**`, `GameCatalog.cs`, `GameCatalog.asset`, `AssetLibraryBuilder.cs`, `ProjectBuilder.cs`, `Tools/audit_asset_library.py`, `Tools/prepare_library_assets.py`, `Tools/run_unity.ps1`, `Docs/ASSET_AUDIT.md`, `Docs/asset-library-import.json`.
 - Kiểm chứng: import 48/48 bounds/pivot/material/collider pass; Windows build và Player RTX 4060 pass; 118/118 EditMode pass tại 13:31 UTC. Ảnh toàn bộ model được chọn đã xem. Runtime/new-game và path evidence được chốt ở mốc tiếp theo.
-- Git mốc thư viện: commit có message `feat: import curated local tycoon asset library`; hash và push được ghi sau khi hoàn thành commit.
+- Git mốc thư viện: `bdf34b7` — `feat: import curated local tycoon asset library`; đã push `origin/main` (52 LFS objects, khoảng 1,4 MB).
 - Raw ASSET có sẵn và `QualitySettings.asset` có sẵn của người dùng nằm ngoài commit. Chỉ commit derivative cần cho game cùng metadata/licenses/CLI. Build không phụ thuộc thư mục raw ASSET; tái xử lý art trên máy khác cần nguồn local tương ứng.
+
+## Công đoạn 14 — hoàn tất thay asset và world dressing — 2026-10-05
+
+**Hoàn tất phạm vi audit/thay asset local được giao. Công đoạn 14 toàn bộ vẫn chưa nghiệm thu.** Không thiết kế lại gameplay core, không tạo project mới.
+
+### Thay đổi cuối
+
+- Thay hình ảnh 11 SKU qua cùng catalog key; stock/carry/customer goods vẫn dùng ItemPool/InventoryStack và owner thật. Nhân vật/vật nuôi có rig, animation hiện có được giữ.
+- Quầy POS, kệ kho/thùng trống, bàn bán hàng, trough, chuồng, oven/kitchen, hood, bàn ghế, đồ dùng bếp và cảnh quan dùng model phù hợp đã có ở ASSET. Processing machines chuyên dụng vẫn giữ model hiện có và Rotor.
+- Crop soil/lúa/lá được chuẩn hóa scale/pivot; hàng rào khớp pen boundary. Các prop phía sau, planter và cảnh quan không có collider. Đã dời sink Restaurant khỏi waiting point, đưa stock visual ra trước rack và giữ toàn bộ station/interaction/work/queue coordinates.
+- Ánh sáng/palette giảm cháy sáng, cây xanh/đất nâu/lúa vàng; sàn cream/sage đọc rõ zone. Xoay mặt oven/fridge đúng hướng; nâng label máy có hood. Sửa mặt đất starter chồng nhau gây sọc nhấp nháy; ảnh kiểm tra cuối hết sọc.
+- `TableMealView` chỉ đọc basket/phase/cleaning: đĩa trống lúc gọi món, món khi thật sự đã nhận, đĩa bẩn khi cần dọn. Không tạo/trừ thêm hàng, tiền hoặc cập nhật state.
+- File runtime chính: `WorldDressing.cs`, `WorldFactory.cs`, `FinalBusinesses.cs`, `QaAssetLibrary.cs`, `QaDriver.cs`; CLI `Tools/run_player.ps1`; preset xem art `mod/test/asset-preview.json`. Preset chỉ ghi save QA riêng và không được dùng làm bằng chứng balance/progression.
+
+### Kiểm chứng
+
+| Kiểm chứng | Kết quả | Bằng chứng |
+|---|---|---|
+| Bảo toàn ASSET gốc | 7.553/7.553 SHA giữ nguyên | `work/art-refresh/source-preservation.json` |
+| Thư viện Unity | 48/48 model, bounds/pivot/material/collider pass; 12.372 triangles | `work/art-refresh/unity-import.json` |
+| Chạy lại converter | 0 model export lại | `work/art-refresh/repeat-convert.log` |
+| Windows build cuối | Succeeded, 0 errors, 2 warnings, 117.716.703 bytes; 14:03 UTC | `work/art-refresh/Build/build-report.json` |
+| EditMode hiện có | 118/118 pass, 0 fail/skip; 13:31 UTC | `QA/editmode-results.xml` |
+| Asset tour RTX 4060/D3D11, 1080p | 172 checks pass, 0 runtime errors; 11/11 ảnh không blank/pink, đã xem từng ảnh | `work/art-refresh/player-assets-20261005T133111975Z/asset-library-report.json`, `work/art-refresh/image-checks.json` |
+| Gameplay mới từ ví 0 | Gieo/tưới/grow/harvest/carry/serve/Collect pass, 18 checks/0 runtime errors; lượt cuối thực thu 20 xu, lượt trước 40 xu | `work/stage14/player-stage14visual-20261005T140520156Z/stage14-visual-report.json` |
+| Layout cuối trên Player | 424 reachable, 0 overlap/failure | `work/stage14/player-stage14layout-20261005T140520156Z/layout-details.json` |
+| Load save QA cũ với visual mới | Pass, wallet/stock không thay bởi tour; source chỉ đọc, fixture tạo ở output riêng | `work/art-refresh/player-assets-20261005T131608073Z/asset-library-report.json` |
+
+Build để chơi: `work/art-refresh/Build/TYCOON2.exe`. Audit/mapping/license: `Docs/ASSET_AUDIT.md`, `Docs/asset-library-import.json`. Source/preset là metadata local; không gửi runtime save hoặc raw drop chưa track lên GitHub.
+
+### GitHub, tiến trình và file trung gian
+
+- `bdf34b7` — `feat: import curated local tycoon asset library`; đã push `origin/main`.
+- Mốc runtime có message `feat: dress tycoon areas with local assets and verify play`; hash/push được bổ sung ở commit bàn giao cuối.
+- Không đưa `ProjectSettings/QualitySettings.asset` hoặc các raw ASSET có sẵn chưa track vào commit. GPU probe report tạm ở đường dẫn QA có sẵn đã khôi phục về baseline.
+- Đối chiếu 30 process records (PID/executable/creation time/parent) với tiến trình hệ thống: 0 process/helper task còn chạy. `process-history.jsonl` có một dòng cuối bị ghi cụt khi hai CLI append cùng lúc; đã đối chiếu thêm file process JSON riêng và các exit result để không bỏ sót PID. Bằng chứng: `work/art-refresh/owned-process-records.json`, `process-cleanup.json`.
+- Đã dọn material derivative mồ côi qua Unity khi import. Lệnh dọn các output trung gian đã xác minh bị automatic command review từ chối với `blocked by policy`; không có lý do chi tiết hơn được trả về và không lách chặn. Các thư mục `work/art-refresh/player-assets-20261005T130637596Z`, `player-assets-20261005T131608073Z` và `Build/TYCOON2_BackUpThisFolder_ButDontShipItWithYourGame` còn tồn tại, không có process sử dụng. Không ship thư mục chẩn đoán này.
+- Giữ `work/art-refresh/library-audit.json`, reports/source hash/process audit, `player-assets-20261005T133111975Z` cùng ảnh, build và các report Player cuối để xem/reproduce kết quả. Các file này nằm ngoài Git; raw ASSET không bị đổi.
 
 ## Những gì chưa thực hiện được / chưa nghiệm thu — cập nhật cuối Công đoạn 14
 
@@ -453,3 +491,7 @@ Regression Player cuối còn xác nhận: rời máy giữ input/job/progress, 
 - **Công đoạn 14:** full-stock, shortage, service/worker bottleneck có kiểm tra core và mã chờ; chưa có đủ ca Player cuối cho toàn tổ hợp. Không chạy soak/benchmark/FPS dài hạn theo yêu cầu test gọn.
 - **Công đoạn 04/05 — acceptance cũ về purchase từng bị thử nhiều lần chưa pass:** các mốc purchase nay đã pass bằng fixture sát ngưỡng trên Windows Player; yêu cầu toàn progression từ 0 vẫn nằm ở Công đoạn 14 chưa pass như trên. Lỗi fixture Input System trong EditMode đã được thay bằng kiểm tra input/interaction trong Player thật; bộ EditMode cuối 118/118 pass.
 - **Dọn file tạm, xuyên nhiều công đoạn:** lệnh PowerShell dọn vẫn bị command policy chặn. Các artifact được liệt kê ở trên để lần tiếp tục xử lý đúng đường dẫn; không có process task còn giữ chúng mở.
+
+- **Công đoạn 14 — asset refresh:** đã hoàn tất 48 model phù hợp và compile/play như bảng trên. Chưa nghiệm thu nghệ thuật với người dùng, chưa retarget/deformation-test mọi character/animation trong raw library, chưa kiểm tra FPS 165 hoặc congestion dài với art mới. Rig/clip cũ được giữ; hướng nhìn/pose ngồi theo ghế mới và độ tự nhiên mọi action vẫn cần nghiệm thu riêng.
+- **CLI/process audit:** một dòng history bị cụt do append đồng thời; audit cuối đã khôi phục phạm vi từ process JSON riêng và xác nhận 0 process task. Chưa sửa logger để hỗ trợ append đồng thời; lần tiếp tục nên chạy CLI tuần tự hoặc bổ sung lock.
+- **Dọn output asset:** automatic command review vẫn chặn việc xóa ba thư mục trung gian/chẩn đoán nêu trên. Đây là phần cleanup chưa thực hiện được; các report/ảnh giữ để đối chiếu đã được nêu mục đích riêng.

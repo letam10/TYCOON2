@@ -28,7 +28,7 @@ namespace Tycoon
                 var root=new GameObject("table_"+i);root.transform.SetParent(world);root.transform.position=new Vector3(-27+i%3*5,0,34+i/3*6);
                 var table=root.AddComponent<TableStation>();table.Id=root.name;table.Label="Bàn "+(i+1);table.Requirement="restaurant";table.AreaId="restaurant";table.Inventory=new Inventory(1);
                 table.InteractionPoint=root.transform.position+Vector3.back*1.6f;table.Seat=root.transform.position+Vector3.right*1.4f;
-                Art.Model("table",Vector3.zero,root.transform,1.15f);
+                WorldDressing.Table(table);
                 Art.Box("TableCollision",new Vector3(0,.5f,0),new Vector3(1.55f,1.25f,1.55f),"#FFFFFF",root.transform,true).GetComponent<Renderer>().enabled=false;
                 table.StatusLabel=Art.Label(table.Label,new Vector3(0,2,0),root.transform,.2f,"#FFFFFF");
                 WorldFactory.Zone(game,world,table,"operate",table.InteractionPoint+Vector3.right*1.5f);

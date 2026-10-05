@@ -35,11 +35,13 @@ namespace Tycoon
             bool redesign=Array.Exists(arguments,x=>x=="--qa-v2");
             bool stage14=Array.Exists(arguments,x=>x=="--qa-stage14"),layout14=Array.Exists(arguments,x=>x=="--qa-stage14-layout"),visual14=Array.Exists(arguments,x=>x=="--qa-stage14-visual");
             bool milestones14=Array.Exists(arguments,x=>x=="--qa-stage14-milestones");
+            bool assets=Array.Exists(arguments,x=>x=="--qa-assets");
             string mode = redesign ? "redesign" : art ? "visual" : load ? "load" : stage67?"stage67":stage45?"stage45":full ? "progression" : game.Milestone == 0 ? "foundation" : "vertical";
             bool resume = Array.Exists(arguments,x=>x=="--qa-resume");
             if(stage14||layout14||visual14)mode=stage14?"stage14-progression":layout14?"stage14-layout":"stage14-visual";
             if(milestones14)mode="stage14-milestones";
-            routines.Push(milestones14?FinalMilestones():stage14?FinalProgression():layout14?FinalLayout():visual14?FinalVisual():redesign ? Redesign() : art ? VisualInspection() : load ? LoadCheck() : stage67?LivestockAndCrew():stage45?FarmStarterAndPurchase():game.Milestone == 0 ? Foundation() : (full || resume) ? Progression(resume) : Vertical());
+            if(assets)mode="asset-library";
+            routines.Push(assets?AssetLibraryVisual():milestones14?FinalMilestones():stage14?FinalProgression():layout14?FinalLayout():visual14?FinalVisual():redesign ? Redesign() : art ? VisualInspection() : load ? LoadCheck() : stage67?LivestockAndCrew():stage45?FarmStarterAndPurchase():game.Milestone == 0 ? Foundation() : (full || resume) ? Progression(resume) : Vertical());
             while (routines.Count > 0)
             {
                 object yielded = null; bool running = false;

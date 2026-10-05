@@ -9,20 +9,10 @@ namespace Tycoon
         public static void Build(GameSession game)
         {
             var world = new GameObject("World").transform; world.SetParent(game.transform);
-            Art.Box("Grass", new Vector3(8, -.13f, 12), new Vector3(112, .25f, 92), "#ADDF86", world, true);
+            Art.Box("Grass", new Vector3(8, -.13f, 12), new Vector3(112, .25f, 92), "#9BC984", world, true);
             Lighting(world);
-            for (int i = 0; i < 115; i++)
-            {
-                float x = -43 + (i % 23) * 4.9f, z = i < 46 ? 55 + (i / 23) * 5 : -25 - ((i - 46) / 23) * 4.7f;
-                var tree = Art.Model("tree", new Vector3(x + (i % 3) * .6f, 0, z), world, 1 + (i % 4) * .13f, i * 47);
-                foreach (var renderer in tree.GetComponentsInChildren<Renderer>())
-                {
-                    var mats = renderer.sharedMaterials;
-                    for (int m = 0; m < mats.Length; m++) if (mats[m].name.ToLower().Contains("green")) mats[m] = Art.Material(i % 3 == 0 ? "#AFEC26" : "#66CF20");
-                    renderer.sharedMaterials = mats;
-                }
-            }
-            Art.Box("StarterField", new Vector3(-13, .012f, 8), new Vector3(19, .04f, 12), "#A7D96B", world);
+            WorldDressing.Environment(world);
+            Art.Box("StarterField", new Vector3(-13, .012f, 10), new Vector3(18, .04f, 14), "#A7D96B", world);
             Art.Box("StarterSelling",new Vector3(-13,.012f,0),new Vector3(17,.04f,6),"#EDB5A2",world);
             var shopFloor=Floor(world, "02  CỬA HÀNG NÔNG SẢN", new Vector3(7, 0, 6), new Vector2(22, 20));
             shopFloor.gameObject.AddComponent<UnlockVisual>().Requirement="farm_shop";
@@ -86,6 +76,7 @@ namespace Tycoon
                 Pad(game, world, upgrade, point);
             }
             LayoutPurchasePads(game);
+            WorldDressing.BackRooms(world);
             world.gameObject.AddComponent<NavigationWorld>();
         }
         static void LayoutPurchasePads(GameSession game)
@@ -122,19 +113,21 @@ namespace Tycoon
         public static Transform Floor(Transform parent, string label, Vector3 position, Vector2 size)
         {
             var floor = new GameObject(label).transform; floor.SetParent(parent); floor.position = position;
-            Art.Box("OrangeFloor", new Vector3(0, .012f, 0), new Vector3(size.x, .04f, size.y), "#EDB5A2", floor);
+            string color=label.Contains("NÔNG SẢN")?"#E7C99A":label.Contains("SIÊU THỊ")?"#E7ECDA":"#E7D9C5";
+            Art.Box("BusinessFloor", new Vector3(0, .012f, 0), new Vector3(size.x, .04f, size.y), color, floor);
             float x = size.x / 2, z = size.y / 2;
             for(int side=-1;side<=1;side+=2)
             {
                 float width=(size.x-4)/2,length=(size.y-4)/2;
-                Art.Box("BackWall",new Vector3(side*(2+width/2),.65f,z),new Vector3(width,1.3f,.22f),"#F7D435",floor,true);
-                Art.Box("BlueBackTrim",new Vector3(side*(2+width/2),1.31f,z),new Vector3(width,.14f,.3f),"#039BDC",floor);
-                Art.Box("RightWall",new Vector3(x,.65f,side*(2+length/2)),new Vector3(.22f,1.3f,length),"#F7D435",floor,true);
-                Art.Box("BlueRightTrim",new Vector3(x,1.31f,side*(2+length/2)),new Vector3(.3f,.14f,length),"#039BDC",floor);
+                Art.Box("BackWall",new Vector3(side*(2+width/2),.65f,z),new Vector3(width,1.3f,.22f),"#EDE1C9",floor,true);
+                Art.Box("BackTrim",new Vector3(side*(2+width/2),1.31f,z),new Vector3(width,.14f,.3f),"#559989",floor);
+                Art.Box("RightWall",new Vector3(x,.65f,side*(2+length/2)),new Vector3(.22f,1.3f,length),"#EDE1C9",floor,true);
+                Art.Box("RightTrim",new Vector3(x,1.31f,side*(2+length/2)),new Vector3(.3f,.14f,length),"#559989",floor);
             }
             Art.Box("FloorEdge", new Vector3(0, .03f, -z), new Vector3(size.x, .08f, .2f), "#039BDC", floor);
             Art.Box("LeftEdge", new Vector3(-x, .03f, 0), new Vector3(.2f, .08f, size.y), "#039BDC", floor);
             Art.Label(label, new Vector3(-x + 4, .06f, -z + 1), floor, .25f, "#FFFFFF", false).transform.rotation = Quaternion.Euler(90, 0, 0);
+            WorldDressing.Floor(floor,size,label);
             return floor;
         }
         static LivestockPopulationView Pen(Transform parent, Vector3 position, Vector2 size, string key, int count, float scale, string requirement, string alternative = "")
@@ -145,10 +138,14 @@ namespace Tycoon
             visual.Requirement = requirement;
             if (!string.IsNullOrEmpty(alternative)) visual.AnyRequirements = new[] { requirement,alternative };
             Art.Box("PenGround", position + new Vector3(0, .008f, 0), new Vector3(size.x, .025f, size.y), "#CBA671", pen);
+            int horizontal=Mathf.CeilToInt(size.x/2.2f),vertical=Mathf.CeilToInt(size.y/2.2f);
+            float stepX=size.x/horizontal,stepZ=size.y/vertical;
             for (int side = 0; side < 2; side++)
-                for (int i = 0; i < Mathf.CeilToInt(size.x / 2.2f); i++) Art.Model("fence", position + new Vector3(-size.x / 2 + 1.1f + i * 2.2f, 0, (side == 0 ? -1 : 1) * size.y / 2), pen, .85f);
+                for (int i = 0; i < horizontal; i++)
+                    Art.Model("farm_fence", position + new Vector3(-size.x / 2 + stepX*.5f + i * stepX, 0, (side == 0 ? -1 : 1) * size.y / 2), pen).transform.localScale=new Vector3(stepX/2.2f,1,1);
             for (int side = 0; side < 2; side++)
-                for (int i = 0; i < Mathf.CeilToInt(size.y / 2.2f); i++) Art.Model("fence", position + new Vector3((side == 0 ? -1 : 1) * size.x / 2, 0, -size.y / 2 + 1.1f + i * 2.2f), pen, .85f, 90);
+                for (int i = 0; i < vertical; i++)
+                    Art.Model("farm_fence", position + new Vector3((side == 0 ? -1 : 1) * size.x / 2, 0, -size.y / 2 + stepZ*.5f + i * stepZ), pen, 1, 90).transform.localScale=new Vector3(stepZ/2.2f,1,1);
             int columns = 3;
             var members=new List<GameObject>();
             for (int i = 0; i < count; i++)
@@ -159,14 +156,15 @@ namespace Tycoon
                 members.Add(animal);
             }
             Art.Box("PenCollision", position + new Vector3(0, .6f, 0), new Vector3(size.x, 1.2f, size.y), "#CBA671", pen, true).GetComponent<Renderer>().enabled = false;
+            WorldDressing.Livestock(pen,position,key=="user_chicken");
             var population=pen.gameObject.AddComponent<LivestockPopulationView>();population.Members=members.ToArray();return population;
         }
         static void Lighting(Transform parent)
         {
             RenderSettings.ambientMode = AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = Art.Hex("#E8F5DC"); RenderSettings.ambientEquatorColor = Art.Hex("#CADDB0"); RenderSettings.ambientGroundColor = Art.Hex("#A0B577"); RenderSettings.fog = false;
+            RenderSettings.ambientSkyColor = new Color(.42f,.50f,.40f); RenderSettings.ambientEquatorColor = new Color(.22f,.28f,.20f); RenderSettings.ambientGroundColor = new Color(.15f,.19f,.12f); RenderSettings.fog = false;
             var sun = new GameObject("Sun"); sun.transform.SetParent(parent); sun.transform.rotation = Quaternion.Euler(55, -35, 0);
-            var light = sun.AddComponent<Light>(); light.type = LightType.Directional; light.intensity = 1.15f; light.color = Color.white; light.shadows = LightShadows.Soft; light.shadowStrength = .48f; light.shadowBias = .04f; RenderSettings.sun = light;
+            var light = sun.AddComponent<Light>(); light.type = LightType.Directional; light.intensity = .95f; light.color = Color.white; light.shadows = LightShadows.Soft; light.shadowStrength = .48f; light.shadowBias = .04f; RenderSettings.sun = light;
             var volume = new GameObject("ColorGrade"); volume.transform.SetParent(parent); var component = volume.AddComponent<Volume>(); component.isGlobal = true; component.sharedProfile = Art.Catalog.lightingProfile;
         }
         static T Register<T>(GameSession game, Transform parent, string id, string label, Vector3 position, int capacity = 0) where T : Station
@@ -186,9 +184,14 @@ namespace Tycoon
         {
             var station = Register<ProductionStation>(game, parent, id, label, point, 24); station.AreaId = "farm"; station.ItemId = item; station.Interval = interval; station.Remaining = interval;
             station.Yield=item=="carrot"?2:4;
-            Art.Box("Soil", new Vector3(0, .07f, 0), new Vector3(4, .14f, 3.5f), "#B4864F", station.transform);
+            Art.Model("crop_soil",Vector3.zero,station.transform);
             var plants = new List<Transform>();
-            for (int i = 0; i < 9; i++) plants.Add(Art.Model(item == "carrot" ? "carrot_crop" : item, new Vector3(-.95f + i % 3 * .95f, .14f, -.75f + i / 3 * .75f), station.transform, item == "tomato" ? .8f : 1).transform);
+            for (int i = 0; i < 9; i++)
+            {
+                var plant=Art.Model(item=="carrot"?"carrot_crop":item=="wheat"?"wheat_crop":"crop_leaves",new Vector3(-.95f+i%3*.95f,.14f,-.75f+i/3*.75f),station.transform);
+                if(item=="tomato")Art.Model("tomato",new Vector3(0,.20f,0),plant.transform,.65f);
+                plants.Add(plant.transform);
+            }
             station.Plants = plants.ToArray(); station.InteractionPoint = point + Vector3.back * 2.25f; game.Producers.Add(station);
             Zone(game, parent, station, "operate", station.InteractionPoint + Vector3.back);
             Zone(game, parent, station, "withdraw", station.InteractionPoint + Vector3.right * 1.7f);
@@ -196,9 +199,7 @@ namespace Tycoon
         static void AnimalProducer(GameSession game, Transform parent, string id, string item, string label, Vector3 point, float interval, string requirement)
         {
             var station = Register<ProductionStation>(game, parent, id, label, point, 36); station.AreaId = "farm"; station.ItemId = item; station.Interval = interval; station.Remaining = interval; station.Requirement = requirement; station.Cycle = interval;
-            Art.Box("YellowBin", new Vector3(0, .43f, 0), new Vector3(1.9f, .85f, 1.9f), "#F6DF29", station.transform);
-            Art.Box("BlueBinBase", new Vector3(0, .08f, 0), new Vector3(2, .16f, 2), "#049CDA", station.transform);
-            Art.Box("BluePipe", new Vector3(-1.5f, .4f, 0), new Vector3(2, .25f, .25f), "#20BEE8", station.transform);
+            Art.Model("feed_trough",Vector3.zero,station.transform);
             Stack(game, station, new Vector3(0, .85f, 0), .75f, 2, 2, 24); game.Producers.Add(station); Locked(station);
             Zone(game, parent, station, "operate", station.InteractionPoint + Vector3.back);
             Zone(game, parent, station, "restock", point+Vector3.right*4.3f+Vector3.back*(item=="egg"?.8f:2));
@@ -211,8 +212,8 @@ namespace Tycoon
             station.ConfigureItemBins(capacity);
             Art.Box("StorageBase", new Vector3(0, .08f, 0), new Vector3(3.4f, .15f, 3.4f), "#FFFFFF", station.transform);
             Art.Box("StorageCollision",new Vector3(0,.55f,.5f),new Vector3(3.1f,1.1f,2.5f),"#FFFFFF",station.transform,true).GetComponent<Renderer>().enabled=false;
-            for (int i = 0; i < 3; i++) Art.Model("crate", new Vector3(-1.1f + i * 1.1f, .15f, .8f), station.transform, 1);
-            Stack(game, station, new Vector3(0, .2f, 0), .7f);
+            WorldDressing.Storage(station.transform);
+            Stack(game, station, new Vector3(0, .2f, -.45f), .7f);
             Zone(game, parent, station, "withdraw", station.InteractionPoint + Vector3.left * 1.6f);
             Zone(game, parent, station, "deposit", station.InteractionPoint + Vector3.right * 1.6f);
             return station;
@@ -221,8 +222,8 @@ namespace Tycoon
         {
             var station = Register<ShelfStation>(game, parent, id, label, point, 36); station.AllowedItems = items; station.ShopId = shop; station.AreaId = shop == "farm" ? "farm_shop" : shop == "market" ? "supermarket" : shop; station.Requirement = requirement; station.InteractionPoint = point + Vector3.left * 1.5f;
             foreach(string item in items)station.Inventory.SetLimit(item,items.Length==1?36:6);
-            Art.Box("BlueCounter", new Vector3(0, .45f, 0), new Vector3(1.4f, .9f, 4.7f), "#039BDD", station.transform, true);
-            Art.Box("WhiteCounter", new Vector3(0, .95f, 0), new Vector3(1.48f, .13f, 4.8f), "#EAF8EF", station.transform);
+            Art.Box("ShelfCollision", new Vector3(0, .45f, 0), new Vector3(1.4f, .9f, 4.7f), "#039BDD", station.transform, true).GetComponent<Renderer>().enabled=false;
+            Art.Model("display_counter",Vector3.zero,station.transform);
             Stack(game, station, new Vector3(0, 1.04f, -.25f), .75f, 2, 5, 36); game.Shelves.Add(station); Locked(station);
             Zone(game, parent, station, "withdraw", station.InteractionPoint + Vector3.left * 1.2f);
             Zone(game, parent, station, "deposit", station.InteractionPoint + Vector3.back * 1.6f);
@@ -230,7 +231,8 @@ namespace Tycoon
         }
         public static CheckoutStation Checkout(GameSession game, Transform parent, string id, Vector3 point, string shop, string requirement = "")
         {
-            var station = Register<CheckoutStation>(game, parent, id, "QUẦY "+GameHud.AreaLabel(shop).ToUpperInvariant(), point); station.ShopId = shop; station.AreaId = shop == "farm" ? "farm_shop" : shop == "market" ? "supermarket" : shop; station.Requirement = requirement; station.Inventory=new Inventory(36); Art.Model("user_checkout", Vector3.zero, station.transform, 1.25f);
+            var station = Register<CheckoutStation>(game, parent, id, "QUẦY "+GameHud.AreaLabel(shop).ToUpperInvariant(), point); station.ShopId = shop; station.AreaId = shop == "farm" ? "farm_shop" : shop == "market" ? "supermarket" : shop; station.Requirement = requirement; station.Inventory=new Inventory(36);
+            WorldDressing.Checkout(station.transform);
             Art.Box("CheckoutCollision", new Vector3(.3f, .55f, 0), new Vector3(2.1f, 1.1f, .9f), "#05A4E3", station.transform, true).GetComponent<Renderer>().enabled = false;
             Stack(game,station,new Vector3(-.6f,1.02f,.1f),.62f,2,4,36);
             station.InteractionPoint = point + Vector3.left * 2.7f + Vector3.forward * .6f;
@@ -254,8 +256,8 @@ namespace Tycoon
         public static MachineStation Machine(GameSession game, Transform parent, string key, Vector3 point, string requirement)
         {
             var recipe = Definitions.Recipe(key); var station = Register<MachineStation>(game, parent, "machine_" + key, recipe.label, point, 36); station.Recipe = recipe; station.Requirement = requirement; station.AreaId = key is "oven" or "cakeoven" ? "bakery" : key == "kitchen" ? "restaurant" : "processing";
-            var model = Art.Model(key, Vector3.zero, station.transform, 1.45f);
-            foreach (var child in model.GetComponentsInChildren<Transform>()) if (child.name.StartsWith("Rotor")) { station.Rotor = child; break; }
+            WorldDressing.Machine(station);
+            if(key is "oven" or "cakeoven" or "kitchen")station.StatusLabel.transform.localPosition=new Vector3(0,3.0f,0);
             Art.Box("MachineCollision", new Vector3(0, .9f, 0), new Vector3(2.65f, 1.8f, 2.25f), "#039BDD", station.transform, true).GetComponent<Renderer>().enabled = false;
             station.InteractionPoint = point + Vector3.back * 2.3f; Stack(game, station, new Vector3(.9f, .18f, -.9f), .55f, 1, 2, 12); game.Machines.Add(station); Locked(station);
             Zone(game, parent, station, "operate", station.InteractionPoint + Vector3.back * 1.25f);

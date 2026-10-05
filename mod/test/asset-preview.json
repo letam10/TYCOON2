@@ -1,0 +1,21 @@
+{
+  "purpose": "Visual asset preview only; not progression or balance evidence",
+  "id": "asset-preview",
+  "wallet": 890,
+  "orders": 602,
+  "batches": 50,
+  "bakeryOrders": 60,
+  "owned": [
+    "barn",
+    "farm_shop",
+    "milk_line",
+    "egg_line",
+    "mill",
+    "dairy",
+    "supermarket",
+    "bakery",
+    "oven_level2",
+    "oven_level3",
+    "restaurant"
+  ]
+}
