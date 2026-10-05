@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 
 namespace Tycoon
@@ -27,7 +28,7 @@ namespace Tycoon
         public List<DinerSave> PendingDiners = new();
         public bool NavigationReady;
         public int BakerySales, RestaurantMeals;
-        public int BusinessStage => Economy.Has("restaurant") ? 5 : Economy.Has("bakery") ? 4 : Economy.Has("supermarket") ? 3 : Economy.Has("mill") ? 2 : 1;
+        public int BusinessStage => Economy.Has("restaurant") ? 5 : Economy.Has("bakery") ? 4 : Economy.Has("supermarket") ? 3 : Economy.Has("mill")||Economy.Has("farm_shop") ? 2 : 1;
         float nextAutosave;
         public StorageStation Storage;
         public int SelectedItem;
@@ -234,6 +235,12 @@ namespace Tycoon
             {
                 var data = SaveStore.Read(SavePath);
                 if (data == null) return;
+                bool worldChanged=EnsureWorldProjection(data);
+                if(data.transactionState!=null)
+                {
+                    worldChanged|=RuntimeTransactions.ReconcileWorld(data.transactionState,this);
+                    if(worldChanged){RuntimeTransactions.Project(data.transactionState,data);SaveStore.Write(SavePath,data);}
+                }
                 ValidateSaveOwners(data);
                 Player.StopInteraction();
                 Transactions?.Detach();Transactions=null;
@@ -273,6 +280,21 @@ namespace Tycoon
                 Say("Đã tải trò chơi");
             }
             catch (Exception error) { BlockRecovery(error); }
+        }
+        bool EnsureWorldProjection(SaveData data)
+        {
+            bool changed=false;
+            foreach(var station in Stations.Where(x=>x is not StationZone))
+            {
+                if(station.Inventory!=null&&!data.inventories.Exists(x=>x.id==station.Id))
+                {data.inventories.Add(new InventorySave(station.Id,new Inventory(station.Inventory.Capacity,station.Inventory.SingleItem)));changed=true;}
+                if(station is MachineStation machine&&!data.inventories.Exists(x=>x.id==station.Id+"_input"))
+                {data.inventories.Add(new InventorySave(station.Id+"_input",new Inventory(machine.Input.Capacity,machine.Input.SingleItem)));changed=true;}
+                if(!data.stationStates.Exists(x=>x.id==station.Id)){data.stationStates.Add(station.CaptureProgress());changed=true;}
+                if(station is CheckoutStation checkout&&!data.cash.Exists(x=>x.id==checkout.Id))
+                {data.cash.Add(new CashSave{id=checkout.Id,amount=0});changed=true;}
+            }
+            return changed;
         }
         void ValidateSaveOwners(SaveData data)
         {

@@ -329,6 +329,51 @@ namespace Tycoon
             TransactionCore.Validate(s); return s;
         }
 
+        // Thêm owner/trạm mới của phiên bản gameplay mà không reset các owner đã lưu.
+        internal static bool ReconcileWorld(TransactionState state,GameSession game)
+        {
+            bool changed=false;
+            foreach(var station in game.Stations.Where(x=>x is not StationZone))
+            {
+                string id=station.Id;
+                if(!state.owners.Any(x=>x.id==id))
+                {
+                    var inventory=station.Inventory??new Inventory(0);
+                    var owner=new OwnerState{id=id,actor="simulation",location=station is StorageStation?station.AreaId:id,
+                        kind=station is StorageStation?OwnerKind.Storage:station is MachineStation or CheckoutStation?OwnerKind.Machine:OwnerKind.Station,
+                        capacity=inventory.Capacity,singleItem=inventory.SingleItem,limits=inventory.Limits,writers=new(){"player"}};
+                    if(station is CheckoutStation)owner.kind=OwnerKind.Counter;
+                    if(station is ShelfStation shelf)owner.accepts=new(shelf.AllowedItems??Array.Empty<string>());
+                    if(station is CheckoutStation checkout)owner.accepts=new(checkout.AcceptedItems);
+                    if(station is MachineStation machine)owner.accepts=new(){machine.Recipe.output};
+                    state.owners.Add(owner);
+                    foreach(var item in inventory.Snapshot())state.stacks.Add(new ItemStackState{id="migrated:"+id+":"+item.id,item=item.id,quantity=item.count,owner=id,location=owner.kind==OwnerKind.Storage?owner.location+"/"+item.id:owner.location});
+                    changed=true;
+                }
+                if(station is MachineStation machineStation&&!state.owners.Any(x=>x.id==id+"_input"))
+                {
+                    var input=machineStation.Input;
+                    state.owners.Add(new OwnerState{id=id+"_input",actor="simulation",location=id+"_input",kind=OwnerKind.Machine,
+                        capacity=input.Capacity,singleItem=input.SingleItem,limits=input.Limits,accepts=machineStation.Recipe.inputs.Select(x=>x.id).ToList(),writers=new(){"player"}});
+                    foreach(var item in input.Snapshot())state.stacks.Add(new ItemStackState{id="migrated:"+id+"_input:"+item.id,item=item.id,quantity=item.count,owner=id+"_input",location=id+"_input"});
+                    changed=true;
+                }
+                if(state.stations.Any(x=>x.id==id))continue;
+                var progress=station.CaptureProgress();
+                var runtime=new StationRuntimeState{id=id,area=station.AreaId,requirement=station.Requirement,level=progress.level,
+                    workCount=progress.workCount,playerWorkCount=progress.playerWorkCount,input=station is MachineStation?id+"_input":id,output=id,
+                    progress=progress,kind=station is MachineStation?"machine":station is ProductionStation?"producer":station is StorageStation?"storage":
+                        station is ShelfStation?"shelf":station is CheckoutStation?"counter":station is TableStation?"table":station is PurchasePad?"purchase":"station",
+                    definitionId=station is MachineStation m?m.Recipe.id:station is PurchasePad pad?pad.Upgrade.id:id,
+                    item=(station as ProductionStation)?.ItemId,running=progress.running,remaining=station is MachineStation?progress.remaining:0,batches=progress.batches};
+                state.stations.Add(runtime);changed=true;
+            }
+            if(!changed)return false;
+            UpgradeCounterOwners(state,game);
+            TransactionCore.NormalizeState(state);TransactionCore.Validate(state);
+            return true;
+        }
+
         internal static void UpgradeCounterOwners(TransactionState state,GameSession game)
         {
             foreach(var counter in game.Checkouts.Where(x=>x.Inventory!=null))

@@ -39,8 +39,11 @@ namespace Tycoon
             nextSpawn = Time.time + (game.RushActive ? .65f : game.BusinessStage==1 ? 10f : 2.5f);
             int limit = game.RushActive ? MaximumActive : game.Economy.Has("supermarket") ? 24 : 15;
             if (ActiveCount >= limit) return;
-            string[] shops = game.Economy.Has("bakery") ? new[] { "farm", "market", "bakery" } : game.Economy.Has("supermarket") ? new[] { "farm", "market" } : new[] { "farm" };
-            string shop = shops[sequence++ % shops.Length];
+            var shops=new System.Collections.Generic.List<string>{"farm"};
+            if(game.Economy.Has("farm_shop"))shops.Add("farm_shop");
+            if(game.Economy.Has("supermarket"))shops.Add("market");
+            if(game.Economy.Has("bakery"))shops.Add("bakery");
+            string shop = shops[sequence++ % shops.Count];
             var checkout = FindLane(shop);
             if (checkout) Spawn(checkout, null);
         }

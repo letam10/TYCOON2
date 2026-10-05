@@ -52,8 +52,9 @@ namespace Tycoon
             Shelf(game, world, "shelf_farm_1", "CÀ RỐT", new Vector3(14.8f, 0, 11), new[] { "carrot" }, "farm");
             // Quầy này nằm trong tuyến cơ bản, không phụ thuộc gói mở Farm Shop.
             Shelf(game, world, "shelf_livestock", "SẢN PHẨM CHĂN NUÔI", new Vector3(14.8f,0,1), new[] { "milk", "egg", "beef" }, "farm");
-            Shelf(game, world, "shelf_farm_2", "NÔNG SẢN", new Vector3(14.8f, 0, 6), new[] { "tomato", "wheat", "milk", "egg", "beef", "flour", "cheese", "sauce" }, "farm", "farm_shop");
+            Shelf(game, world, "shelf_farm_2", "NÔNG SẢN", new Vector3(14.8f, 0, 6), new[] { "tomato", "wheat", "milk", "egg", "beef", "flour", "cheese", "sauce" }, "farm_shop", "farm_shop");
             Checkout(game, world, "checkout_farm", new Vector3(10, 0, -3), "farm");
+            Checkout(game, world, "checkout_farm_shop", new Vector3(4,0,3), "farm_shop", "farm_shop");
             Floor(world, "03  PROCESSING", new Vector3(28, 0, 7), new Vector2(18, 18));
             Machine(game, world, "mill", new Vector3(23, 0, 12), "mill");
             Machine(game, world, "cheesemaker", new Vector3(28, 0, 12), "dairy");

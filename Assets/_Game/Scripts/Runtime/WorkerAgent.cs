@@ -125,7 +125,7 @@ namespace Tycoon
             if(Time.time<nextDecision)return;nextDecision=Time.time+.2f;
             if(IsCashier)
             {
-                string shop=crew.area=="farm_shop"?"farm":crew.area=="supermarket"?"market":crew.area;
+                string shop=crew.area=="supermarket"?"market":crew.area;
                 var counters=g.Checkouts.FindAll(x=>x.ShopId==shop&&x.IsUnlocked);
                 if(counters.Count==0){Reason="Chờ quầy";return;}
                 Checkout=counters[Math.Abs(Slot)%counters.Count];Anchor=Checkout.transform.position+new Vector3(0,0,1.4f);

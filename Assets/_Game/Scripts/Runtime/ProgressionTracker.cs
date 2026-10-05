@@ -118,6 +118,9 @@ namespace Tycoon
                 if (!string.IsNullOrEmpty(requirement.stationFamily) && game.Progression.StationLevel(requirement.stationFamily) < requirement.stationLevel)
                     reasons.Add("Trạm " + requirement.stationFamily + " cấp " + requirement.stationLevel + " • " +
                         game.Progression.StationLevel(requirement.stationFamily) + "/" + requirement.stationLevel + ".");
+                var alternatives=requirement.anyStationFamilies??System.Array.Empty<string>();
+                if(alternatives.Length>0&&!alternatives.Any(f=>game.Progression.StationLevel(f)>=requirement.anyStationLevel))
+                    reasons.Add("Cần một tuyến cấp "+requirement.anyStationLevel+" • "+string.Join(" / ",alternatives.Select(f=>f+" "+game.Progression.StationLevel(f)+"/"+requirement.anyStationLevel))+".");
                 if (requirement.successfulOrders > game.Economy.Transactions)
                     reasons.Add("Đơn thành công • " + game.Economy.Transactions + "/" + requirement.successfulOrders + ".");
                 if (requirement.successfulOrdersAtArea > game.Progression.SuccessfulOrdersAt(requirement.successfulOrderArea))
@@ -161,6 +164,9 @@ namespace Tycoon
                     int level = StationLevel(state, requirement.stationFamily);
                     if (level < requirement.stationLevel) reasons.Add("Trạm " + requirement.stationFamily + " cấp " + requirement.stationLevel + " • " + level + "/" + requirement.stationLevel + ".");
                 }
+                var alternatives=requirement.anyStationFamilies??System.Array.Empty<string>();
+                if(alternatives.Length>0&&!alternatives.Any(f=>StationLevel(state,f)>=requirement.anyStationLevel))
+                    reasons.Add("Cần một tuyến cấp "+requirement.anyStationLevel+" • "+string.Join(" / ",alternatives.Select(f=>f+" "+StationLevel(state,f)+"/"+requirement.anyStationLevel))+".");
                 int sales = state.legacyTransactions + state.payments.Count;
                 if (requirement.successfulOrders > sales) reasons.Add("Đơn thành công • " + sales + "/" + requirement.successfulOrders + ".");
                 if (requirement.successfulOrdersAtArea > 0)

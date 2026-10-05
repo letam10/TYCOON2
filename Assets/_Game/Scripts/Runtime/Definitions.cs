@@ -89,6 +89,8 @@ namespace Tycoon
     {
         public string stationFamily, successfulOrderArea, successfulJobArea;
         public int stationLevel, successfulOrders, successfulOrdersAtArea, successfulJobs;
+        public string[] anyStationFamilies = Array.Empty<string>();
+        public int anyStationLevel;
         public string[] allUnlocks = Array.Empty<string>(), anyUnlocks = Array.Empty<string>();
         public RecipeBatchRequirement[] recipeBatches = Array.Empty<RecipeBatchRequirement>();
     }
@@ -129,7 +131,7 @@ namespace Tycoon
             new("milk_line", "Tuyến sữa: chuồng, đàn, trạm và quầy", 1000),
             new("egg_line", "Tuyến trứng: chuồng, đàn, trạm và quầy", 1000),
             new("animal_worker", "Thuê chăm vật nuôi", 300, "", "worker", "Animal"),
-            new("farm_shop", "Mở rộng Farm Shop", 2000, progression:new ProgressionRequirement { stationFamily="farm", stationLevel=3, successfulOrders=50 }),
+            new("farm_shop", "Mở rộng Farm Shop", 2000, progression:new ProgressionRequirement { anyStationFamilies=new[]{"farm","animal"}, anyStationLevel=3, successfulOrders=50 }),
             new("mill", "Mở khu Processing", 12000, "farm_shop", progression:new ProgressionRequirement { stationFamily="animal", stationLevel=3, successfulOrders=200 }),
             new("processor", "Thuê chế biến", 750, "mill", "worker", "Processor"),
             new("transport_processing", "Thuê vận chuyển Processing", 600, "mill", "worker", "Transporter"),
