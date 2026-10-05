@@ -9,6 +9,8 @@ Chat Codex tiếp theo phải đọc file này trước khi làm việc. Tiếp 
 - Công đoạn 03 — PLAYER INTERACTION: HOÀN THÀNH. Điều khiển WASD/gamepad theo camera, camera 55°, vùng thao tác và stack một loại 6/10/16/24 được kiểm tra trong Editor và Windows Player.
 - Công đoạn 04 — FARM STARTER VERTICAL SLICE: HOÀN THÀNH VỀ IMPLEMENTATION. Farm cà rốt 0 vốn, FIFO order, giao từng phần, payment tại counter và player collect đã được tích hợp; giới hạn kiểm chứng Player xem mục cuối.
 - Công đoạn 05 — PURCHASE & PROGRESSION: HOÀN THÀNH VỀ IMPLEMENTATION. Purchase góp dở, state hiển thị và progression gates/upgrade axes riêng đã được tích hợp; chưa nghiệm thu trọn chuỗi unlock bằng một phiên Player.
+- Công đoạn 06 — FARM LIVESTOCK VERTICAL SLICE: HOÀN THÀNH VỀ IMPLEMENTATION. Tuyến thịt bò 500 xu được chơi từ ví 0 đến sản xuất, giao, payment và collect trên Windows Player; tuyến sữa/trứng thay thế chưa chạy Player.
+- Công đoạn 07 — LOGISTICS VÀ EMPLOYEES: HOÀN THÀNH VỀ IMPLEMENTATION. Kho theo area/SKU, reservation, crew theo nghề/khu, cổng tuyển và worker AI đã được nối; chưa nghiệm thu trọn vòng đời nhân viên đã tuyển bằng Player.
 - Cập nhật bàn giao: 2026-10-05, múi giờ Asia/Bangkok.
 
 ## Môi trường và Git
@@ -21,6 +23,8 @@ Chat Codex tiếp theo phải đọc file này trước khi làm việc. Tiếp 
 - Mốc runtime trước đó: 47e1e9f — feat: add durable ownership and transaction core.
 - Mốc Công đoạn 02 đã push: fdbe67f — feat: extend authoritative transaction state.
 - Công đoạn 04/05 đã commit và push: e909605 — feat: add farm starter and progression systems.
+- Công đoạn 06 đã commit/push: e580495 — feat: add farm livestock route transactions.
+- Công đoạn 07 đã commit/push: e0783e3 — feat: add area logistics and crew automation.
 - Chỉnh sửa interaction có trước nhiệm vụ trong Art, FollowCamera, GameHud, GameSession, PlayerController, Station và PlayerInteraction đã được rà soát, tích hợp vào Công đoạn 03, theo xác nhận của người dùng trước khi commit. QualitySettings.asset và ProjectSettings/ProjectSettings.asset không nằm trong commit nhiệm vụ.
 
 ## Phần đã thực hiện
@@ -217,3 +221,44 @@ Cập nhật này là ghi chép lịch sử tại mốc bàn giao Công đoạn 
 - Công đoạn 04/05: pooled customer inventory chưa bind lại từng gây NullReference khi refresh transaction. Projection hiện chỉ cập nhật inventory đang bind; Editor và Windows Player report cuối đều có runtime errors bằng 0.
 - Công đoạn 04/05: expectation cũ yêu cầu tạo loss record cho đơn chưa nhận hàng; test được sửa đúng quy tắc zero delivered = zero loss, order vẫn terminal. EditMode cuối pass 86/86.
 - Công đoạn 02/03: các lỗi compile/test, ảnh QA và BuildPipeline được ghi ở mục rà soát trước đó đã được sửa hoặc chạy lại thành công; không còn failed check trong báo cáo cuối được liệt kê.
+
+## Công đoạn 06 — FARM LIVESTOCK VERTICAL SLICE
+
+- Producer vật nuôi có state đàn/thức ăn/chu kỳ/tái đàn trong transaction core. Ba gói `barn` (500 xu), `milk_line` (1000 xu) và `egg_line` (1000 xu) được khai báo thành route trọn gói; mỗi purchase mở trạm, đàn/chuồng và quầy bán tương ứng.
+- Cho ăn dùng cà rốt từ tuyến khởi đầu. Có vùng cho ăn, chăm sóc, lấy sản phẩm và tái đàn riêng; tái đàn trừ một thức ăn, cần 60 giây và bắt đầu được khi đàn về 0.
+- Thu thịt giảm đàn đúng một con cho mỗi miếng bò; hình đàn trong chuồng phản ánh population runtime.
+- Máy có phase `WaitingInput → Ready → Operating → CompletedWaitingPickup`; rời vùng vận hành giữ nguyên job/progress và reservation. Input không bị tiêu thụ lần nữa khi tiếp tục; hoàn tất chờ lấy output mới về Ready.
+- Farm counter và shelf chấp nhận thịt/sữa/trứng mà không cần mua quầy ẩn. Order chụp giá, giao từng phần; payment nằm ở quầy, player Collect mới tăng wallet. Timeout không trả tiền/hoàn hàng; chỉ phần đã nhận được tính loss.
+- File chính: `CommerceDirector.cs`, `PlayerInteraction.cs`, `Station.cs`, `MachineStation.cs`, `TransactionCore.cs`, `TransactionState.cs`, `RuntimeTransactions.cs`, `SaveData.cs`, `WorldFactory.cs`.
+
+## Công đoạn 07 — LOGISTICS VÀ EMPLOYEES
+
+- Storage owner gắn với area; stack trong kho có location `area/ItemType`. Có giới hạn theo item, ngưỡng dự trữ thức ăn/nguyên liệu, reservation nguồn/đích và dòng trạng thái hiển thị hàng đang giữ/chờ nhận.
+- Hire kiểm tra trạm đúng family cấp 3, 30 job do người chơi tự làm đúng nghề/khu và kho riêng. Crew được key theo Role + Area; nâng tốc độ, sức mang, số người tác động riêng từng đội.
+- Worker có route cho Farmer, AnimalWorker, Restocker, Cashier, Processor/Cook/Baker, Transporter và Waiter. Giữ slot trạm, dùng reservation khi vận chuyển, chờ khi thiếu input/kho/đích hoặc máy hỏng và kiểm tra lại sau. Navigation tránh SetDestination lặp; stuck repath tối đa 3 lần rồi nghỉ 5 giây.
+- HUD có mục Quản lý đội. State trạm, player job count, crew và reservation được persist trong transaction save.
+- File chính: `Inventory.cs`, `ProgressionTracker.cs`, `WorkerAgent.cs`, `NavigationWorld.cs`, `GameHud.cs`; cùng cập nhật trong `Station.cs`, `TransactionCore.cs`, `RuntimeTransactions.cs`.
+
+## Kiểm chứng Công đoạn 06/07
+
+- Unity EditMode cuối: Passed 92/92, Failed 0, Skipped 0 — `QA/editmode-results.xml`. Bao gồm machine phase/pause/output reservation, meat trừ đàn, restock từ population 0, order timeout/loss, location và reservation kho, hire gate theo player job, upgrade crew cô lập theo nghề/khu và Baker/Cook gate.
+- Windows BuildPipeline cuối: Succeeded, 0 errors, 2 warnings; build size 115,438,215 bytes.
+- Windows Player Stage67 cuối: Passed 285 checks, 0 failure, 0 runtime error; NVIDIA GeForce RTX 4060 Laptop GPU / Direct3D11 — `work/stage06-07/player-stage67-20261005T044650212Z/stage67-report.json` và `graphics-device.json`.
+- Tuyến thực chơi trên Player: ví 0 → trồng/bán cà rốt và Collect → mua gói bò 500 → cho ăn → chờ chu kỳ → thu thịt (đàn giảm) → giao đơn bò → payment ở quầy → player Collect. Cũng xác minh kho theo area/SKU và reservation nguồn/đích.
+- Ảnh QA cuối: `work/stage06-07/player-stage67-20261005T044650212Z/farm-livestock-sale.png`.
+
+### GitHub Công đoạn 06/07
+
+- `e580495` — `feat: add farm livestock route transactions`; đã push lên `origin/main`.
+- `e0783e3` — `feat: add area logistics and crew automation`; đã push lên `origin/main`.
+- Handoff này được cập nhật sau các commit mã trên và sẽ được push bằng commit tài liệu riêng. `ProjectSettings/QualitySettings.asset` (`antiAliasing: 0` → `2`) là thay đổi người dùng có sẵn và nằm ngoài commit/push của nhiệm vụ.
+
+## Chưa làm hoặc chưa nghiệm thu sau Công đoạn 06/07
+
+- Chưa chơi hết gói sữa 1000 xu hoặc gói trứng 1000 xu trên Windows Player; đã chạy tuyến thịt bò làm vertical slice đại diện.
+- Tái đàn từ population 0 và timeout/loss chỉ theo lượng khách nhận có EditMode coverage; Player Stage67 không ép hết patience để kiểm tra nhánh timeout.
+- Chưa tuyển rồi để nhiều worker chạy end-to-end trên Player. Hire gate yêu cầu level 3 + 30 job, nên bài Stage67 xuất phát từ 0 không đạt điều kiện tuyển. Role/area/gates, reservation relay, upgrade isolation có EditMode coverage; worker wait/resume theo máy hỏng/kho đầy, tranh slot và stuck recovery chưa có Player acceptance riêng.
+- Chưa đóng hẳn Windows Player rồi relaunch để nghiệm thu save/load xuyên process. Save v2, migration và state vật nuôi/máy/crew được kiểm tra bằng EditMode và save/read trong lượt QA.
+- Chưa soak 3–4 giờ hoặc nghiệm thu mục tiêu 165 FPS ở 1080p.
+- QA Stage67 có nhiều lượt trung gian thất bại ở harness (spawn khách quá dày, đích pad sát ranh va chạm, và một đơn 3 cà rốt hết 90 giây sau khi khách nhận 2). Harness được chỉnh để tạo khách FIFO có kiểm soát, dùng vùng pad thực và ghi nhận timeout/loss đúng quy tắc; Editor cuối pass 268 checks và Player cuối pass 285. Không còn acceptance check thất bại ở lượt cuối.
+- Thư mục report tạm của các lượt QA trung gian còn trong `work/stage06-07/`; lệnh xóa bị PowerShell command policy chặn. Chúng không được track và đã xác minh không còn Unity/Player process sử dụng; report Player cuối được giữ làm bằng chứng.
