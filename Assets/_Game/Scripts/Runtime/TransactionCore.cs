@@ -12,20 +12,26 @@ namespace Tycoon
         readonly object gate = new();
         readonly ITransactionStore store;
         readonly Func<double> clock;
+        readonly bool runtime;
+        readonly Dictionary<string,TransactionReceipt> keys=new(),effects=new();
         TransactionState state;
         public CoreLifecycle Lifecycle { get; private set; }
         public Action<CommitBoundary> Fault { get; set; }
-        public TransactionCore(TransactionState seed, ITransactionStore store = null, Func<double> clock = null)
+        public TransactionCore(TransactionState seed, ITransactionStore store = null, Func<double> clock = null, bool runtime = false)
         {
             this.store = store;
+            this.runtime = runtime;
             this.clock = clock ?? (() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000d);
             state = NormalizeState(Copy(store?.Read() ?? seed ?? throw new ArgumentNullException(nameof(seed))));
             RefreshMachinePhases(state);
             Validate(state);
+            IndexReceipts();
             if (store != null && store.Read() == null) store.Write(state);
         }
         public long Revision { get { lock (gate) return state.revision; } }
         public TransactionState Snapshot() { lock (gate) return Copy(state); }
+        internal TransactionState RuntimeSnapshot(){lock(gate)return state.RuntimeCopy(false);}
+        void IndexReceipts(){keys.Clear();effects.Clear();foreach(var r in state.receipts){keys.Add(r.key,r);effects.Add(r.effectId,r);}}
         internal static T Copy<T>(T value) => JsonUtility.FromJson<T>(JsonUtility.ToJson(value));
         public TransactionReceipt Execute(TransactionCommand command)
         {
@@ -36,14 +42,15 @@ namespace Tycoon
                 var c = Copy(command);
                 Require(!string.IsNullOrWhiteSpace(c.key) && !string.IsNullOrWhiteSpace(c.effectId) && !string.IsNullOrWhiteSpace(c.actor), "identity", "Thiếu command, effect hoặc actor ID.");
                 string fingerprint = Fingerprint(c, false), effectFingerprint = Fingerprint(c, true);
-                var receipt = state.receipts.Find(x => x.key == c.key);
+                keys.TryGetValue(c.key,out var receipt);
                 if (receipt != null)
                 { Require(receipt.fingerprint == fingerprint, "key-conflict", "Key đã dùng với payload khác."); return Copy(receipt); }
-                receipt = state.receipts.Find(x => x.effectId == c.effectId);
+                effects.TryGetValue(c.effectId,out receipt);
                 if (receipt != null)
                 { Require(receipt.effectFingerprint == effectFingerprint, "effect-conflict", "Effect đã dùng với payload khác."); return Copy(receipt); }
                 Require(c.expectedRevision == state.revision, "stale", "State version đã thay đổi.");
-                var draft = Copy(state);
+                var draft = runtime ? state.RuntimeCopy(true,c.kind==TransactionKind.AcknowledgeEvent?c.target:null,
+                    c.kind is TransactionKind.RegisterOwner or TransactionKind.CompletePurchase or TransactionKind.UpgradeCrew) : Copy(state);
                 Expire(draft, clock());
                 int amount = Apply(draft, c);
                 RefreshMachinePhases(draft);
@@ -57,17 +64,25 @@ namespace Tycoon
                 draft.receipts.Add(receipt);
                 draft.outbox.Add(new TransactionEvent { id = receipt.eventId, receiptId = receipt.id,
                     effectId = c.effectId, revision = draft.revision, kind = c.kind.ToString() });
-                Validate(draft);
-                Fault?.Invoke(CommitBoundary.Prepared);
-                try { store?.Write(draft); }
+                try
+                {
+                    if(!runtime)Validate(draft);
+                    else Require(draft.money>=0&&draft.revenue>=0&&draft.cashCollected>=0&&draft.receipts.Count==draft.revision,"journal","Giao dịch runtime không hợp lệ.");
+                    Fault?.Invoke(CommitBoundary.Prepared);
+                    if(store is ICommandTransactionStore journal)journal.Write(draft,c);else store?.Write(draft);
+                }
                 catch
                 {
+                    // Lịch sử bất biến được dùng chung; rollback phần append khi chưa publish.
+                    if(runtime){state.receipts.Remove(receipt);if(ReferenceEquals(state.outbox,draft.outbox))state.outbox.RemoveAt(state.outbox.Count-1);}
                     // Có thể lỗi sau replace nhưng trước trả lời: đọc lại receipt trước khi cho retry.
-                    try { var recovered = store.Read(); Validate(recovered); state = Copy(recovered); }
-                    catch { Lifecycle = CoreLifecycle.RecoveryFailed; }
+                    if(store!=null)
+                        try { var recovered = store.Read(); Validate(recovered); state = Copy(recovered);IndexReceipts(); }
+                        catch { Lifecycle = CoreLifecycle.RecoveryFailed; }
                     throw;
                 }
                 state = draft;
+                keys.Add(receipt.key,receipt);effects.Add(receipt.effectId,receipt);
                 Fault?.Invoke(CommitBoundary.Published);
                 return Copy(receipt);
             }
@@ -352,12 +367,12 @@ namespace Tycoon
             {
                 string counter=c.target.Substring(12);WriteAccess(Owner(s,counter),c.actor);
                 var cash=s.legacyCash.Find(x=>x.id==counter);if(cash==null||cash.amount==0)return 0;
-                int amount=cash.amount;s.money=checked(s.money+amount);cash.amount=0;return amount;
+                int amount=cash.amount;s.money=checked(s.money+amount);s.cashCollected=checked(s.cashCollected+amount);cash.amount=0;return amount;
             }
             var payment = s.payments.Find(x => x.id == c.target);
             Require(payment != null, "payment", "Payment không tồn tại."); WriteAccess(Owner(s, payment.counter), c.actor);
             if (payment.collected) return 0;
-            s.money = checked(s.money + payment.amount); payment.collected = true; return payment.amount;
+            s.money = checked(s.money + payment.amount);s.cashCollected=checked(s.cashCollected+payment.amount); payment.collected = true; return payment.amount;
         }
         static int Contribute(TransactionState s, TransactionCommand c)
         {
@@ -426,7 +441,7 @@ namespace Tycoon
             Require(Free(s, Owner(s, m.output), recipe.output) >= recipe.yield, "capacity", "Đầu ra không còn chỗ.");
             if(!string.IsNullOrEmpty(m.escrow))s.stacks.RemoveAll(x=>x.owner==m.escrow);
             AddStack(s, "job-output:" + m.id + ":" + m.jobId, m.output, recipe.output, recipe.yield);
-            m.running = false; m.machinePhase = MachinePhase.CompletedWaitingPickup; m.batches++; m.workCount++; if(c.actor=="player")m.playerWorkCount++; m.remaining = 0; return recipe.yield;
+            m.running = false; m.machinePhase = MachinePhase.CompletedWaitingPickup; m.batches++; m.workCount++; if(c.actor=="player"){m.playerWorkCount++;m.playerBatches++;} m.remaining = 0; return recipe.yield;
         }
         static StationRuntimeState Station(TransactionState s, string id)
         { var m = s.stations.Find(x => x.id == id); Require(m != null, "station", "Station không tồn tại: " + id); return m; }
@@ -571,6 +586,9 @@ namespace Tycoon
         internal static TransactionState NormalizeState(TransactionState s)
         {
             Require(s.schemaVersion is 1 or 2, "schema", "Version transaction chưa hỗ trợ.");
+            // Save cũ có receipt Collect nhưng chưa có số liệu tiền thực thu.
+            var collected=s.outbox.Where(x=>x.kind==nameof(TransactionKind.CollectPayment)).Select(x=>x.receiptId).ToHashSet();
+            s.cashCollected=Math.Max(s.cashCollected,s.receipts.Where(x=>collected.Contains(x.id)).Sum(x=>x.amount));
             foreach(var owner in s.owners.Where(x=>x.kind==OwnerKind.Storage))
             {
                 var station=s.stations.Find(x=>x.kind=="storage"&&(x.output==owner.id||x.id==owner.id));
@@ -598,7 +616,7 @@ namespace Tycoon
         public static void Validate(TransactionState s)
         {
             if (s == null) throw new InvalidDataException("Thiếu transaction state.");
-            Require(s.schemaVersion == 2 && s.catalogVersion == Definitions.Version && s.revision >= 0 && s.money >= 0 && s.revenue >= 0 && double.IsFinite(s.simulationTime), "schema", "Version hoặc tiền không hợp lệ.");
+            Require(s.schemaVersion == 2 && s.catalogVersion == Definitions.Version && s.revision >= 0 && s.money >= 0 && s.revenue >= 0 && s.cashCollected>=0 && double.IsFinite(s.simulationTime), "schema", "Version hoặc tiền không hợp lệ.");
             Unique(s.owners.Select(x => x.id)); Unique(s.stacks.Select(x => x.id)); Unique(s.reservations.Select(x => x.id));
             Unique(s.orders.Select(x => x.id)); Unique(s.payments.Select(x => x.id)); Unique(s.purchases.Select(x => x.id)); Unique(s.crews.Select(x => x.id)); Unique(s.stations.Select(x => x.id));
             Unique(s.receipts.Select(x => x.id)); Unique(s.receipts.Select(x => x.key)); Unique(s.receipts.Select(x => x.effectId)); Unique(s.outbox.Select(x => x.id)); Unique(s.unlocked);
@@ -661,7 +679,7 @@ namespace Tycoon
             foreach (var m in s.stations)
             {
                 Owner(s, m.input); Owner(s, m.output); var recipe = Array.Find(Definitions.Recipes, x => x.id == m.definitionId);
-                Require(m.level >= 1 && m.batches >= 0 && m.workCount >= 0 && m.playerWorkCount>=0 && double.IsFinite(m.remaining) && m.remaining >= 0 && m.progress != null, "station", "Station sai: " + m.id);
+                Require(m.level >= 1 && m.batches >= 0 && m.playerBatches>=0&&m.playerBatches<=m.batches&&m.workCount >= 0 && m.playerWorkCount>=0 && double.IsFinite(m.remaining) && m.remaining >= 0 && m.progress != null, "station", "Station sai: " + m.id);
                 if(m.kind=="table")Require(m.progress.playerServeCount>=0&&m.progress.playerCleanCount>=0,"table","Số lượt phục vụ/dọn bàn không hợp lệ.");
                 if (m.kind != "machine")
                 {
@@ -677,7 +695,8 @@ namespace Tycoon
             }
             Require(s.stations.Count(x=>x.kind=="machine"&&x.progress.broken)<=1,"breakdown","Chỉ một máy được phép hỏng cùng lúc.");
             Require(s.receipts.Count == s.outbox.Count && s.receipts.Count == s.revision, "journal", "Mutation thiếu receipt hoặc outbox.");
-            foreach (var r in s.receipts) Require(r.revision > 0 && r.revision <= s.revision && !string.IsNullOrEmpty(r.fingerprint) && !string.IsNullOrEmpty(r.effectFingerprint) && s.outbox.Any(e => e.id == r.eventId && e.receiptId == r.id && e.effectId == r.effectId && e.revision == r.revision), "journal", "Receipt không khớp event.");
+            var events=s.outbox.ToDictionary(x=>x.id);
+            foreach (var r in s.receipts) Require(r.revision > 0 && r.revision <= s.revision && !string.IsNullOrEmpty(r.fingerprint) && !string.IsNullOrEmpty(r.effectFingerprint) && events.TryGetValue(r.eventId,out var e) && e.receiptId == r.id && e.effectId == r.effectId && e.revision == r.revision, "journal", "Receipt không khớp event.");
         }
         static void Unique(IEnumerable<string> ids)
         { var set = new HashSet<string>(); foreach (var id in ids) Require(!string.IsNullOrWhiteSpace(id) && set.Add(id), "duplicate", "ID thiếu hoặc lặp: " + id); }

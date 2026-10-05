@@ -1,0 +1,15 @@
+{
+  "purchases": [
+    { "id": "barn", "wallet": 490, "payment": 20, "cost": 500 },
+    { "id": "milk_line", "wallet": 990, "payment": 20, "cost": 1000 },
+    { "id": "farm_shop", "wallet": 1990, "payment": 20, "cost": 2000 },
+    { "id": "mill", "wallet": 11990, "payment": 20, "cost": 12000 },
+    { "id": "supermarket", "wallet": 64990, "payment": 20, "cost": 65000 },
+    { "id": "bakery", "wallet": 99990, "payment": 20, "cost": 100000 },
+    { "id": "restaurant", "wallet": 79990, "payment": 20, "cost": 80000 }
+  ],
+  "activeCustomers": 30,
+  "partialRequested": 3,
+  "partialDelivered": 1,
+  "patienceSeconds": 90
+}

@@ -44,6 +44,29 @@ namespace Tycoon.Tests
         }
         [TearDown] public void TearDown()
         { game.Transactions?.Detach(); Object.DestroyImmediate(game.gameObject); GameSession.Instance = previous; if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+        [Test] public void ReservedSecondSkuCanBeDeliveredWithoutTouchingFirstLine()
+        {
+            var customer=Add<CustomerAgent>("MultiCustomer");customer.Restore(new CustomerSave{receipt=99,shop="farm",lane=counter.Id,
+                phase=(int)CustomerAgent.State.Queue,remaining=90,order=new(){new("carrot",1,10),new("wheat",1,12)}});
+            var worker=Add<WorkerAgent>("ReservationWorker");worker.WorkerId="second-sku";worker.UpgradeId="cashier";game.Transactions.BindWorker(worker);
+            string reservation=game.Transactions.Reserve(machine.Input,customer.Basket,"wheat",1,worker.GetEntityId(),worker.Carry);
+            Assert.That(reservation,Is.Not.Null);Assert.That(game.Transactions.Transfer(machine.Input,worker.Carry,"wheat",1,reservation:reservation),Is.EqualTo(1));
+            Assert.That(game.Transactions.Deliver(99,worker.Carry,reservation),Is.EqualTo(1));
+            Assert.That(customer.Order.Lines[0].delivered,Is.Zero);Assert.That(customer.Order.Lines[1].delivered,Is.EqualTo(1));
+            Assert.That(customer.Basket.Count("wheat"),Is.EqualTo(1));TransactionCore.Validate(game.Transactions.Snapshot());
+        }
+        [Test] public void JournalReplayTrimsOnlyUncommittedTailAndCheckpointKeepsDedup()
+        {
+            Inventory.Transfer(storage.Inventory,game.Player.Carry,"carrot",2);
+            File.AppendAllText(game.SavePath+".journal","{interrupted-tail");
+            var saved=SaveStore.Read(game.SavePath);Assert.That(saved.transactionState.stacks.Where(s=>s.owner=="player").Sum(s=>s.quantity),Is.EqualTo(2));
+            game.Transactions.Detach();game.InitializeTransactions(saved.transactionState);
+            Assert.That(File.ReadAllText(game.SavePath+".journal"),Does.Not.Contain("interrupted-tail"));
+            Inventory.Transfer(game.Player.Carry,storage.Inventory,"carrot",1);game.Transactions.Checkpoint();
+            Assert.That(new FileInfo(game.SavePath+".journal").Length,Is.Zero);saved=SaveStore.Read(game.SavePath);
+            Assert.That(saved.transactionState.revision,Is.EqualTo(2));Assert.That(saved.transactionState.receipts.Count,Is.EqualTo(2));
+            Assert.That(saved.inventories.Single(i=>i.id=="player").items.Sum(i=>i.count),Is.EqualTo(1));
+        }
         [Test] public void LiveViewsCannotMutateAuthorityAndTransferHasOneReceipt()
         {
             Assert.Throws<InvalidOperationException>(() => game.Player.Carry.TryAdd("milk", 1));
@@ -117,11 +140,19 @@ namespace Tycoon.Tests
             Assert.That(game.Transactions.Execute(finish).amount, Is.Zero); Assert.That(machine.Batches, Is.EqualTo(1));
             Assert.That(Inventory.Transfer(machine.Inventory,game.Player.Carry,"flour",3),Is.EqualTo(3));Assert.That(machine.Phase,Is.EqualTo(MachinePhase.Ready));
         }
+        [Test] public void PassingPurchasePadDoesNotSpendAndStandingStillContinuesPartialContribution()
+        {
+            Assert.That(farmSpeedPad.HoldToBuy(.4f),Is.False);Assert.That(game.Economy.Money,Is.EqualTo(1000));farmSpeedPad.StopContributing();
+            Assert.That(farmSpeedPad.HoldToBuy(.6f),Is.False);Assert.That(farmSpeedPad.HoldToBuy(.4f),Is.False);
+            Assert.That(farmSpeedPad.HoldToBuy(.2f),Is.True);Assert.That(game.Contribution("farm_speed2"),Is.EqualTo(7));
+            farmSpeedPad.StopContributing();Assert.That(game.Contribution("farm_speed2"),Is.EqualTo(7));
+        }
         [Test] public void MeatBundleOpensFullRouteAndRestockStartsAtZeroPopulation()
         {
             var bundle=Definitions.Upgrade("barn");Assert.That(game.Contribute(bundle,500),Is.EqualTo(500));
             Assert.That(beef.IsUnlocked,Is.True);Assert.That(livestockShelf.IsUnlocked,Is.True);Assert.That(counter.AcceptsItem("beef"),Is.True);
-            var customer=Add<CustomerAgent>("BeefCustomer");customer.Begin("farm",0);customer.transform.position=counter.QueuePoint(customer);
+            var customer=Add<CustomerAgent>("BeefCustomer");customer.Restore(new CustomerSave{receipt=game.NextReceipt++,shop="farm",lane=counter.Id,
+                phase=(int)CustomerAgent.State.Queue,remaining=90,order=new(){new("beef",1,game.ItemPrice("beef"))}});customer.transform.position=counter.QueuePoint(customer);
             Assert.That(customer.Order.Lines.Single().id,Is.EqualTo("beef"));Assert.That(customer.Order.Lines.Single().unitPrice,Is.EqualTo(game.ItemPrice("beef")));
             int requested=customer.Order.Lines.Single().requested;
             for(int i=0;i<requested;i++)
@@ -181,10 +212,10 @@ namespace Tycoon.Tests
             var crew=GameSession.CrewFor(Definitions.Upgrade("cook_bakery"));
             Assert.That(crew.role,Is.EqualTo("Cook"));Assert.That(crew.area,Is.EqualTo("bakery"));
             var state=game.Transactions.Snapshot();var machineState=state.stations.Single(x=>x.id==machine.Id);
-            machineState.area="bakery";machineState.level=3;machineState.workCount=100;machineState.playerWorkCount=29;
+            machineState.area="bakery";machineState.level=3;machineState.workCount=100;machineState.playerWorkCount=100;machineState.batches=29;machineState.playerBatches=29;
             state.stations.Add(new StationRuntimeState{id="storage_bakery",kind="storage",area="bakery"});state.unlocked.Add("bakery");
             Assert.That(ProgressionTracker.MissingRequirements(state,Definitions.Upgrade("cook_bakery")),Has.Some.Contains("29/30"));
-            machineState.playerWorkCount=30;
+            machineState.playerBatches=30;machineState.batches=30;
             Assert.That(ProgressionTracker.MissingRequirements(state,Definitions.Upgrade("cook_bakery")),Is.Empty);
         }
         [Test] public void PurchaseRecoveryAndCarryUpgradeAreSingleWriterAndPersisted()
@@ -199,9 +230,9 @@ namespace Tycoon.Tests
         {
             Assert.That(game.ItemPrice("carrot"),Is.EqualTo(10));Assert.That(crop.Level,Is.EqualTo(1));
             var speed=Definitions.Upgrade("farm_speed2");Assert.That(game.Contribute(speed,20),Is.EqualTo(20));
-            Assert.That(game.Progression.Evaluate(speed).State,Is.EqualTo(PurchaseState.Contributing));Assert.That(farmSpeedPad.Prompt,Does.Contain("CONTRIBUTING"));
+            Assert.That(game.Progression.Evaluate(speed).State,Is.EqualTo(PurchaseState.Contributing));Assert.That(farmSpeedPad.Prompt,Does.Contain("ĐANG GÓP"));
             game.SaveGame();game.LoadGame();Assert.That(game.Contribution(speed.id),Is.EqualTo(20));
-            Assert.That(game.Contribute(speed,40),Is.EqualTo(40));Assert.That(game.Progression.AxisLevel("farm",UpgradeAxis.Speed),Is.EqualTo(2));Assert.That(farmSpeedPad.Prompt,Is.EqualTo("PURCHASED"));
+            Assert.That(game.Contribute(speed,40),Is.EqualTo(40));Assert.That(game.Progression.AxisLevel("farm",UpgradeAxis.Speed),Is.EqualTo(2));Assert.That(farmSpeedPad.Prompt,Is.EqualTo("ĐÃ MUA"));
             Assert.That(game.Progression.FarmGrowSeconds,Is.LessThan(2));Assert.That(game.ItemPrice("carrot"),Is.EqualTo(10));
             Assert.That(game.Player.Carry.Capacity,Is.EqualTo(6));Assert.That(crop.Level,Is.EqualTo(1));Assert.That(crop.Inventory.Capacity,Is.EqualTo(24));
             Assert.That(game.Contribute(Definitions.Upgrade("farm_value2"),250),Is.EqualTo(250));
@@ -222,7 +253,8 @@ namespace Tycoon.Tests
         [TestCase(CommitBoundary.Replaced, true)]
         public void GameplayEnvelopeCrashRetryNeverSplitsViewFromCore(CommitBoundary boundary, bool committed)
         {
-            var store = new GameplayTransactionStore(game); var core = new TransactionCore(game.Transactions.Snapshot(), store, () => game.Transactions.Now);
+            var seed=game.Transactions.Snapshot();game.Transactions.Detach();
+            using var store = new GameplayTransactionStore(game); var core = new TransactionCore(seed, store, () => game.Transactions.Now,true);
             var c = game.Transactions.Command(TransactionKind.Take, "player", key: "crash"); c.source = storage.Id; c.destination = "player"; c.item = "carrot"; c.quantity = 1;
             store.Fault = at => { if (at == boundary) throw new IOException("interrupted gameplay commit"); };
             Assert.Throws<IOException>(() => core.Execute(c)); store.Fault = null;

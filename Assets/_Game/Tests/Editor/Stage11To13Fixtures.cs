@@ -19,7 +19,7 @@ namespace Tycoon.Tests
         internal static void Machine(TransactionState state,string recipe,string requirement,int batches=0,string area="processing",int playerJobs=0)
         {
             state.stations.Add(new StationRuntimeState{id="machine_"+recipe,kind="machine",definitionId=recipe,requirement=requirement,
-                area=area,batches=batches,playerWorkCount=playerJobs});
+                area=area,batches=System.Math.Max(batches,playerJobs),playerBatches=playerJobs,playerWorkCount=playerJobs});
         }
     }
 

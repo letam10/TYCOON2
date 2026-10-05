@@ -87,7 +87,7 @@ namespace Tycoon
             Pool = new ItemPool(transform);
             WorldFactory.Build(this);
             var playerRoot = new GameObject("Player");
-            playerRoot.transform.position = new Vector3(-3, .05f, -4);
+            playerRoot.transform.position = new Vector3(-15.5f, .05f, -3.5f);
             var actor = Art.Model("player", Vector3.zero, playerRoot.transform);
             actor.AddComponent<ActorView>();
             Player = playerRoot.AddComponent<PlayerController>();
@@ -193,7 +193,7 @@ namespace Tycoon
         public SaveData CaptureSaveData()
         {
             var data = new SaveData {
-                money = Economy.Money, revenue = Economy.Revenue, transactions = Economy.Transactions,
+                money = Economy.Money, revenue = Economy.Revenue, cashCollected=Economy.CashCollected,transactions = Economy.Transactions,
                 nextReceipt = NextReceipt, savedAt = DateTime.UtcNow.ToString("o"),
                 pendingCash = Economy.PendingCash, businessStage = BusinessStage, bakerySales = BakerySales, restaurantMeals = RestaurantMeals,
                 playerX = Player.transform.position.x, playerZ = Player.transform.position.z
@@ -248,7 +248,7 @@ namespace Tycoon
                 Workers.Clear();Commerce?.ResetForLoad();Restaurant?.ResetForLoad();
                 foreach(var counter in Checkouts){counter.Queue.Clear();counter.Cash=0;}
                 foreach(var table in Tables)table.Occupant=null;
-                Economy.Restore(data.money, data.revenue, data.transactions, data.unlocked, data.pendingCash, data.receipts, data.losses);
+                Economy.Restore(data.money, data.revenue, data.transactions, data.unlocked, data.pendingCash, data.receipts, data.losses,data.cashCollected);
                 Purchases=data.purchases; CrewStates=data.crews; Events=data.events ?? new EventState();
                 PendingCustomers=data.customers; PendingWorkers=data.workers;
                 BakerySales = data.bakerySales; RestaurantMeals = data.restaurantMeals;
@@ -362,6 +362,7 @@ namespace Tycoon
         }
         void OnDestroy()
         {
+            Transactions?.Detach();
             Application.logMessageReceived -= OnLog;
             if (Instance == this) Instance = null;
         }

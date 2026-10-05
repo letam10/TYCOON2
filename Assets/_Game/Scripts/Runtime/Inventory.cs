@@ -160,6 +160,8 @@ namespace Tycoon
 
     public sealed class Economy
     {
+        int cashCollected;
+        public int CashCollected=>authority?.View.cashCollected??cashCollected;
         RuntimeTransactions authority;
         int money,revenue,transactions,pendingCash;
         readonly HashSet<string> unlocked = new();
@@ -234,13 +236,14 @@ namespace Tycoon
         {
             RequirePrimitive();
             int collected = Math.Min(Math.Max(0, amount), PendingCash);
-            PendingCash -= collected; Money += collected; return collected;
+            PendingCash -= collected; Money += collected;cashCollected+=collected; return collected;
         }
         public void Restore(int money, int revenue, int transactions, IEnumerable<string> unlocked, int pendingCash = 0,
-            IEnumerable<long> paidReceipts = null, IEnumerable<LossRecord> recordedLosses = null)
+            IEnumerable<long> paidReceipts = null, IEnumerable<LossRecord> recordedLosses = null,int collectedCash=0)
         {
             RequirePrimitive();
             Money = Math.Max(0, money); Revenue = Math.Max(0, revenue); Transactions = Math.Max(0, transactions);
+            cashCollected=Math.Max(0,collectedCash);
             PendingCash = Math.Max(0, pendingCash);
             Unlocked.Clear(); receipts.Clear(); losses.Clear();failedOrders.Clear();
             if (unlocked != null) foreach (string id in unlocked) if (!string.IsNullOrEmpty(id)) Unlocked.Add(id);

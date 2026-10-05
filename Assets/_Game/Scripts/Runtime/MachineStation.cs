@@ -6,13 +6,14 @@ namespace Tycoon
     {
         public RecipeDefinition Recipe;
         [System.NonSerialized] public Inventory Input=new(36);
-        bool running,broken,repairPaid;float remaining,repairRemaining=8;int batches,repairFee=20;
+        bool running,broken,repairPaid;float remaining,repairRemaining=8;int batches,playerBatches,repairFee=20;
         public bool Running {get=>Runtime?.running??running;set{GuardState();running=value;}}
         public bool Broken {get=>Runtime?.progress.broken??broken;set{GuardState();broken=value;}}
         public bool RepairPaid {get=>Runtime?.progress.repairPaid??repairPaid;set{GuardState();repairPaid=value;}}
         public float Remaining {get=>(float)(Runtime?.remaining??remaining);set{GuardState();remaining=value;}}
         public float RepairRemaining {get=>Runtime?.progress.repairRemaining??repairRemaining;set{GuardState();repairRemaining=value;}}
         public int Batches {get=>Runtime?.batches??batches;set{GuardState();batches=value;}}
+        public int PlayerBatches=>Runtime?.playerBatches??playerBatches;
         public int RepairFee {get=>Runtime?.progress.repairFee??repairFee;set{GuardState();repairFee=value;}}
         void GuardState(){if(Runtime!=null)throw new System.InvalidOperationException("Machine chỉ được cập nhật qua transaction.");}
         public Transform Rotor;
@@ -59,7 +60,8 @@ namespace Tycoon
             if(Rotor)Rotor.Rotate(Vector3.up,130*delta,Space.Self);
             if(Remaining==0)
             {
-                if(Inventory.AddIntoReservedSpace(Recipe.output,Recipe.yield)){outputReserved=false;Running=false;Batches++;WorkCount++;}
+                if(Inventory.AddIntoReservedSpace(Recipe.output,Recipe.yield))
+                {outputReserved=false;Running=false;Batches++;WorkCount++;if(GameSession.Instance?.Player&&actorId==GameSession.Instance.Player.GetEntityId()){playerBatches++;PlayerWorkCount++;}}
             }
             return true;
         }
@@ -88,13 +90,13 @@ namespace Tycoon
             return Operate(delta,actorId);
         }
         public override bool Interact(PlayerController player,bool withdraw)=>player&&ContainsInteractionPoint(player.transform.position)&&Work(player.Carry,Time.deltaTime,player.GetEntityId());
-        public override StationProgressSave CaptureProgress(){var s=base.CaptureProgress();s.remaining=Remaining;s.running=Running;s.batches=Batches;s.broken=Broken;s.repairPaid=RepairPaid;s.repairRemaining=RepairRemaining;s.repairFee=RepairFee;return s;}
+        public override StationProgressSave CaptureProgress(){var s=base.CaptureProgress();s.remaining=Remaining;s.running=Running;s.batches=Batches;s.playerBatches=PlayerBatches;s.broken=Broken;s.repairPaid=RepairPaid;s.repairRemaining=RepairRemaining;s.repairFee=RepairFee;return s;}
         public override void RestoreProgress(StationProgressSave s)
         {
-            if(s==null||s.remaining<0||s.repairRemaining<0||s.batches<0)throw new System.IO.InvalidDataException("Trạng thái máy không hợp lệ");
+            if(s==null||s.remaining<0||s.repairRemaining<0||s.batches<0||s.playerBatches<0||s.playerBatches>s.batches)throw new System.IO.InvalidDataException("Trạng thái máy không hợp lệ");
             if(outputReserved&&Recipe!=null&&Inventory!=null)Inventory.ReleaseSpace(Recipe.output,Recipe.yield);
             outputReserved=false;
-            base.RestoreProgress(s);Remaining=s.remaining;Running=s.running;Batches=s.batches;Broken=s.broken;RepairPaid=s.repairPaid;RepairRemaining=s.repairRemaining;RepairFee=s.repairFee;
+            base.RestoreProgress(s);Remaining=s.remaining;Running=s.running;Batches=s.batches;playerBatches=s.playerBatches;Broken=s.broken;RepairPaid=s.repairPaid;RepairRemaining=s.repairRemaining;RepairFee=s.repairFee;
             ConfigureInputLimits();
             if(Running)
             {
@@ -107,9 +109,10 @@ namespace Tycoon
     {
         public string Requirement;
         public string[] AnyRequirements;
+        public Station Target;
         bool? previous;
         void Update() => RefreshVisibility();
-        bool RequirementMet() => AnyRequirements != null && AnyRequirements.Length > 0
+        bool RequirementMet() => Target?GameSession.Instance.Economy.Has(Target.Requirement):AnyRequirements != null && AnyRequirements.Length > 0
             ? System.Array.Exists(AnyRequirements, id => GameSession.Instance.Economy.Has(id))
             : GameSession.Instance.Economy.Has(Requirement);
         public void RefreshVisibility()

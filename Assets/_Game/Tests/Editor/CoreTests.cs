@@ -113,13 +113,13 @@ namespace Tycoon.Tests
             state.stations.Add(farm);
             var farmShop=Definitions.Upgrade("farm_shop");
             var missing=ProgressionTracker.MissingRequirements(state,farmShop);
-            Assert.That(missing,Has.Some.Contains("farm cấp 3"));Assert.That(missing,Has.Some.Contains("49/50"));
+            Assert.That(missing,Has.Some.Contains("Cây trồng 2/3"));Assert.That(missing,Has.Some.Contains("49/50"));
             farm.level=3;state.legacyTransactions=50;
             Assert.That(ProgressionTracker.MissingRequirements(state,farmShop),Is.Empty);
             state.unlocked.Add("farm_shop");state.legacyTransactions=200;
             state.stations.Add(new StationRuntimeState{id="animal",kind="producer",item="milk",area="farm",level=2});
             missing=ProgressionTracker.MissingRequirements(state,Definitions.Upgrade("mill"));
-            Assert.That(missing,Has.Some.Contains("animal cấp 3"));Assert.That(System.Array.TrueForAll(missing,x=>!x.Contains("200/200")),Is.True);
+            Assert.That(missing,Has.Some.Contains("Chăn nuôi cấp 3"));Assert.That(System.Array.TrueForAll(missing,x=>!x.Contains("200/200")),Is.True);
             state.stations[1].level=3;
             Assert.That(ProgressionTracker.MissingRequirements(state,Definitions.Upgrade("mill")),Is.Empty);
 

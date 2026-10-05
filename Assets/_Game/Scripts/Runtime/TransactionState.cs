@@ -20,6 +20,7 @@ namespace Tycoon
     // Chỉ TransactionCore giữ bản authoritative; mọi bản trả ra ngoài đều là bản sao.
     [Serializable] public sealed class OwnerState
     {
+        internal OwnerState ShallowCopy()=>(OwnerState)MemberwiseClone();
         public string id, actor, location;
         public OwnerKind kind;
         public int capacity;
@@ -33,11 +34,13 @@ namespace Tycoon
     }
     [Serializable] public sealed class ItemStackState
     {
+        internal ItemStackState ShallowCopy()=>(ItemStackState)MemberwiseClone();
         public string id, item, owner, location;
         public int quantity, definitionVersion = 1;
     }
     [Serializable] public sealed class ReservationState
     {
+        internal ReservationState ShallowCopy()=>(ReservationState)MemberwiseClone();
         public string id, holder, source, destination, item;
         public string relay;
         public int quantity;
@@ -48,6 +51,7 @@ namespace Tycoon
     [Serializable] public sealed class StackAllocation { public string stack; public int quantity; }
     [Serializable] public sealed class OrderRuntimeState
     {
+        internal OrderRuntimeState ShallowCopy()=>(OrderRuntimeState)MemberwiseClone();
         public string id, customer, counter;
         public double deadline;
         public OrderStatus status;
@@ -58,20 +62,23 @@ namespace Tycoon
     }
     [Serializable] public sealed class PaymentState
     {
+        internal PaymentState ShallowCopy()=>(PaymentState)MemberwiseClone();
         public string id, order, counter;
         public int amount;
         public bool collected;
     }
     [Serializable] public sealed class PurchaseRuntimeState
     {
+        internal PurchaseRuntimeState ShallowCopy()=>(PurchaseRuntimeState)MemberwiseClone();
         public string id, definitionId;
         public int definitionVersion = 1, contributed;
         public bool complete;
     }
     [Serializable] public sealed class StationRuntimeState
     {
+        internal StationRuntimeState ShallowCopy()=>(StationRuntimeState)MemberwiseClone();
         public string id, definitionId, input, output, jobId, reservationId, operatorId, escrow;
-        public int definitionVersion = 1, level = 1, workCount, playerWorkCount, batches;
+        public int definitionVersion = 1, level = 1, workCount, playerWorkCount, batches, playerBatches;
         public MachinePhase machinePhase;
         public double remaining;
         public bool running;
@@ -87,15 +94,17 @@ namespace Tycoon
     }
     [Serializable] public sealed class TransactionEvent
     {
+        internal TransactionEvent ShallowCopy()=>(TransactionEvent)MemberwiseClone();
         public string id, receiptId, effectId, kind;
         public long revision;
         public List<string> consumers = new();
     }
     [Serializable] public sealed class TransactionState
     {
+        internal TransactionState ShallowCopy()=>(TransactionState)MemberwiseClone();
         public int schemaVersion = 2, catalogVersion = Definitions.Version;
         public long revision;
-        public int money, revenue;
+        public int money, revenue, cashCollected;
         public double simulationTime;
         public int legacyRevenue, legacyTransactions;
         public List<long> legacyPaid = new();

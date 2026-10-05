@@ -30,6 +30,7 @@ namespace Tycoon
         public int version = 2;
         public int money;
         public int revenue;
+        public int cashCollected;
         public int transactions;
         public long nextReceipt = 1;
         public string savedAt;
@@ -92,12 +93,13 @@ namespace Tycoon
             }
             if (data == null || data.version != 2 || data.money < 0 || data.inventories == null || data.unlocked == null)
                 throw new InvalidDataException("Save không hợp lệ hoặc phiên bản chưa hỗ trợ.");
+            data=GameplayTransactionStore.Recover(path,data);
             Validate(data);
             return data;
         }
         static void Validate(SaveData data)
         {
-            if(data==null||data.version!=2||data.money<0||data.pendingCash<0||data.revenue<0||data.transactions<0||
+            if(data==null||data.version!=2||data.money<0||data.pendingCash<0||data.revenue<0||data.cashCollected<0||data.transactions<0||
                 data.inventories==null||data.receipts==null||data.losses==null||data.cash==null||
                 data.customers==null||data.diners==null||data.workers==null||data.stationStates==null||
                 data.purchases==null||data.crews==null||data.unlocked==null||data.transit==null)

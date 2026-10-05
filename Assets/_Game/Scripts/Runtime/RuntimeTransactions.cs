@@ -26,7 +26,7 @@ namespace Tycoon
         {
             this.game = game; origin = Time.timeAsDouble; restoredTime = state.simulationTime;
             store = persist ? new GameplayTransactionStore(game) : null;
-            core = new TransactionCore(state, store, () => Now); view = core.Snapshot();
+            core = new TransactionCore(state, store, () => Now, true); view = core.RuntimeSnapshot();
             actors.Add(game.Player.GetEntityId(), "player");
             Bind(game.Player.Carry, "player"); game.Economy.Bind(this);
             foreach (var station in game.Stations.Where(x => x is not StationZone))
@@ -51,7 +51,7 @@ namespace Tycoon
         {
             amount = 0; LastReason = "";
             try { amount = Execute(command).amount; return true; }
-            catch (TransactionRejectedException error) { LastReason = error.Message; return false; }
+            catch (TransactionRejectedException error) { LastReason = error.Message.Substring(error.Code.Length+2); return false; }
             catch (IOException error) { game.BlockRecovery(error); LastReason = "Không ghi được giao dịch; gameplay đã dừng."; return false; }
         }
         internal StationRuntimeState Station(string id) => view.stations.Find(x => x.id == id);
@@ -105,6 +105,7 @@ namespace Tycoon
                         Transfer(source.Inventory,route.Inventory,route.ItemId,active.quantity,key,"effect:"+key,active.id)>0;
             }
             if(route.Inventory.Total>0)return false;
+            if(route.Target.Broken)return false;
             foreach(var source in route.Sources)
             {
                 if(!source||source.AvailableAboveReserve(route.ItemId)<input.count||route.Inventory.FreeFor(route.ItemId)<input.count||route.Target.Input.FreeFor(route.ItemId)<input.count)continue;
@@ -221,14 +222,14 @@ namespace Tycoon
             var o = Order(receipt); if (o == null || o.status != OrderStatus.Open) return 0;
             if (Now >= o.deadline) { Fail(receipt); return 0; }
             var shipments=new List<OrderLine>();
+            var held=reservation==null?null:Reservation(reservation);
             foreach(var line in o.lines)
             {
                 if (reservation != null)
                 {
-                    var r=Reservation(reservation);
-                    if(r!=null&&r.status==ReservationStatus.Active&&r.item==line.id&&r.source==OwnerId(source)&&r.quantity<=line.Remaining)
-                        shipments.Add(new OrderLine(line.id,r.quantity,0));
-                    break;
+                    if(held!=null&&held.status==ReservationStatus.Active&&held.item==line.id&&held.source==OwnerId(source)&&held.quantity<=line.Remaining)
+                    {shipments.Add(new OrderLine(line.id,held.quantity,0));break;}
+                    continue;
                 }
                 int quantity=Math.Min(line.Remaining,source.Available(line.id));
                 if(quantity>0)shipments.Add(new OrderLine(line.id,quantity,0));
@@ -270,18 +271,18 @@ namespace Tycoon
                     game.OnPurchased(Definitions.Upgrade(p.id));
         }
         public void Checkpoint()
-        { if (store != null) store.Checkpoint(core.Snapshot()); }
+        { if (store != null) {var saved=core.Snapshot();saved.simulationTime=Now;store.Checkpoint(saved);} }
         void Refresh()
         {
-            view = core.Snapshot();
+            view = core.RuntimeSnapshot();
             foreach (var inventory in inventories.Keys)if(inventory.Authority==this)inventory.Project(view);
         }
         public void Detach()
-        { foreach (var inventory in inventories.Keys) inventory.Unbind(); game.Economy.Unbind(); }
+        { foreach (var inventory in inventories.Keys) inventory.Unbind(); game.Economy.Unbind();store?.Dispose(); }
 
         public static TransactionState Migrate(GameSession game, SaveData data)
         {
-            var s = new TransactionState { money = data.money, revenue = data.revenue, legacyRevenue = data.revenue,
+            var s = new TransactionState { money = data.money, revenue = data.revenue, cashCollected=data.cashCollected, legacyRevenue = data.revenue,
                 legacyTransactions = data.transactions, legacyPaid = data.receipts, legacyLosses = data.losses, legacyCash = data.cash,
                 simulationTime = Time.timeAsDouble, unlocked = data.unlocked, crews = data.crews };
             void Owner(string id, Inventory inventory, OwnerKind kind, string actor = "simulation", List<ItemAmount> items = null, string location = null)
@@ -311,7 +312,7 @@ namespace Tycoon
                     input = station is MachineStation ? station.Id + "_input" : station.Id, output = station.Id, progress = progress,
                     kind = station is MachineStation ? "machine" : station is ProductionStation ? "producer" : station is StorageStation ? "storage" : station is ShelfStation ? "shelf" : station is CheckoutStation ? "counter" : station is TableStation ? "table" : station is ConveyorStation ? "conveyor" : "purchase",
                     definitionId = station is MachineStation machine2 ? machine2.Recipe.id : station is PurchasePad pad ? pad.Upgrade.id : station.Id,
-                    item = (station as ProductionStation)?.ItemId, running = progress.running, remaining = station is MachineStation ? progress.remaining : 0, batches = progress.batches };
+                    item = (station as ProductionStation)?.ItemId, running = progress.running, remaining = station is MachineStation ? progress.remaining : 0, batches = progress.batches,playerBatches=progress.playerBatches };
                 s.stations.Add(m);
                 if (m.running)
                 {
@@ -401,7 +402,7 @@ namespace Tycoon
                     progress=progress,kind=station is MachineStation?"machine":station is ProductionStation?"producer":station is StorageStation?"storage":
                         station is ShelfStation?"shelf":station is CheckoutStation?"counter":station is TableStation?"table":station is ConveyorStation?"conveyor":station is PurchasePad?"purchase":"station",
                     definitionId=station is MachineStation m?m.Recipe.id:station is PurchasePad pad?pad.Upgrade.id:id,
-                    item=(station as ProductionStation)?.ItemId,running=progress.running,remaining=station is MachineStation?progress.remaining:0,batches=progress.batches};
+                    item=(station as ProductionStation)?.ItemId,running=progress.running,remaining=station is MachineStation?progress.remaining:0,batches=progress.batches,playerBatches=progress.playerBatches};
                 state.stations.Add(runtime);changed=true;
             }
             if(!changed)return false;
@@ -422,7 +423,7 @@ namespace Tycoon
         }
         internal static SaveData Project(TransactionState state, SaveData data)
         {
-            data.transactionState = TransactionCore.Copy(state); data.transactionVersion=SaveStore.CurrentTransactionVersion;data.money = state.money; data.revenue = state.revenue;
+            data.transactionState = TransactionCore.Copy(state); data.transactionVersion=SaveStore.CurrentTransactionVersion;data.money = state.money; data.revenue = state.revenue;data.cashCollected=state.cashCollected;
             data.transactions = state.legacyTransactions + state.payments.Count;
             data.unlocked = new(state.unlocked); data.crews = state.crews.Select(TransactionCore.Copy).ToList();
             data.purchases = state.purchases.Select(x => new PurchaseProgress { id = x.id, paid = x.contributed, total = Definitions.Upgrade(x.id).cost, complete = x.complete }).ToList();
@@ -440,7 +441,7 @@ namespace Tycoon
             data.inventories = state.owners.Where(x => x.kind is not (OwnerKind.Worker or OwnerKind.Customer) && (x.id == "player" || data.inventories.Any(i => i.id == x.id)))
                 .Select(x => new InventorySave(x.id, new Inventory(0)) { items = Items(state, x.id) }).ToList();
             data.stationStates = state.stations.Select(x => { var p = TransactionCore.Copy(x.progress); p.id = x.id; p.level = x.level; p.workCount = x.workCount;
-                if (x.kind == "machine") { p.remaining = (float)x.remaining; p.running = x.running; p.batches = x.batches; } return p; }).ToList();
+                if (x.kind == "machine") { p.remaining = (float)x.remaining; p.running = x.running; p.batches = x.batches;p.playerBatches=x.playerBatches; } return p; }).ToList();
             foreach (var owner in state.owners.Where(x => x.kind == OwnerKind.Worker && !string.IsNullOrEmpty(x.worker?.id)))
             {
                 var worker = data.workers.Find(x => x.id == owner.worker.id) ?? TransactionCore.Copy(owner.worker);
@@ -483,25 +484,5 @@ namespace Tycoon
             return data;
         }
         internal static List<ItemAmount> Items(TransactionState state, string owner) => state.stacks.Where(x => x.owner == owner).GroupBy(x => x.item).Select(x => new ItemAmount(x.Key, x.Sum(a => a.quantity))).ToList();
-    }
-    // Save scene + mutation/receipt/dedup/outbox dùng chung một lần replace, không có file core rời.
-    public sealed class GameplayTransactionStore : ITransactionStore
-    {
-        readonly GameSession game;
-        public Action<CommitBoundary> Fault { get; set; }
-        public GameplayTransactionStore(GameSession game) { this.game = game; }
-        public TransactionState Read() => SaveStore.Read(game.SavePath)?.transactionState;
-        public void Write(TransactionState state) => Write(state, false);
-        public void Checkpoint(TransactionState state) => Write(state, true);
-        void Write(TransactionState state, bool checkpoint)
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(game.SavePath)));
-            using var lease = new FileStream(game.SavePath + ".lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, 1, FileOptions.DeleteOnClose);
-            var previous = Read();
-            if (previous != null && previous.revision != state.revision - (checkpoint ? 0 : 1) || previous == null && state.revision != 0)
-                throw new IOException("Save revision đã thay đổi; cần recovery trước khi retry.");
-            var data = RuntimeTransactions.Project(state, game.CaptureSaveData());
-            SaveStore.Write(game.SavePath, data, Fault);
-        }
     }
 }

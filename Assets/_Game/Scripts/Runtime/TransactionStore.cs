@@ -12,6 +12,10 @@ namespace Tycoon
         TransactionState Read();
         void Write(TransactionState state);
     }
+    internal interface ICommandTransactionStore : ITransactionStore
+    {
+        void Write(TransactionState state, TransactionCommand command);
+    }
     public sealed class FileTransactionStore : ITransactionStore
     {
         [Serializable] sealed class Envelope { public string payload, sha256; }

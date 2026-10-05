@@ -4,6 +4,8 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 
 namespace Tycoon
 {
@@ -11,7 +13,10 @@ namespace Tycoon
     {
         GameSession game;
         Canvas canvas;
-        Text money, progress, objective, carry, prompt, toast;
+        Text money, progress, objective, carry, prompt, toast,finance,stock;
+        float nextStatusRefresh;
+        readonly Dictionary<string,Text> crewStatuses=new();
+        readonly StringBuilder stockLines=new();
         GameObject menu,crewPanel;
         Button continueButton;
         Transform crewContent;
@@ -31,6 +36,10 @@ namespace Tycoon
             var cashIcon = Panel("CashIcon", wallet.transform, new Vector2(0,.5f), new Vector2(0,.5f), new Vector2(16,-18), new Vector2(57,18), "#A8EE25", 1);
             cashIcon.transform.localRotation = Quaternion.Euler(0,0,15);
             Panel("BillInner",cashIcon.transform,Vector2.zero,Vector2.one,new Vector2(5,5),new Vector2(-5,-5),"#45A722",1);
+            var financePanel=Panel("Finance",root.transform,Vector2.one,Vector2.one,new Vector2(-355,-245),new Vector2(-28,-106),"#275D34",.9f);
+            finance=Text("FinanceText",financePanel.transform,"",20,TextAnchor.MiddleLeft,"#FFFFFF");Rect(finance.rectTransform,Vector2.zero,Vector2.one,new Vector2(14,5),new Vector2(-12,-5));
+            var stockPanel=Panel("AreaStock",root.transform,new Vector2(1,0),new Vector2(1,0),new Vector2(-355,145),new Vector2(-28,440),"#275D34",.86f);
+            stock=Text("StockText",stockPanel.transform,"",18,TextAnchor.UpperLeft,"#FFFFFF");Rect(stock.rectTransform,Vector2.zero,Vector2.one,new Vector2(14,10),new Vector2(-12,-10));
             var title = Panel("Title", root.transform, new Vector2(0,1), new Vector2(0,1), new Vector2(28,-110), new Vector2(465,-28), "#275D34", .8f);
             progress = Text("Progress", title.transform, "", 22, TextAnchor.MiddleLeft, "#FFFFFF"); Rect(progress.rectTransform, Vector2.zero, Vector2.one, new Vector2(16,8), new Vector2(-8,-8));
             var objectivePanel=Panel("Objective",root.transform,new Vector2(0,1),new Vector2(0,1),new Vector2(28,-220),new Vector2(685,-112),"#275D34",.82f);
@@ -69,7 +78,7 @@ namespace Tycoon
         {
             if (Keyboard.current?.escapeKey.wasPressedThisFrame == true || Gamepad.current?.selectButton.wasPressedThisFrame == true) TogglePause();
             money.text = game.Economy.Money.ToString("N0");
-            string area = game.BusinessStage switch { 5 => "Nhà hàng & tiệm bánh", 4 => "Tiệm bánh", 3 => "Siêu thị", 2 => "Chế biến", _ => "Nông trại & cửa hàng" };
+            string area = game.BusinessStage switch { 5 => "Nhà hàng & tiệm bánh", 4 => "Tiệm bánh", 3 => "Siêu thị", 2 => game.Economy.Has("mill")?"Chế biến":"Cửa hàng nông sản", _ => "Nông trại & cửa hàng" };
             progress.text = area + "\n" + game.Workers.Count + " nhân viên • " + game.Economy.Transactions + " lượt bán";
             objective.text=game.ObjectiveText;
             var carried = game.Player.Carry.Snapshot();
@@ -77,6 +86,35 @@ namespace Tycoon
             var station = game.NearestStation(game.Player.transform.position);
             prompt.text = !string.IsNullOrEmpty(game.Player.InteractionReason) ? game.Player.InteractionReason : station ? station.Prompt : "Đứng vào vùng: Lấy → Đặt → Vận hành → Giao → Thu tiền";
             toast.transform.parent.gameObject.SetActive(Time.time < game.ToastUntil); toast.text = game.Toast;
+            if(Time.unscaledTime>=nextStatusRefresh){nextStatusRefresh=Time.unscaledTime+.3f;RefreshStatus();}
+        }
+        void RefreshStatus()
+        {
+            finance.text="Chưa thu: "+game.Economy.PendingCash.ToString("N0")+" xu\nDoanh thu: "+game.Economy.Revenue.ToString("N0")+" xu\nThực thu: "+game.Economy.CashCollected.ToString("N0")+" xu\nThất thoát: "+game.Economy.LostItems+" món";
+            var nearby=game.Stations.Where(x=>x&&x.IsUnlocked&&x is not StationZone and not PurchasePad and not ConveyorStation)
+                .OrderBy(x=>(x.transform.position-game.Player.transform.position).sqrMagnitude).FirstOrDefault();
+            string area=nearby?.AreaId??"farm";var storage=game.StorageFor(area);
+            if(!storage||!storage.IsUnlocked){area="farm";storage=game.StorageFor(area);}stockLines.Clear();stockLines.AppendLine("KHO • "+AreaLabel(area));
+            if(storage)
+            {
+                int rows=0;
+                foreach(var item in Definitions.Items)
+                {
+                    int total=storage.Inventory.Count(item.id),held=storage.Inventory.Reserved(item.id),incoming=storage.Inventory.ReservedSpace(item.id);
+                    if(total+held+incoming==0)continue;
+                    if(++rows>7){stockLines.AppendLine("… các hàng khác trong khu");break;}
+                    stockLines.Append(item.label).Append(": ").Append(total).Append(" / ").Append(storage.Inventory.Capacity);
+                    if(held+incoming>0)stockLines.Append(" • giữ ").Append(held).Append(" / đến ").Append(incoming);
+                    stockLines.AppendLine();
+                }
+                if(rows==0)stockLines.AppendLine("Kho trống");
+            }
+            foreach(var route in game.Stations.OfType<ConveyorStation>().Where(x=>x.AreaId==area&&x.IsUnlocked).Take(2))stockLines.AppendLine(route.Prompt);
+            var waiting=game.Workers.FirstOrDefault(x=>x&&GameSession.CrewFor(Definitions.Upgrade(x.UpgradeId)).area==area&&x.Reason.StartsWith("Chờ"));
+            if(waiting)stockLines.AppendLine("Đội: "+waiting.Reason);
+            stock.text=stockLines.ToString();
+            if(crewPanel.activeSelf)foreach(var row in crewStatuses)
+                row.Value.text=string.Join(" • ",game.Workers.Where(x=>x&&x.UpgradeId==row.Key).Select(x=>x.Reason).Distinct().Take(3));
         }
         public void TogglePause()
         {
@@ -94,10 +132,13 @@ namespace Tycoon
         void RefreshCrewMenu()
         {
             foreach(Transform child in crewContent)Destroy(child.gameObject);
+            crewStatuses.Clear();
             var crews=game.CrewStates;
             if(crews.Count==0)
             {
-                var empty=Text("NoCrew",crewContent,"Chưa có nhân viên. Mở ô thuê khi trạm đạt cấp 3 và bạn tự làm đủ 30 lượt việc.",20,TextAnchor.MiddleCenter,"#FFFFFF");
+                crewSummary.text="Chưa có đội. Trạm cấp 3 + 30 công việc bạn tự hoàn thành để mở ô thuê.";
+                crewContent.GetComponent<RectTransform>().sizeDelta=new Vector2(0,crewContent.parent.GetComponent<RectTransform>().rect.height);
+                var empty=Text("NoCrew",crewContent,"Bạn vẫn có thể tự sản xuất, vận chuyển và phục vụ.",20,TextAnchor.MiddleCenter,"#FFFFFF");
                 empty.transform.SetParent(crewContent,false);Rect(empty.rectTransform,new Vector2(.05f,.35f),new Vector2(.95f,.65f),Vector2.zero,Vector2.zero);return;
             }
             crewSummary.text="Mỗi nâng cấp chỉ tác động đội cùng nghề và khu. Tiền được trừ ngay khi chọn.";
@@ -105,16 +146,17 @@ namespace Tycoon
             foreach(var crew in crews)
             {
                 var row=new GameObject("CrewRow_"+crew.id,typeof(RectTransform),typeof(Image));row.transform.SetParent(crewContent,false);
-                var rect=row.GetComponent<RectTransform>();rect.anchorMin=new Vector2(0,1);rect.anchorMax=new Vector2(1,1);rect.pivot=new Vector2(.5f,1);rect.anchoredPosition=new Vector2(0,-index*112);rect.sizeDelta=new Vector2(0,104);
+                var rect=row.GetComponent<RectTransform>();rect.anchorMin=new Vector2(0,1);rect.anchorMax=new Vector2(1,1);rect.pivot=new Vector2(.5f,1);rect.anchoredPosition=new Vector2(0,-index*152);rect.sizeDelta=new Vector2(0,144);
                 var image=row.GetComponent<Image>();image.color=new Color(.15f,.36f,.2f,.9f);image.raycastTarget=false;
-                string title=(Definitions.Upgrade(crew.id)?.label??crew.id)+" • "+AreaLabel(crew.area)+" • "+crew.count+" người";
-                var name=Text("CrewName",row.transform,title,22,TextAnchor.MiddleLeft,"#FFFFFF");Rect(name.rectTransform,new Vector2(.02f,.56f),new Vector2(.98f,.98f),Vector2.zero,Vector2.zero);
+                string title=RoleLabel(crew.role)+" • "+AreaLabel(crew.area)+" • "+crew.count+" người";
+                var name=Text("CrewName",row.transform,title,22,TextAnchor.MiddleLeft,"#FFFFFF");Rect(name.rectTransform,new Vector2(.02f,.7f),new Vector2(.98f,.98f),Vector2.zero,Vector2.zero);
+                var status=Text("CrewStatus",row.transform,"",17,TextAnchor.MiddleLeft,"#CBE9BA");Rect(status.rectTransform,new Vector2(.02f,.43f),new Vector2(.98f,.72f),Vector2.zero,Vector2.zero);crewStatuses[crew.id]=status;
                 CrewButton(row.transform,.18f,UpgradeLabel(crew,"speed"),()=>UpgradeCrew(crew.id,"speed"));
                 CrewButton(row.transform,.50f,crew.role=="Cashier"?"Không cần sức mang":UpgradeLabel(crew,"carry"),crew.role=="Cashier"?null:()=>UpgradeCrew(crew.id,"carry"));
                 CrewButton(row.transform,.82f,UpgradeLabel(crew,"count"),()=>UpgradeCrew(crew.id,"count"));
                 index++;
             }
-            var size=crewContent.GetComponent<RectTransform>().sizeDelta;crewContent.GetComponent<RectTransform>().sizeDelta=new Vector2(size.x,Mathf.Max(crewContent.parent.GetComponent<RectTransform>().rect.height,index*112));
+            var size=crewContent.GetComponent<RectTransform>().sizeDelta;crewContent.GetComponent<RectTransform>().sizeDelta=new Vector2(size.x,Mathf.Max(crewContent.parent.GetComponent<RectTransform>().rect.height,index*152));
         }
         string UpgradeLabel(CrewState crew,string type)
         {
@@ -125,7 +167,7 @@ namespace Tycoon
         }
         void CrewButton(Transform parent,float center,string label,UnityEngine.Events.UnityAction click)
         {
-            var buttonRoot=Panel("CrewUpgrade",parent,new Vector2(center-.15f,.05f),new Vector2(center+.15f,.52f),Vector2.zero,Vector2.zero,"#59C840",click==null?.35f:1);
+            var buttonRoot=Panel("CrewUpgrade",parent,new Vector2(center-.15f,.05f),new Vector2(center+.15f,.39f),Vector2.zero,Vector2.zero,"#59C840",click==null?.35f:1);
             var button=buttonRoot.AddComponent<Button>();button.interactable=click!=null;if(click!=null)button.onClick.AddListener(click);
             var text=Text("Label",buttonRoot.transform,label,17,TextAnchor.MiddleCenter,"#FFFFFF");Rect(text.rectTransform,Vector2.zero,Vector2.one,new Vector2(3,0),new Vector2(-3,0));
         }
@@ -133,7 +175,8 @@ namespace Tycoon
         {
             bool changed=game.UpgradeCrew(id,type);game.Say(changed?"Đã nâng đội "+(Definitions.Upgrade(id)?.label??id):"Không đủ xu hoặc nâng cấp đã tối đa.");RefreshCrewMenu();
         }
-        static string AreaLabel(string area)=>area switch{"farm"=>"Nông trại","farm_shop"=>"Farm Shop","processing"=>"Processing","supermarket"=>"Supermarket","bakery"=>"Bakery","restaurant"=>"Restaurant",_=>area};
+        public static string AreaLabel(string area)=>area switch{"farm"=>"Nông trại","farm_shop"=>"Cửa hàng nông sản","processing"=>"Chế biến","supermarket" or "market"=>"Siêu thị","bakery"=>"Tiệm bánh","restaurant"=>"Nhà hàng",_=>area};
+        static string RoleLabel(string role)=>role switch{"Farmer"=>"Nông dân","AnimalWorker"=>"Chăm vật nuôi","Restocker"=>"Xếp hàng","Cashier"=>"Bán hàng","Processor"=>"Chế biến","Cook"=>"Đầu bếp / thợ bánh","Waiter"=>"Phục vụ","Transporter"=>"Vận chuyển",_=>role};
         static GameObject Panel(string name, Transform parent, Vector2 min, Vector2 max, Vector2 offsetMin, Vector2 offsetMax, string color, float alpha)
         {
             var root = new GameObject(name, typeof(RectTransform)); root.transform.SetParent(parent,false);

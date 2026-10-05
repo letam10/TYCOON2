@@ -4,7 +4,8 @@ namespace Tycoon
 {
     [Serializable] public sealed class StationProgressSave
     {
-        public string id; public int level=1,workCount,playerWorkCount,playerServeCount,playerCleanCount,phase,herd=3,feed,batches,repairFee;public float remaining,action,cycle,breeding,repairRemaining;public bool running,broken,repairPaid;public float produced;
+        internal StationProgressSave ShallowCopy()=>(StationProgressSave)MemberwiseClone();
+        public string id; public int level=1,workCount,playerWorkCount,playerServeCount,playerCleanCount,phase,herd=3,feed,batches,playerBatches,repairFee;public float remaining,action,cycle,breeding,repairRemaining;public bool running,broken,repairPaid;public float produced;
     }
     public abstract class Station:MonoBehaviour,IPlayerInteractionTarget
     {
@@ -15,6 +16,8 @@ namespace Tycoon
         public int WorkCount { get=>Runtime?.workCount??workCount;set{if(Runtime!=null&&value!=WorkCount)throw new InvalidOperationException("Station work chỉ được cập nhật qua transaction.");workCount=value;} }
         public int PlayerWorkCount { get=>Runtime?.playerWorkCount??playerWorkCount;set{if(Runtime!=null&&value!=PlayerWorkCount)throw new InvalidOperationException("Player work chỉ được cập nhật qua transaction.");playerWorkCount=value;} }
         public float InteractionRadius=1.15f;public bool PlayerUsesZones;
+        public virtual Vector3 WorkPoint=>InteractionPoint;
+        public virtual Vector3 WaitingPoint=>WorkPoint+Vector3.left*2.6f+Vector3.forward*3;
         public bool ContainsInteractionPoint(Vector3 position){if(Mathf.Abs(position.y-InteractionPoint.y)>1.2f)return false;position.y=InteractionPoint.y;return (position-InteractionPoint).sqrMagnitude<=InteractionRadius*InteractionRadius;}
         [NonSerialized]public Inventory Inventory;public TextMesh StatusLabel;protected EntityId operatorId;protected float operatorUntil;
         public bool IsUnlocked=>GameSession.Instance!=null&&GameSession.Instance.CanSimulate&&GameSession.Instance.Economy.Has(Requirement);
@@ -67,6 +70,7 @@ namespace Tycoon
     }
     public sealed class ProductionStation:Station
     {
+        public override Vector3 WaitingPoint=>Animal?WorkPoint+Vector3.right*5+Vector3.back*3:base.WaitingPoint;
         public string ItemId;public float Interval=5;public int Yield=1;public Transform[] Plants;
         public const int MaximumHerd=3, MaximumFeed=3;
         float remaining,produced,action,cycle=30,breeding;int phase,herd=3,feed;float attendedUntil,tickDelta;
@@ -235,8 +239,8 @@ namespace Tycoon
             if(game==null||Inventory==null)return 0;
             foreach(var animal in game.Producers)if(animal.IsUnlocked&&animal.AreaId==AreaId&&animal.Animal&&animal.FeedItem==itemId)
                 reserve+=Mathf.Max(0,ProductionStation.MaximumFeed-animal.Feed-animal.Inventory.Available(itemId));
-            foreach(var machine in game.Machines)if(machine.IsUnlocked&&!machine.Broken&&!machine.Running&&SourceArea(machine.AreaId)==AreaId)
-                foreach(var input in machine.Recipe.inputs)if(input.id==itemId)
+            foreach(var machine in game.Machines)if(machine.IsUnlocked&&!machine.Broken)
+                foreach(var input in machine.Recipe.inputs)if(input.id==itemId&&SourceArea(input.id)==AreaId)
                     reserve+=Mathf.Max(0,input.count*2-machine.Input.Available(itemId));
             return reserve;
         }
@@ -265,7 +269,7 @@ namespace Tycoon
     }
     public sealed class PurchasePad:Station,IPlayerInteractionArea
     {
-        public UpgradeDefinition Upgrade;float held;PurchaseState previousState;bool hasVisualState;
+        public UpgradeDefinition Upgrade;float held,settled;PurchaseState previousState;bool hasVisualState;
         public InteractionKind Kind=>InteractionKind.Purchase;
         public Vector3 Center=>InteractionPoint;
         public PurchaseEvaluation Evaluation=>GameSession.Instance.Progression.Evaluate(Upgrade);
@@ -277,11 +281,14 @@ namespace Tycoon
         {
             var game=GameSession.Instance;
             if(delta<=0||float.IsNaN(delta)||float.IsInfinity(delta)||!game.CanPurchase(Upgrade,out _)||game.Economy.Money<=0){held=0;return false;}
-            held+=delta*35;int amount=Mathf.FloorToInt(held);
+            // Đi ngang pad không tiêu tiền; đứng lại một giây mới bắt đầu góp tự động.
+            float delay=Mathf.Max(0,1-settled);settled+=delta;delta=Mathf.Max(0,delta-delay);if(delta==0)return false;
+            // Giá khu lớn vẫn góp từng phần, nhưng không bắt player đứng chờ hàng chục phút.
+            held+=delta*Mathf.Max(35,Upgrade.cost/12f);int amount=Mathf.FloorToInt(held);
             if(amount==0)return false;
             held-=amount;return game.Contribute(Upgrade,amount)>0;
         }
-        public void StopContributing()=>held=0;
+        public void StopContributing(){held=settled=0;}
         public override string Prompt=>StatusText(Evaluation);
         public override bool Interact(PlayerController player,bool withdraw)=>!withdraw&&player&&ContainsInteractionPoint(player.transform.position)&&HoldToBuy(Time.deltaTime);
         protected override void LateUpdate()
@@ -294,10 +301,10 @@ namespace Tycoon
         }
         static string StatusText(PurchaseEvaluation e)=>e.State switch
         {
-            PurchaseState.Locked=>"LOCKED • "+string.Join(" ",e.Requirements),
-            PurchaseState.Available=>"AVAILABLE • "+e.Contributed+"/"+e.Cost+" xu",
-            PurchaseState.Contributing=>"CONTRIBUTING • "+e.Contributed+"/"+e.Cost+" xu",
-            _=>"PURCHASED"
+            PurchaseState.Locked=>"CHƯA ĐỦ ĐIỀU KIỆN • "+string.Join(" ",e.Requirements),
+            PurchaseState.Available=>"CÓ THỂ MUA • "+e.Contributed+"/"+e.Cost+" xu",
+            PurchaseState.Contributing=>"ĐANG GÓP • "+e.Contributed+"/"+e.Cost+" xu",
+            _=>"ĐÃ MUA"
         };
     }
 }

@@ -13,16 +13,17 @@ namespace Tycoon
         public bool CanContribute => Requirements.Length == 0 && State is PurchaseState.Available or PurchaseState.Contributing;
         public string StatusText => State switch
         {
-            PurchaseState.Locked => "LOCKED",
-            PurchaseState.Available => "AVAILABLE",
-            PurchaseState.Contributing => "CONTRIBUTING",
-            _ => "PURCHASED"
+            PurchaseState.Locked => "CHƯA ĐỦ ĐIỀU KIỆN",
+            PurchaseState.Available => "CÓ THỂ MUA",
+            PurchaseState.Contributing => "ĐANG GÓP",
+            _ => "ĐÃ MUA"
         };
     }
 
     // Chỉ đọc số liệu authoritative; writer của đơn, trạm và unlock vẫn là TransactionCore.
     public sealed class ProgressionTracker
     {
+        public static string FamilyLabel(string family)=>family switch{"farm"=>"Cây trồng","animal"=>"Chăn nuôi","counter"=>"Quầy nông sản","mill"=>"Máy chế biến","market"=>"Siêu thị","oven"=>"Lò bánh","kitchen"=>"Bếp nhà hàng",_=>family};
         readonly GameSession game;
         readonly Dictionary<string,PurchaseEvaluation> evaluations=new();
         RuntimeTransactions cachedTransactions;
@@ -149,11 +150,11 @@ namespace Tycoon
                 if (requirement.anyUnlocks != null && requirement.anyUnlocks.Length > 0 && !requirement.anyUnlocks.Any(game.Economy.Has))
                     reasons.Add("Cần mở một tuyến chăn nuôi (chuồng, sữa hoặc trứng).");
                 if (!string.IsNullOrEmpty(requirement.stationFamily) && game.Progression.StationLevel(requirement.stationFamily) < requirement.stationLevel)
-                    reasons.Add("Trạm " + requirement.stationFamily + " cấp " + requirement.stationLevel + " • " +
+                    reasons.Add("Trạm " + FamilyLabel(requirement.stationFamily) + " cấp " + requirement.stationLevel + " • " +
                         game.Progression.StationLevel(requirement.stationFamily) + "/" + requirement.stationLevel + ".");
                 var alternatives=requirement.anyStationFamilies??System.Array.Empty<string>();
                 if(alternatives.Length>0&&!alternatives.Any(f=>game.Progression.StationLevel(f)>=requirement.anyStationLevel))
-                    reasons.Add("Cần một tuyến cấp "+requirement.anyStationLevel+" • "+string.Join(" / ",alternatives.Select(f=>f+" "+game.Progression.StationLevel(f)+"/"+requirement.anyStationLevel))+".");
+                    reasons.Add("Cần một tuyến cấp "+requirement.anyStationLevel+" • "+string.Join(" / ",alternatives.Select(f=>FamilyLabel(f)+" "+game.Progression.StationLevel(f)+"/"+requirement.anyStationLevel))+".");
                 if (requirement.successfulOrders > game.Economy.Transactions)
                     reasons.Add("Đơn thành công • " + game.Economy.Transactions + "/" + requirement.successfulOrders + ".");
                 if (requirement.successfulOrdersAtArea > game.Progression.SuccessfulOrdersAt(requirement.successfulOrderArea))
@@ -167,7 +168,7 @@ namespace Tycoon
                         reasons.Add("Mẻ " + (Definitions.Recipe(batch.recipeId)?.label ?? batch.recipeId) + " • " +
                             game.Progression.RecipeBatches(batch.recipeId) + "/" + batch.batches + ".");
                 AddPlayerTraining(reasons,requirement,
-                    game.Machines.Where(x=>x.AreaId=="restaurant"&&x.Recipe?.id=="kitchen").Sum(x=>x.PlayerWorkCount),
+                    game.Machines.Where(x=>x.AreaId=="restaurant"&&x.Recipe?.id=="kitchen").Sum(x=>x.PlayerBatches),
                     game.Tables.Sum(x=>x.PlayerServeCount),game.Tables.Sum(x=>x.PlayerCleanCount));
             }
             if (upgrade.kind == "worker")
@@ -176,7 +177,7 @@ namespace Tycoon
                 int level = game.Progression.StationLevel(family), work = PlayerJobs(game,crew);
                 if (level < 3) reasons.Add("Trạm cấp 3 • hiện cấp " + level + ".");
                 if (work < 30) reasons.Add("30 lượt việc bạn tự làm • " + work + "/30.");
-                if (game.StorageFor(crew.area) == null) reasons.Add("Khu " + crew.area + " chưa có kho riêng.");
+                if (game.StorageFor(crew.area) == null) reasons.Add("Khu " + GameHud.AreaLabel(crew.area) + " chưa có kho riêng.");
             }
             return reasons.ToArray();
         }
@@ -198,11 +199,11 @@ namespace Tycoon
                 if (!string.IsNullOrEmpty(requirement.stationFamily))
                 {
                     int level = StationLevel(state, requirement.stationFamily);
-                    if (level < requirement.stationLevel) reasons.Add("Trạm " + requirement.stationFamily + " cấp " + requirement.stationLevel + " • " + level + "/" + requirement.stationLevel + ".");
+                    if (level < requirement.stationLevel) reasons.Add("Trạm " + FamilyLabel(requirement.stationFamily) + " cấp " + requirement.stationLevel + " • " + level + "/" + requirement.stationLevel + ".");
                 }
                 var alternatives=requirement.anyStationFamilies??System.Array.Empty<string>();
                 if(alternatives.Length>0&&!alternatives.Any(f=>StationLevel(state,f)>=requirement.anyStationLevel))
-                    reasons.Add("Cần một tuyến cấp "+requirement.anyStationLevel+" • "+string.Join(" / ",alternatives.Select(f=>f+" "+StationLevel(state,f)+"/"+requirement.anyStationLevel))+".");
+                    reasons.Add("Cần một tuyến cấp "+requirement.anyStationLevel+" • "+string.Join(" / ",alternatives.Select(f=>FamilyLabel(f)+" "+StationLevel(state,f)+"/"+requirement.anyStationLevel))+".");
                 int sales = state.legacyTransactions + state.payments.Count;
                 if (requirement.successfulOrders > sales) reasons.Add("Đơn thành công • " + sales + "/" + requirement.successfulOrders + ".");
                 if (requirement.successfulOrdersAtArea > 0)
@@ -221,7 +222,7 @@ namespace Tycoon
                     if (count < batch.batches) reasons.Add("Mẻ " + (Definitions.Recipe(batch.recipeId)?.label ?? batch.recipeId) + " • " + count + "/" + batch.batches + ".");
                 }
                 AddPlayerTraining(reasons,requirement,
-                    state.stations.Where(s=>s.kind=="machine"&&s.area=="restaurant"&&s.definitionId=="kitchen").Sum(s=>s.playerWorkCount),
+                    state.stations.Where(s=>s.kind=="machine"&&s.area=="restaurant"&&s.definitionId=="kitchen").Sum(s=>s.playerBatches),
                     state.stations.Where(s=>s.kind=="table"&&s.area=="restaurant").Sum(s=>s.progress.playerServeCount),
                     state.stations.Where(s=>s.kind=="table"&&s.area=="restaurant").Sum(s=>s.progress.playerCleanCount));
             }
@@ -232,7 +233,7 @@ namespace Tycoon
                 int work = PlayerJobs(state,crew);
                 if (level < 3) reasons.Add("Trạm cấp 3 • hiện cấp " + level + ".");
                 if (work < 30) reasons.Add("30 lượt việc bạn tự làm • " + work + "/30.");
-                if (!state.stations.Any(s => s.kind == "storage" && s.area == crew.area)) reasons.Add("Khu " + crew.area + " chưa có kho riêng.");
+                if (!state.stations.Any(s => s.kind == "storage" && s.area == crew.area)) reasons.Add("Khu " + GameHud.AreaLabel(crew.area) + " chưa có kho riêng.");
             }
             return reasons.ToArray();
         }
@@ -248,10 +249,10 @@ namespace Tycoon
         {
             string id = !Unlocked("farm_shop") ? "farm_shop" : !Unlocked("mill") ? "mill" :
                 !Unlocked("supermarket") ? "supermarket" : !Unlocked("bakery") ? "bakery" : !Unlocked("restaurant") ? "restaurant" : null;
-            if (id == null) return "PURCHASED • Đã mở đủ năm khu.";
+            if (id == null) return "ĐÃ MỞ ĐỦ KHU • Nhà hàng đang hoạt động.";
             var definition = Definitions.Upgrade(id); var evaluation = Evaluate(definition);
             string title = evaluation.StatusText + " • " + definition.label + " • " + evaluation.Contributed + "/" + evaluation.Cost + " xu";
-            if (evaluation.Requirements.Length == 0) return title + "\nĐứng trên purchase pad và giữ thao tác để góp tiền.";
+            if (evaluation.Requirements.Length == 0) return title + "\nĐứng trên ô mua để góp tiền.";
             return title + "\n" + string.Join("  •  ", evaluation.Requirements);
         }
 
@@ -293,11 +294,11 @@ namespace Tycoon
 
         static int PlayerJobs(TransactionState state,CrewState crew)
         {
-            return state.stations.Where(s=>s.area==crew.area&&PlayerJobStation(s,crew.role)).Sum(s=>s.playerWorkCount);
+            return state.stations.Where(s=>s.area==crew.area&&PlayerJobStation(s,crew.role)).Sum(s=>crew.role is "Processor" or "Baker" or "Cook"?s.playerBatches:s.playerWorkCount);
         }
         static int PlayerJobs(GameSession game,CrewState crew)
         {
-            return game.Stations.Where(s=>s&&!(s is StationZone)&&s.AreaId==crew.area&&PlayerJobStation(s,crew.role)).Sum(s=>s.PlayerWorkCount);
+            return game.Stations.Where(s=>s&&!(s is StationZone)&&s.AreaId==crew.area&&PlayerJobStation(s,crew.role)).Sum(s=>s is MachineStation machine&&(crew.role is "Processor" or "Baker" or "Cook")?machine.PlayerBatches:s.PlayerWorkCount);
         }
         static bool PlayerJobStation(StationRuntimeState station,string role)=>role switch
         {
