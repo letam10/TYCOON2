@@ -93,6 +93,7 @@ namespace Tycoon
             }
             LayoutPurchasePads(game);
             WorldDressing.BackRooms(world);
+            TruckRoutes.BuildDocks(game,world);
             world.gameObject.AddComponent<NavigationWorld>();
         }
         static void LayoutPurchasePads(GameSession game)

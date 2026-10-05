@@ -28,6 +28,7 @@ namespace Tycoon
             copy.legacyCash=state.legacyCash.Select(c=>new CashSave{id=c.id,amount=c.amount}).ToList();
             copy.legacyPaid=new(state.legacyPaid);copy.legacyLosses=new(state.legacyLosses);
             copy.jobIds=new(state.jobIds);copy.unlocked=new(state.unlocked);
+            copy.crates=state.crates.Select(x=>x.Copy()).ToList();copy.truck=state.truck?.Copy();copy.transportJobs=new(state.transportJobs);
             copy.consumers=state.consumers.Select(c=>new ConsumerState{id=c.id,appliedEvents=c.appliedEvents}).ToList();
             copy.receipts=history?state.receipts:new();
             copy.outbox=history?state.outbox:new();

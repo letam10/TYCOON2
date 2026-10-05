@@ -26,7 +26,8 @@ namespace Tycoon
         {
             this.game = game; origin = Time.timeAsDouble; restoredTime = state.simulationTime;
             store = persist ? new GameplayTransactionStore(game) : null;
-            core = new TransactionCore(state, store, () => Now, true); view = core.RuntimeSnapshot();
+            try{core = new TransactionCore(state, store, () => Now, true); view = core.RuntimeSnapshot();}
+            catch{store?.Dispose();throw;}
             actors.Add(game.Player.GetEntityId(), "player");
             Bind(game.Player.Carry, "player"); game.Economy.Bind(this);
             foreach (var station in game.Stations.Where(x => x is not StationZone))
@@ -175,6 +176,7 @@ namespace Tycoon
             string id = WorkerOwner(worker.WorkerId);
             var crew=view.crews.Find(x=>x.id==worker.UpgradeId);
             int capacity=crew==null||crew.carryLevel==1?6:crew.carryLevel==2?10:16;
+            if(crew?.role=="Loader")capacity=6*crew.carryLevel;
             EnsureOwner(new OwnerState { id = id, actor = id, location = id, kind = OwnerKind.Worker,
                 singleItem = true, capacity = capacity,
                 worker = saved ?? new WorkerSave { id = worker.WorkerId, upgrade = worker.UpgradeId, x = worker.transform.position.x, z = worker.transform.position.z } });
@@ -311,7 +313,7 @@ namespace Tycoon
                 var progress = station.CaptureProgress();
                 var m = new StationRuntimeState { id = station.Id, area = station.AreaId, requirement = station.Requirement, level = progress.level, workCount = progress.workCount, playerWorkCount=progress.playerWorkCount,
                     input = station is MachineStation ? station.Id + "_input" : station.Id, output = station.Id, progress = progress,
-                    kind = station is MachineStation ? "machine" : station is ProductionStation ? "producer" : station is StorageStation ? "storage" : station is ShelfStation ? "shelf" : station is CheckoutStation ? "counter" : station is TableStation ? "table" : station is ConveyorStation ? "conveyor" : "purchase",
+                    kind = station is MachineStation ? "machine" : station is ProductionStation ? "producer" : station is StorageStation ? "storage" : station is CargoDock?"dock":station is ShelfStation ? "shelf" : station is CheckoutStation ? "counter" : station is TableStation ? "table" : station is ConveyorStation ? "conveyor" : "purchase",
                     definitionId = station is MachineStation machine2 ? machine2.Recipe.id : station is PurchasePad pad ? pad.Upgrade.id : station.Id,
                     item = (station as ProductionStation)?.ItemId,batchYield=(station as ProductionStation)?.Yield??1,cycleSeconds=(station as ProductionStation)?.Interval??0, running = progress.running, remaining = station is MachineStation ? progress.remaining : 0, batches = progress.batches,playerBatches=progress.playerBatches };
                 s.stations.Add(m);
@@ -407,7 +409,7 @@ namespace Tycoon
                 var progress=station.CaptureProgress();
                 var runtime=new StationRuntimeState{id=id,area=station.AreaId,requirement=station.Requirement,level=progress.level,
                     workCount=progress.workCount,playerWorkCount=progress.playerWorkCount,input=station is MachineStation?id+"_input":id,output=id,
-                    progress=progress,kind=station is MachineStation?"machine":station is ProductionStation?"producer":station is StorageStation?"storage":
+                    progress=progress,kind=station is MachineStation?"machine":station is ProductionStation?"producer":station is StorageStation?"storage":station is CargoDock?"dock":
                         station is ShelfStation?"shelf":station is CheckoutStation?"counter":station is TableStation?"table":station is ConveyorStation?"conveyor":station is PurchasePad?"purchase":"station",
                     definitionId=station is MachineStation m?m.Recipe.id:station is PurchasePad pad?pad.Upgrade.id:id,
                     item=(station as ProductionStation)?.ItemId,batchYield=(station as ProductionStation)?.Yield??1,cycleSeconds=(station as ProductionStation)?.Interval??0,running=progress.running,remaining=station is MachineStation?progress.remaining:0,batches=progress.batches,playerBatches=progress.playerBatches};

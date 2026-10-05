@@ -45,12 +45,20 @@ namespace Tycoon
         }
         void Update()
         {
-            var g=GameSession.Instance;if(!g.NavigationReady||!g.CanSimulate||!Agent.isOnNavMesh)return;
+            var g=GameSession.Instance;if(!g.NavigationReady||!g.CanSimulate)return;
+            if(Role=="Driver")
+            {
+                if(g.Logistics?.Vehicle){if(Agent.enabled)Agent.enabled=false;transform.SetParent(g.Logistics.Vehicle,false);transform.localPosition=new(0,.45f,1.5f);transform.localRotation=Quaternion.identity;Reason=g.Logistics.Reason;
+                    if(View.Animator.HasState(0,Animator.StringToHash("Sit"))&&!View.Animator.GetCurrentAnimatorStateInfo(0).IsName("Sit"))View.Animator.CrossFadeInFixedTime("Sit",.2f);}
+                return;
+            }
+            if(!Agent.isOnNavMesh)return;
             if(Time.time<routeRetryAt){Reason="Đang chờ thông lối";return;}
             crew=g.CrewStates.Find(x=>x.id==UpgradeId)??crew;
             if(!g.StorageFor(crew.area)){Reason="Khu chưa có kho riêng";return;}
-            Agent.speed=4.2f*(1+.2f*(crew.speedLevel-1));Carry.Capacity=crew.carryLevel==1?6:crew.carryLevel==2?10:crew.carryLevel==3?16:24;
+            Agent.speed=4.2f*(1+.2f*(crew.speedLevel-1));Carry.Capacity=crew.role=="Loader"?6*crew.carryLevel:crew.carryLevel==1?6:crew.carryLevel==2?10:crew.carryLevel==3?16:24;
             View.SetMotion(Agent.velocity.magnitude,Carry.Total>0);
+            if(Role=="Loader"){View.SetMotion(Agent.velocity.magnitude,g.Logistics.HasCargo(this));g.Logistics.Loader(this,crew);return;}
             if(label){label.text=Reason;label.gameObject.SetActive((g.Player.transform.position-transform.position).sqrMagnitude<60);label.transform.rotation=Camera.main.transform.rotation;}
             float moved=(transform.position-previous).sqrMagnitude;
             if(Agent.hasPath&&Agent.remainingDistance>.6f&&moved<.0001f)stuckTime+=Time.deltaTime;

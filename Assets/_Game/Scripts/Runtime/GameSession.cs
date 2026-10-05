@@ -24,6 +24,7 @@ namespace Tycoon
         public CommerceDirector Commerce;
         public GameFeedback Feedback;
         public RestaurantDirector Restaurant;
+        public TruckLogistics Logistics;
         public readonly List<TableStation> Tables = new();
         public List<DinerSave> PendingDiners = new();
         public bool NavigationReady;
@@ -120,6 +121,7 @@ namespace Tycoon
             Feedback = gameObject.AddComponent<GameFeedback>();
             Commerce = gameObject.AddComponent<CommerceDirector>();
             Restaurant = gameObject.AddComponent<RestaurantDirector>();
+            Logistics=gameObject.AddComponent<TruckLogistics>();
             if(IsQa&&Array.Exists(Environment.GetCommandLineArgs(),x=>x=="--qa-stage23"))gameObject.AddComponent<QaStages>();
             else if(IsQa&&baseline)gameObject.AddComponent<QaBaseline>();
             else if (IsQa) gameObject.AddComponent<QaDriver>();

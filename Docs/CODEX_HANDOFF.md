@@ -503,6 +503,15 @@ Build để chơi: `work/art-refresh/Build/TYCOON2.exe`. Audit/mapping/license: 
 - Compile/EditMode: 127/127 pass, gồm takeover, ba mức thời gian, save/load và worker sai nghề bị từ chối. Đã cập nhật fixture sửa 8 s cũ thành 5 s.
 - Mốc 2: `1b25892`, đã push. Commit mốc 3: `feat: add specialist repair crews and persistent repair progress`.
 
+## Thiết kế thị trấn mới — mốc 4 — 2026-10-06
+
+- Gói xe/tài xế/bến 5.000, Processing + kho cấp 3 + 30 job vận chuyển tay hoàn thành; hand job đếm theo cả lượt giao, không theo mỗi đơn vị. Loader theo Area thuê riêng, giữ thùng/work slot, carry 1/2/3 thùng cùng SKU.
+- API Pack/Claim/Load/Unload/SelectRoute/Dispatch/Tick dùng transaction. Thùng một SKU tối đa 6, xe 6 vị trí; reserve toàn bộ kho đích trước departure. Xe rỗng có thể đến kho nguồn; tuyến tự động tùy chọn, không tự bật.
+- Hàng có owner Crate + parent dock/worker/truck. Snapshot lưu đường, khoảng cách đã chạy, reservations, box/crew/jobs. Chuyển thùng không tạo bản sao hàng. UI chọn hai kho/gửi xe, model xe và icon trên thùng đã có.
+- Compile/EditMode: 131/131 pass, gồm gate 29→30, half delivery không tăng job, full destination giữ cargo, save/load xe giữa chuyến và retry unload không clone.
+- Mốc 3: `1169255`, đã push. Commit mốc 4: `feat: add owned cargo crates and truck logistics`.
+- Còn mốc 5: bố trí lại town/đường theo TruckRoutes, spawn ngoài đường chính, UI 2×, visual/animation, Windows Player + fixture QA ngắn. Chưa coi route/layout/Player của mốc 4 đã nghiệm thu.
+
 ## Những gì chưa thực hiện được / chưa nghiệm thu — cập nhật cuối Công đoạn 14
 
 - **Công đoạn 14: chưa pass lượt liên tục new game 0 → Restaurant bằng sản xuất/thu tiền thực tế, không nạp state. Chưa pass mục tiêu mở toàn chuỗi trong 180–240 phút.** Preset sát ngưỡng xác nhận từng gate/gameplay nhưng không thay thế hai tiêu chí này; chưa chốt acceptance toàn Công đoạn 14.

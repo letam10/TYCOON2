@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Tycoon
 {
-    public enum OwnerKind { Player, Worker, Customer, Storage, Counter, Machine, Conveyor, Station, Escrow }
+    public enum OwnerKind { Player, Worker, Customer, Storage, Counter, Machine, Conveyor, Station, Escrow, Crate, Truck }
     public enum MachinePhase { WaitingInput, Ready, Operating, CompletedWaitingPickup }
     public enum TransactionKind
     {
@@ -12,7 +12,7 @@ namespace Tycoon
         StartMachine, AdvanceMachine, CompleteMachine, AcknowledgeEvent,
         RegisterOwner, OperateProducer, TickProducer, HarvestProducer, FeedProducer,
         ReleaseOperator, BreakMachine, RepairMachine, UpgradeCrew, CleanTable, AdvanceDiner, Checkpoint, RestockProducer,
-        GrantAssistance, SelectRecipe
+        GrantAssistance, SelectRecipe, PackCrate, ClaimCrate, LoadCrate, UnloadCrate, SelectTruckRoute, DispatchTruck, TickTruck
     }
     public enum OrderStatus { Open, Complete, Failed }
     public enum ReservationStatus { Active, Used, Released, Expired }
@@ -132,6 +132,14 @@ namespace Tycoon
         public List<string> unlocked = new();
         public List<TransactionReceipt> receipts = new();
         public List<TransactionEvent> outbox = new();
+        public List<CargoCrateState> crates=new();
+        // JsonUtility có thể tạo object rỗng cho reference null; list rỗng biểu diễn chưa mua xe.
+        public List<TruckRuntimeState> trucks=new();
+        public TruckRuntimeState truck {get=>trucks!=null&&trucks.Count>0?trucks[0]:null;set=>trucks=value==null?new():new(){value};}
+        public List<ManualTransportJob> transportJobs=new();
+        public string carryOrigin,carryBatch;
+        public string carryDestination;
+        public int carryDelivered;
     }
     [Serializable] public sealed class TransactionCommand
     {
@@ -143,6 +151,7 @@ namespace Tycoon
         public double duration, expiresAt;
         public List<OrderLine> lines = new();
         public OwnerState owner;
+        public List<RoutePoint> path=new();
     }
     [Serializable] public sealed class ConsumerState { public string id; public int appliedEvents; }
     public sealed class TransactionRejectedException : InvalidOperationException

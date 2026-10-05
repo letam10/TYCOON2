@@ -12,11 +12,11 @@ namespace Tycoon
         float elapsed;
         public ProximityTarget(Station target,bool cash=false){Target=target;Cash=cash;}
         public InteractionKind Kind=>kind;
-        public Vector3 Center=>Cash && Target is CheckoutStation c ? c.CollectionPoint : Target.transform.position;
+        public Vector3 Center=>Cash && Target is CheckoutStation c ? c.CollectionPoint :Target is CargoDock?Target.transform.position+Vector3.left*1.7f:Target.transform.position;
         public bool Available=>Target && Target.isActiveAndEnabled && Target.IsUnlocked;
         Vector3 Surface(Vector3 point)
         {
-            if(Cash)return Center;
+            if(Cash||Target is CargoDock)return Center;
             Vector3 size=Target is ProductionStation p&&!p.Animal?new(4,.2f,4):Target is MachineStation?new(2.65f,1,2.25f):
                 Target is ShelfStation?new(1.4f,1,4.7f):Target is StorageStation?new(3.3f,1,2.5f):Target is CheckoutStation?new(2.6f,1,1.2f):new(2,1,2);
             return new Bounds(Center+Vector3.up*.5f,size).ClosestPoint(point);
@@ -35,6 +35,7 @@ namespace Tycoon
         {
             if(!Available)return InteractionResult.Waiting;
             if(Cash)kind=InteractionKind.Collect;
+            else if(Target is CargoDock)kind=InteractionKind.Operate;
             else if(Target is ProductionStation p)
             {
                 kind=!p.Animal?(p.Phase==3?InteractionKind.Pickup:InteractionKind.Operate):

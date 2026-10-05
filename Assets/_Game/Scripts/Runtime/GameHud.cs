@@ -20,6 +20,8 @@ namespace Tycoon
         GameObject menu,crewPanel;
         Button continueButton;
         Button recipeButton;
+        GameObject cargoPanel;
+        Text cargoText;
         Transform crewContent;
         Text crewSummary;
         bool paused;
@@ -82,11 +84,26 @@ namespace Tycoon
             var scroll=viewport.AddComponent<ScrollRect>();scroll.viewport=viewport.GetComponent<RectTransform>();scroll.content=contentRect;scroll.horizontal=false;scroll.vertical=true;scroll.movementType=ScrollRect.MovementType.Clamped;
             Button(crewPanel.transform,"Quay lại",-435,BackToPauseMenu);
             crewPanel.SetActive(false);
+            var cargoOpen=Button(root.transform,"Vận chuyển xe tải",0,()=>{cargoPanel.SetActive(!cargoPanel.activeSelf);game.Player.CanControl=!cargoPanel.activeSelf;});
+            Rect(cargoOpen.GetComponent<RectTransform>(),Vector2.one,Vector2.one,new Vector2(-510,-245),new Vector2(-28,-140));
+            cargoPanel=Panel("CargoRoutes",root.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(-800,-450),new Vector2(800,450),"#143627",.98f);
+            cargoText=Text("CargoSummary",cargoPanel.transform,"",24,TextAnchor.UpperLeft,"#FFFFFF");Rect(cargoText.rectTransform,new Vector2(.05f,.56f),new Vector2(.95f,.94f),Vector2.zero,Vector2.zero);
+            Button(cargoPanel.transform,"Đổi kho nguồn",0,()=>CycleCargo(true));Button(cargoPanel.transform,"Đổi kho đích",-90,()=>CycleCargo(false));
+            Button(cargoPanel.transform,"Gửi xe",-180,()=>{if(game.Logistics!=null&&!game.Logistics.Dispatch())game.Say(game.Logistics.Reason);});
+            Button(cargoPanel.transform,"Bật / tắt tuyến tự động",-270,()=>{var t=game.Transactions?.View.truck;if(t!=null)game.Logistics.Select(t.source,t.destination,!t.repeat);});
+            Button(cargoPanel.transform,"Đóng",-360,()=>{cargoPanel.SetActive(false);game.Player.CanControl=true;});cargoPanel.SetActive(false);
         }
         void Update()
         {
             if (Keyboard.current?.escapeKey.wasPressedThisFrame == true || Gamepad.current?.selectButton.wasPressedThisFrame == true) TogglePause();
             money.text = game.Economy.Money.ToString("N0");
+            if(cargoPanel.activeSelf)
+            {
+                var t=game.Transactions?.View.truck;
+                cargoText.text=t==null?"Xe tải + tài xế: mở Processing, kho cấp 3 và 30 jobs vận chuyển tay.\nGóp tiền tại pad xe cạnh kho Processing.":
+                    "Nguồn: "+CargoWarehouse(t.source)+" → "+CargoWarehouse(t.destination)+"\n"+(t.phase switch{"Idle"=>"Đỗ tại bến","Loading"=>"Đang chất hàng","Travelling"=>"Đang vận chuyển",_=>"Chờ dỡ hàng"})+" • "+game.Logistics.Reason+" • tự động "+(t.repeat?"BẬT":"TẮT")+"\n"+
+                    string.Join(" • ",game.Transactions.View.crates.Where(x=>x.holder==t.id).Select(x=>Definitions.Item(x.item).label+" ×"+game.Transactions.View.stacks.Where(s=>s.owner==x.id).Sum(s=>s.quantity)));
+            }
             var active=game.Player.ActiveInteraction as ProximityTarget;
             recipeButton.gameObject.SetActive(active?.Target is MachineStation m && m.Options.Length>1);
             string area = game.BusinessStage switch { 5 => "Nhà hàng & tiệm bánh", 4 => "Tiệm bánh", 3 => "Siêu thị", 2 => game.Economy.Has("mill")?"Chế biến":"Cửa hàng nông sản", _ => "Nông trại & cửa hàng" };
@@ -133,6 +150,14 @@ namespace Tycoon
             int i=System.Array.IndexOf(machine.Options,machine.Recipe.id);
             if(game.Transactions.SelectRecipe(machine,machine.Options[(i+1)%machine.Options.Length]))game.Say("Chuẩn bị: "+machine.Recipe.label);
         }
+        string CargoWarehouse(string id)=>AreaLabel(game.Stations.Find(x=>x.Id==id)?.AreaId??id);
+        void CycleCargo(bool source)
+        {
+            var t=game.Transactions?.View.truck;if(t==null)return;
+            var options=game.Stations.OfType<StorageStation>().Where(x=>x.IsUnlocked).Select(x=>x.Id).ToArray();if(options.Length<2)return;
+            int index=System.Array.IndexOf(options,source?t.source:t.destination);
+            for(int i=1;i<=options.Length;i++){string id=options[(index+i)%options.Length];if(id==(source?t.destination:t.source))continue;game.Logistics.Select(source?id:t.source,source?t.destination:id,t.repeat);break;}
+        }
         public void TogglePause()
         {
             crewPanel?.SetActive(false);paused = !paused; menu.SetActive(paused); Time.timeScale = paused ? 0 : 1; game.Player.CanControl = !paused;
@@ -169,8 +194,8 @@ namespace Tycoon
                 var name=Text("CrewName",row.transform,title,22,TextAnchor.MiddleLeft,"#FFFFFF");Rect(name.rectTransform,new Vector2(.02f,.7f),new Vector2(.98f,.98f),Vector2.zero,Vector2.zero);
                 var status=Text("CrewStatus",row.transform,"",17,TextAnchor.MiddleLeft,"#CBE9BA");Rect(status.rectTransform,new Vector2(.02f,.43f),new Vector2(.98f,.72f),Vector2.zero,Vector2.zero);crewStatuses[crew.id]=status;
                 CrewButton(row.transform,.18f,UpgradeLabel(crew,"speed"),()=>UpgradeCrew(crew.id,"speed"));
-                CrewButton(row.transform,.50f,crew.role=="Cashier"?"Không cần sức mang":UpgradeLabel(crew,"carry"),crew.role=="Cashier"?null:()=>UpgradeCrew(crew.id,"carry"));
-                CrewButton(row.transform,.82f,UpgradeLabel(crew,"count"),()=>UpgradeCrew(crew.id,"count"));
+                CrewButton(row.transform,.50f,crew.role is "Cashier" or "Driver" or "Repairer"?"Không dùng sức mang":UpgradeLabel(crew,"carry"),crew.role is "Cashier" or "Driver" or "Repairer"?null:()=>UpgradeCrew(crew.id,"carry"));
+                CrewButton(row.transform,.82f,crew.role=="Driver"?"Một tài xế / xe":UpgradeLabel(crew,"count"),crew.role=="Driver"?null:()=>UpgradeCrew(crew.id,"count"));
                 index++;
             }
             var size=crewContent.GetComponent<RectTransform>().sizeDelta;crewContent.GetComponent<RectTransform>().sizeDelta=new Vector2(size.x,Mathf.Max(crewContent.parent.GetComponent<RectTransform>().rect.height,index*152));
@@ -193,7 +218,7 @@ namespace Tycoon
             bool changed=game.UpgradeCrew(id,type);game.Say(changed?"Đã nâng đội "+(Definitions.Upgrade(id)?.label??id):"Không đủ xu hoặc nâng cấp đã tối đa.");RefreshCrewMenu();
         }
         public static string AreaLabel(string area)=>area switch{"farm"=>"Nông trại","farm_shop"=>"Cửa hàng nông sản","processing"=>"Chế biến","supermarket" or "market"=>"Siêu thị","bakery"=>"Tiệm bánh","restaurant"=>"Nhà hàng",_=>area};
-        static string RoleLabel(string role)=>role switch{"Farmer"=>"Nông dân","AnimalWorker"=>"Chăm vật nuôi","Restocker"=>"Xếp hàng","Cashier"=>"Bán hàng","Processor"=>"Chế biến","Cook"=>"Đầu bếp / thợ bánh","Waiter"=>"Phục vụ","Transporter"=>"Vận chuyển","Repairer"=>"Kỹ thuật viên sửa chữa",_=>role};
+        static string RoleLabel(string role)=>role switch{"Farmer"=>"Nông dân","AnimalWorker"=>"Chăm vật nuôi","Restocker"=>"Xếp hàng","Cashier"=>"Bán hàng","Processor"=>"Chế biến","Cook"=>"Đầu bếp / thợ bánh","Waiter"=>"Phục vụ","Transporter"=>"Vận chuyển","Repairer"=>"Kỹ thuật viên sửa chữa","Loader"=>"Bốc hàng","Driver"=>"Tài xế",_=>role};
         static GameObject Panel(string name, Transform parent, Vector2 min, Vector2 max, Vector2 offsetMin, Vector2 offsetMax, string color, float alpha)
         {
             var root = new GameObject(name, typeof(RectTransform)); root.transform.SetParent(parent,false);

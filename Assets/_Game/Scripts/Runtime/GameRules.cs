@@ -70,6 +70,8 @@ namespace Tycoon
             string role = u.role switch { "Animal" => "AnimalWorker", "Baker" => "Cook", "RestockerMarket" => "Restocker", "CashierMarket" => "Cashier", _ => u.role };
             string area = u.id.Contains("market") ? "supermarket" : u.id.Contains("bakery") ? "bakery" : u.id is "cook" or "waiter" or "transport_restaurant" ? "restaurant" : u.id is "processor" or "transport_processing" ? "processing" : role is "Farmer" or "AnimalWorker" ? "farm" : "farm_shop";
             if(role=="Repairer")area=u.id.Substring("repair_".Length);
+            if(role=="Loader")area=u.id.Substring("loader_".Length);
+            if(role=="Driver")area="processing";
             return new CrewState { id = u.id, role = role, area = area };
         }
         public int CrewUpgradeCost(string id, string kind)

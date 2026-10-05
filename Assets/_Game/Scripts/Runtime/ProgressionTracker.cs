@@ -283,6 +283,7 @@ namespace Tycoon
 
         internal static string Family(StationRuntimeState station)
         {
+            if(station.kind=="storage"&&station.area=="processing")return "storage_processing";
             if (station.kind == "producer") return Definitions.IsAnimal(station.item) ? "animal" : "farm";
             return station.area switch
             {
@@ -291,18 +292,20 @@ namespace Tycoon
             };
         }
 
-        internal static string FamilyFor(CrewState crew) => crew.role == "Farmer" || crew.role=="Repairer"&&crew.area=="farm" ? "farm" : crew.role == "AnimalWorker" ? "animal" :
+        internal static string FamilyFor(CrewState crew) => crew.role=="Driver"||crew.role=="Loader"&&crew.area=="processing"?"storage_processing":crew.role == "Farmer" || crew.role is "Repairer" or "Loader"&&crew.area=="farm" ? "farm" : crew.role == "AnimalWorker" ? "animal" :
             crew.area == "supermarket" ? "market" : crew.area == "processing" ? "mill" :
             crew.area == "bakery" ? "oven" : crew.area == "restaurant" ? "kitchen" : "counter";
 
         static int PlayerJobs(TransactionState state,CrewState crew)
         {
             if(crew.role=="Repairer")return state.stations.Where(s=>s.area==crew.area).Sum(s=>s.progress.playerRepairCount);
+            if(crew.role is "Driver" or "Loader")return state.transportJobs.Count(x=>x.area==crew.area&&(crew.role=="Driver"?x.kind=="hand":x.kind is "load" or "unload"));
             return state.stations.Where(s=>s.area==crew.area&&PlayerJobStation(s,crew.role)).Sum(s=>crew.role is "Processor" or "Baker" or "Cook"?s.playerBatches:s.playerWorkCount);
         }
         static int PlayerJobs(GameSession game,CrewState crew)
         {
             if(crew.role=="Repairer")return game.Transactions?.Snapshot().stations.Where(s=>s.area==crew.area).Sum(s=>s.progress.playerRepairCount)??0;
+            if(crew.role is "Driver" or "Loader")return game.Transactions==null?0:PlayerJobs(game.Transactions.Snapshot(),crew);
             return game.Stations.Where(s=>s&&!(s is StationZone)&&s.AreaId==crew.area&&PlayerJobStation(s,crew.role)).Sum(s=>s is MachineStation machine&&(crew.role is "Processor" or "Baker" or "Cook")?machine.PlayerBatches:s.PlayerWorkCount);
         }
         static bool PlayerJobStation(StationRuntimeState station,string role)=>role switch
