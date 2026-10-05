@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
+using System.Collections.Generic;
 
 namespace Tycoon
 {
@@ -11,8 +12,10 @@ namespace Tycoon
         GameSession game;
         Canvas canvas;
         Text money, progress, objective, carry, prompt, toast;
-        GameObject menu;
+        GameObject menu,crewPanel;
         Button continueButton;
+        Transform crewContent;
+        Text crewSummary;
         bool paused;
         static Sprite rounded;
         public void Initialize()
@@ -43,10 +46,24 @@ namespace Tycoon
             menu = Panel("Pause", root.transform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, "#143627", .95f);
             var heading = Text("PauseHeading", menu.transform, "TYCOON2\nNông trại → Đế chế kinh doanh", 40, TextAnchor.MiddleCenter, "#FFFFFF");
             Rect(heading.rectTransform, new Vector2(.5f,.5f), new Vector2(.5f,.5f), new Vector2(-500,120), new Vector2(500,290));
-            continueButton = Button(menu.transform,"Tiếp tục",40,TogglePause);
-            Button(menu.transform,"Lưu trò chơi",-55,()=>game.SaveGame());
-            Button(menu.transform,"Lưu & thoát",-150,()=> { game.SaveGame(); Application.Quit(); });
+            continueButton = Button(menu.transform,"Tiếp tục",75,TogglePause);
+            Button(menu.transform,"Quản lý đội",-5,OpenCrewMenu);
+            Button(menu.transform,"Lưu trò chơi",-85,()=>game.SaveGame());
+            Button(menu.transform,"Lưu & thoát",-165,()=> { game.SaveGame(); Application.Quit(); });
             menu.SetActive(false);
+            crewPanel=Panel("CrewManagement",root.transform,Vector2.zero,Vector2.one,Vector2.zero,Vector2.zero,"#143627",.97f);
+            var crewTitle=Text("CrewTitle",crewPanel.transform,"ĐỘI NGŨ • VAI TRÒ VÀ KHU VỰC",34,TextAnchor.MiddleCenter,"#FFFFFF");
+            Rect(crewTitle.rectTransform,new Vector2(.1f,.88f),new Vector2(.9f,.97f),Vector2.zero,Vector2.zero);
+            crewSummary=Text("CrewSummary",crewPanel.transform,"",18,TextAnchor.MiddleCenter,"#FFFFFF");
+            Rect(crewSummary.rectTransform,new Vector2(.1f,.81f),new Vector2(.9f,.88f),Vector2.zero,Vector2.zero);
+            var viewport=new GameObject("CrewViewport",typeof(RectTransform),typeof(Image),typeof(Mask));viewport.transform.SetParent(crewPanel.transform,false);
+            Rect(viewport.GetComponent<RectTransform>(),new Vector2(.08f,.17f),new Vector2(.92f,.8f),Vector2.zero,Vector2.zero);
+            viewport.GetComponent<Image>().color=new Color(0,0,0,.12f);viewport.GetComponent<Mask>().showMaskGraphic=false;
+            var content=new GameObject("CrewRows",typeof(RectTransform));content.transform.SetParent(viewport.transform,false);crewContent=content.transform;
+            var contentRect=content.GetComponent<RectTransform>();contentRect.anchorMin=new Vector2(0,1);contentRect.anchorMax=new Vector2(1,1);contentRect.pivot=new Vector2(.5f,1);contentRect.anchoredPosition=Vector2.zero;contentRect.sizeDelta=Vector2.zero;
+            var scroll=viewport.AddComponent<ScrollRect>();scroll.viewport=viewport.GetComponent<RectTransform>();scroll.content=contentRect;scroll.horizontal=false;scroll.vertical=true;scroll.movementType=ScrollRect.MovementType.Clamped;
+            Button(crewPanel.transform,"Quay lại",-435,BackToPauseMenu);
+            crewPanel.SetActive(false);
         }
         void Update()
         {
@@ -63,9 +80,60 @@ namespace Tycoon
         }
         public void TogglePause()
         {
-            paused = !paused; menu.SetActive(paused); Time.timeScale = paused ? 0 : 1; game.Player.CanControl = !paused;
+            crewPanel?.SetActive(false);paused = !paused; menu.SetActive(paused); Time.timeScale = paused ? 0 : 1; game.Player.CanControl = !paused;
             if (paused) EventSystem.current.SetSelectedGameObject(continueButton.gameObject);
         }
+        void OpenCrewMenu()
+        {
+            menu.SetActive(false);crewPanel.SetActive(true);RefreshCrewMenu();
+        }
+        void BackToPauseMenu()
+        {
+            crewPanel.SetActive(false);menu.SetActive(true);EventSystem.current.SetSelectedGameObject(continueButton.gameObject);
+        }
+        void RefreshCrewMenu()
+        {
+            foreach(Transform child in crewContent)Destroy(child.gameObject);
+            var crews=game.CrewStates;
+            if(crews.Count==0)
+            {
+                var empty=Text("NoCrew",crewContent,"Chưa có nhân viên. Mở ô thuê khi trạm đạt cấp 3 và bạn tự làm đủ 30 lượt việc.",20,TextAnchor.MiddleCenter,"#FFFFFF");
+                empty.transform.SetParent(crewContent,false);Rect(empty.rectTransform,new Vector2(.05f,.35f),new Vector2(.95f,.65f),Vector2.zero,Vector2.zero);return;
+            }
+            crewSummary.text="Mỗi nâng cấp chỉ tác động đội cùng nghề và khu. Tiền được trừ ngay khi chọn.";
+            int index=0;
+            foreach(var crew in crews)
+            {
+                var row=new GameObject("CrewRow_"+crew.id,typeof(RectTransform),typeof(Image));row.transform.SetParent(crewContent,false);
+                var rect=row.GetComponent<RectTransform>();rect.anchorMin=new Vector2(0,1);rect.anchorMax=new Vector2(1,1);rect.pivot=new Vector2(.5f,1);rect.anchoredPosition=new Vector2(0,-index*112);rect.sizeDelta=new Vector2(0,104);
+                var image=row.GetComponent<Image>();image.color=new Color(.15f,.36f,.2f,.9f);image.raycastTarget=false;
+                string title=(Definitions.Upgrade(crew.id)?.label??crew.id)+" • "+AreaLabel(crew.area)+" • "+crew.count+" người";
+                var name=Text("CrewName",row.transform,title,22,TextAnchor.MiddleLeft,"#FFFFFF");Rect(name.rectTransform,new Vector2(.02f,.56f),new Vector2(.98f,.98f),Vector2.zero,Vector2.zero);
+                CrewButton(row.transform,.18f,UpgradeLabel(crew,"speed"),()=>UpgradeCrew(crew.id,"speed"));
+                CrewButton(row.transform,.50f,crew.role=="Cashier"?"Không cần sức mang":UpgradeLabel(crew,"carry"),crew.role=="Cashier"?null:()=>UpgradeCrew(crew.id,"carry"));
+                CrewButton(row.transform,.82f,UpgradeLabel(crew,"count"),()=>UpgradeCrew(crew.id,"count"));
+                index++;
+            }
+            var size=crewContent.GetComponent<RectTransform>().sizeDelta;crewContent.GetComponent<RectTransform>().sizeDelta=new Vector2(size.x,Mathf.Max(crewContent.parent.GetComponent<RectTransform>().rect.height,index*112));
+        }
+        string UpgradeLabel(CrewState crew,string type)
+        {
+            int level=type=="speed"?crew.speedLevel:type=="carry"?crew.carryLevel:crew.count;
+            if(level>=3)return (type=="speed"?"Tốc độ":type=="carry"?"Sức mang":"Số người")+" • TỐI ĐA";
+            string next=type=="speed"?"Tốc độ cấp "+(level+1):type=="carry"?"Sức mang cấp "+(level+1):"Thêm người • "+(crew.count+1);
+            return next+" • "+game.CrewUpgradeCost(crew.id,type)+" xu";
+        }
+        void CrewButton(Transform parent,float center,string label,UnityEngine.Events.UnityAction click)
+        {
+            var buttonRoot=Panel("CrewUpgrade",parent,new Vector2(center-.15f,.05f),new Vector2(center+.15f,.52f),Vector2.zero,Vector2.zero,"#59C840",click==null?.35f:1);
+            var button=buttonRoot.AddComponent<Button>();button.interactable=click!=null;if(click!=null)button.onClick.AddListener(click);
+            var text=Text("Label",buttonRoot.transform,label,17,TextAnchor.MiddleCenter,"#FFFFFF");Rect(text.rectTransform,Vector2.zero,Vector2.one,new Vector2(3,0),new Vector2(-3,0));
+        }
+        void UpgradeCrew(string id,string type)
+        {
+            bool changed=game.UpgradeCrew(id,type);game.Say(changed?"Đã nâng đội "+(Definitions.Upgrade(id)?.label??id):"Không đủ xu hoặc nâng cấp đã tối đa.");RefreshCrewMenu();
+        }
+        static string AreaLabel(string area)=>area switch{"farm"=>"Nông trại","farm_shop"=>"Farm Shop","processing"=>"Processing","supermarket"=>"Supermarket","bakery"=>"Bakery","restaurant"=>"Restaurant",_=>area};
         static GameObject Panel(string name, Transform parent, Vector2 min, Vector2 max, Vector2 offsetMin, Vector2 offsetMax, string color, float alpha)
         {
             var root = new GameObject(name, typeof(RectTransform)); root.transform.SetParent(parent,false);

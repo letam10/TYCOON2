@@ -30,9 +30,11 @@ namespace Tycoon
             agent.obstacleAvoidanceType = ObstacleAvoidanceType.LowQualityObstacleAvoidance;
             return agent;
         }
-        public static bool Go(NavMeshAgent agent, Vector3 point)
+        public static bool Go(NavMeshAgent agent, Vector3 point, bool forceRepath=false)
         {
-            return agent.isOnNavMesh && NavMesh.SamplePosition(point, out var hit, 1.8f, NavMesh.AllAreas) && agent.SetDestination(hit.position);
+            if(!agent||!agent.isOnNavMesh||!NavMesh.SamplePosition(point,out var hit,1.8f,NavMesh.AllAreas))return false;
+            if(!forceRepath&&(agent.pathPending||agent.hasPath)&&Vector3.SqrMagnitude(agent.destination-hit.position)<.16f)return true;
+            return agent.SetDestination(hit.position);
         }
         public static bool Arrived(NavMeshAgent agent) => agent.isOnNavMesh && !agent.pathPending && agent.remainingDistance < .5f;
     }

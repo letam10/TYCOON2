@@ -5,6 +5,20 @@ namespace Tycoon.Tests
 {
     public sealed partial class TransactionCoreTests
     {
+        [Test]public void CrewUpgradesAreIsolatedByRoleAndArea()
+        {
+            var seed=Seed();seed.money=1000;seed.unlocked.Add("farmer");seed.unlocked.Add("animal_worker");
+            seed.crews.Add(GameSession.CrewFor(Definitions.Upgrade("farmer")));
+            seed.crews.Add(GameSession.CrewFor(Definitions.Upgrade("animal_worker")));
+            var core=Core(seed);
+            var speed=Command(core,TransactionKind.UpgradeCrew,"farmer-speed","farmer");speed.secondary="speed";core.Execute(speed);
+            var count=Command(core,TransactionKind.UpgradeCrew,"animal-count","animal_worker");count.secondary="count";core.Execute(count);
+            var crews=core.Snapshot().crews;
+            Assert.That(crews.Single(x=>x.id=="farmer").speedLevel,Is.EqualTo(2));
+            Assert.That(crews.Single(x=>x.id=="farmer").count,Is.EqualTo(1));
+            Assert.That(crews.Single(x=>x.id=="animal_worker").speedLevel,Is.EqualTo(1));
+            Assert.That(crews.Single(x=>x.id=="animal_worker").count,Is.EqualTo(2));
+        }
         [Test] public void RelayReservationFollowsWorkerAndHoldsFinalCapacityUntilPlacement()
         {
             var core=Core();var reserve=Command(core,TransactionKind.Reserve,"route","route:1");reserve.actor="worker";

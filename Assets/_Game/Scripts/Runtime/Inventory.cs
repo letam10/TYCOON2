@@ -17,6 +17,8 @@ namespace Tycoon
         public bool SingleItem { get => singleItem; set { if(Authority!=null && value!=singleItem)throw new InvalidOperationException("Carry mode chỉ được cập nhật qua transaction."); singleItem=value; } }
         public int Total { get; private set; }
         public int Revision { get; private set; }
+        public int ReservedTotal { get { int total=0;foreach(var amount in reserved.Values)total+=amount;return total; } }
+        public int IncomingTotal => incomingTotal;
         public int Free => Math.Max(0, Capacity - Total - incomingTotal);
         public Inventory(int capacity, bool singleItem = false) { Capacity = Math.Max(0, capacity); SingleItem = singleItem; }
         internal List<ItemAmount> Limits { get { var result=new List<ItemAmount>(); foreach(var pair in limits)result.Add(new(pair.Key,pair.Value));return result; } }

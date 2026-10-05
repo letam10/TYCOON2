@@ -49,7 +49,7 @@ namespace Tycoon.Tests
         {
             var store = new FileTransactionStore(path); var core = Core(store: store); var c = Command(core, TransactionKind.Transfer, "belt"); c.destination = "conveyor"; c.quantity = 4; core.Execute(c);
             core = Core(store: store); core.Execute(c); var state = core.Snapshot(); Assert.That(Count(core, "conveyor"), Is.EqualTo(4));
-            Assert.That(state.stacks.Sum(x => x.quantity), Is.EqualTo(18)); Assert.That(state.stacks.All(x => state.owners.Any(o => o.id == x.owner && o.location == x.location)), Is.True); Journal(core, 1);
+            Assert.That(state.stacks.Sum(x => x.quantity), Is.EqualTo(18)); Assert.That(state.stacks.All(x => state.owners.Any(o => o.id == x.owner && (o.kind==OwnerKind.Storage?o.location+"/"+x.item:o.location)==x.location)), Is.True); Journal(core, 1);
         }
         [TestCase(CommitBoundary.Prepared, false)]
         [TestCase(CommitBoundary.TemporaryFlushed, false)]

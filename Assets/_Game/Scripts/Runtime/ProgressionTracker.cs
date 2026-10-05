@@ -48,6 +48,7 @@ namespace Tycoon
             if (State != null) return State.stations.Where(x => x.area == area).Sum(x => x.workCount);
             return game.Stations.Where(x => x.AreaId == area).Sum(x => x.WorkCount);
         }
+        public int PlayerJobs(CrewState crew)=>State==null?PlayerJobs(game,crew):PlayerJobs(State,crew);
 
         public int SuccessfulOrdersAt(string area)
         {
@@ -133,9 +134,9 @@ namespace Tycoon
             if (upgrade.kind == "worker")
             {
                 var crew = GameSession.CrewFor(upgrade); string family = FamilyFor(crew);
-                int level = game.Progression.StationLevel(family), work = game.Progression.SuccessfulJobs(crew.area);
+                int level = game.Progression.StationLevel(family), work = PlayerJobs(game,crew);
                 if (level < 3) reasons.Add("Trạm cấp 3 • hiện cấp " + level + ".");
-                if (work < 30) reasons.Add("30 lượt việc • " + work + "/30.");
+                if (work < 30) reasons.Add("30 lượt việc bạn tự làm • " + work + "/30.");
                 if (game.StorageFor(crew.area) == null) reasons.Add("Khu " + crew.area + " chưa có kho riêng.");
             }
             return reasons.ToArray();
@@ -182,11 +183,9 @@ namespace Tycoon
             {
                 var crew = GameSession.CrewFor(upgrade); string family = FamilyFor(crew);
                 int level = StationLevel(state, family);
-                int work = state.stations.Where(s => s.area == crew.area &&
-                    (crew.role != "Farmer" || s.kind == "producer" && s.item is "carrot" or "tomato" or "wheat") &&
-                    (crew.role != "AnimalWorker" || s.kind == "producer" && s.item is "milk" or "egg" or "beef")).Sum(s => s.workCount);
+                int work = PlayerJobs(state,crew);
                 if (level < 3) reasons.Add("Trạm cấp 3 • hiện cấp " + level + ".");
-                if (work < 30) reasons.Add("30 lượt việc • " + work + "/30.");
+                if (work < 30) reasons.Add("30 lượt việc bạn tự làm • " + work + "/30.");
                 if (!state.stations.Any(s => s.kind == "storage" && s.area == crew.area)) reasons.Add("Khu " + crew.area + " chưa có kho riêng.");
             }
             return reasons.ToArray();
@@ -238,5 +237,36 @@ namespace Tycoon
         internal static string FamilyFor(CrewState crew) => crew.role == "Farmer" ? "farm" : crew.role == "AnimalWorker" ? "animal" :
             crew.area == "supermarket" ? "market" : crew.area == "processing" ? "mill" :
             crew.area == "bakery" ? "oven" : crew.area == "restaurant" ? "kitchen" : "counter";
+
+        static int PlayerJobs(TransactionState state,CrewState crew)
+        {
+            return state.stations.Where(s=>s.area==crew.area&&PlayerJobStation(s,crew.role)).Sum(s=>s.playerWorkCount);
+        }
+        static int PlayerJobs(GameSession game,CrewState crew)
+        {
+            return game.Stations.Where(s=>s&&!(s is StationZone)&&s.AreaId==crew.area&&PlayerJobStation(s,crew.role)).Sum(s=>s.PlayerWorkCount);
+        }
+        static bool PlayerJobStation(StationRuntimeState station,string role)=>role switch
+        {
+            "Farmer"=>station.kind=="producer"&&station.item is "carrot" or "tomato" or "wheat",
+            "AnimalWorker"=>station.kind=="producer"&&station.item is "milk" or "egg" or "beef",
+            "Restocker"=>station.kind=="shelf",
+            "Cashier"=>station.kind=="counter",
+            "Processor" or "Baker" or "Cook"=>station.kind=="machine",
+            "Waiter"=>station.kind=="table",
+            "Transporter"=>station.kind is "storage" or "shelf" or "machine" or "producer" or "counter",
+            _=>false
+        };
+        static bool PlayerJobStation(Station station,string role)=>station switch
+        {
+            ProductionStation producer when role=="Farmer"=>!producer.Animal,
+            ProductionStation producer when role=="AnimalWorker"=>producer.Animal,
+            ShelfStation when role=="Restocker"=>true,
+            CheckoutStation when role=="Cashier"=>true,
+            MachineStation when role is "Processor" or "Baker" or "Cook"=>true,
+            TableStation when role=="Waiter"=>true,
+            StorageStation or ShelfStation or MachineStation or ProductionStation or CheckoutStation when role=="Transporter"=>true,
+            _=>false
+        };
     }
 }
