@@ -7,7 +7,9 @@ Chat Codex tiếp theo phải đọc file này trước khi làm việc. Tiếp 
 - Công đoạn 01 — AUDIT VÀ BASELINE: HOÀN THÀNH. Prototype mâu thuẫn trong phạm vi audit đã được chặn/sửa; baseline Editor và Windows Player đều đạt.
 - Công đoạn 02 — DATA, OWNERSHIP VÀ TRANSACTION CORE: HOÀN THÀNH. Core là writer authoritative cho item/location, order, payment, purchase, crew, producer, table và machine; save v2 ghi state/receipt/dedup/outbox cùng một file.
 - Công đoạn 03 — PLAYER INTERACTION: HOÀN THÀNH. Điều khiển WASD/gamepad theo camera, camera 55°, vùng thao tác và stack một loại 6/10/16/24 được kiểm tra trong Editor và Windows Player.
-- Cập nhật bàn giao: 2026-10-04, múi giờ Asia/Bangkok.
+- Công đoạn 04 — FARM STARTER VERTICAL SLICE: HOÀN THÀNH VỀ IMPLEMENTATION. Farm cà rốt 0 vốn, FIFO order, giao từng phần, payment tại counter và player collect đã được tích hợp; giới hạn kiểm chứng Player xem mục cuối.
+- Công đoạn 05 — PURCHASE & PROGRESSION: HOÀN THÀNH VỀ IMPLEMENTATION. Purchase góp dở, state hiển thị và progression gates/upgrade axes riêng đã được tích hợp; chưa nghiệm thu trọn chuỗi unlock bằng một phiên Player.
+- Cập nhật bàn giao: 2026-10-05, múi giờ Asia/Bangkok.
 
 ## Môi trường và Git
 
@@ -18,6 +20,7 @@ Chat Codex tiếp theo phải đọc file này trước khi làm việc. Tiếp 
 - Follow-up CLI đã commit và push: 3a4a6d6 — fix: preserve default Windows build report path.
 - Mốc runtime trước đó: 47e1e9f — feat: add durable ownership and transaction core.
 - Mốc Công đoạn 02 đã push: fdbe67f — feat: extend authoritative transaction state.
+- Công đoạn 04/05 đã commit và push: e909605 — feat: add farm starter and progression systems.
 - Chỉnh sửa interaction có trước nhiệm vụ trong Art, FollowCamera, GameHud, GameSession, PlayerController, Station và PlayerInteraction đã được rà soát, tích hợp vào Công đoạn 03, theo xác nhận của người dùng trước khi commit. QualitySettings.asset và ProjectSettings/ProjectSettings.asset không nằm trong commit nhiệm vụ.
 
 ## Phần đã thực hiện
@@ -87,7 +90,7 @@ Chat Codex tiếp theo phải đọc file này trước khi làm việc. Tiếp 
 
 ## Trạng thái bàn giao
 
-Công đoạn 01 hoàn tất; code commit 3582a92 và CLI follow-up 3a4a6d6 đã push lên main. Handoff này được commit/push riêng. Công đoạn 02 có core code riêng tại 47e1e9f nhưng chưa tích hợp vào runtime gameplay và chưa nghiệm thu. Các thay đổi working tree có sẵn từ trước nhiệm vụ được giữ ngoài commit; kiểm tra git status trước khi tiếp tục.
+Cập nhật này là ghi chép lịch sử tại mốc bàn giao Công đoạn 01; thông tin Công đoạn 02/03 bên dưới đã thay thế nhận định cũ rằng transaction core chưa tích hợp runtime. Trạng thái hiện hành sau Công đoạn 04/05 được ghi tại các mục cuối tài liệu.
 
 ## Công đoạn 02 — DATA, OWNERSHIP VÀ TRANSACTION CORE — HOÀN THÀNH
 
@@ -131,8 +134,8 @@ Công đoạn 01 hoàn tất; code commit 3582a92 và CLI follow-up 3a4a6d6 đã
 
 - Core Công đoạn 02 đã commit/push: `fdbe67f` — `feat: extend authoritative transaction state`.
 - Runtime/interaction Công đoạn 02/03 đã commit/push: `3d6ba3a` — `feat: integrate runtime transactions and player interactions`.
-- Handoff này được cập nhật sau kiểm tra Player/render và sẽ được commit/push riêng.
-- Công đoạn 01/02/03 không còn bước bàn giao mở. Nội dung gameplay phía sau kế hoạch chưa được triển khai hoặc nghiệm thu.
+- Handoff tại mốc này được cập nhật sau kiểm tra Player/render; bản audit 01–03 sau đó đã được push thành `b017f62`.
+- Tại thời điểm handoff Công đoạn 02/03 (2026-10-04), ba công đoạn đầu đã hoàn tất; các công đoạn sau chưa triển khai. Trạng thái này được cập nhật tại mục Công đoạn 04/05 bên dưới.
 - `ProjectSettings/QualitySettings.asset` là thay đổi có sẵn trước lượt này và vẫn được giữ ngoài commit. `ProjectSettings/ProjectSettings.asset` bị Unity BuildPipeline tự thêm Input Actions vào `preloadedAssets`; thay đổi build-generated này được hoàn nguyên, không đưa vào commit.
 - Báo cáo EditMode/build/QA và ảnh được giữ trong `work/stage02-03/`. File save QA, binary Windows và log tạm cũng còn ở đó vì các lệnh PowerShell xóa bị Windows command policy từ chối (`Remove-Item: blocked by policy`) dù đã khoanh đường dẫn task; chúng không nằm trong Git. Không còn Unity/Player/process con nào chạy.
 
@@ -143,9 +146,9 @@ Công đoạn 01 hoàn tất; code commit 3582a92 và CLI follow-up 3a4a6d6 đã
 - Công đoạn 01: các tiêu chí baseline có báo cáo pass; không tìm thấy lỗi acceptance còn mở trong phạm vi công đoạn.
 - Công đoạn 02: chưa chạy bài xác minh save/load bằng cách đóng hẳn rồi khởi chạy lại Windows Player. Đã có test load lặp, save atomic/recovery và tương thích save cũ trong cùng tiến trình; đây chưa phải bằng chứng relaunch thực tế.
 - Công đoạn 03: chưa chơi hết luồng worker đã tuyển/mở khóa trong Windows Player và chưa chạy end-to-end toàn bộ vòng đời khách nhà hàng trên Player. Worker relay, bàn và các vùng thao tác có test/integration coverage, nhưng chưa thay thế được hai lượt chơi trọn luồng này.
-- Công đoạn 03: ảnh xác minh chỉ bao phủ một trạng thái; nhãn một số vùng station có vẻ chồng nhau ở góc camera đó, cần kiểm tra/chỉnh thị giác riêng.
+- Công đoạn 03: ảnh stage02/03 chỉ bao phủ một trạng thái và có nhãn vùng station trông gần nhau. Sau đó đã giới hạn nhãn theo vùng đang hoạt động; ảnh Player Công đoạn 04/05 được xem lại, không còn hiện tượng chồng nhãn rõ trong góc chụp đó. Chưa có rà soát hình ảnh toàn scene ở nhiều góc.
 - Xuyên suốt: chưa đo nghiệm thu mục tiêu 165 FPS ở 1080p trong thời gian dài hoặc phiên tiến trình 3–4 giờ.
-- Ngoài phạm vi Công đoạn 01–03: chưa xây nội dung gameplay riêng cho Farm Shop, Processing, Supermarket, Bakery và Restaurant; các trạm/zone hiện có chỉ được giữ hoặc nối vào core và framework chung.
+- Tại mốc rà soát 01–03, chưa có nội dung Farm Starter hay progression. Công đoạn 04/05 sau đó bổ sung tuyến Farm cà rốt và điều kiện unlock; nội dung gameplay riêng của Farm Shop, Processing, Supermarket, Bakery và Restaurant vẫn chưa được xây (đúng giới hạn Công đoạn 05).
 - Dọn artifact QA/build tạm của Công đoạn 02/03 dưới `work/stage02-03/` đã được thử nhiều lần nhưng chưa xong: lệnh `Remove-Item` bị command policy từ chối (`blocked by policy`). Các file còn lại không đưa vào Git; không còn tiến trình Unity/Player của lượt làm việc giữ chúng mở.
 
 ### Lượt thử lỗi lặp đã được khắc phục; kết quả cuối pass
@@ -157,5 +160,60 @@ Công đoạn 01 hoàn tất; code commit 3582a92 và CLI follow-up 3a4a6d6 đã
 
 ### Git của lượt rà soát này
 
-- Trước khi sửa handoff: `main` trùng `origin/main` tại `2218095`; chỉ file này được đưa vào commit audit cuối và commit được push lên `origin/main` sau khi cập nhật mục này.
+- Mốc audit 01–03 trước khi cập nhật khi đó ở `2218095`; tài liệu audit được commit thành `b017f62` và đã nằm trên `origin/main`. Mã Công đoạn 04/05 hiện được commit/push thành `e909605`.
 - `ProjectSettings/QualitySettings.asset` vẫn là thay đổi có sẵn của người dùng (`antiAliasing: 0` → `2`); được giữ nguyên và không đưa vào commit/push.
+
+## Công đoạn 04 — FARM STARTER VERTICAL SLICE — HOÀN THÀNH VỀ IMPLEMENTATION
+
+- Scene khởi đầu có ba ô cà rốt, gieo không mất tiền; chăm sóc/tưới, grow và harvest đi qua transaction core. Tuyến này vẫn hoạt động khi wallet bằng 0.
+- Farm customer tạo order FIFO 1–3 cà rốt, giá 10 xu/củ được snapshot lúc tạo order, patience 90 giây từ lúc vào queue. Giao có thể từng phần; khách hết hạn giữ hàng đã nhận, không trả hàng về kho, chỉ ghi loss với số đã nhận. Đơn chưa nhận hàng không tạo loss.
+- Hàng player đặt vào stock counter có owner riêng; Serve hỗ trợ giao từ carry hoặc từ counter. Đủ order tạo payment chưa thu tại counter; chỉ Collect Zone do player kích hoạt mới tăng wallet.
+- `CommerceDirector.cs`, `PlayerInteraction.cs`, `Station.cs`, `WorldFactory.cs`, `Inventory.cs`, `OrderState.cs` và `RuntimeTransactions.cs` nối vòng farm–carry–counter/direct serve–payment–collect. `QaDriver.cs`, `Tools/run_unity.ps1` và `Tools/run_player.ps1` có `--qa-stage45`.
+
+## Công đoạn 05 — PURCHASE & PROGRESSION — HOÀN THÀNH VỀ IMPLEMENTATION
+
+- Purchase state hiển thị Locked / Available / Contributing / Purchased; góp tiền theo phần khi player đứng trong pad, dừng khi rời vùng hoặc hết tiền, giữ phần đã góp và chỉ grant một lần.
+- Purchase pad được đặt ngoài footprint khu xây dựng. HUD chiếu mục tiêu tiếp theo và blockers kể cả khi pad đang Locked/chưa xuất hiện.
+- `ProgressionTracker.cs` tổng hợp điều kiện trạm, order/job thành công, recipe batch và unlock. `Definitions.cs` chứa gates; `UpgradeAxis` tách riêng Quality/Value, Speed và Capacity, không dùng một level để tăng tất cả.
+- `TransactionCore.cs`, `RuntimeTransactions.cs`, `GameRules.cs` và `GameHud.cs` là các điểm nối transaction, projection, validation và HUD. Đã giữ hệ thống purchase/save và state cũ tương thích qua migration đang có.
+- Mở Farm Shop → Processing → Supermarket → Bakery → Restaurant mới dừng ở điều kiện/progression tracker; không xây nội dung gameplay các khu sau trong công đoạn này.
+
+### GitHub
+
+- Implementation Công đoạn 04/05: `e909605` — `feat: add farm starter and progression systems`; đã push lên `origin/main`.
+- Các mốc handoff/audit trước đó: `b017f62` (rà soát Công đoạn 01–03); `e909605` là code HEAD trước lần cập nhật handoff này.
+- Nội dung handoff này ghi nhận code commit `e909605`; `ProjectSettings/QualitySettings.asset` vẫn là thay đổi người dùng và nằm ngoài commit code (`antiAliasing: 0` → `2`).
+
+### File và bằng chứng Công đoạn 04/05
+
+- File runtime mới/chính: `Assets/_Game/Scripts/Runtime/ProgressionTracker.cs` (+ `.meta`); `Definitions.cs`, `GameRules.cs`, `TransactionCore.cs`, `RuntimeTransactions.cs`, `Inventory.cs`, `OrderState.cs`, `CommerceDirector.cs`, `PlayerInteraction.cs`, `Station.cs`, `WorldFactory.cs`, `GameHud.cs`, `QaDriver.cs`.
+- Test chính: `Assets/_Game/Tests/Editor/BaselineTests.cs`, `CommerceV2Tests.cs`, `CoreTests.cs`, `PlayerInteractionTests.cs`, `RuntimeAuthorityTests.cs`.
+- EditMode: Passed 86/86, Failed 0, Skipped 0 — `work/stage04-05/run-20261005/editmode-acceptance-final.xml`.
+- Editor Stage23 integration: Passed, errors rỗng, revision/receipts/events 136 — `work/stage04-05/editor-stage23-acceptance/stage23-results.json` (Null Device).
+- Editor Stage45: Passed 106 checks, runtime errors 0 — `work/stage04-05/editor-stage45-acceptance/stage45-report.json` (Null Device).
+- Windows BuildPipeline: Succeeded, 115,410,055 bytes, 0 errors, 2 warnings — `work/stage04-05/windows-build-final/build-report.json`.
+- Windows Player Stage45 trên RTX 4060 Laptop GPU / Direct3D11, 1920×1080: Passed 101 checks, runtime errors 0, 180 interactions — `work/stage04-05/player-stage45-20261005T020712223Z/stage45-report.json`; ảnh `farm-starter-sale.png` đã được xem lại.
+- Các report, ảnh, build output và QA save do lượt này tạo còn trong `work/stage04-05/`; không đưa vào Git. Lệnh dọn artifact bị PowerShell command policy từ chối; đã kiểm tra không còn Unity/Player process thuộc lượt chạy này.
+
+## Chưa thực hiện được, chưa nghiệm thu và lượt thử chưa pass
+
+### Chưa thực hiện hoặc chưa có bằng chứng nghiệm thu
+
+- Công đoạn 02: chưa đóng hẳn Windows Player rồi khởi chạy lại để nghiệm thu save/load xuyên process. Save atomic/recovery, load lặp và save cũ mới có bằng chứng test trong process.
+- Công đoạn 03: chưa chơi trọn tuyến worker đã tuyển/mở khóa và chưa nghiệm thu trọn lifecycle Restaurant trong Windows Player; có test/integration coverage nhưng chưa có lượt chơi end-to-end.
+- Công đoạn 04: timeout 90 giây, loss và xử lý đơn hết hạn có test EditMode; Player QA không chờ đủ 90 giây để chứng minh hành vi timeout ngoài runtime test.
+- Công đoạn 04/05: Player QA cuối chứng minh tuyến trồng–thu hoạch–mang–bán–thu tiền và góp purchase từng phần, save/load, rời pad rồi tiếp tục trồng; chưa hoàn tất purchase trong một phiên Player acceptance cuối.
+- Công đoạn 05: chưa chạy end-to-end chuỗi unlock Farm Shop → Processing → Supermarket → Bakery → Restaurant. Nội dung gameplay của các khu này nằm ngoài phạm vi đã giao.
+- Toàn dự án: chưa đo hiệu năng 165 FPS ở 1080p trong thời gian dài hoặc phiên 3–4 giờ.
+
+### Đã thử nhiều lần nhưng vẫn chưa pass/hoàn tất
+
+- Công đoạn 04/05: đã thử lặp lại việc hoàn tất purchase trong Player, nhưng hàng FIFO và các đơn khách hết patience khiến lượt chơi không cho bằng chứng ổn định về hoàn tất purchase; mục tiêu Player acceptance này vẫn chưa pass. Purchase completion/one-shot có EditMode và Stage23 integration coverage, không thay thế được Player end-to-end.
+- Công đoạn 02/03 và 04/05: đã thử nhiều lần xóa file tạm bằng PowerShell, nhưng `Remove-Item` bị command policy chặn (`blocked by policy`). Artifact còn trong `work/stage02-03/` và `work/stage04-05/`, không được track và không còn process sử dụng; không thử lách policy.
+
+### Các lỗi lặp đã sửa và lần cuối đã pass
+
+- Công đoạn 04/05: QA drop ban đầu giả định toàn bộ cà rốt phải nằm ở counter, nhưng player đi ngang vùng Serve và giao hàng cho FIFO customer. Harness được sửa để kiểm tra bảo toàn ownership và cash thay vì giả định tồn kho bất biến; Player acceptance cuối pass.
+- Công đoạn 04/05: pooled customer inventory chưa bind lại từng gây NullReference khi refresh transaction. Projection hiện chỉ cập nhật inventory đang bind; Editor và Windows Player report cuối đều có runtime errors bằng 0.
+- Công đoạn 04/05: expectation cũ yêu cầu tạo loss record cho đơn chưa nhận hàng; test được sửa đúng quy tắc zero delivered = zero loss, order vẫn terminal. EditMode cuối pass 86/86.
+- Công đoạn 02/03: các lỗi compile/test, ảnh QA và BuildPipeline được ghi ở mục rà soát trước đó đã được sửa hoặc chạy lại thành công; không còn failed check trong báo cáo cuối được liệt kê.
