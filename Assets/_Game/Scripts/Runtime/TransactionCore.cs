@@ -434,7 +434,7 @@ namespace Tycoon
             }
             Require(p.phase < 2, "phase", p.phase == 2 ? "Cây đang lớn." : "Cây đã chín; hãy sang vùng Lấy hàng.");
             p.action += (float)c.duration;
-            if (p.action >= 1) { p.action = 0; if (p.phase == 0) p.phase = 1; else { p.phase = 2; p.remaining = 2; } }
+            if (p.action >= 1) { p.action = 0; if (p.phase == 0) p.phase = 1; else { p.phase = 2; p.remaining = ProgressionTracker.FarmGrowDuration(s); } }
             return 1;
         }
         int TickProducer(TransactionState s, TransactionCommand c)
@@ -494,36 +494,21 @@ namespace Tycoon
         {
             foreach (var owner in s.owners)
             {
-                if (owner.kind == OwnerKind.Player) owner.capacity = s.unlocked.Contains("carry24") ? 24 : s.unlocked.Contains("carry16") ? 16 : s.unlocked.Contains("carry10") ? 10 : 6;
+                if (owner.kind == OwnerKind.Player) owner.capacity = ProgressionTracker.AxisCapacity(s, "player", 6);
                 if (owner.kind == OwnerKind.Worker && !string.IsNullOrEmpty(owner.worker?.upgrade))
                 { var crew = s.crews.Find(x => x.id == owner.worker.upgrade); if (crew != null) owner.capacity = crew.carryLevel == 3 ? 16 : crew.carryLevel == 2 ? 10 : 6; }
+                var station = s.stations.Find(x => x.id == owner.id);
+                if (station?.kind == "producer" && station.area == "farm" && station.item is "carrot" or "tomato" or "wheat")
+                    owner.capacity = ProgressionTracker.AxisCapacity(s, "farm", 24);
             }
             foreach (var m in s.stations)
             {
-                string family = m.kind == "producer" ? (m.item is "milk" or "egg" or "beef" ? "animal" : "farm") : m.area == "processing" ? "mill" : m.area == "supermarket" ? "market" : m.area == "bakery" ? "oven" : m.area == "restaurant" ? "kitchen" : "counter";
-                m.level = s.unlocked.Contains(family + "_level3") ? 3 : s.unlocked.Contains(family + "_level2") ? 2 : 1;
+                m.level = ProgressionTracker.StationLevel(s, ProgressionTracker.Family(m));
             }
         }
         static void ValidatePurchaseRequirements(TransactionState s,UpgradeDefinition d)
         {
-            int Tier(string family)=>s.unlocked.Contains(family+"_level3")?3:s.unlocked.Contains(family+"_level2")?2:1;
-            int sales=s.legacyTransactions+s.payments.Count;
-            bool eligible=d.id switch
-            {
-                "farm_shop"=>Tier("farm")==3&&sales>=50,
-                "mill"=>Tier("animal")==3&&sales>=200,
-                "supermarket"=>new[]{"mill","cheesemaker","saucemaker"}.All(id=>s.stations.Any(x=>x.definitionId==id&&x.batches>=50))&&sales>=600,
-                "bakery"=>Tier("market")==3&&sales>=1000,
-                "restaurant"=>Tier("oven")==3&&s.payments.Count(x=>s.stations.Any(m=>m.id==x.counter&&m.area=="bakery"))>=60,
-                "animal_level2"=>s.unlocked.Any(x=>x is "barn" or "milk_line" or "egg_line"),
-                _=>true
-            };
-            Require(eligible,"requirement","Chưa đạt điều kiện mở khóa.");
-            if(d.kind!="worker")return;
-            var crew=GameSession.CrewFor(d);
-            string family=crew.role=="Farmer"?"farm":crew.role=="AnimalWorker"?"animal":crew.area=="supermarket"?"market":crew.area=="processing"?"mill":crew.area=="bakery"?"oven":crew.area=="restaurant"?"kitchen":"counter";
-            int work=s.stations.Where(x=>x.area==crew.area&&(crew.role!="Farmer"||x.kind=="producer"&&x.item is "carrot" or "tomato" or "wheat")&&(crew.role!="AnimalWorker"||x.kind=="producer"&&x.item is "milk" or "egg" or "beef")).Sum(x=>x.workCount);
-            Require(Tier(family)==3&&work>=30&&s.stations.Any(x=>x.kind=="storage"&&x.area==crew.area),"requirement","Cần trạm cấp 3, 30 lượt việc và kho riêng của đội.");
+            Require(ProgressionTracker.MissingRequirements(s, d).Length == 0, "requirement", "Chưa đạt điều kiện mở khóa.");
         }
         int CleanTable(TransactionState s, TransactionCommand c)
         {

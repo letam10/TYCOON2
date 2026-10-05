@@ -83,12 +83,21 @@ namespace Tycoon.Tests
         [Test]public void FarmMachineCounterAndTableExposeOnlyTheirSeparateActions()
         {
             var crop=Add<ProductionStation>("Crop");crop.ItemId="carrot";
-            var machine=Add<MachineStation>("Machine");var counter=Add<CheckoutStation>("Counter");var table=Add<TableStation>("Table");
+            var machine=Add<MachineStation>("Machine");var counter=Add<CheckoutStation>("Counter");counter.ShopId="farm";counter.Inventory=new Inventory(4);
+            var shelf=Add<ShelfStation>("CarrotShelf");shelf.ShopId="farm";shelf.AllowedItems=new[]{"carrot"};game.Shelves.Add(shelf);
+            var table=Add<TableStation>("Table");
             Assert.That(StationPlayerActions.Supports(crop,InteractionKind.Drop),Is.False);
             Assert.That(StationPlayerActions.Supports(machine,InteractionKind.Serve),Is.False);
             Assert.That(StationPlayerActions.Supports(counter,InteractionKind.Pickup),Is.False);
+            Assert.That(StationPlayerActions.Supports(counter,InteractionKind.Drop),Is.True);
             Assert.That(StationPlayerActions.Supports(counter,InteractionKind.Serve),Is.True);
             Assert.That(StationPlayerActions.Supports(counter,InteractionKind.Collect),Is.True);
+            game.Player.Carry.TryAdd("carrot",1);
+            Assert.That(counter.Perform(InteractionKind.Drop,new InteractionContext(game.Player,"carrot"),.1f).Worked,Is.True);
+            Assert.That(counter.Inventory.Count("carrot"),Is.EqualTo(1));
+            game.Player.Carry.TryAdd("milk",1);
+            var rejected=counter.Perform(InteractionKind.Drop,new InteractionContext(game.Player,"milk"),.1f);
+            Assert.That(rejected.Worked,Is.False);Assert.That(game.Player.Carry.Count("milk"),Is.EqualTo(1));
             Assert.That(StationPlayerActions.Supports(table,InteractionKind.Serve),Is.True);
             Assert.That(StationPlayerActions.Supports(table,InteractionKind.Operate),Is.True);
         }

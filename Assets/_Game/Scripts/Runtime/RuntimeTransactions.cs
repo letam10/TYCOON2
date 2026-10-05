@@ -113,8 +113,9 @@ namespace Tycoon
                 if (!TryExecute(start, out _)) return false;
                 m = Station(machine.Id);
             }
+            string family=machine.AreaId switch{"processing"=>"mill","supermarket"=>"market","bakery"=>"oven","restaurant"=>"kitchen",_=>machine.AreaId};
             var advance = Command(TransactionKind.AdvanceMachine, actorId, machine.Id);
-            advance.secondary = m.jobId; advance.duration = delta * (1 + .15f * (machine.Level - 1));
+            advance.secondary = m.jobId; advance.duration = delta * (1 + .15f * (game.Progression.AxisLevel(family,UpgradeAxis.Speed) - 1));
             if (!TryExecute(advance, out _)) return false;
             m = Station(machine.Id);
             if (m.remaining == 0)
@@ -184,7 +185,7 @@ namespace Tycoon
             var o = Order(receipt); if (o == null || o.status != OrderStatus.Open) return false;
             return TryExecute(Command(TransactionKind.FailOrder, "simulation", o.id, effect: "fail:" + o.id), out _);
         }
-        public int Deliver(long receipt, Inventory source, string reservation = null)
+        public int Deliver(long receipt, Inventory source, string reservation = null, EntityId? actingActor = null)
         {
             var o = Order(receipt); if (o == null || o.status != OrderStatus.Open) return 0;
             if (Now >= o.deadline) { Fail(receipt); return 0; }
@@ -195,7 +196,8 @@ namespace Tycoon
                 if (reservation != null)
                 { var r=Reservation(reservation);quantity=r!=null&&r.status==ReservationStatus.Active&&r.item==line.id?Math.Min(line.Remaining,r.quantity):0; }
                 if (quantity == 0) continue;
-                var c = Command(TransactionKind.DeliverOrder, view.owners.Find(x => x.id == OwnerId(source)).actor, o.id);
+                string actor=actingActor.HasValue?Actor(actingActor.Value):view.owners.Find(x=>x.id==OwnerId(source)).actor;
+                var c = Command(TransactionKind.DeliverOrder, actor, o.id);
                 c.source = OwnerId(source); c.item = line.id; c.quantity = quantity; c.reservation = reservation;
                 if (TryExecute(c, out int delivered)) moved += delivered;
             }
@@ -235,7 +237,7 @@ namespace Tycoon
         void Refresh()
         {
             view = core.Snapshot();
-            foreach (var inventory in inventories.Keys) inventory.Project(view);
+            foreach (var inventory in inventories.Keys)if(inventory.Authority==this)inventory.Project(view);
         }
         public void Detach()
         { foreach (var inventory in inventories.Keys) inventory.Unbind(); game.Economy.Unbind(); }
@@ -259,6 +261,7 @@ namespace Tycoon
                 OwnerKind kind = station is StorageStation ? OwnerKind.Storage : station is MachineStation ? OwnerKind.Machine : station is CheckoutStation ? OwnerKind.Counter : OwnerKind.Station;
                 Owner(station.Id, station.Inventory ?? new Inventory(0), kind);
                 if(station is ShelfStation shelf)s.owners[^1].accepts=new(shelf.AllowedItems);
+                if(station is CheckoutStation checkout)s.owners[^1].accepts=new(checkout.AcceptedItems);
                 if(station is MachineStation machine)
                 {
                     s.owners[^1].accepts=new(){machine.Recipe.output};Owner(station.Id + "_input", machine.Input, OwnerKind.Machine);
@@ -322,6 +325,17 @@ namespace Tycoon
             }
             TransactionCore.Validate(s); return s;
         }
+
+        internal static void UpgradeCounterOwners(TransactionState state,GameSession game)
+        {
+            foreach(var counter in game.Checkouts.Where(x=>x.Inventory!=null))
+            {
+                var owner=state.owners.Find(x=>x.id==counter.Id);
+                if(owner==null)throw new InvalidDataException("Owner quầy không còn tồn tại: "+counter.Id);
+                owner.capacity=Math.Max(owner.capacity,counter.Inventory.Capacity);
+                foreach(string item in counter.AcceptedItems)if(!owner.accepts.Contains(item))owner.accepts.Add(item);
+            }
+        }
         internal static SaveData Project(TransactionState state, SaveData data)
         {
             data.transactionState = TransactionCore.Copy(state); data.transactionVersion=1;data.money = state.money; data.revenue = state.revenue;
@@ -334,8 +348,11 @@ namespace Tycoon
             data.receipts = state.legacyPaid.Concat(state.payments.Select(x => long.Parse(x.order.Substring(6)))).Distinct().ToList();
             data.losses = state.legacyLosses.Select(TransactionCore.Copy).ToList();
             foreach (var order in state.orders.Where(x => x.status == OrderStatus.Failed))
-                if (!data.losses.Any(x => x.receipt == long.Parse(order.id.Substring(6)))) data.losses.Add(new LossRecord {
-                    receipt = long.Parse(order.id.Substring(6)), goods = Items(state, order.customer) });
+            {
+                var goods=Items(state,order.customer);
+                if(goods.Sum(x=>x.count)>0&&!data.losses.Any(x => x.receipt == long.Parse(order.id.Substring(6)))) data.losses.Add(new LossRecord {
+                    receipt = long.Parse(order.id.Substring(6)), goods = goods });
+            }
             data.inventories = state.owners.Where(x => x.kind is not (OwnerKind.Worker or OwnerKind.Customer) && (x.id == "player" || data.inventories.Any(i => i.id == x.id)))
                 .Select(x => new InventorySave(x.id, new Inventory(0)) { items = Items(state, x.id) }).ToList();
             data.stationStates = state.stations.Select(x => { var p = TransactionCore.Copy(x.progress); p.id = x.id; p.level = x.level; p.workCount = x.workCount;

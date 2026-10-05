@@ -142,8 +142,8 @@ namespace Tycoon.Tests
             Assert.That(order.Expire(new Inventory(2),game.Economy,2),Is.True);
             Assert.That(game.Economy.IsLost(22),Is.True);
             Assert.That(game.Economy.RecordPayment(22,10),Is.False);
-            Assert.That(game.Economy.Losses.Count,Is.EqualTo(1));
-            Assert.That(game.Economy.Losses[0].goods,Is.Empty);
+            Assert.That(game.Economy.Losses,Is.Empty);
+            Assert.That(game.Economy.LostItems,Is.Zero);
         }
         [Test] public void ReceiptCannotProducePaymentAndLoss()
         {

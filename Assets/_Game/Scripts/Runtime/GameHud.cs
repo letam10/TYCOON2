@@ -10,7 +10,7 @@ namespace Tycoon
     {
         GameSession game;
         Canvas canvas;
-        Text money, progress, carry, prompt, toast;
+        Text money, progress, objective, carry, prompt, toast;
         GameObject menu;
         Button continueButton;
         bool paused;
@@ -30,6 +30,8 @@ namespace Tycoon
             Panel("BillInner",cashIcon.transform,Vector2.zero,Vector2.one,new Vector2(5,5),new Vector2(-5,-5),"#45A722",1);
             var title = Panel("Title", root.transform, new Vector2(0,1), new Vector2(0,1), new Vector2(28,-110), new Vector2(465,-28), "#275D34", .8f);
             progress = Text("Progress", title.transform, "", 22, TextAnchor.MiddleLeft, "#FFFFFF"); Rect(progress.rectTransform, Vector2.zero, Vector2.one, new Vector2(16,8), new Vector2(-8,-8));
+            var objectivePanel=Panel("Objective",root.transform,new Vector2(0,1),new Vector2(0,1),new Vector2(28,-220),new Vector2(685,-112),"#275D34",.82f);
+            objective=Text("ObjectiveText",objectivePanel.transform,"",17,TextAnchor.MiddleLeft,"#FFFFFF");Rect(objective.rectTransform,Vector2.zero,Vector2.one,new Vector2(13,5),new Vector2(-13,-5));
             var bag = Panel("Carry", root.transform, Vector2.zero, Vector2.zero, new Vector2(28,55), new Vector2(340,135), "#275D34", .8f);
             carry = Text("CarryText", bag.transform, "", 22, TextAnchor.MiddleLeft, "#FFFFFF"); Rect(carry.rectTransform, Vector2.zero, Vector2.one, new Vector2(16,6), new Vector2(-8,-6));
             var action = Panel("Action", root.transform, new Vector2(.5f,0), new Vector2(.5f,0), new Vector2(-430,55), new Vector2(430,115), "#275D34", .8f);
@@ -52,6 +54,7 @@ namespace Tycoon
             money.text = game.Economy.Money.ToString("N0");
             string area = game.BusinessStage switch { 5 => "Nhà hàng & tiệm bánh", 4 => "Tiệm bánh", 3 => "Siêu thị", 2 => "Chế biến", _ => "Nông trại & cửa hàng" };
             progress.text = area + "\n" + game.Workers.Count + " nhân viên • " + game.Economy.Transactions + " lượt bán";
+            objective.text=game.ObjectiveText;
             var carried = game.Player.Carry.Snapshot();
             carry.text = (carried.Count == 0 ? "Giỏ trống" : Definitions.Item(carried[0].id).label) + ": " + game.Player.Carry.Total + "/" + game.Player.Carry.Capacity + "\nChọn lấy: " + Definitions.Items[game.SelectedItem].label;
             var station = game.NearestStation(game.Player.transform.position);

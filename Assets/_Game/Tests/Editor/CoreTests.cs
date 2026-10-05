@@ -106,6 +106,34 @@ namespace Tycoon.Tests
         }
 
         [Test]
+        public void ProgressionTrackerCombinesStationLevelsOrdersRecipesAndUnlocks()
+        {
+            var state=new TransactionState{legacyTransactions=49};
+            var farm=new StationRuntimeState{id="field_carrot",kind="producer",item="carrot",area="farm",level=2};
+            state.stations.Add(farm);
+            var farmShop=Definitions.Upgrade("farm_shop");
+            var missing=ProgressionTracker.MissingRequirements(state,farmShop);
+            Assert.That(missing,Has.Some.Contains("farm cấp 3"));Assert.That(missing,Has.Some.Contains("49/50"));
+            farm.level=3;state.legacyTransactions=50;
+            Assert.That(ProgressionTracker.MissingRequirements(state,farmShop),Is.Empty);
+            state.unlocked.Add("farm_shop");state.legacyTransactions=200;
+            state.stations.Add(new StationRuntimeState{id="animal",kind="producer",item="milk",area="farm",level=2});
+            missing=ProgressionTracker.MissingRequirements(state,Definitions.Upgrade("mill"));
+            Assert.That(missing,Has.Some.Contains("animal cấp 3"));Assert.That(System.Array.TrueForAll(missing,x=>!x.Contains("200/200")),Is.True);
+            state.stations[1].level=3;
+            Assert.That(ProgressionTracker.MissingRequirements(state,Definitions.Upgrade("mill")),Is.Empty);
+
+            state.unlocked.Add("dairy");state.legacyTransactions=600;
+            state.stations.Add(new StationRuntimeState{id="mill",kind="machine",definitionId="mill",area="processing",batches=49});
+            state.stations.Add(new StationRuntimeState{id="cheesemaker",kind="machine",definitionId="cheesemaker",area="processing",batches=50});
+            state.stations.Add(new StationRuntimeState{id="saucemaker",kind="machine",definitionId="saucemaker",area="processing",batches=50});
+            missing=ProgressionTracker.MissingRequirements(state,Definitions.Upgrade("supermarket"));
+            Assert.That(missing,Has.Some.Contains("49/50"));
+            state.stations[2].batches=50;
+            Assert.That(ProgressionTracker.MissingRequirements(state,Definitions.Upgrade("supermarket")),Is.Empty);
+        }
+
+        [Test]
         public void PaymentRetainsDeliveredItemsWithCustomerAndNeverPaysTwice()
         {
             var economy = new Economy(); var basket = new Inventory(12);

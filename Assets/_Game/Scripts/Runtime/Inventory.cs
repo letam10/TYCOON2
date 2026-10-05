@@ -171,6 +171,7 @@ namespace Tycoon
         void RequirePrimitive() { if(authority!=null)throw new InvalidOperationException("Economy chỉ được cập nhật qua transaction API."); }
         readonly HashSet<long> receipts = new();
         readonly Dictionary<long, LossRecord> losses = new();
+        readonly HashSet<long> failedOrders = new();
         public List<long> ReceiptIds { get { if(authority==null)return new(receipts);var result=new List<long>(authority.View.legacyPaid);foreach(var p in authority.View.payments){long id=long.Parse(p.order.Substring(6));if(!result.Contains(id))result.Add(id);}return result; } }
         public List<LossRecord> Losses
         {
@@ -181,7 +182,10 @@ namespace Tycoon
                 {
                     foreach(var loss in authority.View.legacyLosses)result.Add(TransactionCore.Copy(loss));
                     foreach(var order in authority.View.orders)if(order.status==OrderStatus.Failed&&!result.Exists(x=>x.receipt==long.Parse(order.id.Substring(6))))
-                        result.Add(new LossRecord{receipt=long.Parse(order.id.Substring(6)),goods=RuntimeTransactions.Items(authority.View,order.customer)});
+                    {
+                        var goods=RuntimeTransactions.Items(authority.View,order.customer);
+                        if(goods.Exists(x=>x.count>0))result.Add(new LossRecord{receipt=long.Parse(order.id.Substring(6)),goods=goods});
+                    }
                     return result;
                 }
                 foreach (var loss in losses.Values)
@@ -201,7 +205,8 @@ namespace Tycoon
         public Economy(int money = 0) { Money = Math.Max(0, money); }
         public bool Has(string id) => string.IsNullOrEmpty(id) || Unlocked.Contains(id);
         public bool IsPaid(long receipt) => authority==null?receipts.Contains(receipt):ReceiptIds.Contains(receipt);
-        public bool IsLost(long receipt) => authority==null?losses.ContainsKey(receipt):Losses.Exists(x=>x.receipt==receipt);
+        public bool IsLost(long receipt) => authority==null?failedOrders.Contains(receipt):
+            authority.View.legacyLosses.Exists(x=>x.receipt==receipt)||authority.View.orders.Exists(x=>x.status==OrderStatus.Failed&&long.Parse(x.id.Substring(6))==receipt);
         public bool TrySpend(int amount)
         {
             RequirePrimitive();
@@ -212,14 +217,16 @@ namespace Tycoon
         public bool RecordPayment(long receiptId, int amount)
         {
             RequirePrimitive();
-            if (receiptId <= 0 || amount <= 0 || receipts.Contains(receiptId) || losses.ContainsKey(receiptId)) return false;
+            if (receiptId <= 0 || amount <= 0 || receipts.Contains(receiptId) || failedOrders.Contains(receiptId)) return false;
             receipts.Add(receiptId); PendingCash += amount; Revenue += amount; Transactions++; return true;
         }
         public bool RecordLoss(long receiptId, Inventory goods)
         {
             RequirePrimitive();
-            if (receiptId <= 0 || goods == null || receipts.Contains(receiptId) || losses.ContainsKey(receiptId)) return false;
-            losses.Add(receiptId, new LossRecord { receipt = receiptId, goods = goods.Snapshot() }); return true;
+            if (receiptId <= 0 || goods == null || receipts.Contains(receiptId) || failedOrders.Contains(receiptId)) return false;
+            failedOrders.Add(receiptId);
+            if(goods.Total>0)losses.Add(receiptId, new LossRecord { receipt = receiptId, goods = goods.Snapshot() });
+            return true;
         }
         public int CollectCash(int amount)
         {
@@ -233,12 +240,12 @@ namespace Tycoon
             RequirePrimitive();
             Money = Math.Max(0, money); Revenue = Math.Max(0, revenue); Transactions = Math.Max(0, transactions);
             PendingCash = Math.Max(0, pendingCash);
-            Unlocked.Clear(); receipts.Clear(); losses.Clear();
+            Unlocked.Clear(); receipts.Clear(); losses.Clear();failedOrders.Clear();
             if (unlocked != null) foreach (string id in unlocked) if (!string.IsNullOrEmpty(id)) Unlocked.Add(id);
             if (paidReceipts != null) foreach (long receipt in paidReceipts) receipts.Add(receipt);
             if (recordedLosses != null) foreach (var loss in recordedLosses)
             {
-                if (loss == null || receipts.Contains(loss.receipt) || losses.ContainsKey(loss.receipt)) continue;
+                if (loss == null || receipts.Contains(loss.receipt) || failedOrders.Contains(loss.receipt)) continue;
                 var goods = new Inventory(int.MaxValue); goods.Restore(loss.goods); RecordLoss(loss.receipt, goods);
             }
         }

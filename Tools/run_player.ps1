@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('Probe','Foundation','Vertical','Progression','Load','Diagnostic','Visual','Stage23')] [string]$Task = 'Foundation',
+    [ValidateSet('Probe','Foundation','Vertical','Progression','Load','Diagnostic','Visual','Stage23','Stage45')] [string]$Task = 'Foundation',
     [string]$LoadFrom = 'Vertical',
     [string]$BuildPath = '',
     [switch]$Visible
@@ -8,8 +8,8 @@ $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
 $exe = if($BuildPath){[System.IO.Path]::GetFullPath($BuildPath)}else{Join-Path $taskRoot 'Builds\Windows\TYCOON2.exe'}
 if (!(Test-Path -LiteralPath $exe)) { throw 'Windows build missing.' }
-$mode = @{ Probe='--qa-gpu-probe'; Foundation='--qa-m0'; Vertical='--qa-vertical'; Progression='--qa-progression'; Load='--qa-load'; Diagnostic='--qa-resume'; Visual='--qa-art'; Stage23='--qa-stage23' }[$Task]
-$outputRoot = if($Task -eq 'Stage23'){Join-Path (Join-Path $taskRoot 'work\stage02-03') ('player-stage23-' + [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'))}else{Join-Path $taskRoot ('QA\Evidence\' + $Task.ToLower())}
+$mode = @{ Probe='--qa-gpu-probe'; Foundation='--qa-m0'; Vertical='--qa-vertical'; Progression='--qa-progression'; Load='--qa-load'; Diagnostic='--qa-resume'; Visual='--qa-art'; Stage23='--qa-stage23'; Stage45='--qa-stage45' }[$Task]
+$outputRoot = if($Task -eq 'Stage23'){Join-Path (Join-Path $taskRoot 'work\stage02-03') ('player-stage23-' + [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'))}elseif($Task -eq 'Stage45'){Join-Path (Join-Path $taskRoot 'work\stage04-05') ('player-stage45-' + [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'))}else{Join-Path $taskRoot ('QA\Evidence\' + $Task.ToLower())}
 New-Item -ItemType Directory -Path $outputRoot -Force | Out-Null
 if ($Task -notin @('Probe','Load')) {
     $qaSavePath = [System.IO.Path]::GetFullPath((Join-Path $outputRoot 'qa-save.json'))

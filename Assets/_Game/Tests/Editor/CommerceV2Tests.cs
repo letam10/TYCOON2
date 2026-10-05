@@ -46,7 +46,7 @@ namespace Tycoon.Tests
         }
 
         [Test]
-        public void GeneratedOrdersHaveOneToThreeUnlockedProductsAndNinetySeconds()
+        public void FarmStarterOrdersOneToThreeCarrotsAtBasePriceWithNinetySeconds()
         {
             var shelf = Component<ShelfStation>("Shelf"); shelf.ShopId = "farm";
             shelf.Inventory = new Inventory(20); shelf.AllowedItems = new[] { "carrot", "tomato", "milk", "beef" };
@@ -60,17 +60,27 @@ namespace Tycoon.Tests
             for (int i = 0; i < 20; i++)
             {
                 customer.Begin("farm", i);
-                Assert.That(customer.Order.Lines.Count, Is.InRange(1, 3));
+                Assert.That(customer.Order.Lines.Count, Is.EqualTo(1));
                 Assert.That(customer.Order.RemainingPatience(Time.time), Is.EqualTo(90).Within(.1f));
-                var seen = new HashSet<string>();
-                foreach (var line in customer.Order.Lines)
-                {
-                    Assert.That(line.id, Is.Not.EqualTo("beef")); Assert.That(seen.Add(line.id), Is.True);
-                    Assert.That(line.requested, Is.EqualTo(1)); Assert.That(line.delivered, Is.Zero);
-                    Assert.That(line.unitPrice, Is.EqualTo(game.ItemPrice(line.id)));
-                }
+                var line=customer.Order.Lines[0];Assert.That(line.id,Is.EqualTo("carrot"));
+                Assert.That(line.requested,Is.InRange(1,3));Assert.That(line.delivered,Is.Zero);
+                Assert.That(line.unitPrice,Is.EqualTo(10));
                 Assert.That(lane.Queue.Count, Is.EqualTo(1));
             }
+        }
+
+        [Test]
+        public void ExpiredUnservedCarrotOrderRecordsNoLossAndKeepsThePriceSnapshot()
+        {
+            var customer=Customer(25,0,0,new OrderLine("carrot",3,10));
+            Assert.That(customer.Order.Expire(customer.Basket,game.Economy,Time.time),Is.True);
+            Assert.That(customer.Order.TimedOut,Is.True);Assert.That(customer.Basket.Total,Is.Zero);
+            Assert.That(game.Economy.IsLost(25),Is.True);Assert.That(game.Economy.LossCount,Is.Zero);Assert.That(game.Economy.LostItems,Is.Zero);
+            game.Economy.Unlock("farm_value2");
+            Assert.That(game.ItemPrice("carrot"),Is.EqualTo(13));
+            Assert.That(customer.Order.Lines[0].unitPrice,Is.EqualTo(10));
+            Assert.That(customer.Order.TotalPrice,Is.EqualTo(30));
+            Assert.That(game.Economy.PendingCash,Is.Zero);Assert.That(game.Economy.Money,Is.Zero);
         }
 
         [Test]

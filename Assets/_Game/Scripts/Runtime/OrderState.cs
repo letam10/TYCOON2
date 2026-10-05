@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Tycoon
 {
@@ -57,9 +58,9 @@ namespace Tycoon
             if (economy.IsPaid(Receipt)) { Paid = true; return false; }
             TimedOut = true; economy.RecordLoss(Receipt, received); return true;
         }
-        public int Deliver(Inventory source, Inventory received, Economy economy, float now)
+        public int Deliver(Inventory source, Inventory received, Economy economy, float now, EntityId? actingActor = null)
         {
-            if(authority!=null)return authority.Deliver(Receipt,source);
+            if(authority!=null)return authority.Deliver(Receipt,source,actingActor:actingActor);
             if (Finished || economy == null || received == null) return 0;
             if (economy.IsPaid(Receipt)) { Paid = true; return 0; }
             if (economy.IsLost(Receipt)) { TimedOut = true; return 0; }

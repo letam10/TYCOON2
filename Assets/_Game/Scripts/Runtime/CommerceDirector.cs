@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using UnityEngine;
 using UnityEngine.AI;
@@ -35,7 +36,7 @@ namespace Tycoon
             }
             if (game.Milestone == 0) return;
             if (Time.time < nextSpawn || ActiveCount >= MaximumActive) return;
-            nextSpawn = Time.time + (game.RushActive ? .65f : 2.5f);
+            nextSpawn = Time.time + (game.RushActive ? .65f : game.BusinessStage==1 ? 10f : 2.5f);
             int limit = game.RushActive ? MaximumActive : game.Economy.Has("supermarket") ? 24 : 15;
             if (ActiveCount >= limit) return;
             string[] shops = game.Economy.Has("bakery") ? new[] { "farm", "market", "bakery" } : game.Economy.Has("supermarket") ? new[] { "farm", "market" } : new[] { "farm" };
@@ -137,11 +138,19 @@ namespace Tycoon
                 }
             }
             var lines = new List<OrderLine>();
-            int count = Mathf.Min(available.Count, Random.Range(1, 4));
-            for (int i = 0; i < count; i++)
+            if (shop == "farm")
             {
-                int chosen = Random.Range(0, available.Count); string id = available[chosen]; available.RemoveAt(chosen);
-                lines.Add(new OrderLine(id, 1, game.ItemPrice(id)));
+                // Tuyến cà rốt luôn hoạt động, kể cả khi người chơi chưa mở khu khác.
+                lines.Add(new OrderLine("carrot", Random.Range(1, 4), game.ItemPrice("carrot")));
+            }
+            else
+            {
+                int count = Mathf.Min(available.Count, Random.Range(1, 4));
+                for (int i = 0; i < count; i++)
+                {
+                    int chosen = Random.Range(0, available.Count); string id = available[chosen]; available.RemoveAt(chosen);
+                    lines.Add(new OrderLine(id, 1, game.ItemPrice(id)));
+                }
             }
             Order = new OrderState(Receipt, lines, Time.time);
             if (!Lane || lines.Count == 0) { Leave(); return; }
@@ -223,6 +232,10 @@ namespace Tycoon
     {
         public string ShopId;
         public StationZone CashZone;
+        public string[] AcceptedItems => GameSession.Instance.Shelves.Where(x=>x.ShopId==ShopId&&x.AllowedItems!=null)
+            .SelectMany(x=>x.AllowedItems).Distinct().ToArray();
+        public bool AcceptsItem(string id)
+        { foreach(var shelf in GameSession.Instance.Shelves)if(shelf.ShopId==ShopId&&System.Array.IndexOf(shelf.AllowedItems??System.Array.Empty<string>(),id)>=0)return true;return false; }
         public readonly List<CustomerAgent> Queue = new();
         int cash,sales;
         public int Cash {get {if(Authority==null)return cash;int total=Authority.View.legacyCash.Find(x=>x.id==Id)?.amount??0;foreach(var p in Authority.View.payments)if(p.counter==Id&&!p.collected)total+=p.amount;return total;} set{if(Authority!=null&&value!=Cash)throw new System.InvalidOperationException("Cash chỉ được cập nhật qua transaction.");cash=value;}}
@@ -230,7 +243,7 @@ namespace Tycoon
         public OrderState FrontOrder => Queue.Count > 0 ? Queue[0].Order : null;
         readonly List<GameObject> bills = new();
         int shownCash = -1;
-        public override string Prompt => "Chờ phục vụ: " + Queue.Count + " • chưa thu: " + Cash + " xu";
+        public override string Prompt => "Khách " + Queue.Count + " • hàng quầy " + (Inventory?.Total??0) + " • chưa thu " + Cash + " xu";
         public Vector3 QueuePoint(CustomerAgent customer)
         {
             int index = Mathf.Max(0, Queue.IndexOf(customer));
@@ -249,16 +262,18 @@ namespace Tycoon
             shownCash = Cash;
         }
 
-        public bool Serve(Inventory source)
+        public bool Serve(Inventory source) => Serve(source, null);
+        public bool Serve(Inventory source, EntityId actor) => Serve(source, (EntityId?)actor);
+        bool Serve(Inventory source, EntityId? actingActor)
         {
-            if (!IsUnlocked || Queue.Count == 0) return false;
+            if (!IsUnlocked || Queue.Count == 0 || source==null) return false;
             var game = GameSession.Instance; var customer = Queue[0]; var order = customer.Order;
             if (order == null) return false;
             order.Expire(customer.Basket, game.Economy, Time.time);
             if (order.Finished) { customer.Leave(); return false; }
             if (Vector3.Distance(customer.transform.position, QueuePoint(customer)) > .9f) return false;
             bool previouslyPaid = game.Economy.IsPaid(customer.Receipt);
-            int moved = order.Deliver(source, customer.Basket, game.Economy, Time.time);
+            int moved = order.Deliver(source, customer.Basket, game.Economy, Time.time, actingActor);
             if (order.Paid && !previouslyPaid)
             {
                 if(Authority==null){Cash += order.TotalPrice; Sales++; WorkCount++;}
@@ -269,7 +284,7 @@ namespace Tycoon
             return moved > 0;
         }
 
-        public override bool Work(Inventory carrier, float delta, EntityId actorId) => Serve(carrier);
+        public override bool Work(Inventory carrier, float delta, EntityId actorId) => Serve(carrier, actorId);
 
         public int CollectCash(PlayerController player)
         {
@@ -281,9 +296,10 @@ namespace Tycoon
         }
 
         public override bool Interact(PlayerController player, bool withdraw) =>
-            !withdraw && IsUnlocked && player && ContainsInteractionPoint(player.transform.position) && Serve(player.Carry);
+            !withdraw && IsUnlocked && player && ContainsInteractionPoint(player.transform.position) && Serve(player.Carry,player.GetEntityId());
 
-        protected override void LateUpdate() { if (StatusLabel) StatusLabel.text = "THU NGÂN\n" + Cash + " xu • " + Queue.Count + " chờ"; }
+        protected override void LateUpdate()
+        {if(StatusLabel){StatusLabel.text="THU NGÂN\n"+Cash+" xu • "+Queue.Count+" chờ";StatusLabel.gameObject.SetActive(!PlayerUsesZones&&IsUnlocked&&GameSession.Instance.Player&&(GameSession.Instance.Player.transform.position-InteractionPoint).sqrMagnitude<36);}}
     }
 }
 

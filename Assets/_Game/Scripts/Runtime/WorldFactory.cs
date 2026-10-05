@@ -66,7 +66,25 @@ namespace Tycoon
                     : new Vector3(-23 + (index % 7) * 3.7f, 0, -8 + (index / 7) * 3);
                 Pad(game, world, upgrade, point);
             }
+            LayoutPurchasePads(game);
             world.gameObject.AddComponent<NavigationWorld>();
+        }
+        static void LayoutPurchasePads(GameSession game)
+        {
+            var pads=game.Stations.FindAll(x=>x is PurchasePad);pads.Sort((a,b)=>string.CompareOrdinal(a.Id,b.Id));
+            var starter=pads.FindAll(x=>x is PurchasePad p&&p.Upgrade.family is "farm" or "player");
+            var outer=pads.FindAll(x=>!starter.Contains(x));
+            for(int i=0;i<starter.Count;i++)
+            {
+                Vector3 point=new(-27f+(i%5)*4.2f,0,-6f-(i/5)*3.5f);
+                starter[i].transform.position=point;starter[i].InteractionPoint=point;
+            }
+            for(int i=0;i<outer.Count;i++)
+            {
+                // Dải purchase đặt ngoài các sàn kinh doanh, trên bãi cỏ có thể đi tới.
+                Vector3 point=new(42.5f+(i%4)*3.3f,0,-12f+(i/4)*5.2f);
+                outer[i].transform.position=point;outer[i].InteractionPoint=point;
+            }
         }
         public static Transform Floor(Transform parent, string label, Vector3 position, Vector2 size)
         {
@@ -169,10 +187,12 @@ namespace Tycoon
         }
         public static CheckoutStation Checkout(GameSession game, Transform parent, string id, Vector3 point, string shop, string requirement = "")
         {
-            var station = Register<CheckoutStation>(game, parent, id, "QUẦY " + shop, point); station.ShopId = shop; station.AreaId = shop == "farm" ? "farm_shop" : shop == "market" ? "supermarket" : shop; station.Requirement = requirement; Art.Model("user_checkout", Vector3.zero, station.transform, 1.25f);
+            var station = Register<CheckoutStation>(game, parent, id, "QUẦY " + shop, point); station.ShopId = shop; station.AreaId = shop == "farm" ? "farm_shop" : shop == "market" ? "supermarket" : shop; station.Requirement = requirement; station.Inventory=new Inventory(36); Art.Model("user_checkout", Vector3.zero, station.transform, 1.25f);
             Art.Box("CheckoutCollision", new Vector3(.3f, .55f, 0), new Vector3(2.1f, 1.1f, .9f), "#05A4E3", station.transform, true).GetComponent<Renderer>().enabled = false;
+            Stack(game,station,new Vector3(-.6f,1.02f,.1f),.62f,2,4,36);
             station.InteractionPoint = point + Vector3.left * 2.7f + Vector3.back * 1.5f;
             Zone(game, parent, station, "serve", station.InteractionPoint);
+            Zone(game,parent,station,"deposit",point+Vector3.back*4.2f);
             Zone(game, parent, station, "cash", point + Vector3.right * 2.7f + Vector3.back * 1.5f);
             game.Checkouts.Add(station); Locked(station); return station;
         }

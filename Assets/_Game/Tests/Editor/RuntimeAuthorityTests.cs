@@ -16,6 +16,7 @@ namespace Tycoon.Tests
         CheckoutStation counter;
         MachineStation machine;
         ProductionStation crop;
+        PurchasePad farmSpeedPad;
         string directory;
         T Add<T>(string id) where T : Component
         { var root = new GameObject(id); root.SetActive(false); root.transform.SetParent(game.transform); return root.AddComponent<T>(); }
@@ -27,11 +28,12 @@ namespace Tycoon.Tests
             game.Player = Add<PlayerController>("Player"); game.Economy = new Economy(1000);
             storage = Add<StorageStation>("Storage"); storage.Id = "storage"; storage.Inventory = new Inventory(20); game.Stations.Add(storage);
             storage.Inventory.TryAdd("carrot", 6);
-            counter = Add<CheckoutStation>("Counter"); counter.Id = "counter"; counter.ShopId = "farm"; game.Stations.Add(counter); game.Checkouts.Add(counter);
+            counter = Add<CheckoutStation>("Counter"); counter.Id = "counter"; counter.ShopId = "farm"; counter.Inventory=new Inventory(36); game.Stations.Add(counter); game.Checkouts.Add(counter);
             machine = Add<MachineStation>("Machine"); machine.Id = "machine"; machine.Recipe = Definitions.Recipe("mill");
             machine.Inventory = new Inventory(3); machine.Input = new Inventory(8); machine.ConfigureInputLimits(); machine.Input.TryAdd("wheat", 8);
             game.Stations.Add(machine); game.Machines.Add(machine);
             crop = Add<ProductionStation>("Crop"); crop.Id = "crop"; crop.ItemId = "carrot"; crop.Inventory = new Inventory(2); game.Stations.Add(crop); game.Producers.Add(crop);
+            farmSpeedPad=Add<PurchasePad>("pad_farm_speed2");farmSpeedPad.Id="pad_farm_speed2";farmSpeedPad.Upgrade=Definitions.Upgrade("farm_speed2");game.Stations.Add(farmSpeedPad);
             directory = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "work", "stage02-03", Guid.NewGuid().ToString("N"));
             game.SavePath = Path.Combine(directory, "save.json");
             game.InitializeTransactions();
@@ -73,6 +75,29 @@ namespace Tycoon.Tests
             Assert.That(game.Economy.Money, Is.EqualTo(1010)); Assert.That(game.Economy.Transactions, Is.EqualTo(1));
             TransactionCore.Validate(game.Transactions.Snapshot());
         }
+        [Test] public void UnservedExpiredOrderRecordsZeroLoss()
+        {
+            Customer(9,3);
+            Assert.That(game.Transactions.Fail(9),Is.True);
+            Assert.That(game.Economy.IsLost(9),Is.True);Assert.That(game.Economy.LostItems,Is.Zero);Assert.That(game.Economy.LossCount,Is.Zero);
+            Assert.That(game.Economy.IsPaid(9),Is.False);Assert.That(counter.Cash,Is.Zero);Assert.That(game.Economy.Money,Is.EqualTo(1000));
+            Assert.That(game.Transactions.Fail(9),Is.False);
+        }
+        [Test] public void FarmCounterStockAndDirectServeKeepSeparateOwnersAndSettleOnce()
+        {
+            var customer=Customer(11,2);
+            Assert.That(Inventory.Transfer(storage.Inventory,game.Player.Carry,"carrot",2),Is.EqualTo(2));
+            Assert.That(Inventory.Transfer(game.Player.Carry,counter.Inventory,"carrot",1),Is.EqualTo(1));
+            Assert.That(storage.Inventory.Count("carrot"),Is.EqualTo(4));
+            Assert.That(counter.Inventory.Count("carrot"),Is.EqualTo(1));Assert.That(game.Player.Carry.Count("carrot"),Is.EqualTo(1));
+            Assert.That(counter.Serve(counter.Inventory,game.Player.GetEntityId()),Is.True);
+            Assert.That(customer.Basket.Count("carrot"),Is.EqualTo(1));Assert.That(customer.Order.Paid,Is.False);Assert.That(counter.Cash,Is.Zero);
+            Assert.That(counter.Serve(game.Player.Carry,game.Player.GetEntityId()),Is.True);
+            Assert.That(customer.Basket.Count("carrot"),Is.EqualTo(2));Assert.That(customer.Order.Paid,Is.True);
+            Assert.That(game.Player.Carry.Total,Is.Zero);Assert.That(counter.Cash,Is.EqualTo(20));Assert.That(game.Economy.Money,Is.EqualTo(1000));
+            Assert.That(game.Transactions.Collect(counter.Id),Is.EqualTo(20));Assert.That(game.Transactions.Collect(counter.Id),Is.Zero);
+            Assert.That(game.Economy.Money,Is.EqualTo(1020));TransactionCore.Validate(game.Transactions.Snapshot());
+        }
         [Test] public void MachineHandsOffOperatorAndRecoversJobReservationAndOutputOnce()
         {
             Assert.That(machine.Operate(.1f, game.Player.GetEntityId()), Is.True); string job = game.Transactions.Snapshot().stations.Find(x => x.id == machine.Id).jobId;
@@ -90,6 +115,29 @@ namespace Tycoon.Tests
             Assert.That(game.Contribute(upgrade, 100), Is.EqualTo(60)); Assert.That(game.Player.Carry.Capacity, Is.EqualTo(10));
             Assert.That(game.Contribute(upgrade, 100), Is.Zero); Assert.That(game.Economy.Money, Is.EqualTo(900));
             game.LoadGame(); Assert.That(game.Player.Carry.Capacity, Is.EqualTo(10)); Assert.That(game.Purchases.Single().complete, Is.True);
+        }
+        [Test] public void FarmQualitySpeedAndCapacityPurchasesChangeOnlyTheirOwnAxis()
+        {
+            Assert.That(game.ItemPrice("carrot"),Is.EqualTo(10));Assert.That(crop.Level,Is.EqualTo(1));
+            var speed=Definitions.Upgrade("farm_speed2");Assert.That(game.Contribute(speed,20),Is.EqualTo(20));
+            Assert.That(game.Progression.Evaluate(speed).State,Is.EqualTo(PurchaseState.Contributing));Assert.That(farmSpeedPad.Prompt,Does.Contain("CONTRIBUTING"));
+            game.SaveGame();game.LoadGame();Assert.That(game.Contribution(speed.id),Is.EqualTo(20));
+            Assert.That(game.Contribute(speed,40),Is.EqualTo(40));Assert.That(game.Progression.AxisLevel("farm",UpgradeAxis.Speed),Is.EqualTo(2));Assert.That(farmSpeedPad.Prompt,Is.EqualTo("PURCHASED"));
+            Assert.That(game.Progression.FarmGrowSeconds,Is.LessThan(2));Assert.That(game.ItemPrice("carrot"),Is.EqualTo(10));
+            Assert.That(game.Player.Carry.Capacity,Is.EqualTo(6));Assert.That(crop.Level,Is.EqualTo(1));Assert.That(crop.Inventory.Capacity,Is.EqualTo(24));
+            Assert.That(game.Contribute(Definitions.Upgrade("farm_value2"),250),Is.EqualTo(250));
+            Assert.That(game.ItemPrice("carrot"),Is.EqualTo(13));Assert.That(game.Progression.AxisLevel("farm",UpgradeAxis.Speed),Is.EqualTo(2));
+            Assert.That(crop.Inventory.Capacity,Is.EqualTo(24));Assert.That(crop.Level,Is.EqualTo(1));
+            Assert.That(game.Contribute(Definitions.Upgrade("farm_capacity2"),150),Is.EqualTo(150));
+            Assert.That(crop.Inventory.Capacity,Is.EqualTo(36));Assert.That(game.ItemPrice("carrot"),Is.EqualTo(13));
+            Assert.That(crop.Level,Is.EqualTo(1));Assert.That(game.Player.Carry.Capacity,Is.EqualTo(6));
+            Assert.That(game.Contribute(Definitions.Upgrade("farm_level2"),100),Is.EqualTo(100));
+            Assert.That(crop.Level,Is.EqualTo(2));Assert.That(game.Progression.StationLevel("farm"),Is.EqualTo(2));
+            Assert.That(game.ItemPrice("carrot"),Is.EqualTo(13));Assert.That(crop.Inventory.Capacity,Is.EqualTo(36));
+            Assert.That(game.Contribute(Definitions.Upgrade("farm_level3"),300),Is.EqualTo(300));
+            Assert.That(crop.Level,Is.EqualTo(3));Assert.That(game.Progression.StationLevel("farm"),Is.EqualTo(3));
+            Assert.That(game.ItemPrice("carrot"),Is.EqualTo(13));Assert.That(game.Progression.AxisLevel("farm",UpgradeAxis.Speed),Is.EqualTo(2));
+            Assert.That(game.Progression.Evaluate(Definitions.Upgrade("farm_shop")).Requirements,Has.Some.Contains("0/50"));
         }
         [TestCase(CommitBoundary.TemporaryFlushed, false)]
         [TestCase(CommitBoundary.Replaced, true)]

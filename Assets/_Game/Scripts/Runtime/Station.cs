@@ -27,7 +27,7 @@ namespace Tycoon
         public virtual StationProgressSave CaptureProgress()=>new(){id=Id,level=Level,workCount=WorkCount};
         public virtual void RestoreProgress(StationProgressSave s){Level=s.level;WorkCount=s.workCount;operatorUntil=0;}
         public bool IsOperatedByOther(EntityId actorId)=>Authority!=null?Authority.OperatedByOther(this,actorId):operatorId!=actorId&&Time.time<operatorUntil;
-        protected virtual void LateUpdate(){if(StatusLabel){StatusLabel.text=Prompt;StatusLabel.gameObject.SetActive(IsUnlocked&&GameSession.Instance.Player&&(GameSession.Instance.Player.transform.position-InteractionPoint).sqrMagnitude<36);}}
+        protected virtual void LateUpdate(){if(StatusLabel){StatusLabel.text=Prompt;StatusLabel.gameObject.SetActive(!PlayerUsesZones&&IsUnlocked&&GameSession.Instance.Player&&(GameSession.Instance.Player.transform.position-InteractionPoint).sqrMagnitude<36);}}
     }
     public sealed class StationZone:Station,IPlayerInteractionArea
     {
@@ -52,6 +52,8 @@ namespace Tycoon
         }
         public void Exit(EntityId actor){nextTransfer=operationDelta=0;if(Target)Target.EndInteraction(actor);}
         public override string Prompt=>!Target?"":Mode=="deposit"?"Đặt hàng • "+Target.Label:Mode=="withdraw"?"Lấy hàng • "+Target.Label:Mode=="serve"?"Giao hàng • "+Target.Label:Mode=="cash"?"Thu "+(Target as CheckoutStation)?.Cash+" xu":Target.Prompt;
+        protected override void LateUpdate()
+        {if(StatusLabel){StatusLabel.text=Prompt;StatusLabel.gameObject.SetActive(Available&&GameSession.Instance.Player&&Contains(GameSession.Instance.Player.transform.position));}}
         public override bool Interact(PlayerController player,bool withdraw)
         {
             if(player==null||!ContainsInteractionPoint(player.transform.position))return false;
@@ -112,7 +114,7 @@ namespace Tycoon
                 return InteractionResult.Success;
             }
             Action+=delta;
-            if(Action>=1){Action=0;if(Phase==0)Phase=1;else{Phase=2;Remaining=2;}}
+            if(Action>=1){Action=0;if(Phase==0)Phase=1;else{Phase=2;Remaining=GameSession.Instance.Progression.FarmGrowSeconds;}}
             return InteractionResult.Success;
         }
         public InteractionResult PickupPlayer(Inventory carry,float delta,EntityId actor)
@@ -179,7 +181,7 @@ namespace Tycoon
             if(Action<1)return true;
             Action=0;
             if(Phase==0)Phase=1;
-            else if(Phase==1){Phase=2;Remaining=2;}
+            else if(Phase==1){Phase=2;Remaining=GameSession.Instance.Progression.FarmGrowSeconds;}
             else if(carrier.TryAdd(ItemId,1)){Phase=0;Produced++;WorkCount++;}
             return true;
         }
@@ -213,10 +215,11 @@ namespace Tycoon
     }
     public sealed class PurchasePad:Station,IPlayerInteractionArea
     {
-        public UpgradeDefinition Upgrade;float held;
+        public UpgradeDefinition Upgrade;float held;PurchaseState previousState;bool hasVisualState;
         public InteractionKind Kind=>InteractionKind.Purchase;
         public Vector3 Center=>InteractionPoint;
-        public bool Available=>this&&isActiveAndEnabled&&GameSession.Instance!=null&&GameSession.Instance.CanPurchase(Upgrade,out _);
+        public PurchaseEvaluation Evaluation=>GameSession.Instance.Progression.Evaluate(Upgrade);
+        public bool Available=>this&&isActiveAndEnabled&&GameSession.Instance!=null&&Evaluation.CanContribute;
         public bool Contains(Vector3 point)=>ContainsInteractionPoint(point);
         public InteractionResult Perform(InteractionContext context,float delta)=>context.Player&&!Contains(context.Player.transform.position)?InteractionResult.Reject("Hãy đứng trong vùng mua."):Perform(Kind,context,delta);
         public void Exit(EntityId actor)=>EndInteraction(actor);
@@ -229,15 +232,23 @@ namespace Tycoon
             held-=amount;return game.Contribute(Upgrade,amount)>0;
         }
         public void StopContributing()=>held=0;
-        public override string Prompt=>Upgrade.label+" • "+GameSession.Instance.Contribution(Upgrade.id)+"/"+Upgrade.cost+" xu";
+        public override string Prompt=>StatusText(Evaluation);
         public override bool Interact(PlayerController player,bool withdraw)=>!withdraw&&player&&ContainsInteractionPoint(player.transform.position)&&HoldToBuy(Time.deltaTime);
         protected override void LateUpdate()
         {
-            var g=GameSession.Instance;bool available=g.CanPurchase(Upgrade,out _);
-            foreach(var renderer in GetComponentsInChildren<Renderer>())renderer.enabled=available;
+            var g=GameSession.Instance;var evaluation=Evaluation;bool visible=evaluation.State!=PurchaseState.Locked;
+            if(!hasVisualState||previousState!=evaluation.State)
+            {foreach(var renderer in GetComponentsInChildren<Renderer>())renderer.enabled=visible;previousState=evaluation.State;hasVisualState=true;}
             if((g.Player.transform.position-InteractionPoint).sqrMagnitude>3)held=0;
-            if(StatusLabel){StatusLabel.text=Prompt;StatusLabel.gameObject.SetActive(available&&(g.Player.transform.position-InteractionPoint).sqrMagnitude<36);}
+            if(StatusLabel){bool nearby=(g.Player.transform.position-InteractionPoint).sqrMagnitude<36;StatusLabel.gameObject.SetActive(visible&&nearby);if(visible&&nearby)StatusLabel.text=StatusText(evaluation);}
         }
+        static string StatusText(PurchaseEvaluation e)=>e.State switch
+        {
+            PurchaseState.Locked=>"LOCKED • "+string.Join(" ",e.Requirements),
+            PurchaseState.Available=>"AVAILABLE • "+e.Contributed+"/"+e.Cost+" xu",
+            PurchaseState.Contributing=>"CONTRIBUTING • "+e.Contributed+"/"+e.Cost+" xu",
+            _=>"PURCHASED"
+        };
     }
 }
 

@@ -49,7 +49,7 @@ namespace Tycoon
             if(delta<=0||float.IsNaN(delta)||float.IsInfinity(delta)){Stop();return InteractionResult.Waiting;}
             IPlayerInteractionArea nearest=null;float distance=float.PositiveInfinity;
             foreach(var area in areas)
-                if(area!=null&&area.Available&&area.Contains(position))
+                if(area!=null&&area.Contains(position)&&area.Available)
                 {
                     var offset=position-area.Center;offset.y=0;
                     if(offset.sqrMagnitude<distance){distance=offset.sqrMagnitude;nearest=area;}
@@ -72,7 +72,7 @@ namespace Tycoon
             ProductionStation p=>kind is InteractionKind.Pickup or InteractionKind.Operate||p.Animal&&kind==InteractionKind.Drop,
             MachineStation=>kind is InteractionKind.Pickup or InteractionKind.Drop or InteractionKind.Operate,
             StorageStation or ShelfStation=>kind is InteractionKind.Pickup or InteractionKind.Drop,
-            CheckoutStation=>kind is InteractionKind.Serve or InteractionKind.Collect,
+            CheckoutStation=>kind is InteractionKind.Drop or InteractionKind.Serve or InteractionKind.Collect,
             TableStation=>kind is InteractionKind.Serve or InteractionKind.Operate,
             PurchasePad=>kind==InteractionKind.Purchase,
             _=>false
@@ -97,17 +97,19 @@ namespace Tycoon
             }
             if(kind==InteractionKind.Serve)
             {
-                if(carry.Total==0)return InteractionResult.Reject("Giỏ đang trống.");
                 if(target is CheckoutStation counter)
                 {
                     var order=counter.FrontOrder;
                     if(order==null)return InteractionResult.Reject("Chưa có khách cần phục vụ.");
-                    bool wanted=false;foreach(var line in order.Lines)wanted|=line.Remaining>0&&carry.Available(line.id)>0;
-                    if(!wanted)return InteractionResult.Reject("Đơn hàng không cần loại đang mang.");
-                    return counter.Serve(carry)?InteractionResult.Success:InteractionResult.Reject("Chờ khách tới đúng vị trí quầy.");
+                    var source=carry.Total>0?carry:counter.Inventory;
+                    if(source==null||source.Total==0)return InteractionResult.Reject("Giỏ và quầy đang không có hàng.");
+                    bool wanted=false;foreach(var line in order.Lines)wanted|=line.Remaining>0&&source.Available(line.id)>0;
+                    if(!wanted)return InteractionResult.Reject(carry.Total>0?"Đơn hàng không cần loại đang mang.":"Quầy chưa có loại hàng khách cần.");
+                    return counter.Serve(source,context.Actor)?InteractionResult.Success:InteractionResult.Reject("Chờ khách tới đúng vị trí quầy.");
                 }
                 if(target is TableStation table)
                 {
+                    if(carry.Total==0)return InteractionResult.Reject("Giỏ đang trống.");
                     if(!table.NeedsMeal)return InteractionResult.Reject("Bàn chưa cần phục vụ.");
                     if(carry.Available("meal")==0)return InteractionResult.Reject("Bàn chỉ nhận món ăn.");
                     return new InteractionResult(table.DeliverMeal(carry));
@@ -155,6 +157,7 @@ namespace Tycoon
                     return animal.FeedPlayer(carry,context.Actor);
                 }
                 if(target is ShelfStation shelf&&!shelf.Accepts(item))return InteractionResult.Reject("Quầy không nhận "+Name(item)+".");
+                if(target is CheckoutStation counter&&!counter.AcceptsItem(item))return InteractionResult.Reject("Quầy không nhận "+Name(item)+".");
                 var destination=target.Inventory;
                 if(target is MachineStation machine)
                 {

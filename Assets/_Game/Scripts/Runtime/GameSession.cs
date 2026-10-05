@@ -216,7 +216,9 @@ namespace Tycoon
         public void InitializeTransactions(TransactionState state=null,bool persist=true)
         {
             foreach(var machine in Machines)machine.ConfigureInputLimits();
-            Transactions = new RuntimeTransactions(this,state??RuntimeTransactions.Migrate(this,CaptureSaveData()),persist);
+            var initial=state??RuntimeTransactions.Migrate(this,CaptureSaveData());
+            RuntimeTransactions.UpgradeCounterOwners(initial,this);
+            Transactions = new RuntimeTransactions(this,initial,persist);
             Transactions.CompletePurchases();
             foreach(var order in Transactions.Snapshot().orders)if(long.TryParse(order.id.Substring(6),out long receipt))Transactions.Settle(receipt);
         }
