@@ -239,7 +239,10 @@ namespace Tycoon
             if (!string.IsNullOrEmpty(c.secondary))
             {
                 var relay = Owner(s, c.secondary); WriteAccess(relay, c.actor);
-                Require(relay.kind == OwnerKind.Worker && relay.actor == c.actor && relay.id != source.id && relay.id != destination.id && Free(s, relay, c.item) >= c.quantity, "capacity", "Giỏ worker không đủ chỗ.");
+                bool workerRelay=relay.kind==OwnerKind.Worker&&relay.actor==c.actor;
+                bool conveyorRelay=relay.kind==OwnerKind.Conveyor&&relay.actor=="simulation"&&c.actor=="simulation";
+                Require((workerRelay||conveyorRelay)&&relay.id!=source.id&&relay.id!=destination.id&&Free(s,relay,c.item)>=c.quantity,
+                    "capacity", "Khoang trung chuyển không đủ chỗ hoặc không thuộc actor.");
             }
             s.reservations.Add(new ReservationState { id = c.target, holder = c.actor, source = c.source, destination = c.destination, item = c.item,
                 relay = c.secondary, quantity = c.quantity, expiresAt = c.expiresAt, allocations = Allocate(s, source.id, c.item, c.quantity) }); return c.quantity;
@@ -609,7 +612,12 @@ namespace Tycoon
             {
                 Require(!string.IsNullOrWhiteSpace(r.holder) && r.quantity > 0 && Definitions.Item(r.item) != null && double.IsFinite(r.expiresAt) && Enum.IsDefined(typeof(ReservationStatus), r.status), "reservation", "Reservation không hợp lệ.");
                 Owner(s, r.destination);
-                if (!string.IsNullOrEmpty(r.relay)) Require(Owner(s, r.relay).kind == OwnerKind.Worker && r.relay != r.destination && r.relay != r.source, "reservation", "Relay không hợp lệ.");
+                if (!string.IsNullOrEmpty(r.relay))
+                {
+                    var relay=Owner(s,r.relay);
+                    Require((relay.kind==OwnerKind.Worker&&relay.actor==r.holder||relay.kind==OwnerKind.Conveyor&&relay.actor=="simulation"&&r.holder=="simulation")&&
+                        r.relay!=r.destination&&r.relay!=r.source,"reservation","Relay không hợp lệ.");
+                }
                 if (r.status != ReservationStatus.Active) continue;
                 if (string.IsNullOrEmpty(r.source)) Require(s.stations.Any(x => x.running && x.reservationId == r.id && x.output == r.destination), "reservation", "Reservation capacity không thuộc job.");
                 else
@@ -642,7 +650,7 @@ namespace Tycoon
                 Require(m.level >= 1 && m.batches >= 0 && m.workCount >= 0 && m.playerWorkCount>=0 && double.IsFinite(m.remaining) && m.remaining >= 0 && m.progress != null, "station", "Station sai: " + m.id);
                 if (m.kind != "machine")
                 {
-                    Require(m.kind is "producer" or "storage" or "shelf" or "counter" or "table" or "purchase", "station", "Station kind sai: " + m.id);
+                    Require(m.kind is "producer" or "storage" or "shelf" or "counter" or "table" or "purchase" or "conveyor", "station", "Station kind sai: " + m.id);
                     if (m.kind == "producer") Require(Definitions.Item(m.item) != null && m.progress.phase is >= 0 and <= 3 && m.progress.herd is >= 0 and <= 3 && m.progress.feed is >= 0 and <= 3 && float.IsFinite(m.progress.remaining) && m.progress.remaining >= 0 && float.IsFinite(m.progress.action) && m.progress.action >= 0 && float.IsFinite(m.progress.cycle) && m.progress.cycle >= 0 && float.IsFinite(m.progress.breeding) && m.progress.breeding >= 0, "station", "Producer state sai: " + m.id);
                     continue;
                 }

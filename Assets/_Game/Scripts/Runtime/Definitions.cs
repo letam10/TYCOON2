@@ -127,6 +127,7 @@ namespace Tycoon
             new("farmer", "Thuê nông dân", 150, "", "worker", "Farmer"),
             new("restocker", "Thuê xếp hàng Farm Shop", 200, "", "worker", "Restocker"),
             new("cashier", "Thuê bán hàng Farm Shop", 250, "", "worker", "Cashier"),
+            new("transport_farm_shop", "Thuê vận chuyển Farm Shop", 350, "farm_shop", "worker", "Transporter"),
             new("barn", "Tuyến thịt bò: chuồng, đàn, trạm và quầy", 500),
             new("milk_line", "Tuyến sữa: chuồng, đàn, trạm và quầy", 1000),
             new("egg_line", "Tuyến trứng: chuồng, đàn, trạm và quầy", 1000),

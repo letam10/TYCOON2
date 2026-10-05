@@ -61,6 +61,10 @@ namespace Tycoon
             Machine(game, world, "saucemaker", new Vector3(33, 0, 12), "dairy");
             FinalBusinesses.Build(game, world);
             var processingStorage=Warehouse(game,world,new Vector3(36,0,2),"storage_processing","processing",72);processingStorage.Requirement="mill";Locked(processingStorage);
+            var shopStorage=game.Stations.Find(x=>x.Id=="storage_farm_shop") as StorageStation;
+            Conveyor(game,world,"conveyor_mill","wheat",game.Storage,shopStorage,game.Machines.Find(x=>x.Recipe.id=="mill"),-1);
+            Conveyor(game,world,"conveyor_cheesemaker","milk",shopStorage,game.Storage,game.Machines.Find(x=>x.Recipe.id=="cheesemaker"),0);
+            Conveyor(game,world,"conveyor_saucemaker","tomato",game.Storage,shopStorage,game.Machines.Find(x=>x.Recipe.id=="saucemaker"),1);
             var marketStorage=Warehouse(game,world,new Vector3(18.7f,0,32),"storage_supermarket","supermarket",72);marketStorage.Requirement="supermarket";Locked(marketStorage);
             var bakeryStorage=Warehouse(game,world,new Vector3(-4.7f,0,33),"storage_bakery","bakery",72);bakeryStorage.Requirement="bakery";Locked(bakeryStorage);
             var restaurantStorage=Warehouse(game,world,new Vector3(-30.7f,0,33),"storage_restaurant","restaurant",72);restaurantStorage.Requirement="restaurant";Locked(restaurantStorage);
@@ -231,6 +235,19 @@ namespace Tycoon
             Zone(game, parent, station, "withdraw", station.InteractionPoint + Vector3.right * 1.55f + Vector3.back * .35f);
             Zone(game, parent, station, "deposit", station.InteractionPoint + Vector3.left * 1.55f + Vector3.back * .35f);
             return station;
+        }
+        static void Conveyor(GameSession game,Transform parent,string id,string item,StorageStation primary,StorageStation alternate,MachineStation target,float laneOffset)
+        {
+            Vector3 start=primary.transform.position+new Vector3(1.8f,0,laneOffset);
+            Vector3 end=target.transform.position+Vector3.left*2.1f+Vector3.forward*laneOffset;
+            var route=Register<ConveyorStation>(game,parent,id,"BĂNG CHUYỀN • "+Definitions.Item(item).label,(start+end)*.5f,Mathf.Max(4,Definitions.Recipe(target.Recipe.id).inputs[0].count));
+            route.AreaId="processing";route.Requirement="conveyor_processing";route.Target=target;route.ItemId=item;route.Sources=new[]{primary,alternate};
+            var belt=new GameObject("BeltVisuals");belt.transform.SetParent(route.transform,false);belt.SetActive(false);route.VisualRoot=belt;
+            Vector3 direction=end-start;float length=direction.magnitude;
+            belt.transform.position=start;belt.transform.rotation=Quaternion.LookRotation(direction);
+            Art.Box("Belt",new Vector3(0,.12f,length*.5f),new Vector3(.7f,.18f,length),"#46524A",belt.transform);
+            Art.Box("BeltRailLeft",new Vector3(-.4f,.22f,length*.5f),new Vector3(.08f,.16f,length),"#E2C45D",belt.transform);
+            Art.Box("BeltRailRight",new Vector3(.4f,.22f,length*.5f),new Vector3(.08f,.16f,length),"#E2C45D",belt.transform);
         }
         static void Locked(Station station) { if (!string.IsNullOrEmpty(station.Requirement)) station.gameObject.AddComponent<UnlockVisual>().Requirement = station.Requirement; }
         public static PurchasePad Pad(GameSession game, Transform parent, UpgradeDefinition upgrade, Vector3 point)

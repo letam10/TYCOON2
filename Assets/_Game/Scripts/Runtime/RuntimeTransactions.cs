@@ -89,6 +89,36 @@ namespace Tycoon
             if (string.IsNullOrEmpty(reservation)) return false;
             return TryExecute(Command(TransactionKind.Release, Actor(actor), reservation), out _);
         }
+        public bool TickConveyor(ConveyorStation route)
+        {
+            if(!Ready||!route||!route.IsUnlocked||!route.Target||route.Sources==null)return false;
+            var input=route.Target.Recipe.inputs.SingleOrDefault(x=>x.id==route.ItemId);
+            if(input==null)return false;
+            string relay=OwnerId(route.Inventory),destination=OwnerId(route.Target.Input);
+            var active=view.reservations.FirstOrDefault(x=>x.status==ReservationStatus.Active&&x.destination==destination&&x.item==route.ItemId&&(x.relay==relay||x.source==relay));
+            if(active!=null)
+            {
+                string key="belt:"+active.id+":"+(active.source==relay?"deliver":"load");
+                return active.source==relay
+                    ?Transfer(route.Inventory,route.Target.Input,route.ItemId,active.quantity,key,"effect:"+key,active.id)>0
+                    :route.Sources.FirstOrDefault(x=>x&&OwnerId(x.Inventory)==active.source) is StorageStation source&&route.Inventory.FreeFor(route.ItemId)>=active.quantity&&
+                        Transfer(source.Inventory,route.Inventory,route.ItemId,active.quantity,key,"effect:"+key,active.id)>0;
+            }
+            if(route.Inventory.Total>0)return false;
+            foreach(var source in route.Sources)
+            {
+                if(!source||source.AvailableAboveReserve(route.ItemId)<input.count||route.Inventory.FreeFor(route.ItemId)<input.count||route.Target.Input.FreeFor(route.ItemId)<input.count)continue;
+                string sequence=Revision.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                string reservation="reservation:"+route.Id+":"+sequence;
+                var command=Command(TransactionKind.Reserve,"simulation",reservation,"belt-reserve:"+route.Id+":"+sequence,"effect:belt-reserve:"+route.Id+":"+sequence);
+                command.source=OwnerId(source.Inventory);command.destination=destination;command.secondary=relay;command.item=route.ItemId;
+                command.quantity=input.count;command.expiresAt=double.MaxValue;
+                if(!TryExecute(command,out _))return false;
+                string key="belt:"+reservation+":load";
+                return Transfer(source.Inventory,route.Inventory,route.ItemId,input.count,key,"effect:"+key,reservation)>0;
+            }
+            return false;
+        }
         internal ReservationState Reservation(string id) => view.reservations.Find(x => x.id == id);
         public bool StationAction(TransactionKind kind, Station station, EntityId actor, float delta = 0, Inventory carrier = null)
         {
@@ -261,7 +291,7 @@ namespace Tycoon
             Owner("player", game.Player.Carry, OwnerKind.Player, "player");
             foreach (var station in game.Stations.Where(x => x is not StationZone))
             {
-                OwnerKind kind = station is StorageStation ? OwnerKind.Storage : station is MachineStation ? OwnerKind.Machine : station is CheckoutStation ? OwnerKind.Counter : OwnerKind.Station;
+                OwnerKind kind = station is StorageStation ? OwnerKind.Storage : station is MachineStation ? OwnerKind.Machine : station is CheckoutStation ? OwnerKind.Counter : station is ConveyorStation ? OwnerKind.Conveyor : OwnerKind.Station;
                 Owner(station.Id, station.Inventory ?? new Inventory(0), kind, location:station is StorageStation?station.AreaId:null);
                 if(station is ShelfStation shelf)s.owners[^1].accepts=new(shelf.AllowedItems);
                 if(station is CheckoutStation checkout)s.owners[^1].accepts=new(checkout.AcceptedItems);
@@ -273,7 +303,7 @@ namespace Tycoon
                 var progress = station.CaptureProgress();
                 var m = new StationRuntimeState { id = station.Id, area = station.AreaId, requirement = station.Requirement, level = progress.level, workCount = progress.workCount, playerWorkCount=progress.playerWorkCount,
                     input = station is MachineStation ? station.Id + "_input" : station.Id, output = station.Id, progress = progress,
-                    kind = station is MachineStation ? "machine" : station is ProductionStation ? "producer" : station is StorageStation ? "storage" : station is ShelfStation ? "shelf" : station is CheckoutStation ? "counter" : station is TableStation ? "table" : "purchase",
+                    kind = station is MachineStation ? "machine" : station is ProductionStation ? "producer" : station is StorageStation ? "storage" : station is ShelfStation ? "shelf" : station is CheckoutStation ? "counter" : station is TableStation ? "table" : station is ConveyorStation ? "conveyor" : "purchase",
                     definitionId = station is MachineStation machine2 ? machine2.Recipe.id : station is PurchasePad pad ? pad.Upgrade.id : station.Id,
                     item = (station as ProductionStation)?.ItemId, running = progress.running, remaining = station is MachineStation ? progress.remaining : 0, batches = progress.batches };
                 s.stations.Add(m);
@@ -340,7 +370,7 @@ namespace Tycoon
                 {
                     var inventory=station.Inventory??new Inventory(0);
                     var owner=new OwnerState{id=id,actor="simulation",location=station is StorageStation?station.AreaId:id,
-                        kind=station is StorageStation?OwnerKind.Storage:station is MachineStation or CheckoutStation?OwnerKind.Machine:OwnerKind.Station,
+                        kind=station is StorageStation?OwnerKind.Storage:station is MachineStation or CheckoutStation?OwnerKind.Machine:station is ConveyorStation?OwnerKind.Conveyor:OwnerKind.Station,
                         capacity=inventory.Capacity,singleItem=inventory.SingleItem,limits=inventory.Limits,writers=new(){"player"}};
                     if(station is CheckoutStation)owner.kind=OwnerKind.Counter;
                     if(station is ShelfStation shelf)owner.accepts=new(shelf.AllowedItems??Array.Empty<string>());
@@ -363,7 +393,7 @@ namespace Tycoon
                 var runtime=new StationRuntimeState{id=id,area=station.AreaId,requirement=station.Requirement,level=progress.level,
                     workCount=progress.workCount,playerWorkCount=progress.playerWorkCount,input=station is MachineStation?id+"_input":id,output=id,
                     progress=progress,kind=station is MachineStation?"machine":station is ProductionStation?"producer":station is StorageStation?"storage":
-                        station is ShelfStation?"shelf":station is CheckoutStation?"counter":station is TableStation?"table":station is PurchasePad?"purchase":"station",
+                        station is ShelfStation?"shelf":station is CheckoutStation?"counter":station is TableStation?"table":station is ConveyorStation?"conveyor":station is PurchasePad?"purchase":"station",
                     definitionId=station is MachineStation m?m.Recipe.id:station is PurchasePad pad?pad.Upgrade.id:id,
                     item=(station as ProductionStation)?.ItemId,running=progress.running,remaining=station is MachineStation?progress.remaining:0,batches=progress.batches};
                 state.stations.Add(runtime);changed=true;

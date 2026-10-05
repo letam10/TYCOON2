@@ -1,5 +1,6 @@
 param(
-    [ValidateSet('Import','Tests','Build','Scene','Baseline','Stage23','Stage45','Stage67','Stage08','Stage09')] [string]$Task = 'Import'
+    [ValidateSet('Import','Tests','Build','Scene','Baseline','Stage23','Stage45','Stage67','Stage08','Stage09','Stage10')] [string]$Task = 'Import',
+    [string]$BuildPath = ''
 )
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
@@ -13,12 +14,13 @@ if (!(Test-Path -LiteralPath $baselinePath)) {
 }
 $logPath = Join-Path $logDirectory ($Task.ToLower() + '.log')
 $arguments = @('-batchmode','-nographics','-projectPath',('"' + $taskRoot + '"'),'-logFile',('"' + $logPath + '"'))
-if ($Task -in @('Tests','Stage08','Stage09')) {
-    $stage=if($Task -eq 'Stage08'){'stage08'}elseif($Task -eq 'Stage09'){'stage09'}else{$null}
+if ($Task -in @('Tests','Stage08','Stage09','Stage10')) {
+    $stage=if($Task -eq 'Stage08'){'stage08'}elseif($Task -eq 'Stage09'){'stage09'}elseif($Task -eq 'Stage10'){'stage10'}else{$null}
     $results=if($stage){Join-Path $taskRoot ('work\'+$stage+'\editmode-results.xml')}else{Join-Path $taskRoot 'QA\editmode-results.xml'}
     $arguments += @('-runTests','-testPlatform','EditMode','-testResults',('"' + $results + '"'))
     if($Task -eq 'Stage08'){$arguments += @('-testFilter','Tycoon.Tests.SaveV2Tests')}
     if($Task -eq 'Stage09'){$arguments += @('-testFilter','Tycoon.Tests.StageProgressionTests')}
+    if($Task -eq 'Stage10'){$arguments += @('-testFilter','Tycoon.Tests.StageProgressionTests')}
 } else {
     if($Task -notin @('Baseline','Stage23','Stage45','Stage67')) { $arguments += '-quit' }
     if($Task -eq 'Baseline') {
@@ -39,7 +41,17 @@ if ($Task -in @('Tests','Stage08','Stage09')) {
         $qaOutput=Join-Path $qaRoot ('editor-stage67-' + [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'))
         $arguments += @('-executeMethod','Tycoon.Editor.ProjectBuilder.PlayBaseline','--qa','--qa-stage67','--qa-output',('"'+$qaOutput+'"'))
     }
-    if ($Task -eq 'Build') { $arguments += @('-executeMethod','Tycoon.Editor.ProjectBuilder.BuildWindows') }
+    if ($Task -eq 'Build') {
+        $arguments += @('-executeMethod','Tycoon.Editor.ProjectBuilder.BuildWindows')
+        if($BuildPath)
+        {
+            $fullBuildPath=[System.IO.Path]::GetFullPath((Join-Path $taskRoot $BuildPath))
+            $workRoot=[System.IO.Path]::GetFullPath((Join-Path $taskRoot 'work'))+[System.IO.Path]::DirectorySeparatorChar
+            if(!$fullBuildPath.StartsWith($workRoot,[System.StringComparison]::OrdinalIgnoreCase)){throw 'Custom build path must stay under work/.'}
+            New-Item -ItemType Directory -Path (Split-Path -Parent $fullBuildPath) -Force | Out-Null
+            $arguments += @('--build-output',('"'+$fullBuildPath+'"'))
+        }
+    }
     if ($Task -eq 'Scene') { $arguments += @('-executeMethod','Tycoon.Editor.ProjectBuilder.CreateScene') }
 }
 $process = Start-Process -FilePath $unityExe -ArgumentList $arguments -PassThru -WindowStyle Hidden
