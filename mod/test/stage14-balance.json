@@ -1,0 +1,9 @@
+{
+  "randomSeed": 74014,
+  "timeScale": 12,
+  "maximumMinutes": 300,
+  "targetMinimumMinutes": 180,
+  "targetMaximumMinutes": 240,
+  "traceSeconds": 60,
+  "startingWallet": 0
+}

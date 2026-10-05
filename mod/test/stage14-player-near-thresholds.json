@@ -1,0 +1,12 @@
+{
+  "timeScale": 6,
+  "cases": [
+    {"id":"barn","wallet":490,"orders":0,"owned":[]},
+    {"id":"milk_line","wallet":990,"orders":0,"owned":[]},
+    {"id":"farm_shop","wallet":1990,"orders":49,"owned":["farm_level2","farm_level3"]},
+    {"id":"mill","wallet":11990,"orders":199,"owned":["farm_shop","milk_line","animal_level2","animal_level3"]},
+    {"id":"supermarket","wallet":64990,"orders":599,"batches":49,"owned":["farm_shop","milk_line","egg_line","mill","dairy"]},
+    {"id":"bakery","wallet":99990,"orders":600,"batches":50,"owned":["farm_shop","milk_line","egg_line","mill","dairy","supermarket"]},
+    {"id":"restaurant","wallet":79990,"orders":600,"batches":50,"bakeryOrders":59,"owned":["farm_shop","milk_line","egg_line","mill","dairy","supermarket","bakery","oven_level2","oven_level3"]}
+  ]
+}

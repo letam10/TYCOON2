@@ -439,7 +439,7 @@ namespace Tycoon
             var reservation = Reservation(s, m.reservationId); Require(reservation.status == ReservationStatus.Active, "reservation", "Mất chỗ đầu ra.");
             reservation.status = ReservationStatus.Used;
             Require(Free(s, Owner(s, m.output), recipe.output) >= recipe.yield, "capacity", "Đầu ra không còn chỗ.");
-            if(!string.IsNullOrEmpty(m.escrow))s.stacks.RemoveAll(x=>x.owner==m.escrow);
+            if(!string.IsNullOrEmpty(m.escrow)){s.stacks.RemoveAll(x=>x.owner==m.escrow);s.owners.RemoveAll(x=>x.id==m.escrow);m.escrow=null;}
             AddStack(s, "job-output:" + m.id + ":" + m.jobId, m.output, recipe.output, recipe.yield);
             m.running = false; m.machinePhase = MachinePhase.CompletedWaitingPickup; m.batches++; m.workCount++; if(c.actor=="player"){m.playerWorkCount++;m.playerBatches++;} m.remaining = 0; return recipe.yield;
         }
@@ -499,16 +499,16 @@ namespace Tycoon
         {
             var m = Producer(s, c); var p = m.progress; var carrier = Owner(s, c.destination); WriteAccess(carrier, c.actor);
             Require(carrier.actor == c.actor && carrier.kind is OwnerKind.Player or OwnerKind.Worker, "authority", "Chỉ lấy vào giỏ người thao tác.");
-            Require(double.IsFinite(c.duration) && c.duration > 0 && Free(s, carrier, m.item) > 0, "capacity", "Giỏ đầy hoặc đang mang loại khác.");
             bool animal = m.item is "milk" or "egg" or "beef";
+            int count=animal?1:Math.Max(1,m.batchYield+ProgressionTracker.AxisLevel(s,"farm",UpgradeAxis.Capacity)-1);
+            Require(double.IsFinite(c.duration) && c.duration > 0 && Free(s, carrier, m.item) >= count, "capacity", "Giỏ cần đủ chỗ cho cả lượt thu "+count+" "+Definitions.Item(m.item).label+".");
             Require(animal ? p.herd > 0 && p.feed > 0 && p.cycle == 0 : p.phase == 3, "phase", "Chưa đến lúc thu hoạch.");
             p.action += (float)c.duration;
             if (p.action < 1) return 0;
             // Một lần lấy thịt luôn tiêu thụ đúng một con và tạo một đơn vị thịt.
-            int count = 1;
             AddStack(s, "harvest:" + c.effectId, carrier.id, m.item, count);
             p.action = 0; p.produced += count; m.workCount++;if(c.actor=="player")m.playerWorkCount++;
-            if (animal) { if (m.item == "beef") p.herd--; p.feed--; p.cycle = m.item == "beef" ? 45 : 30; } else p.phase = 0;
+            if (animal) { if (m.item == "beef") p.herd--; p.feed--; p.cycle = m.cycleSeconds>0?m.cycleSeconds:m.item == "beef" ? 45 : 30; } else p.phase = 0;
             return count;
         }
         int FeedProducer(TransactionState s, TransactionCommand c)
@@ -596,6 +596,7 @@ namespace Tycoon
                 foreach(var stack in s.stacks.Where(x=>x.owner==owner.id))stack.location=StackLocation(owner,stack.item);
             }
             s.schemaVersion=2;
+            foreach(var station in s.stations)if(station.batchYield==0)station.batchYield=1;
             RefreshMachinePhases(s);
             return s;
         }
@@ -684,7 +685,7 @@ namespace Tycoon
                 if (m.kind != "machine")
                 {
                     Require(m.kind is "producer" or "storage" or "shelf" or "counter" or "table" or "purchase" or "conveyor", "station", "Station kind sai: " + m.id);
-                    if (m.kind == "producer") Require(Definitions.Item(m.item) != null && m.progress.phase is >= 0 and <= 3 && m.progress.herd is >= 0 and <= 3 && m.progress.feed is >= 0 and <= 3 && float.IsFinite(m.progress.remaining) && m.progress.remaining >= 0 && float.IsFinite(m.progress.action) && m.progress.action >= 0 && float.IsFinite(m.progress.cycle) && m.progress.cycle >= 0 && float.IsFinite(m.progress.breeding) && m.progress.breeding >= 0, "station", "Producer state sai: " + m.id);
+                    if (m.kind == "producer") Require(Definitions.Item(m.item) != null && m.batchYield>=1&&float.IsFinite(m.cycleSeconds)&&m.cycleSeconds>=0&&m.progress.phase is >= 0 and <= 3 && m.progress.herd is >= 0 and <= 3 && m.progress.feed is >= 0 and <= 3 && float.IsFinite(m.progress.remaining) && m.progress.remaining >= 0 && float.IsFinite(m.progress.action) && m.progress.action >= 0 && float.IsFinite(m.progress.cycle) && m.progress.cycle >= 0 && float.IsFinite(m.progress.breeding) && m.progress.breeding >= 0, "station", "Producer state sai: " + m.id);
                     continue;
                 }
                 Require(recipe != null && m.definitionVersion == recipe.version, "station", "Recipe version sai: " + m.id);

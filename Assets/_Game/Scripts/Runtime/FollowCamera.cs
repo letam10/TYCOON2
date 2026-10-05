@@ -8,8 +8,8 @@ namespace Tycoon
         public Transform Target;
         public float Pitch = 55;
         public float Yaw = 40;
-        public float Distance = 24;
-        public Vector3 FocusOffset=new(2,.8f,3);
+        public float Distance = 18;
+        public Vector3 FocusOffset=new(.5f,.8f,1.3f);
         public bool Overview;
         public float Damping = .18f;
         Vector3 velocity;

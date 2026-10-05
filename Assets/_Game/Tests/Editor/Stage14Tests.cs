@@ -11,6 +11,20 @@ namespace Tycoon.Tests
         [Serializable] sealed class Boundaries {public Purchase[] purchases;public int activeCustomers,partialRequested,partialDelivered,patienceSeconds;}
         [Serializable] sealed class Purchase {public string id;public int wallet,payment,cost;}
         static IEnumerable<string> PurchaseIds=>new[]{"barn","milk_line","farm_shop","mill","supermarket","bakery","restaurant"};
+        [Serializable] sealed class EconomyFixture{public ItemAmount[] prices;public int carrotHarvest,wheatTomatoHarvest,milkEggCycleSeconds,careMultiplier,walletSeed;}
+        [Test] public void HarvestBatchRefusesInsufficientSpaceWithoutLosingCropAndPricesMatchFixture()
+        {
+            var f=Stage11To13Fixtures.Read<EconomyFixture>("stage14-economy.json");foreach(var price in f.prices)Assert.That(Definitions.Item(price.id).price,Is.EqualTo(price.count));
+            Assert.That(f.walletSeed,Is.Zero);Assert.That(Definitions.Item("carrot").price,Is.EqualTo(10));
+            var state=TransactionCoreTests.Seed();state.stations.Add(new StationRuntimeState{id="plot",kind="producer",item="carrot",input="storage",output="storage",batchYield=f.carrotHarvest,progress=new(){phase=3}});
+            state.stacks.Add(new ItemStackState{id="carried",owner="player",location="location:player",item="carrot",quantity=5});
+            var core=new TransactionCore(state,null,()=>100,true);string before=JsonUtility.ToJson(core.Snapshot());
+            var harvest=Command(core,TransactionKind.HarvestProducer,"harvest","plot");harvest.destination="player";harvest.duration=1;
+            Assert.That(Assert.Throws<TransactionRejectedException>(()=>core.Execute(harvest)).Code,Is.EqualTo("capacity"));Assert.That(JsonUtility.ToJson(core.Snapshot()),Is.EqualTo(before));
+            var place=Command(core,TransactionKind.Place,"place");place.source="player";place.destination="storage";place.item="carrot";place.quantity=5;core.Execute(place);
+            harvest.expectedRevision=core.Revision;Assert.That(core.Execute(harvest).amount,Is.EqualTo(f.carrotHarvest));
+            Assert.That(core.Snapshot().stations.Single(s=>s.id=="plot").progress.phase,Is.Zero);TransactionCore.Validate(core.Snapshot());
+        }
         static TransactionCommand Command(TransactionCore core,TransactionKind kind,string key,string target=null,string actor="player")=>
             new(){kind=kind,key=key,effectId="effect:"+key,actor=actor,target=target,expectedRevision=core.Revision};
         static TransactionState ReadySeed(string id,int wallet)

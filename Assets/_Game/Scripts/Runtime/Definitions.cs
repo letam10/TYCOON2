@@ -106,12 +106,12 @@ namespace Tycoon
             new("wheat", "Lúa mì", 12, "#E9C26A"),
             new("milk", "Sữa", 35, "#E3F2F5"),
             new("egg", "Trứng", 25, "#F6E5BA"),
-            new("flour", "Bột mì", 30, "#EED9AD"),
-            new("cheese", "Phô mai", 80, "#F4CC50"),
-            new("sauce", "Sốt cà chua", 35, "#C84648"),
-            new("bread", "Bánh mì", 90, "#C58C4E"),
-            new("cake", "Bánh kem", 180, "#F4ABC5"),
-            new("meal", "Suất ăn", 200, "#AFC986"),
+            new("flour", "Bột mì", 120, "#EED9AD"),
+            new("cheese", "Phô mai", 240, "#F4CC50"),
+            new("sauce", "Sốt cà chua", 120, "#C84648"),
+            new("bread", "Bánh mì", 300, "#C58C4E"),
+            new("cake", "Bánh kem", 600, "#F4ABC5"),
+            new("meal", "Suất ăn", 600, "#AFC986"),
             new("beef", "Thịt bò", 60, "#F4654E")
         };
         public static RecipeDefinition[] Recipes => (RecipeDefinition[])recipes.Clone();

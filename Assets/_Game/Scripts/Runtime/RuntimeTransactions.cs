@@ -312,7 +312,7 @@ namespace Tycoon
                     input = station is MachineStation ? station.Id + "_input" : station.Id, output = station.Id, progress = progress,
                     kind = station is MachineStation ? "machine" : station is ProductionStation ? "producer" : station is StorageStation ? "storage" : station is ShelfStation ? "shelf" : station is CheckoutStation ? "counter" : station is TableStation ? "table" : station is ConveyorStation ? "conveyor" : "purchase",
                     definitionId = station is MachineStation machine2 ? machine2.Recipe.id : station is PurchasePad pad ? pad.Upgrade.id : station.Id,
-                    item = (station as ProductionStation)?.ItemId, running = progress.running, remaining = station is MachineStation ? progress.remaining : 0, batches = progress.batches,playerBatches=progress.playerBatches };
+                    item = (station as ProductionStation)?.ItemId,batchYield=(station as ProductionStation)?.Yield??1,cycleSeconds=(station as ProductionStation)?.Interval??0, running = progress.running, remaining = station is MachineStation ? progress.remaining : 0, batches = progress.batches,playerBatches=progress.playerBatches };
                 s.stations.Add(m);
                 if (m.running)
                 {
@@ -373,6 +373,12 @@ namespace Tycoon
             foreach(var station in game.Stations.Where(x=>x is not StationZone))
             {
                 string id=station.Id;
+                if(station is ProductionStation producer)
+                {
+                    var existing=state.stations.Find(x=>x.id==id);
+                    if(existing!=null&&(existing.batchYield!=producer.Yield||existing.cycleSeconds!=producer.Interval))
+                    {existing.batchYield=producer.Yield;existing.cycleSeconds=producer.Interval;changed=true;}
+                }
                 if(!state.owners.Any(x=>x.id==id))
                 {
                     var inventory=station.Inventory??new Inventory(0);
@@ -402,7 +408,7 @@ namespace Tycoon
                     progress=progress,kind=station is MachineStation?"machine":station is ProductionStation?"producer":station is StorageStation?"storage":
                         station is ShelfStation?"shelf":station is CheckoutStation?"counter":station is TableStation?"table":station is ConveyorStation?"conveyor":station is PurchasePad?"purchase":"station",
                     definitionId=station is MachineStation m?m.Recipe.id:station is PurchasePad pad?pad.Upgrade.id:id,
-                    item=(station as ProductionStation)?.ItemId,running=progress.running,remaining=station is MachineStation?progress.remaining:0,batches=progress.batches,playerBatches=progress.playerBatches};
+                    item=(station as ProductionStation)?.ItemId,batchYield=(station as ProductionStation)?.Yield??1,cycleSeconds=(station as ProductionStation)?.Interval??0,running=progress.running,remaining=station is MachineStation?progress.remaining:0,batches=progress.batches,playerBatches=progress.playerBatches};
                 state.stations.Add(runtime);changed=true;
             }
             if(!changed)return false;
@@ -413,6 +419,11 @@ namespace Tycoon
 
         internal static void UpgradeCounterOwners(TransactionState state,GameSession game)
         {
+            foreach(var producer in game.Producers)
+            {
+                var runtime=state.stations.Find(s=>s.id==producer.Id);if(runtime==null)continue;
+                runtime.batchYield=producer.Yield;runtime.cycleSeconds=producer.Interval;
+            }
             foreach(var counter in game.Checkouts.Where(x=>x.Inventory!=null))
             {
                 var owner=state.owners.Find(x=>x.id==counter.Id);

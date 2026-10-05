@@ -179,8 +179,22 @@ namespace Tycoon
         public void Interact(bool pickup)
         {
             interactionEnd = Time.time + .42f;
+            if(Animator)Animator.speed=1;
             Play(pickup ? "Pickup" : "Drop");
         }
+        public void Work(string state)
+        {
+            interactionEnd=Time.time+.22f;
+            if(Animator)Animator.speed=1;
+            Play(state);
+        }
+        public static string WorkState(Station target,InteractionKind kind)=>kind switch
+        {
+            InteractionKind.Serve=>target is TableStation?"Serving":"Cashier",
+            InteractionKind.Repair=>"Operate",
+            _=>target switch{ProductionStation p=>p.Animal?"AnimalCare":"Farming",TableStation=>"Cleaning",
+                MachineStation m=>m.AreaId is "bakery" or "restaurant"?"Cooking":"Operate",_=>"Operate"}
+        };
         public void Play(string state)
         {
             if (state == State || !Animator) return;

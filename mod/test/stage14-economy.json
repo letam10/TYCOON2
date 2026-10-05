@@ -1,0 +1,16 @@
+{
+  "prices": [
+    { "id": "carrot", "count": 10 },
+    { "id": "flour", "count": 120 },
+    { "id": "cheese", "count": 240 },
+    { "id": "sauce", "count": 120 },
+    { "id": "bread", "count": 300 },
+    { "id": "cake", "count": 600 },
+    { "id": "meal", "count": 600 }
+  ],
+  "carrotHarvest": 2,
+  "wheatTomatoHarvest": 4,
+  "milkEggCycleSeconds": 12,
+  "careMultiplier": 2,
+  "walletSeed": 0
+}

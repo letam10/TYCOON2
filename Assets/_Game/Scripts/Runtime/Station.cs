@@ -85,6 +85,7 @@ namespace Tycoon
         public string FeedItem=>Animal?"carrot":null;
         void GuardState(){if(Runtime!=null)throw new InvalidOperationException("Producer chỉ được cập nhật qua transaction.");}
         public bool Animal=>ItemId is "milk" or "egg" or "beef";
+        public int HarvestQuantity=>Animal?1:Mathf.Max(1,Yield+(GameSession.Instance?.Progression.AxisLevel("farm",UpgradeAxis.Capacity)??1)-1);
         public override string Prompt=>!IsUnlocked?Label+" • chưa mở":Animal?Label+" • đàn "+Herd+"/"+MaximumHerd+" • thức ăn "+Feed+"/"+MaximumFeed+" • "+(Feed<MaximumFeed?"Cần "+Definitions.Item(FeedItem)?.label:Herd==0?"Đang tái đàn":Cycle.ToString("0")+"s"):Label+" • "+(Phase==0?"Đứng gieo hạt":Phase==1?"Đứng tưới":Phase==2?"Đang lớn "+Remaining.ToString("0.0")+"s":"Đứng thu hoạch")+" • cấp "+Level;
         void Update(){Tick(Time.deltaTime);}
         public void Tick(float delta)
@@ -127,17 +128,18 @@ namespace Tycoon
         public InteractionResult PickupPlayer(Inventory carry,float delta,EntityId actor)
         {
             if(!IsUnlocked||carry==null||delta<=0||float.IsNaN(delta)||float.IsInfinity(delta))return InteractionResult.Waiting;
-            if(carry.FreeFor(ItemId)<1)return StationPlayerActions.CannotCarry(carry,ItemId);
+            int batch=HarvestQuantity;
+            if(carry.FreeFor(ItemId)<batch)return carry.FreeFor(ItemId)==0?StationPlayerActions.CannotCarry(carry,ItemId):InteractionResult.Reject("Cần "+batch+" chỗ trống để thu cả lượt.");
             if(Authority!=null)return Authority.StationAction(TransactionKind.HarvestProducer,this,actor,delta,carry)?InteractionResult.Success:InteractionResult.Reject(Authority.LastReason);
             if(!Animal&&Phase!=3)return InteractionResult.Reject("Chưa đến lúc thu hoạch; hãy gieo và tưới ở vùng Làm việc.");
             if(Animal&&(Feed==0||Herd==0||Cycle>0))return InteractionResult.Reject("Chuồng chưa có sản phẩm để lấy.");
             if(!Lease(actor))return InteractionResult.Reject("Trạm đang có người vận hành.");
             Action+=delta;
             if(Action<1)return InteractionResult.Success;
-            int amount=1;
+            int amount=HarvestQuantity;
             if(!carry.TryAdd(ItemId,amount))return StationPlayerActions.CannotCarry(carry,ItemId);
             Action=0;Produced+=amount;WorkCount++;
-            if(Animal){if(ItemId=="beef")Herd--;Feed--;Cycle=ItemId=="beef"?45:30;}
+            if(Animal){if(ItemId=="beef")Herd--;Feed--;Cycle=Interval;}
             else Phase=0;
             return InteractionResult.Success;
         }
@@ -201,16 +203,16 @@ namespace Tycoon
                 Action+=delta;if(Action<1)return true;
                 int amount=1;
                 if(!carrier.TryAdd(ItemId,amount))return false;
-                if(ItemId=="beef")Herd--;Feed--;Produced+=amount;WorkCount++;Action=0;Cycle=ItemId=="beef"?45:30;return true;
+                if(ItemId=="beef")Herd--;Feed--;Produced+=amount;WorkCount++;Action=0;Cycle=Interval;return true;
             }
             if(Phase==2){ReleaseOperator(actorId);return false;}
-            if(Phase==3&&carrier.FreeFor(ItemId)<1)return false;
+            if(Phase==3&&carrier.FreeFor(ItemId)<HarvestQuantity)return false;
             Action+=delta;
             if(Action<1)return true;
             Action=0;
             if(Phase==0)Phase=1;
             else if(Phase==1){Phase=2;Remaining=GameSession.Instance.Progression.FarmGrowSeconds;}
-            else if(carrier.TryAdd(ItemId,1)){Phase=0;Produced++;WorkCount++;}
+            else if(carrier.TryAdd(ItemId,HarvestQuantity)){Phase=0;Produced+=HarvestQuantity;WorkCount++;}
             return true;
         }
         public override bool Interact(PlayerController player,bool withdraw)=>player&&ContainsInteractionPoint(player.transform.position)&&Work(player.Carry,Time.deltaTime,player.GetEntityId());

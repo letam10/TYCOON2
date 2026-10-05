@@ -10,7 +10,20 @@ namespace Tycoon
         public GameObject VisualRoot;
         float nextTransfer;
 
-        public override string Prompt=>"Băng chuyền • "+Definitions.Item(ItemId)?.label+" • đang chuyển "+(Inventory?.Count(ItemId)??0);
+        public string StoppedReason
+        {
+            get
+            {
+                if(!IsUnlocked)return "Chưa mở tuyến";
+                if(!Target||!Target.IsUnlocked)return "Chờ mở máy nhận";
+                if(Target.Broken)return "Máy hỏng • chờ sửa";
+                int amount=System.Array.Find(Target.Recipe.inputs,x=>x.id==ItemId)?.count??1;
+                if(Target.Input.FreeFor(ItemId)<amount)return "Đầu nhận đầy / đã giữ chỗ";
+                if(Sources==null||!System.Array.Exists(Sources,x=>x&&x.AvailableAboveReserve(ItemId)>=amount))return "Thiếu hàng trên mức dự trữ";
+                return "Đang cấp hàng";
+            }
+        }
+        public override string Prompt=>Definitions.Item(ItemId)?.label+" • trên đường "+(Inventory?.Count(ItemId)??0)+" • "+StoppedReason;
         public override bool Interact(PlayerController player,bool withdraw)=>false;
 
         void Update()

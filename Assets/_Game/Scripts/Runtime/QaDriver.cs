@@ -33,9 +33,13 @@ namespace Tycoon
             bool stage45=Array.Exists(arguments,x=>x=="--qa-stage45");bool stage67=Array.Exists(arguments,x=>x=="--qa-stage67");
             bool art = Array.Exists(arguments,x=>x=="--qa-art");
             bool redesign=Array.Exists(arguments,x=>x=="--qa-v2");
+            bool stage14=Array.Exists(arguments,x=>x=="--qa-stage14"),layout14=Array.Exists(arguments,x=>x=="--qa-stage14-layout"),visual14=Array.Exists(arguments,x=>x=="--qa-stage14-visual");
+            bool milestones14=Array.Exists(arguments,x=>x=="--qa-stage14-milestones");
             string mode = redesign ? "redesign" : art ? "visual" : load ? "load" : stage67?"stage67":stage45?"stage45":full ? "progression" : game.Milestone == 0 ? "foundation" : "vertical";
             bool resume = Array.Exists(arguments,x=>x=="--qa-resume");
-            routines.Push(redesign ? Redesign() : art ? VisualInspection() : load ? LoadCheck() : stage67?LivestockAndCrew():stage45?FarmStarterAndPurchase():game.Milestone == 0 ? Foundation() : (full || resume) ? Progression(resume) : Vertical());
+            if(stage14||layout14||visual14)mode=stage14?"stage14-progression":layout14?"stage14-layout":"stage14-visual";
+            if(milestones14)mode="stage14-milestones";
+            routines.Push(milestones14?FinalMilestones():stage14?FinalProgression():layout14?FinalLayout():visual14?FinalVisual():redesign ? Redesign() : art ? VisualInspection() : load ? LoadCheck() : stage67?LivestockAndCrew():stage45?FarmStarterAndPurchase():game.Milestone == 0 ? Foundation() : (full || resume) ? Progression(resume) : Vertical());
             while (routines.Count > 0)
             {
                 object yielded = null; bool running = false;
@@ -186,15 +190,15 @@ namespace Tycoon
                 var route=new List<string>{"from="+game.Player.transform.position+" to="+target+" status="+path.status};
                 foreach(var corner in path.corners)route.Add("corner="+corner);
                 File.WriteAllLines(Path.Combine(game.QaDirectory,"navigation-route.txt"),route);
-                for (int i = 1; i < path.corners.Length; i++) yield return WalkTo(path.corners[i]);
+                for (int i = 1; i < path.corners.Length; i++) yield return WalkTo(path.corners[i],i==path.corners.Length-1);
             }
             else yield return WalkTo(target);
             Keys();InputSystem.QueueStateEvent(gamepad,new GamepadState()); yield return new WaitForSeconds(.2f);
         }
-        IEnumerator WalkTo(Vector3 target)
+        IEnumerator WalkTo(Vector3 target,bool settle=true)
         {
             float end = Time.realtimeSinceStartup + 25;
-            while (Vector2.Distance(new Vector2(target.x, target.z), new Vector2(game.Player.transform.position.x, game.Player.transform.position.z)) > .25f)
+            while (Vector2.Distance(new Vector2(target.x, target.z), new Vector2(game.Player.transform.position.x, game.Player.transform.position.z)) > (settle?.4f:.2f))
             {
                 if (Time.realtimeSinceStartup > end) throw new Exception("Movement timeout: " + target + " from " + game.Player.transform.position);
                 Vector3 direction = target - game.Player.transform.position; direction.y = 0; direction.Normalize();
@@ -202,9 +206,11 @@ namespace Tycoon
                 Vector3 right = Camera.main.transform.right; right.y = 0; right.Normalize();
                 float x = Vector3.Dot(direction, right), y = Vector3.Dot(direction, forward);
                 // Stick liên tục theo góc NavMesh; WASD tám hướng có thể cắt góc tường.
-                Keys();InputSystem.QueueStateEvent(gamepad,new GamepadState{leftStick=new Vector2(x,y)});yield return null;
+                float distance=Vector3.Distance(game.Player.transform.position,target);
+                float approach=Mathf.Clamp01(distance/Mathf.Max(.5f,6.2f*Time.deltaTime*1.4f));
+                Keys();InputSystem.QueueStateEvent(gamepad,new GamepadState{leftStick=new Vector2(x,y)*approach});yield return null;
             }
-            Keys();InputSystem.QueueStateEvent(gamepad,new GamepadState()); yield return new WaitForSeconds(.2f);
+            if(settle){Keys();InputSystem.QueueStateEvent(gamepad,new GamepadState()); yield return new WaitForSeconds(.2f);}
         }
         IEnumerator Vertical()
         {

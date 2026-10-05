@@ -170,7 +170,7 @@ namespace Tycoon
             Station nearest = null; float distance = float.PositiveInfinity;
             foreach (var station in Stations)
             {
-                if (!station || station.PlayerUsesZones || !station.ContainsInteractionPoint(position) || (!station.IsUnlocked && !(station is PurchasePad))) continue;
+                if (!station || station.PlayerUsesZones || station is StationZone zone&&!zone.Available || !station.ContainsInteractionPoint(position) || (!station.IsUnlocked && !(station is PurchasePad))) continue;
                 if (station is PurchasePad pad && !CanPurchase(pad.Upgrade, out _)) continue;
                 float square = (station.InteractionPoint - position).sqrMagnitude;
                 if (square < distance) { distance = square; nearest = station; }

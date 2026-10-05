@@ -111,7 +111,7 @@ namespace Tycoon
 
         public void Initialize()
         {
-            Agent = Navigation.Agent(gameObject); View = GetComponentInChildren<ActorView>(); View.Initialize();
+            Agent = Navigation.Agent(gameObject,true); View = GetComponentInChildren<ActorView>(); View.Initialize();
             orderBubble = new GameObject("OrderBubble").transform; orderBubble.SetParent(transform, false); orderBubble.localPosition = new Vector3(0, 2.4f, 0);
             orderBubble.gameObject.AddComponent<BillboardLabel>();
             var disk = Art.Cylinder("BubbleBackground", new Vector3(0, 0, .03f), new Vector3(.95f, .04f, .95f), "#FFFFFF", orderBubble);
@@ -144,7 +144,7 @@ namespace Tycoon
             {
                 // Khi chưa mở vật nuôi, Farm tiếp tục chỉ bán cà rốt.
                 var livestock=available.FindAll(id=>id is "milk" or "egg" or "beef");
-                string item=livestock.Count==0?"carrot":livestock[Random.Range(0,livestock.Count)];
+                string item=livestock.Count==0||Random.value<.65f?"carrot":livestock[Random.Range(0,livestock.Count)];
                 int quantity=item=="carrot"?Random.Range(1,4):1;
                 lines.Add(new OrderLine(item, quantity, game.ItemPrice(item)));
             }
@@ -164,7 +164,7 @@ namespace Tycoon
             game.Transactions?.BindCustomer(this,Snapshot(),true);
         }
 
-        public static int MaximumOrderItemTypes(string shop)=>shop=="market"?2:3;
+        public static int MaximumOrderItemTypes(string shop)=>shop is "farm" or "farm_shop"?1:2;
 
         public void Restore(CustomerSave saved)
         {
@@ -238,6 +238,8 @@ namespace Tycoon
 
     public sealed class CheckoutStation : Station
     {
+        public override Vector3 WorkPoint=>transform.position+Vector3.forward*1.65f;
+        public override Vector3 WaitingPoint=>transform.position+Vector3.right*4.8f+Vector3.forward*1.9f;
         public string ShopId;
         public StationZone CashZone;
         public string[] AcceptedItems => GameSession.Instance.Shelves.Where(x=>x.ShopId==ShopId&&x.AllowedItems!=null)
@@ -255,7 +257,16 @@ namespace Tycoon
         public Vector3 QueuePoint(CustomerAgent customer)
         {
             int index = Mathf.Max(0, Queue.IndexOf(customer));
-            return transform.position + new Vector3((index / 6) * 1.1f, 0, -1.5f - (index % 6) * 1.1f);
+            return QueuePoint(index);
+        }
+        public Vector3 QueuePoint(int index)
+        {
+            if(ShopId=="market")
+            {
+                float[] columns={-.45f,.7f,-1.6f,1.85f,-2.75f,3};
+                return transform.position+new Vector3(columns[index%columns.Length],0,-2-(index/columns.Length)*1.05f);
+            }
+            return transform.position + new Vector3(index%2==0?-.45f:.7f, 0, -2f-(index/2)*1.2f);
         }
 
         void Update()

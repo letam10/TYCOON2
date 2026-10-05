@@ -73,6 +73,8 @@ namespace Tycoon
         public bool InteractAtCurrentPosition(float delta, bool withdraw = false)
         {
             if (!CanControl || delta <= 0 || !float.IsFinite(delta) || !GameSession.Instance || !GameSession.Instance.CanSimulate) { StopInteraction(); return false; }
+            // Đã dừng trong vùng mới thao tác; đi ngang kho không tự nhặt nhầm loại hàng.
+            if(Move!=null&&Move.ReadValue<Vector2>().sqrMagnitude>.0025f){StopInteraction();return false;}
             var game = GameSession.Instance;
             int carriedBefore = Carry.Total;
             var before = interaction.Current;
@@ -88,6 +90,8 @@ namespace Tycoon
                     View?.Interact(Carry.Total > carriedBefore);
                     game.Feedback?.PlayPickup();
                 }
+                else if(interaction.Current is StationZone zone&&zone.Kind is InteractionKind.Operate or InteractionKind.Serve or InteractionKind.Repair)
+                    View?.Work(ActorView.WorkState(zone.Target,zone.Kind));
             }
             return result.Worked;
         }

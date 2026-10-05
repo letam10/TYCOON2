@@ -9,11 +9,11 @@ namespace Tycoon
         public static void Build(GameSession game)
         {
             var world = new GameObject("World").transform; world.SetParent(game.transform);
-            Art.Box("Grass", new Vector3(8, -.13f, 12), new Vector3(112, .25f, 92), "#94D661", world, true);
+            Art.Box("Grass", new Vector3(8, -.13f, 12), new Vector3(112, .25f, 92), "#ADDF86", world, true);
             Lighting(world);
             for (int i = 0; i < 115; i++)
             {
-                float x = -43 + (i % 23) * 4.9f, z = i < 46 ? 55 + (i / 23) * 5 : -20 - ((i - 46) / 23) * 4.7f;
+                float x = -43 + (i % 23) * 4.9f, z = i < 46 ? 55 + (i / 23) * 5 : -25 - ((i - 46) / 23) * 4.7f;
                 var tree = Art.Model("tree", new Vector3(x + (i % 3) * .6f, 0, z), world, 1 + (i % 4) * .13f, i * 47);
                 foreach (var renderer in tree.GetComponentsInChildren<Renderer>())
                 {
@@ -23,7 +23,9 @@ namespace Tycoon
                 }
             }
             Art.Box("StarterField", new Vector3(-13, .012f, 8), new Vector3(19, .04f, 12), "#A7D96B", world);
-            Floor(world, "02  FARM SHOP", new Vector3(7, 0, 6), new Vector2(22, 20));
+            Art.Box("StarterSelling",new Vector3(-13,.012f,0),new Vector3(17,.04f,6),"#EDB5A2",world);
+            var shopFloor=Floor(world, "02  CỬA HÀNG NÔNG SẢN", new Vector3(7, 0, 6), new Vector2(22, 20));
+            shopFloor.gameObject.AddComponent<UnlockVisual>().Requirement="farm_shop";
             Crop(game, world, "field_carrot", "carrot", "CÀ RỐT • LUỐNG 1", new Vector3(-19, 0, 8), 3.8f);
             Crop(game, world, "field_carrot_2", "carrot", "CÀ RỐT • LUỐNG 2", new Vector3(-13, 0, 8), 3.8f);
             Crop(game, world, "field_carrot_3", "carrot", "CÀ RỐT • LUỐNG 3", new Vector3(-7, 0, 8), 3.8f);
@@ -40,22 +42,23 @@ namespace Tycoon
                         zone.gameObject.AddComponent<UnlockVisual>().Requirement = locked.Requirement;
                     }
             }
-            var cows=Pen(world, new Vector3(-14, 0, 25), new Vector2(20, 12), "user_cow", 28, 1, "barn", "milk_line");
-            var chickens=Pen(world, new Vector3(-28, 0, 25), new Vector2(8, 12), "user_chicken", 12, .9f, "egg_line");
-            AnimalProducer(game, world, "dairy_milk", "milk", "SỮA", new Vector3(-3.5f, 0, 15), 30, "milk_line");
-            AnimalProducer(game, world, "coop_egg", "egg", "TRỨNG", new Vector3(-3.5f, 0, 10), 30, "egg_line");
-            AnimalProducer(game, world, "ranch_beef", "beef", "THỊT BÒ", new Vector3(-7, 0, 15), 45, "barn");
+            var cows=Pen(world, new Vector3(-33, 0, 18), new Vector2(10, 8), "user_cow", 6, 1, "barn", "milk_line");
+            var chickens=Pen(world, new Vector3(-39, 0, 28), new Vector2(8, 7), "user_chicken", 3, .9f, "egg_line");
+            AnimalProducer(game, world, "dairy_milk", "milk", "SỮA", new Vector3(-26, 0, 18), 12, "milk_line");
+            AnimalProducer(game, world, "coop_egg", "egg", "TRỨNG", new Vector3(-31, 0, 25), 12, "egg_line");
+            AnimalProducer(game, world, "ranch_beef", "beef", "THỊT BÒ", new Vector3(-26, 0, 12), 45, "barn");
             cows.Bind(game.Producers.FindAll(x=>x.ItemId is "milk" or "beef").ToArray());
             chickens.Bind(game.Producers.FindAll(x=>x.ItemId=="egg").ToArray());
-            game.Storage = Warehouse(game, world, new Vector3(-1, 0, 10), "storage_farm", "farm", 72);
-            Warehouse(game, world, new Vector3(18, 0, 10), "storage_farm_shop", "farm_shop", 72);
-            Shelf(game, world, "shelf_farm_1", "CÀ RỐT", new Vector3(14.8f, 0, 11), new[] { "carrot" }, "farm");
+            game.Storage = Warehouse(game, world, new Vector3(-6, 0, 14), "storage_farm", "farm", 72);
+            var farmShopStorage=Warehouse(game, world, new Vector3(3, 0, 13), "storage_farm_shop", "farm_shop", 72);farmShopStorage.Requirement="farm_shop";Locked(farmShopStorage);
+            Shelf(game, world, "shelf_farm_1", "CÀ RỐT", new Vector3(-4, 0, 0), new[] { "carrot" }, "farm");
             // Quầy này nằm trong tuyến cơ bản, không phụ thuộc gói mở Farm Shop.
-            Shelf(game, world, "shelf_livestock", "SẢN PHẨM CHĂN NUÔI", new Vector3(14.8f,0,1), new[] { "milk", "egg", "beef" }, "farm");
-            Shelf(game, world, "shelf_farm_2", "NÔNG SẢN", new Vector3(14.8f, 0, 6), new[] { "tomato", "wheat", "milk", "egg", "beef", "flour", "cheese", "sauce" }, "farm_shop", "farm_shop");
-            Checkout(game, world, "checkout_farm", new Vector3(10, 0, -3), "farm");
-            Checkout(game, world, "checkout_farm_shop", new Vector3(4,0,3), "farm_shop", "farm_shop");
-            Floor(world, "03  PROCESSING", new Vector3(28, 0, 7), new Vector2(18, 18));
+            Shelf(game, world, "shelf_livestock", "SẢN PHẨM CHĂN NUÔI", new Vector3(-1,0,8), new[] { "milk", "egg", "beef" }, "farm");
+            Shelf(game, world, "shelf_farm_2", "NÔNG SẢN", new Vector3(14.8f, 0, 6), new[] { "carrot", "tomato", "wheat", "milk", "egg", "beef", "flour", "cheese", "sauce" }, "farm_shop", "farm_shop");
+            Checkout(game, world, "checkout_farm", new Vector3(-13, 0, 0), "farm");
+            Checkout(game, world, "checkout_farm_shop", new Vector3(7,0,0), "farm_shop", "farm_shop");
+            var processFloor=Floor(world, "03  CHẾ BIẾN", new Vector3(28, 0, 7), new Vector2(18, 18));
+            processFloor.gameObject.AddComponent<UnlockVisual>().Requirement="mill";
             Machine(game, world, "mill", new Vector3(23, 0, 12), "mill");
             Machine(game, world, "cheesemaker", new Vector3(28, 0, 12), "dairy");
             Machine(game, world, "saucemaker", new Vector3(33, 0, 12), "dairy");
@@ -66,12 +69,15 @@ namespace Tycoon
             Conveyor(game,world,"conveyor_cheesemaker","milk",shopStorage,game.Storage,game.Machines.Find(x=>x.Recipe.id=="cheesemaker"),0);
             Conveyor(game,world,"conveyor_saucemaker","tomato",game.Storage,shopStorage,game.Machines.Find(x=>x.Recipe.id=="saucemaker"),1);
             var marketStorage=Warehouse(game,world,new Vector3(18.7f,0,32),"storage_supermarket","supermarket",72);marketStorage.Requirement="supermarket";Locked(marketStorage);
-            var bakeryStorage=Warehouse(game,world,new Vector3(-4.7f,0,33),"storage_bakery","bakery",72);bakeryStorage.Requirement="bakery";Locked(bakeryStorage);
-            var restaurantStorage=Warehouse(game,world,new Vector3(-30.7f,0,33),"storage_restaurant","restaurant",72);restaurantStorage.Requirement="restaurant";Locked(restaurantStorage);
+            var bakeryStorage=Warehouse(game,world,new Vector3(-4,0,44),"storage_bakery","bakery",72);bakeryStorage.Requirement="bakery";Locked(bakeryStorage);
+            var restaurantStorage=Warehouse(game,world,new Vector3(-30.7f,0,44),"storage_restaurant","restaurant",72);restaurantStorage.Requirement="restaurant";Locked(restaurantStorage);
+            var bakeryBelt=Conveyor(game,world,"conveyor_oven","flour",processingStorage,processingStorage,game.Machines.Find(m=>m.Recipe.id=="oven"),0);
+            bakeryBelt.Requirement="conveyor_bakery";bakeryBelt.AreaId="bakery";
             int farmPad = 0, processPad = 0;
             foreach (var upgrade in Definitions.Upgrades)
             {
-                if (System.Array.IndexOf(new[] { "supermarket", "restocker_market", "cashier_market", "bakery", "cook_bakery", "restaurant", "cook", "waiter", "transport_bakery", "cashier_bakery", "transport_restaurant" }, upgrade.id) >= 0) continue;
+                if(upgrade.kind=="legacy")continue;
+                if (System.Array.IndexOf(new[] { "supermarket", "restocker_market", "cashier_market", "bakery", "cook_bakery", "restaurant", "cook", "waiter" }, upgrade.id) >= 0) continue;
                 bool processing = upgrade.id is "mill" or "processor" or "dairy" or "machine_upgrade" or "transport_processing" or "conveyor_processing";
                 int index = processing ? processPad++ : farmPad++;
                 Vector3 point = processing
@@ -89,13 +95,27 @@ namespace Tycoon
             var outer=pads.FindAll(x=>!starter.Contains(x));
             for(int i=0;i<starter.Count;i++)
             {
-                Vector3 point=new(-27f+(i%5)*4.2f,0,-6f-(i/5)*3.5f);
+                Vector3 point=new(-26f+(i%3)*3.7f,0,-5f-(i/3)*3.7f);
                 starter[i].transform.position=point;starter[i].InteractionPoint=point;
             }
+            var indices=new Dictionary<string,int>();
             for(int i=0;i<outer.Count;i++)
             {
-                // Dải purchase đặt ngoài các sàn kinh doanh, trên bãi cỏ có thể đi tới.
-                Vector3 point=new(42.5f+(i%4)*3.3f,0,-12f+(i/4)*5.2f);
+                var upgrade=((PurchasePad)outer[i]).Upgrade;
+                string area=upgrade.id is "barn" or "milk_line" or "egg_line" or "animal_worker" or "farmer"||upgrade.family=="animal"?"farm":
+                    upgrade.id.Contains("market")||upgrade.family=="market"?"market":upgrade.id.Contains("bakery")||upgrade.family=="oven"?"bakery":
+                    upgrade.id is "restaurant" or "cook" or "waiter" or "transport_restaurant"||upgrade.family=="kitchen"?"restaurant":
+                    upgrade.id is "mill" or "dairy" or "processor" or "transport_processing" or "conveyor_processing"||upgrade.family=="mill"?"processing":"farm_shop";
+                int index=indices.TryGetValue(area,out var previous)?previous:0;indices[area]=index+1;
+                // Pad đặt cạnh khu, ngoài footprint và không cắt hàng chờ phía trước quầy.
+                Vector3 point=area switch{"farm"=>new(-42,0,-3+index*3.5f),"processing"=>new(40+(index%2)*3.5f,0,-5+(index/2)*3.5f),
+                    "market"=>new(42,0,23+index*3.5f),"bakery"=>new(-10+(index%4)*3.5f,0,23-(index/4)*3.5f),
+                    "restaurant"=>new(-34,0,30+index*3.5f),_=>new(13+(index%2)*3.5f,0,-7-(index/2)*3.5f)};
+                if(upgrade.id=="farm_shop")point=new(4,0,-10);
+                if(upgrade.id=="mill")point=new(28,0,-6);
+                if(upgrade.id=="supermarket")point=new(34,0,18);
+                if(upgrade.id=="bakery")point=new(4,0,21);
+                if(upgrade.id=="restaurant")point=new(-23,0,25);
                 outer[i].transform.position=point;outer[i].InteractionPoint=point;
             }
         }
@@ -104,10 +124,14 @@ namespace Tycoon
             var floor = new GameObject(label).transform; floor.SetParent(parent); floor.position = position;
             Art.Box("OrangeFloor", new Vector3(0, .012f, 0), new Vector3(size.x, .04f, size.y), "#EDB5A2", floor);
             float x = size.x / 2, z = size.y / 2;
-            Art.Box("BackWall", new Vector3(0, .65f, z), new Vector3(size.x, 1.3f, .22f), "#F7D435", floor, true);
-            Art.Box("BlueBackTrim", new Vector3(0, 1.31f, z), new Vector3(size.x + .15f, .14f, .3f), "#039BDC", floor);
-            Art.Box("RightWall", new Vector3(x, .65f, 0), new Vector3(.22f, 1.3f, size.y), "#F7D435", floor, true);
-            Art.Box("BlueRightTrim", new Vector3(x, 1.31f, 0), new Vector3(.3f, .14f, size.y), "#039BDC", floor);
+            for(int side=-1;side<=1;side+=2)
+            {
+                float width=(size.x-4)/2,length=(size.y-4)/2;
+                Art.Box("BackWall",new Vector3(side*(2+width/2),.65f,z),new Vector3(width,1.3f,.22f),"#F7D435",floor,true);
+                Art.Box("BlueBackTrim",new Vector3(side*(2+width/2),1.31f,z),new Vector3(width,.14f,.3f),"#039BDC",floor);
+                Art.Box("RightWall",new Vector3(x,.65f,side*(2+length/2)),new Vector3(.22f,1.3f,length),"#F7D435",floor,true);
+                Art.Box("BlueRightTrim",new Vector3(x,1.31f,side*(2+length/2)),new Vector3(.3f,.14f,length),"#039BDC",floor);
+            }
             Art.Box("FloorEdge", new Vector3(0, .03f, -z), new Vector3(size.x, .08f, .2f), "#039BDC", floor);
             Art.Box("LeftEdge", new Vector3(-x, .03f, 0), new Vector3(.2f, .08f, size.y), "#039BDC", floor);
             Art.Label(label, new Vector3(-x + 4, .06f, -z + 1), floor, .25f, "#FFFFFF", false).transform.rotation = Quaternion.Euler(90, 0, 0);
@@ -119,13 +143,13 @@ namespace Tycoon
             pen.SetParent(parent, false);
             var visual = pen.gameObject.AddComponent<UnlockVisual>();
             visual.Requirement = requirement;
-            if (!string.IsNullOrEmpty(alternative)) visual.AnyRequirements = new[] { alternative };
+            if (!string.IsNullOrEmpty(alternative)) visual.AnyRequirements = new[] { requirement,alternative };
             Art.Box("PenGround", position + new Vector3(0, .008f, 0), new Vector3(size.x, .025f, size.y), "#CBA671", pen);
             for (int side = 0; side < 2; side++)
                 for (int i = 0; i < Mathf.CeilToInt(size.x / 2.2f); i++) Art.Model("fence", position + new Vector3(-size.x / 2 + 1.1f + i * 2.2f, 0, (side == 0 ? -1 : 1) * size.y / 2), pen, .85f);
             for (int side = 0; side < 2; side++)
                 for (int i = 0; i < Mathf.CeilToInt(size.y / 2.2f); i++) Art.Model("fence", position + new Vector3((side == 0 ? -1 : 1) * size.x / 2, 0, -size.y / 2 + 1.1f + i * 2.2f), pen, .85f, 90);
-            int columns = key == "user_cow" ? 7 : 3;
+            int columns = 3;
             var members=new List<GameObject>();
             for (int i = 0; i < count; i++)
             {
@@ -161,6 +185,7 @@ namespace Tycoon
         static void Crop(GameSession game, Transform parent, string id, string item, string label, Vector3 point, float interval)
         {
             var station = Register<ProductionStation>(game, parent, id, label, point, 24); station.AreaId = "farm"; station.ItemId = item; station.Interval = interval; station.Remaining = interval;
+            station.Yield=item=="carrot"?2:4;
             Art.Box("Soil", new Vector3(0, .07f, 0), new Vector3(4, .14f, 3.5f), "#B4864F", station.transform);
             var plants = new List<Transform>();
             for (int i = 0; i < 9; i++) plants.Add(Art.Model(item == "carrot" ? "carrot_crop" : item, new Vector3(-.95f + i % 3 * .95f, .14f, -.75f + i / 3 * .75f), station.transform, item == "tomato" ? .8f : 1).transform);
@@ -176,13 +201,13 @@ namespace Tycoon
             Art.Box("BluePipe", new Vector3(-1.5f, .4f, 0), new Vector3(2, .25f, .25f), "#20BEE8", station.transform);
             Stack(game, station, new Vector3(0, .85f, 0), .75f, 2, 2, 24); game.Producers.Add(station); Locked(station);
             Zone(game, parent, station, "operate", station.InteractionPoint + Vector3.back);
-            Zone(game, parent, station, "restock", station.InteractionPoint + Vector3.forward * 1.7f);
-            Zone(game, parent, station, "withdraw", station.InteractionPoint + Vector3.right * 1.7f);
-            Zone(game, parent, station, "deposit", station.InteractionPoint + Vector3.left * 1.7f);
+            Zone(game, parent, station, "restock", point+Vector3.right*4.3f+Vector3.back*(item=="egg"?.8f:2));
+            Zone(game, parent, station, "withdraw", point+Vector3.right*2.1f+Vector3.back*.8f);
+            Zone(game, parent, station, "deposit", point+Vector3.right*(item=="egg"?3.8f:2.1f)+Vector3.back*3.3f);
         }
         public static StorageStation Warehouse(GameSession game, Transform parent, Vector3 point, string id = "storage", string area = "farm", int capacity = 800)
         {
-            var station = Register<StorageStation>(game, parent, id, "KHO • " + area, point, capacity); station.AreaId = area;
+            var station = Register<StorageStation>(game, parent, id, "KHO • " + GameHud.AreaLabel(area), point, capacity); station.AreaId = area;
             station.ConfigureItemBins(capacity);
             Art.Box("StorageBase", new Vector3(0, .08f, 0), new Vector3(3.4f, .15f, 3.4f), "#FFFFFF", station.transform);
             Art.Box("StorageCollision",new Vector3(0,.55f,.5f),new Vector3(3.1f,1.1f,2.5f),"#FFFFFF",station.transform,true).GetComponent<Renderer>().enabled=false;
@@ -194,7 +219,8 @@ namespace Tycoon
         }
         public static ShelfStation Shelf(GameSession game, Transform parent, string id, string label, Vector3 point, string[] items, string shop, string requirement = "")
         {
-            var station = Register<ShelfStation>(game, parent, id, label, point, 36); station.AllowedItems = items; station.ShopId = shop; station.AreaId = shop == "farm" ? "farm_shop" : shop == "market" ? "supermarket" : shop; station.Requirement = requirement; station.InteractionPoint = point + Vector3.left * 1.25f;
+            var station = Register<ShelfStation>(game, parent, id, label, point, 36); station.AllowedItems = items; station.ShopId = shop; station.AreaId = shop == "farm" ? "farm_shop" : shop == "market" ? "supermarket" : shop; station.Requirement = requirement; station.InteractionPoint = point + Vector3.left * 1.5f;
+            foreach(string item in items)station.Inventory.SetLimit(item,items.Length==1?36:6);
             Art.Box("BlueCounter", new Vector3(0, .45f, 0), new Vector3(1.4f, .9f, 4.7f), "#039BDD", station.transform, true);
             Art.Box("WhiteCounter", new Vector3(0, .95f, 0), new Vector3(1.48f, .13f, 4.8f), "#EAF8EF", station.transform);
             Stack(game, station, new Vector3(0, 1.04f, -.25f), .75f, 2, 5, 36); game.Shelves.Add(station); Locked(station);
@@ -204,13 +230,13 @@ namespace Tycoon
         }
         public static CheckoutStation Checkout(GameSession game, Transform parent, string id, Vector3 point, string shop, string requirement = "")
         {
-            var station = Register<CheckoutStation>(game, parent, id, "QUẦY " + shop, point); station.ShopId = shop; station.AreaId = shop == "farm" ? "farm_shop" : shop == "market" ? "supermarket" : shop; station.Requirement = requirement; station.Inventory=new Inventory(36); Art.Model("user_checkout", Vector3.zero, station.transform, 1.25f);
+            var station = Register<CheckoutStation>(game, parent, id, "QUẦY "+GameHud.AreaLabel(shop).ToUpperInvariant(), point); station.ShopId = shop; station.AreaId = shop == "farm" ? "farm_shop" : shop == "market" ? "supermarket" : shop; station.Requirement = requirement; station.Inventory=new Inventory(36); Art.Model("user_checkout", Vector3.zero, station.transform, 1.25f);
             Art.Box("CheckoutCollision", new Vector3(.3f, .55f, 0), new Vector3(2.1f, 1.1f, .9f), "#05A4E3", station.transform, true).GetComponent<Renderer>().enabled = false;
             Stack(game,station,new Vector3(-.6f,1.02f,.1f),.62f,2,4,36);
-            station.InteractionPoint = point + Vector3.left * 2.7f + Vector3.back * 1.5f;
+            station.InteractionPoint = point + Vector3.left * 2.7f + Vector3.forward * .6f;
             Zone(game, parent, station, "serve", station.InteractionPoint);
-            Zone(game,parent,station,"deposit",point+Vector3.back*4.2f);
-            Zone(game, parent, station, "cash", point + Vector3.right * 2.7f + Vector3.back * 1.5f);
+            Zone(game,parent,station,"deposit",point+Vector3.forward*2.6f);
+            Zone(game, parent, station, "cash", point + Vector3.right * 2.7f + Vector3.forward * .6f);
             game.Checkouts.Add(station); Locked(station); return station;
         }
         public static void Zone(GameSession game, Transform parent, Station target, string mode, Vector3 point)
@@ -222,7 +248,8 @@ namespace Tycoon
             if (target is CheckoutStation checkout && mode == "cash") checkout.CashZone = zone;
             string color = mode switch { "serve" => "#73CF4F", "withdraw" => "#39A4D8", "deposit" => "#F5AB3D", "operate" => "#9A72D8", "repair"=>"#E65D43", _ => "#FFD63E" };
             Art.Box("InteractionZone", new Vector3(0, .035f, 0), new Vector3(1.8f, .07f, 1.8f), color, zone.transform);
-            Locked(zone);
+            var caption=Art.Label(mode=="operate"&&target is ProductionStation p&&!p.Animal?"GIEO / TƯỚI":label,new Vector3(0,.083f,0),zone.transform,.1f,"#FFFFFF",false);caption.transform.rotation=Quaternion.Euler(90,0,0);
+            zone.gameObject.AddComponent<UnlockVisual>().Target=target;
         }
         public static MachineStation Machine(GameSession game, Transform parent, string key, Vector3 point, string requirement)
         {
@@ -234,21 +261,22 @@ namespace Tycoon
             Zone(game, parent, station, "operate", station.InteractionPoint + Vector3.back * 1.25f);
             Zone(game, parent, station, "withdraw", station.InteractionPoint + Vector3.right * 1.55f + Vector3.back * .35f);
             Zone(game, parent, station, "deposit", station.InteractionPoint + Vector3.left * 1.55f + Vector3.back * .35f);
-            Zone(game,parent,station,"repair",station.InteractionPoint+Vector3.left*3.4f+Vector3.back*1.55f);
+            Zone(game,parent,station,"repair",key=="kitchen"?point+Vector3.right*4.1f+Vector3.back*1.1f:point+Vector3.back*5.9f);
             return station;
         }
-        static void Conveyor(GameSession game,Transform parent,string id,string item,StorageStation primary,StorageStation alternate,MachineStation target,float laneOffset)
+        static ConveyorStation Conveyor(GameSession game,Transform parent,string id,string item,StorageStation primary,StorageStation alternate,MachineStation target,float laneOffset)
         {
             Vector3 start=primary.transform.position+new Vector3(1.8f,0,laneOffset);
             Vector3 end=target.transform.position+Vector3.left*2.1f+Vector3.forward*laneOffset;
             var route=Register<ConveyorStation>(game,parent,id,"BĂNG CHUYỀN • "+Definitions.Item(item).label,(start+end)*.5f,Mathf.Max(4,Definitions.Recipe(target.Recipe.id).inputs[0].count));
-            route.AreaId="processing";route.Requirement="conveyor_processing";route.Target=target;route.ItemId=item;route.Sources=new[]{primary,alternate};
+            route.AreaId="processing";route.Requirement="conveyor_processing";route.Target=target;route.ItemId=item;route.Sources=primary==alternate?new[]{primary}:new[]{primary,alternate};
             var belt=new GameObject("BeltVisuals");belt.transform.SetParent(route.transform,false);belt.SetActive(false);route.VisualRoot=belt;
             Vector3 direction=end-start;float length=direction.magnitude;
             belt.transform.position=start;belt.transform.rotation=Quaternion.LookRotation(direction);
             Art.Box("Belt",new Vector3(0,.12f,length*.5f),new Vector3(.7f,.18f,length),"#46524A",belt.transform);
             Art.Box("BeltRailLeft",new Vector3(-.4f,.22f,length*.5f),new Vector3(.08f,.16f,length),"#E2C45D",belt.transform);
             Art.Box("BeltRailRight",new Vector3(.4f,.22f,length*.5f),new Vector3(.08f,.16f,length),"#E2C45D",belt.transform);
+            return route;
         }
         static void Locked(Station station) { if (!string.IsNullOrEmpty(station.Requirement)) station.gameObject.AddComponent<UnlockVisual>().Requirement = station.Requirement; }
         public static PurchasePad Pad(GameSession game, Transform parent, UpgradeDefinition upgrade, Vector3 point)

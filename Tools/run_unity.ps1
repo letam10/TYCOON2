@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('Import','Tests','Build','Scene','Baseline','Stage23','Stage45','Stage67','Stage08','Stage09','Stage10','Stage11','Stage12','Stage13')] [string]$Task = 'Import',
+    [ValidateSet('Import','Tests','Build','Scene','Polish','Stage14Tests','Stage14Layout','Stage14Play','Baseline','Stage23','Stage45','Stage67','Stage08','Stage09','Stage10','Stage11','Stage12','Stage13')] [string]$Task = 'Import',
     [string]$BuildPath = ''
 )
 $ErrorActionPreference = 'Stop'
@@ -14,15 +14,22 @@ if (!(Test-Path -LiteralPath $baselinePath)) {
 }
 $logPath = Join-Path $logDirectory ($Task.ToLower() + '.log')
 $arguments = @('-batchmode','-nographics','-projectPath',('"' + $taskRoot + '"'),'-logFile',('"' + $logPath + '"'))
-if ($Task -in @('Tests','Stage08','Stage09','Stage10','Stage11','Stage12','Stage13')) {
-    $stage=if($Task -match '^Stage(\d+)$'){'stage'+$Matches[1]}else{$null}
+if ($Task -in @('Tests','Stage08','Stage09','Stage10','Stage11','Stage12','Stage13','Stage14Tests')) {
+    $stage=if($Task -match '^Stage(\d+)'){'stage'+$Matches[1]}else{$null}
     $results=if($stage){Join-Path $taskRoot ('work\'+$stage+'\editmode-results.xml')}else{Join-Path $taskRoot 'QA\editmode-results.xml'}
     $arguments += @('-runTests','-testPlatform','EditMode','-testResults',('"' + $results + '"'))
     if($Task -eq 'Stage08'){$arguments += @('-testFilter','Tycoon.Tests.SaveV2Tests')}
     if($Task -in @('Stage09','Stage10')){$arguments += @('-testFilter','Tycoon.Tests.StageProgressionTests')}
     if($Task -in @('Stage11','Stage12','Stage13')){$arguments += @('-testFilter',('Tycoon.Tests.'+$Task+'Tests'))}
+    if($Task -eq 'Stage14Tests'){$arguments += @('-testFilter','Tycoon.Tests.Stage14Tests')}
 } else {
-    if($Task -notin @('Baseline','Stage23','Stage45','Stage67')) { $arguments += '-quit' }
+    if($Task -notin @('Baseline','Stage23','Stage45','Stage67','Stage14Layout','Stage14Play')) { $arguments += '-quit' }
+    if($Task -eq 'Polish'){$arguments += @('-executeMethod','Tycoon.Editor.Stage14Tools.PrepareAnimations')}
+    if($Task -in @('Stage14Layout','Stage14Play')){
+        $qaOutput=Join-Path $taskRoot ('work\stage14\editor-'+$Task.ToLower()+'-'+[DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'))
+        $qaMode=if($Task -eq 'Stage14Layout'){'--qa-stage14-layout'}else{'--qa-stage14'}
+        $arguments += @('-executeMethod','Tycoon.Editor.ProjectBuilder.PlayBaseline','--qa',$qaMode,'--qa-output',('"'+$qaOutput+'"'))
+    }
     if($Task -eq 'Baseline') {
         $qaOutput=Join-Path $taskRoot 'work\stage01\editor-play'
         $arguments += @('-executeMethod','Tycoon.Editor.ProjectBuilder.PlayBaseline','--qa','--qa-baseline','--qa-output',('"' + $qaOutput + '"'))

@@ -79,6 +79,8 @@ namespace Tycoon
         internal StationRuntimeState ShallowCopy()=>(StationRuntimeState)MemberwiseClone();
         public string id, definitionId, input, output, jobId, reservationId, operatorId, escrow;
         public int definitionVersion = 1, level = 1, workCount, playerWorkCount, batches, playerBatches;
+        public int batchYield=1;
+        public float cycleSeconds;
         public MachinePhase machinePhase;
         public double remaining;
         public bool running;

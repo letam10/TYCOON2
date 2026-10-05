@@ -88,7 +88,7 @@ namespace Tycoon
         public int Price;
         float lastTickTime;
         public float PatienceLeft=>Phase<2?Runtime!=null?Remaining:Mathf.Max(0,Remaining-Mathf.Max(0,Time.time-lastTickTime)):0;
-        public void Initialize(){Agent=Navigation.Agent(gameObject);View=GetComponentInChildren<ActorView>();View.Initialize();}
+        public void Initialize(){Agent=Navigation.Agent(gameObject,true);View=GetComponentInChildren<ActorView>();View.Initialize();}
         public void Begin(TableStation table,DinerSave saved)
         {
             Table=table;if(Basket.Authority!=null)Basket.Unbind();Basket.Restore(saved?.basket);Receipt=saved?.receipt??GameSession.Instance.NextReceipt++;
