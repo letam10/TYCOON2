@@ -294,7 +294,41 @@ Cập nhật này là ghi chép lịch sử tại mốc bàn giao Công đoạn 
 - Các commit 08–10 (`c035cae`, `45c535c`, `1ba7b9d`) cũng đã push lên `origin/main`; handoff này ghi lại bằng chứng và backlog sau các mốc đó.
 - `ProjectSettings/QualitySettings.asset` (`antiAliasing: 0` → `2`) là thay đổi người dùng có sẵn, được giữ nguyên và nằm ngoài commit/push của nhiệm vụ.
 
-## Chưa thực hiện được / chưa nghiệm thu sau Công đoạn 01–10
+## Công đoạn 11 — SUPERMARKET
+
+- Gate dùng 600 đơn thành công và 50 batch cho từng recipe mill/cheesemaker/saucemaker; Supermarket có giá 65.000. Các route đơn hàng chỉ chọn SKU có recipe/producer đã mở và có thể sản xuất. Đơn market tối đa 2 ItemTypes; giao nhiều SKU đi qua một `DeliverOrder` transaction, nên người chơi/worker không thể giao trùng khi cạnh tranh cùng revision.
+- `dairy` vẫn là purchase Processing riêng 1.800 xu từ Công đoạn 10; cần mở nó trước khi tạo batch phô mai/sốt và đạt gate ba recipe.
+- Seed sát ngưỡng: `mod/test/stage11-near-supermarket.json` (64.990/65.000, 599/600 đơn, 49/50 mỗi recipe).
+- File chính: `CommerceDirector.cs`, `ProgressionTracker.cs`, `RuntimeTransactions.cs`, `TransactionCore.cs`.
+
+## Công đoạn 12 — BAKERY VÀ RESTAURANT
+
+- Bakery mở với Supermarket và 100.000 xu; gate prototype market cấp 3/1.000 đơn đã được gỡ. Oven/cakeoven dùng recipe Flour + Milk + Egg → Bread/Cake; kho, shelf, checkout, khách và crew Bakery riêng đã được nối.
+- Restaurant cần Bakery, 60 payment đơn Bakery thành công, oven cấp 3 và 80.000 xu. Flow table/diner, patience 90 giây, payment tại checkout Restaurant và trạng thái bàn bẩn/clean có sẵn trong runtime; worker hire Restaurant còn yêu cầu player tự nấu, phục vụ và dọn ít nhất một lượt.
+- Seed: `mod/test/stage12-near-bakery.json`, `mod/test/stage12-near-restaurant.json` (99.990/100.000, 79.990/80.000, 59/60 đơn Bakery, oven cấp 2/3).
+- File chính: `Definitions.cs`, `ProgressionTracker.cs`, `RestaurantDirector.cs`, `Station.cs`, `TransactionCore.cs`.
+
+## Công đoạn 13 — EVENTS VÀ BREAKDOWN
+
+- Rush chỉ chạy sau khi có crew, báo trước 15 giây, kéo dài 90 giây và giới hạn tổng khách/khách bàn ở 30. Breakdown đếm machine batch hoàn tất, cảnh báo 15 giây, giới hạn một máy hỏng, không áp dụng lên tuyến crop cà rốt.
+- Máy hỏng được sửa riêng qua Repair Zone; sửa 8 giây, phí 10–100 chỉ trừ một lần, rời vùng giữ progress. Break không xóa running job, escrow, input hay output reservation; worker hiện đúng lý do chờ người chơi sửa.
+- Trạng thái cảnh báo được lưu ở `SaveData.events`; trạng thái job/repair máy nằm trong transaction state và Save v2.
+- Seed: `mod/test/stage13-events-seed.json`. File chính: `GameRules.cs`, `GameSession.cs`, `MachineStation.cs`, `PlayerInteraction.cs`, `Station.cs`, `WorldFactory.cs`, `TransactionCore.cs`.
+
+## Kiểm chứng Công đoạn 11–13
+
+- Stage11 EditMode: Passed 2/2 — `work/stage11/editmode-results.xml`; gate 599→600, 49→50 cho ba recipe, route sản xuất đã mở, đơn nhiều SKU atomic/idempotent, purchase 64.990→65.000.
+- Stage12 EditMode: Passed 1/1 — `work/stage12/editmode-results.xml`; bakery/restaurant gate theo đơn, oven level, top-up purchase, recipe availability và player-training gate.
+- Stage13 EditMode: Passed 2/2 — `work/stage13/editmode-results.xml`; Rush crew gate/timer, breakdown warning/save, single-broken guard, repair fee once, rời vùng, khôi phục transaction snapshot của machine đang chạy.
+- Windows BuildPipeline: Succeeded, 0 errors, 2 warnings; 115.453.743 bytes — `work/stage11-13/Build/build-report.json`. Bản kiểm chứng riêng: `work/stage11-13/Build/TYCOON2.exe`.
+
+### GitHub Công đoạn 11–13
+
+- `5b0a5bb` — `feat: add supermarket bakery and restaurant progression`; đã push lên `origin/main`.
+- `6137994` — `feat: add rush hour and machine breakdown events`; đã push lên `origin/main`.
+- Handoff ghi lại hai commit code đã push; thay đổi `QualitySettings.asset` vẫn được giữ ngoài commit.
+
+## Chưa thực hiện được / chưa nghiệm thu sau Công đoạn 01–13
 
 - Chưa chơi hết gói sữa 1000 xu hoặc gói trứng 1000 xu trên Windows Player; đã chạy tuyến thịt bò làm vertical slice đại diện.
 - Tái đàn từ population 0 và timeout/loss chỉ theo lượng khách nhận có EditMode coverage; Player Stage67 không ép hết patience để kiểm tra nhánh timeout.
@@ -307,6 +341,12 @@ Cập nhật này là ghi chép lịch sử tại mốc bàn giao Công đoạn 
 - Công đoạn 09: chưa nghiệm thu Player route khách FIFO vào checkout Farm Shop, stocker/cashier/transport worker và giao đơn thực. Đã pass gate hai hướng crop/livestock trong EditMode.
 - Công đoạn 10: chưa nghiệm thu Player đủ ba tuyến Wheat→Flour, Milk→Cheese, Tomato→Sauce hoặc hành vi conveyor khi destination full. EditMode đã xác nhận gate, cargo ownership, save/load và giao idempotent; BuildPipeline pass.
 - Công đoạn 10: purchase `dairy` hiển thị riêng với giá 1.800 xu vẫn cần để mở hai máy cheese/sauce sau Processing; chưa gộp chi phí này vào purchase Processing 12.000 xu.
+- Công đoạn 11: chưa chạy Windows Player để quan sát customer routing/ngẫu nhiên hóa đơn Supermarket và người chơi/worker cùng giao đơn nhiều SKU thật; EditMode chỉ kiểm tra gate, route capability và transaction atomic.
+- Công đoạn 12: chưa chạy Player toàn chuỗi Bakery sản xuất/bán Bread/Cake rồi Restaurant reserve → eat → payment → clean; chưa nghiệm thu cảm giác điều khiển/timing 90 giây hoặc Player tự làm ba thao tác trước khi hire. Gate và recipe được kiểm tra bằng EditMode.
+- Công đoạn 13: chưa chạy Player chờ Rush/đếm arrival rate ở 30 khách, để machine chạy xuyên breakdown/repair tại zone thật hoặc xác nhận worker resume sau sửa; EditMode kiểm tra timer, state, fee và progress.
+- Không chạy soak, benchmark, hoặc kiểm tra mục tiêu FPS theo yêu cầu test gọn.
+- Unity tạo thư mục `work/stage11-13/Build/TYCOON2_BackUpThisFolder_ButDontShipItWithYourGame` trong Build. Đã xác minh Unity build process kết thúc; lệnh dọn thư mục bị command policy chặn, nên thư mục này còn lại.
+- Bản build Stage11–13 được giữ ở `work/stage11-13/Build/TYCOON2.exe` để dùng cho Player acceptance sau; khi tiếp tục cần kiểm tra file và process trước khi chạy.
 - Công đoạn 04/05: các lần thử Player hoàn tất purchase progression trước đây chưa đạt bằng chứng ổn định; one-shot completion chỉ có Editor/core và Stage23 integration coverage, chưa có Player end-to-end purchase gate.
 - Bản kiểm chứng `work/stage10/Build/TYCOON2.exe` được giữ để chạy Player acceptance sau; ở lần làm việc liên quan tiếp theo cần kiểm tra file/process trước khi dùng và xóa khi không còn cần.
 
@@ -320,3 +360,4 @@ Cập nhật này là ghi chép lịch sử tại mốc bàn giao Công đoạn 
 - Công đoạn 08: lượt SaveV2 mới đầu dùng seed stack storage chưa normalize location nên validation thất bại; dùng state qua `TransactionCore` trước khi lưu, lượt cuối 6/6 pass.
 - Công đoạn 10: lượt đầu lọc nhiều test class trả 0 test nên không tính là pass; chuyển sang suite StageProgressionTests. Một assertion sau load yêu cầu một wheat stack duy nhất trong khi transfer giữ hai stack hợp lệ; đổi sang tổng lượng theo owner/item, lượt cuối 4/4 pass.
 - Công đoạn 10: compile đầu dùng nhầm `Inventory.AvailableAboveReserve`; sửa sang API của `StorageStation`, BuildPipeline cuối succeeded với 0 errors.
+- Công đoạn 11–13: compile đầu thiếu `System.Linq` cho breakdown batch count; bổ sung import. Lượt test đầu của batch-delivery dùng fixture thiếu stack location nên transaction validation từ chối; fixture đã đặt đúng owner location. Kết quả cuối Stage11 2/2, Stage12 1/1, Stage13 2/2 pass; BuildPipeline 0 errors.
