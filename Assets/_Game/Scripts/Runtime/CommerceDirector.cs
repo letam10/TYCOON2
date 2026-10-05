@@ -136,8 +136,7 @@ namespace Tycoon
                 foreach (string id in shelf.AllowedItems)
                 {
                     if (Definitions.Item(id) == null || available.Contains(id)) continue;
-                    bool produced = game.Producers.Exists(x => x.IsUnlocked && x.ItemId == id) || game.Machines.Exists(x => x.IsUnlocked && x.Recipe.output == id);
-                    if (produced || shelf.Inventory.Count(id) > 0) available.Add(id);
+                    if(game.Progression.CanProduce(id))available.Add(id);
                 }
             }
             var lines = new List<OrderLine>();
@@ -151,7 +150,8 @@ namespace Tycoon
             }
             else
             {
-                int count = Mathf.Min(available.Count, Random.Range(1, 4));
+                int maximumTypes=MaximumOrderItemTypes(shop);
+                int count = Mathf.Min(available.Count, Random.Range(1, maximumTypes+1));
                 for (int i = 0; i < count; i++)
                 {
                     int chosen = Random.Range(0, available.Count); string id = available[chosen]; available.RemoveAt(chosen);
@@ -163,6 +163,8 @@ namespace Tycoon
             Current = State.Queue; Lane.Queue.Add(this); Go(Lane.QueuePoint(this)); RefreshBubble();
             game.Transactions?.BindCustomer(this,Snapshot(),true);
         }
+
+        public static int MaximumOrderItemTypes(string shop)=>shop=="market"?2:3;
 
         public void Restore(CustomerSave saved)
         {

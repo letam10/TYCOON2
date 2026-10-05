@@ -50,8 +50,10 @@ namespace Tycoon
     {
         public DinerAgent Occupant;
         public Vector3 Seat;
-        float cleaning;
+        float cleaning;int playerServeCount,playerCleanCount;
         public float Cleaning {get=>Runtime?.progress.remaining??cleaning;set{if(Runtime!=null)throw new System.InvalidOperationException("Table chỉ được cập nhật qua transaction.");cleaning=value;}}
+        public int PlayerServeCount=>Runtime?.progress.playerServeCount??playerServeCount;
+        public int PlayerCleanCount=>Runtime?.progress.playerCleanCount??playerCleanCount;
         public bool NeedsMeal=>Occupant && Occupant.Phase==1 && Occupant.PatienceLeft>0;
         public override string Prompt=>Cleaning>0?Label+" • đứng dọn bàn "+Cleaning.ToString("0.0")+"s":NeedsMeal?Label+" • phục vụ món ăn":Label+" • "+(Occupant?"Đang có khách":"Trống");
         public override bool Work(Inventory carrier,float delta,EntityId actorId)
@@ -68,8 +70,8 @@ namespace Tycoon
         }
         public bool DeliverMeal(Inventory carrier,long expectedReceipt=0)=>IsUnlocked&&Occupant&&(expectedReceipt==0||Occupant.Receipt==expectedReceipt)&&Occupant.ReceiveMeal(carrier);
         public override bool Interact(PlayerController player,bool withdraw)=>!withdraw&&player&&ContainsInteractionPoint(player.transform.position)&&Work(player.Carry,Time.deltaTime,player.GetEntityId());
-        public override StationProgressSave CaptureProgress(){var state=base.CaptureProgress();state.remaining=Cleaning;return state;}
-        public override void RestoreProgress(StationProgressSave state){base.RestoreProgress(state);Cleaning=state.remaining;Occupant=null;}
+        public override StationProgressSave CaptureProgress(){var state=base.CaptureProgress();state.remaining=Cleaning;state.playerServeCount=PlayerServeCount;state.playerCleanCount=PlayerCleanCount;return state;}
+        public override void RestoreProgress(StationProgressSave state){base.RestoreProgress(state);Cleaning=state.remaining;playerServeCount=state.playerServeCount;playerCleanCount=state.playerCleanCount;Occupant=null;}
         protected override void LateUpdate(){if(StatusLabel)StatusLabel.text=Label+"\n"+(Cleaning>0?"Dọn bàn":Occupant?(Occupant.Phase==1?"Gọi món":Occupant.Phase==2?"Đang ăn":"Đã đặt bàn"):"Trống");}
     }
     public sealed class DinerAgent : MonoBehaviour

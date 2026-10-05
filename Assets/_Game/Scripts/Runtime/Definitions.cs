@@ -89,6 +89,7 @@ namespace Tycoon
     {
         public string stationFamily, successfulOrderArea, successfulJobArea;
         public int stationLevel, successfulOrders, successfulOrdersAtArea, successfulJobs;
+        public int playerCookJobs, playerTableServes, playerTableCleans;
         public string[] anyStationFamilies = Array.Empty<string>();
         public int anyStationLevel;
         public string[] allUnlocks = Array.Empty<string>(), anyUnlocks = Array.Empty<string>();
@@ -142,14 +143,17 @@ namespace Tycoon
                     new RecipeBatchRequirement { recipeId="cheesemaker", batches=50 }, new RecipeBatchRequirement { recipeId="saucemaker", batches=50 } } }),
             new("restocker_market", "Thuê xếp hàng Supermarket", 1500, "supermarket", "worker", "RestockerMarket"),
             new("cashier_market", "Thuê bán hàng Supermarket", 1500, "supermarket", "worker", "CashierMarket"),
-            new("bakery", "Mở Bakery", 100000, "supermarket", progression:new ProgressionRequirement { stationFamily="market", stationLevel=3, successfulOrders=1000 }),
+            new("bakery", "Mở Bakery", 100000, "supermarket"),
             new("cook_bakery", "Thuê thợ bánh", 2000, "bakery", "worker", "Baker"),
             new("transport_bakery", "Thuê vận chuyển Bakery", 1500, "bakery", "worker", "Transporter"),
             new("cashier_bakery", "Thuê bán bánh", 2000, "bakery", "worker", "Cashier"),
             new("restaurant", "Mở Restaurant", 80000, "bakery", progression:new ProgressionRequirement { stationFamily="oven", stationLevel=3, successfulOrderArea="bakery", successfulOrdersAtArea=60 }),
-            new("cook", "Thuê đầu bếp", 2500, "restaurant", "worker", "Cook"),
-            new("waiter", "Thuê phục vụ", 2000, "restaurant", "worker", "Waiter"),
-            new("transport_restaurant", "Thuê vận chuyển Restaurant", 2000, "restaurant", "worker", "Transporter"),
+            new("cook", "Thuê đầu bếp", 2500, "restaurant", "worker", "Cook",
+                progression:new ProgressionRequirement{playerCookJobs=1,playerTableServes=1,playerTableCleans=1}),
+            new("waiter", "Thuê phục vụ", 2000, "restaurant", "worker", "Waiter",
+                progression:new ProgressionRequirement{playerCookJobs=1,playerTableServes=1,playerTableCleans=1}),
+            new("transport_restaurant", "Thuê vận chuyển Restaurant", 2000, "restaurant", "worker", "Transporter",
+                progression:new ProgressionRequirement{playerCookJobs=1,playerTableServes=1,playerTableCleans=1}),
             new("farm_level2", "Cây trồng cấp 2", 100, "", "upgrade", family:"farm", axis:UpgradeAxis.StationLevel, axisLevel:2),
             new("farm_level3", "Cây trồng cấp 3", 300, "farm_level2", "upgrade", family:"farm", axis:UpgradeAxis.StationLevel, axisLevel:3),
             new("counter_level2", "Quầy Farm Shop cấp 2", 120, "", "upgrade", family:"counter", axis:UpgradeAxis.StationLevel, axisLevel:2),

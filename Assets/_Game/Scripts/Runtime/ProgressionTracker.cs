@@ -63,6 +63,39 @@ namespace Tycoon
             return game.Machines.Where(x => x.Recipe != null && x.Recipe.id == recipeId).Sum(x => x.Batches);
         }
 
+        public bool CanProduce(string item) => State!=null?CanProduce(State,item):CanProduce(game,item,new HashSet<string>());
+
+        public static bool CanProduce(TransactionState state,string item) => state!=null&&!string.IsNullOrEmpty(item)&&CanProduce(state,item,new HashSet<string>());
+
+        static bool CanProduce(TransactionState state,string item,HashSet<string> visiting)
+        {
+            if(!visiting.Add(item))return false;
+            bool available=state.stations.Any(s=>s.kind=="producer"&&s.item==item&&(string.IsNullOrEmpty(s.requirement)||state.unlocked.Contains(s.requirement)));
+            if(!available)
+                foreach(var machine in state.stations.Where(s=>s.kind=="machine"&&(string.IsNullOrEmpty(s.requirement)||state.unlocked.Contains(s.requirement))))
+                {
+                    var recipe=Definitions.Recipe(machine.definitionId);
+                    var path=new HashSet<string>(visiting);
+                    if(recipe!=null&&recipe.output==item&&recipe.inputs.All(x=>CanProduce(state,x.id,path))){available=true;break;}
+                }
+            if(!available)visiting.Remove(item);
+            return available;
+        }
+
+        static bool CanProduce(GameSession game,string item,HashSet<string> visiting)
+        {
+            if(!visiting.Add(item))return false;
+            bool available=game.Producers.Any(x=>x.IsUnlocked&&x.ItemId==item);
+            if(!available)
+                foreach(var machine in game.Machines.Where(x=>x.IsUnlocked&&x.Recipe!=null&&x.Recipe.output==item))
+                {
+                    var path=new HashSet<string>(visiting);
+                    if(machine.Recipe.inputs.All(x=>CanProduce(game,x.id,path))){available=true;break;}
+                }
+            if(!available)visiting.Remove(item);
+            return available;
+        }
+
         public int AxisLevel(string family, UpgradeAxis axis)
         {
             return Definitions.Upgrades.Where(x => x.family == family && x.axis == axis && Unlocked(x.id))
@@ -133,6 +166,9 @@ namespace Tycoon
                     if (game.Progression.RecipeBatches(batch.recipeId) < batch.batches)
                         reasons.Add("Mẻ " + (Definitions.Recipe(batch.recipeId)?.label ?? batch.recipeId) + " • " +
                             game.Progression.RecipeBatches(batch.recipeId) + "/" + batch.batches + ".");
+                AddPlayerTraining(reasons,requirement,
+                    game.Machines.Where(x=>x.AreaId=="restaurant"&&x.Recipe?.id=="kitchen").Sum(x=>x.PlayerWorkCount),
+                    game.Tables.Sum(x=>x.PlayerServeCount),game.Tables.Sum(x=>x.PlayerCleanCount));
             }
             if (upgrade.kind == "worker")
             {
@@ -184,6 +220,10 @@ namespace Tycoon
                     int count = state.stations.Where(s => s.kind == "machine" && s.definitionId == batch.recipeId).Sum(s => s.batches);
                     if (count < batch.batches) reasons.Add("Mẻ " + (Definitions.Recipe(batch.recipeId)?.label ?? batch.recipeId) + " • " + count + "/" + batch.batches + ".");
                 }
+                AddPlayerTraining(reasons,requirement,
+                    state.stations.Where(s=>s.kind=="machine"&&s.area=="restaurant"&&s.definitionId=="kitchen").Sum(s=>s.playerWorkCount),
+                    state.stations.Where(s=>s.kind=="table"&&s.area=="restaurant").Sum(s=>s.progress.playerServeCount),
+                    state.stations.Where(s=>s.kind=="table"&&s.area=="restaurant").Sum(s=>s.progress.playerCleanCount));
             }
             if (upgrade.kind == "worker")
             {
@@ -195,6 +235,13 @@ namespace Tycoon
                 if (!state.stations.Any(s => s.kind == "storage" && s.area == crew.area)) reasons.Add("Khu " + crew.area + " chưa có kho riêng.");
             }
             return reasons.ToArray();
+        }
+
+        static void AddPlayerTraining(List<string> reasons,ProgressionRequirement requirement,int cooked,int served,int cleaned)
+        {
+            if(requirement.playerCookJobs>cooked)reasons.Add("Bạn phải tự nấu ít nhất "+requirement.playerCookJobs+" món • "+cooked+"/"+requirement.playerCookJobs+".");
+            if(requirement.playerTableServes>served)reasons.Add("Bạn phải tự phục vụ ít nhất "+requirement.playerTableServes+" bàn • "+served+"/"+requirement.playerTableServes+".");
+            if(requirement.playerTableCleans>cleaned)reasons.Add("Bạn phải tự dọn ít nhất "+requirement.playerTableCleans+" bàn • "+cleaned+"/"+requirement.playerTableCleans+".");
         }
 
         public string NextObjectiveText()

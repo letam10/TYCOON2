@@ -1,0 +1,10 @@
+{
+  "successfulBakeryOrdersBefore": 59,
+  "successfulBakeryOrdersAtThreshold": 60,
+  "ovenLevelBefore": 2,
+  "ovenLevelAtThreshold": 3,
+  "contributed": 79990,
+  "finalContribution": 10,
+  "cost": 80000,
+  "purpose": "Seed Restaurant at 79,990/80,000, 59/60 Bakery orders and oven level 2/3."
+}

@@ -295,13 +295,26 @@ namespace Tycoon
         }
         int Deliver(TransactionState s, TransactionCommand c)
         {
-            var o = Order(s, c); var line = o.lines.Find(x => x.id == c.item);
-            Require(line != null && c.quantity > 0 && c.quantity <= line.Remaining, "delivery", "Giao quá nhu cầu hoặc sai hàng.");
-            var move = Copy(c); move.kind = TransactionKind.Transfer; move.destination = o.customer;
-            Move(s, move, true); line.delivered += c.quantity;
+            var o = Order(s, c);int moved=0;
+            var shipments=c.lines.Count==0?new List<OrderLine>{new(c.item,c.quantity,0)}:c.lines;
+            Require(shipments.Count>0&&shipments.Select(x=>x.id).Distinct().Count()==shipments.Count&&
+                (string.IsNullOrEmpty(c.reservation)||shipments.Count==1),"delivery","Danh sách hàng giao không hợp lệ.");
+            foreach(var shipment in shipments)
+            {
+                var line=o.lines.Find(x=>x.id==shipment.id);
+                Require(line!=null&&shipment.requested>0&&shipment.delivered==0&&shipment.requested<=line.Remaining,
+                    "delivery","Giao quá nhu cầu hoặc sai hàng.");
+                var move=Copy(c);move.kind=TransactionKind.Transfer;move.destination=o.customer;move.item=shipment.id;
+                move.quantity=shipment.requested;move.lines.Clear();move.effectId=c.effectId+":"+shipment.id;
+                Move(s,move,true);line.delivered+=shipment.requested;moved=checked(moved+shipment.requested);
+            }
             if(c.actor=="player"&&o.lines.All(x=>x.Remaining==0))
-            {var completed=s.stations.Find(x=>x.id==(string.IsNullOrEmpty(o.table)?o.counter:o.table));if(completed!=null)completed.playerWorkCount++;}
-            return c.quantity;
+            {
+                var completed=s.stations.Find(x=>x.id==(string.IsNullOrEmpty(o.table)?o.counter:o.table));
+                if(completed!=null)
+                {completed.playerWorkCount++;if(!string.IsNullOrEmpty(o.table))completed.progress.playerServeCount++;}
+            }
+            return moved;
         }
         int CompleteOrder(TransactionState s, TransactionCommand c)
         {
@@ -537,7 +550,7 @@ namespace Tycoon
             var m = Station(s, c.target); WriteAccess(Owner(s, m.output), c.actor);
             Require(m.kind == "table" && m.progress.remaining > 0 && double.IsFinite(c.duration) && c.duration > 0, "table", "Bàn chưa cần dọn.");
             Lease(m, c.actor, clock()); m.progress.remaining = Math.Max(0, m.progress.remaining - (float)c.duration);
-            if (m.progress.remaining == 0) {m.workCount++;if(c.actor=="player")m.playerWorkCount++;} return 1;
+            if (m.progress.remaining == 0) {m.workCount++;if(c.actor=="player"){m.playerWorkCount++;m.progress.playerCleanCount++;}} return 1;
         }
         int AdvanceDiner(TransactionState s, TransactionCommand c)
         {
@@ -648,6 +661,7 @@ namespace Tycoon
             {
                 Owner(s, m.input); Owner(s, m.output); var recipe = Array.Find(Definitions.Recipes, x => x.id == m.definitionId);
                 Require(m.level >= 1 && m.batches >= 0 && m.workCount >= 0 && m.playerWorkCount>=0 && double.IsFinite(m.remaining) && m.remaining >= 0 && m.progress != null, "station", "Station sai: " + m.id);
+                if(m.kind=="table")Require(m.progress.playerServeCount>=0&&m.progress.playerCleanCount>=0,"table","Số lượt phục vụ/dọn bàn không hợp lệ.");
                 if (m.kind != "machine")
                 {
                     Require(m.kind is "producer" or "storage" or "shelf" or "counter" or "table" or "purchase" or "conveyor", "station", "Station kind sai: " + m.id);

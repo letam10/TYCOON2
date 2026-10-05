@@ -220,18 +220,24 @@ namespace Tycoon
         {
             var o = Order(receipt); if (o == null || o.status != OrderStatus.Open) return 0;
             if (Now >= o.deadline) { Fail(receipt); return 0; }
-            int moved = 0;
-            foreach (var line in o.lines.ToArray())
+            var shipments=new List<OrderLine>();
+            foreach(var line in o.lines)
             {
-                int quantity = Math.Min(line.Remaining, source.Available(line.id));
                 if (reservation != null)
-                { var r=Reservation(reservation);quantity=r!=null&&r.status==ReservationStatus.Active&&r.item==line.id?Math.Min(line.Remaining,r.quantity):0; }
-                if (quantity == 0) continue;
-                string actor=actingActor.HasValue?Actor(actingActor.Value):view.owners.Find(x=>x.id==OwnerId(source)).actor;
-                var c = Command(TransactionKind.DeliverOrder, actor, o.id);
-                c.source = OwnerId(source); c.item = line.id; c.quantity = quantity; c.reservation = reservation;
-                if (TryExecute(c, out int delivered)) moved += delivered;
+                {
+                    var r=Reservation(reservation);
+                    if(r!=null&&r.status==ReservationStatus.Active&&r.item==line.id&&r.source==OwnerId(source)&&r.quantity<=line.Remaining)
+                        shipments.Add(new OrderLine(line.id,r.quantity,0));
+                    break;
+                }
+                int quantity=Math.Min(line.Remaining,source.Available(line.id));
+                if(quantity>0)shipments.Add(new OrderLine(line.id,quantity,0));
             }
+            if(shipments.Count==0)return 0;
+            string actorId=actingActor.HasValue?Actor(actingActor.Value):view.owners.Find(x=>x.id==OwnerId(source)).actor;
+            var command=Command(TransactionKind.DeliverOrder,actorId,o.id);command.source=OwnerId(source);command.reservation=reservation;
+            command.lines=shipments;
+            int moved=TryExecute(command,out int delivered)?delivered:0;
             Settle(receipt); return moved;
         }
         public void Settle(long receipt)

@@ -1,0 +1,10 @@
+{
+  "successfulOrdersBefore": 599,
+  "successfulOrdersAtThreshold": 600,
+  "recipeBatchesBefore": 49,
+  "recipeBatchesAtThreshold": 50,
+  "contributed": 64990,
+  "finalContribution": 10,
+  "cost": 65000,
+  "purpose": "Seed 64,990/65,000 and each recipe at 49/50, then test the last order, batches and contribution."
+}

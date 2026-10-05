@@ -4,7 +4,7 @@ namespace Tycoon
 {
     [Serializable] public sealed class StationProgressSave
     {
-        public string id; public int level=1,workCount,playerWorkCount,phase,herd=3,feed,batches,repairFee;public float remaining,action,cycle,breeding,repairRemaining;public bool running,broken,repairPaid;public float produced;
+        public string id; public int level=1,workCount,playerWorkCount,playerServeCount,playerCleanCount,phase,herd=3,feed,batches,repairFee;public float remaining,action,cycle,breeding,repairRemaining;public bool running,broken,repairPaid;public float produced;
     }
     public abstract class Station:MonoBehaviour,IPlayerInteractionTarget
     {
