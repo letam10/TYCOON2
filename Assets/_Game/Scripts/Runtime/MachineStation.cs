@@ -16,7 +16,27 @@ namespace Tycoon
         public int RepairFee {get=>Runtime?.progress.repairFee??repairFee;set{GuardState();repairFee=value;}}
         void GuardState(){if(Runtime!=null)throw new System.InvalidOperationException("Machine chỉ được cập nhật qua transaction.");}
         public Transform Rotor;
-        public override string Prompt=>Broken?Label+" • sửa "+RepairFee+" xu • "+RepairRemaining.ToString("0.0")+"s":Label+" • "+(Running?"Đứng vận hành • "+Remaining.ToString("0.0")+"s":"Đưa nguyên liệu / vận hành / lấy hàng");
+        public MachinePhase Phase=>Runtime?.machinePhase??(Recipe==null?MachinePhase.WaitingInput:Running?MachinePhase.Operating:
+            Inventory!=null&&Inventory.Count(Recipe.output)>0?MachinePhase.CompletedWaitingPickup:
+            Recipe.CanMake(Input)&&Inventory!=null&&Inventory.FreeFor(Recipe.output)>=Recipe.yield?MachinePhase.Ready:MachinePhase.WaitingInput);
+        public bool HasOperator=>Runtime!=null?!string.IsNullOrEmpty(Runtime.operatorId)&&Runtime.operatorUntil>Authority.Now:Time.time<operatorUntil;
+        public string WaitReason
+        {
+            get
+            {
+                if(Recipe==null)return "Sai recipe";
+                foreach(var input in Recipe.inputs)if(Input.Available(input.id)<input.count)return "Thiếu "+Definitions.Item(input.id).label;
+                if(Inventory!=null&&Inventory.FreeFor(Recipe.output)<Recipe.yield)return "Đầu ra đầy • lấy "+Definitions.Item(Recipe.output).label;
+                return "Chờ nguyên liệu";
+            }
+        }
+        public override string Prompt=>Broken?Label+" • máy hỏng, sửa "+RepairFee+" xu • "+RepairRemaining.ToString("0.0")+"s":Label+" • "+(Phase switch
+        {
+            MachinePhase.Ready=>"Sẵn sàng • đứng vận hành",
+            MachinePhase.Operating=>(HasOperator?"Đang chạy • "+Remaining.ToString("0.0")+"s":"Tạm dừng • "+Remaining.ToString("0.0")+"s")+" • giữ đầu ra "+Inventory.ReservedSpace(Recipe.output),
+            MachinePhase.CompletedWaitingPickup=>"Hoàn tất • chờ lấy "+Recipe?.label,
+            _=>WaitReason
+        });
         bool outputReserved;
         void Start()=>ConfigureInputLimits();
         public void ConfigureInputLimits(){if(Recipe!=null&&Recipe.inputs.Length>0)foreach(var item in Recipe.inputs)Input.SetLimit(item.id,Mathf.Max(item.count,Input.Capacity/Recipe.inputs.Length));}
@@ -115,6 +135,18 @@ namespace Tycoon
             transform.localPosition=Origin+offset;
             transform.localRotation=Quaternion.Slerp(transform.localRotation,Quaternion.LookRotation(direction),1-Mathf.Exp(-2.5f*Time.deltaTime));
             if(view){view.SetMotion(.5f,false);view.Animator.speed=.6f;}
+        }
+    }
+    public sealed class LivestockPopulationView : MonoBehaviour
+    {
+        public GameObject[] Members=System.Array.Empty<GameObject>();
+        ProductionStation[] producers=System.Array.Empty<ProductionStation>();
+        public void Bind(ProductionStation[] value)=>producers=value??System.Array.Empty<ProductionStation>();
+        void LateUpdate()
+        {
+            int population=0;foreach(var producer in producers)if(producer&&producer.IsUnlocked)population+=producer.Herd;
+            population=Mathf.Min(population,Members.Length);
+            for(int i=0;i<Members.Length;i++)if(Members[i]&&Members[i].activeSelf!=(i<population))Members[i].SetActive(i<population);
         }
     }
 }

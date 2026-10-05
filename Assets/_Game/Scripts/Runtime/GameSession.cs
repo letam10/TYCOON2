@@ -216,6 +216,7 @@ namespace Tycoon
         public void InitializeTransactions(TransactionState state=null,bool persist=true)
         {
             foreach(var machine in Machines)machine.ConfigureInputLimits();
+            foreach(var station in Stations)if(station is StorageStation storage&&storage.Inventory!=null)storage.ConfigureItemBins(storage.Inventory.Capacity);
             var initial=state??RuntimeTransactions.Migrate(this,CaptureSaveData());
             RuntimeTransactions.UpgradeCounterOwners(initial,this);
             Transactions = new RuntimeTransactions(this,initial,persist);

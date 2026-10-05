@@ -54,7 +54,7 @@ namespace Tycoon.Tests
             foreach (string id in shelf.AllowedItems)
             {
                 var producer = Component<ProductionStation>(id); producer.ItemId = id;
-                producer.Requirement = id == "beef" ? "barn" : ""; game.Producers.Add(producer);
+                producer.Requirement = id switch { "beef" => "barn", "milk" => "milk_line", _ => "" }; game.Producers.Add(producer);
             }
             var customer = Component<CustomerAgent>("Customer");
             for (int i = 0; i < 20; i++)

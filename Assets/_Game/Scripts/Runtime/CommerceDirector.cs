@@ -140,8 +140,11 @@ namespace Tycoon
             var lines = new List<OrderLine>();
             if (shop == "farm")
             {
-                // Tuyến cà rốt luôn hoạt động, kể cả khi người chơi chưa mở khu khác.
-                lines.Add(new OrderLine("carrot", Random.Range(1, 4), game.ItemPrice("carrot")));
+                // Khi chưa mở vật nuôi, Farm tiếp tục chỉ bán cà rốt.
+                var livestock=available.FindAll(id=>id is "milk" or "egg" or "beef");
+                string item=livestock.Count==0?"carrot":livestock[Random.Range(0,livestock.Count)];
+                int quantity=item=="carrot"?Random.Range(1,4):1;
+                lines.Add(new OrderLine(item, quantity, game.ItemPrice(item)));
             }
             else
             {

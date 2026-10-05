@@ -66,6 +66,14 @@ namespace Tycoon.Tests
             var recipes = Definitions.Recipes; recipes[0] = null; var ingredients = Definitions.Recipe("mill").inputs; ingredients[0].count = 99;
             Assert.That(Definitions.Recipe("mill").inputs[0].count, Is.EqualTo(4)); Assert.That(Definitions.Recipes[0], Is.Not.Null);
         }
+        [Test] public void TransactionSchemaOneMigratesTypedStorageLocationAndMachinePhase()
+        {
+            var seed=Seed();seed.schemaVersion=1;var core=Core(seed);var state=core.Snapshot();
+            Assert.That(state.schemaVersion,Is.EqualTo(2));
+            Assert.That(state.stacks.Single(x=>x.owner=="storage").location,Is.EqualTo("location:storage/carrot"));
+            Assert.That(state.stations.Single().machinePhase,Is.EqualTo(MachinePhase.Ready));
+            TransactionCore.Validate(state);
+        }
         [Test] public void RetryReturnsDurableReceiptAndConflictingPayloadCannotMutate()
         {
             var core = Core(); var c = Command(core, TransactionKind.Take, "pickup"); var result = core.Execute(c);

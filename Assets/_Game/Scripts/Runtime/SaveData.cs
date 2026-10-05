@@ -84,6 +84,8 @@ namespace Tycoon
             var data = JsonUtility.FromJson<SaveData>(File.ReadAllText(path));
             // Unity có thể tạo inline class rỗng khi JSON thiếu field; marker phân biệt save v2 cũ.
             if(data!=null&&data.transactionVersion==0)data.transactionState=null;
+            if(data?.transactionVersion==1&&data.transactionState!=null)
+                data.transactionState=TransactionCore.NormalizeState(data.transactionState);
             if (data == null || data.version != 2 || data.money < 0 || data.inventories == null || data.unlocked == null)
                 throw new InvalidDataException("Save không hợp lệ hoặc phiên bản chưa hỗ trợ.");
             Validate(data);

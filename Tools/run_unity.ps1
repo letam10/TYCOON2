@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('Import','Tests','Build','Scene','Baseline','Stage23','Stage45')] [string]$Task = 'Import'
+    [ValidateSet('Import','Tests','Build','Scene','Baseline','Stage23','Stage45','Stage67')] [string]$Task = 'Import'
 )
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
@@ -16,7 +16,7 @@ $arguments = @('-batchmode','-nographics','-projectPath',('"' + $taskRoot + '"')
 if ($Task -eq 'Tests') {
     $arguments += @('-runTests','-testPlatform','EditMode','-testResults',('"' + (Join-Path $taskRoot 'QA\editmode-results.xml') + '"'))
 } else {
-    if($Task -notin @('Baseline','Stage23','Stage45')) { $arguments += '-quit' }
+    if($Task -notin @('Baseline','Stage23','Stage45','Stage67')) { $arguments += '-quit' }
     if($Task -eq 'Baseline') {
         $qaOutput=Join-Path $taskRoot 'work\stage01\editor-play'
         $arguments += @('-executeMethod','Tycoon.Editor.ProjectBuilder.PlayBaseline','--qa','--qa-baseline','--qa-output',('"' + $qaOutput + '"'))
@@ -29,6 +29,11 @@ if ($Task -eq 'Tests') {
         $qaRoot=Join-Path $taskRoot 'work\stage04-05'
         $qaOutput=Join-Path $qaRoot ('editor-stage45-' + [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'))
         $arguments += @('-executeMethod','Tycoon.Editor.ProjectBuilder.PlayBaseline','--qa','--qa-stage45','--qa-output',('"'+$qaOutput+'"'))
+    }
+    if($Task -eq 'Stage67') {
+        $qaRoot=Join-Path $taskRoot 'work\stage06-07'
+        $qaOutput=Join-Path $qaRoot ('editor-stage67-' + [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'))
+        $arguments += @('-executeMethod','Tycoon.Editor.ProjectBuilder.PlayBaseline','--qa','--qa-stage67','--qa-output',('"'+$qaOutput+'"'))
     }
     if ($Task -eq 'Build') { $arguments += @('-executeMethod','Tycoon.Editor.ProjectBuilder.BuildWindows') }
     if ($Task -eq 'Scene') { $arguments += @('-executeMethod','Tycoon.Editor.ProjectBuilder.CreateScene') }

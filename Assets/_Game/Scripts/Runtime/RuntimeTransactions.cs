@@ -93,6 +93,7 @@ namespace Tycoon
         public bool StationAction(TransactionKind kind, Station station, EntityId actor, float delta = 0, Inventory carrier = null)
         {
             var c = Command(kind, Actor(actor), station.Id); c.duration = delta;
+            if(kind==TransactionKind.FeedProducer&&station is ProductionStation livestock)c.item=livestock.FeedItem;
             if (carrier != null) { c.source = OwnerId(carrier); c.destination = OwnerId(carrier); }
             return TryExecute(c, out _);
         }
@@ -247,19 +248,21 @@ namespace Tycoon
             var s = new TransactionState { money = data.money, revenue = data.revenue, legacyRevenue = data.revenue,
                 legacyTransactions = data.transactions, legacyPaid = data.receipts, legacyLosses = data.losses, legacyCash = data.cash,
                 simulationTime = Time.timeAsDouble, unlocked = data.unlocked, crews = data.crews };
-            void Owner(string id, Inventory inventory, OwnerKind kind, string actor = "simulation", List<ItemAmount> items = null)
+            void Owner(string id, Inventory inventory, OwnerKind kind, string actor = "simulation", List<ItemAmount> items = null, string location = null)
             {
-                s.owners.Add(new OwnerState { id = id, actor = actor, kind = kind, location = id,
+                var owner=new OwnerState { id = id, actor = actor, kind = kind, location = location??id,
                     capacity = inventory.Capacity, singleItem = inventory.SingleItem, limits = inventory.Limits,
-                    writers = kind == OwnerKind.Player ? new() : new() { "player" } });
+                    writers = kind == OwnerKind.Player ? new() : new() { "player" } };
+                s.owners.Add(owner);
                 foreach (var item in items ?? inventory.Snapshot()) s.stacks.Add(new ItemStackState {
-                    id = "migrated:" + id + ":" + item.id, item = item.id, quantity = item.count, owner = id, location = id });
+                    id = "migrated:" + id + ":" + item.id, item = item.id, quantity = item.count, owner = id,
+                    location = kind==OwnerKind.Storage?owner.location+"/"+item.id:owner.location });
             }
             Owner("player", game.Player.Carry, OwnerKind.Player, "player");
             foreach (var station in game.Stations.Where(x => x is not StationZone))
             {
                 OwnerKind kind = station is StorageStation ? OwnerKind.Storage : station is MachineStation ? OwnerKind.Machine : station is CheckoutStation ? OwnerKind.Counter : OwnerKind.Station;
-                Owner(station.Id, station.Inventory ?? new Inventory(0), kind);
+                Owner(station.Id, station.Inventory ?? new Inventory(0), kind, location:station is StorageStation?station.AreaId:null);
                 if(station is ShelfStation shelf)s.owners[^1].accepts=new(shelf.AllowedItems);
                 if(station is CheckoutStation checkout)s.owners[^1].accepts=new(checkout.AcceptedItems);
                 if(station is MachineStation machine)
@@ -268,7 +271,7 @@ namespace Tycoon
                     s.owners[^1].accepts=machine.Recipe.inputs.Select(x=>x.id).ToList();
                 }
                 var progress = station.CaptureProgress();
-                var m = new StationRuntimeState { id = station.Id, area = station.AreaId, requirement = station.Requirement, level = progress.level, workCount = progress.workCount,
+                var m = new StationRuntimeState { id = station.Id, area = station.AreaId, requirement = station.Requirement, level = progress.level, workCount = progress.workCount, playerWorkCount=progress.playerWorkCount,
                     input = station is MachineStation ? station.Id + "_input" : station.Id, output = station.Id, progress = progress,
                     kind = station is MachineStation ? "machine" : station is ProductionStation ? "producer" : station is StorageStation ? "storage" : station is ShelfStation ? "shelf" : station is CheckoutStation ? "counter" : station is TableStation ? "table" : "purchase",
                     definitionId = station is MachineStation machine2 ? machine2.Recipe.id : station is PurchasePad pad ? pad.Upgrade.id : station.Id,

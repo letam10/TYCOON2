@@ -4,15 +4,16 @@ namespace Tycoon
 {
     [Serializable] public sealed class StationProgressSave
     {
-        public string id; public int level=1,workCount,phase,herd=3,feed,batches,repairFee;public float remaining,action,cycle,breeding,repairRemaining;public bool running,broken,repairPaid;public float produced;
+        public string id; public int level=1,workCount,playerWorkCount,phase,herd=3,feed,batches,repairFee;public float remaining,action,cycle,breeding,repairRemaining;public bool running,broken,repairPaid;public float produced;
     }
     public abstract class Station:MonoBehaviour,IPlayerInteractionTarget
     {
-        public string Id,Label;public string Requirement="",AreaId="farm";int level=1,workCount;public Vector3 InteractionPoint;
+        public string Id,Label;public string Requirement="",AreaId="farm";int level=1,workCount,playerWorkCount;public Vector3 InteractionPoint;
         protected RuntimeTransactions Authority=>GameSession.Instance?GameSession.Instance.Transactions:null;
         protected StationRuntimeState Runtime=>Authority?.Station(Id);
         public int Level { get=>Runtime?.level??level;set{if(Runtime!=null&&value!=Level)throw new InvalidOperationException("Station level chỉ được cập nhật qua transaction.");level=value;} }
         public int WorkCount { get=>Runtime?.workCount??workCount;set{if(Runtime!=null&&value!=WorkCount)throw new InvalidOperationException("Station work chỉ được cập nhật qua transaction.");workCount=value;} }
+        public int PlayerWorkCount { get=>Runtime?.playerWorkCount??playerWorkCount;set{if(Runtime!=null&&value!=PlayerWorkCount)throw new InvalidOperationException("Player work chỉ được cập nhật qua transaction.");playerWorkCount=value;} }
         public float InteractionRadius=1.15f;public bool PlayerUsesZones;
         public bool ContainsInteractionPoint(Vector3 position){if(Mathf.Abs(position.y-InteractionPoint.y)>1.2f)return false;position.y=InteractionPoint.y;return (position-InteractionPoint).sqrMagnitude<=InteractionRadius*InteractionRadius;}
         [NonSerialized]public Inventory Inventory;public TextMesh StatusLabel;protected EntityId operatorId;protected float operatorUntil;
@@ -24,8 +25,8 @@ namespace Tycoon
         public virtual bool Work(Inventory carrier,float delta,EntityId actorId)=>false;
         public virtual InteractionResult Perform(InteractionKind kind,InteractionContext context,float delta)=>StationPlayerActions.Execute(this,kind,context,delta);
         public virtual void EndInteraction(EntityId actor){ReleaseOperator(actor);if(this is PurchasePad pad)pad.StopContributing();}
-        public virtual StationProgressSave CaptureProgress()=>new(){id=Id,level=Level,workCount=WorkCount};
-        public virtual void RestoreProgress(StationProgressSave s){Level=s.level;WorkCount=s.workCount;operatorUntil=0;}
+        public virtual StationProgressSave CaptureProgress()=>new(){id=Id,level=Level,workCount=WorkCount,playerWorkCount=PlayerWorkCount};
+        public virtual void RestoreProgress(StationProgressSave s){Level=s.level;WorkCount=s.workCount;PlayerWorkCount=s.playerWorkCount;operatorUntil=0;}
         public bool IsOperatedByOther(EntityId actorId)=>Authority!=null?Authority.OperatedByOther(this,actorId):operatorId!=actorId&&Time.time<operatorUntil;
         protected virtual void LateUpdate(){if(StatusLabel){StatusLabel.text=Prompt;StatusLabel.gameObject.SetActive(!PlayerUsesZones&&IsUnlocked&&GameSession.Instance.Player&&(GameSession.Instance.Player.transform.position-InteractionPoint).sqrMagnitude<36);}}
     }
@@ -33,7 +34,7 @@ namespace Tycoon
     {
         public Station Target;public string Mode;
         float nextTransfer,operationDelta;
-        public InteractionKind Kind=>Mode switch{"withdraw"=>InteractionKind.Pickup,"deposit"=>InteractionKind.Drop,"operate"=>InteractionKind.Operate,"serve"=>InteractionKind.Serve,"cash"=>InteractionKind.Collect,_=>throw new InvalidOperationException("Unknown interaction zone: "+Mode)};
+        public InteractionKind Kind=>Mode switch{"withdraw"=>InteractionKind.Pickup,"deposit"=>InteractionKind.Drop,"operate"=>InteractionKind.Operate,"restock"=>InteractionKind.Restock,"serve"=>InteractionKind.Serve,"cash"=>InteractionKind.Collect,_=>throw new InvalidOperationException("Unknown interaction zone: "+Mode)};
         public Vector3 Center=>InteractionPoint;
         public bool Available=>this&&isActiveAndEnabled&&Target&&Target.IsUnlocked;
         public bool Contains(Vector3 point)=>ContainsInteractionPoint(point);
@@ -47,11 +48,11 @@ namespace Tycoon
             {operationDelta+=delta;if(operationDelta<.1f)return InteractionResult.Waiting;delta=operationDelta;operationDelta=0;}
             int before=context.Carry.Total;
             var result=Target.Perform(Kind,context,delta);
-            if(result.Worked&&(context.Carry.Total!=before||Kind is InteractionKind.Serve or InteractionKind.Collect))nextTransfer=.12f;
+            if(result.Worked&&(context.Carry.Total!=before||Kind is InteractionKind.Serve or InteractionKind.Collect or InteractionKind.Restock))nextTransfer=.12f;
             return result;
         }
         public void Exit(EntityId actor){nextTransfer=operationDelta=0;if(Target)Target.EndInteraction(actor);}
-        public override string Prompt=>!Target?"":Mode=="deposit"?"Đặt hàng • "+Target.Label:Mode=="withdraw"?"Lấy hàng • "+Target.Label:Mode=="serve"?"Giao hàng • "+Target.Label:Mode=="cash"?"Thu "+(Target as CheckoutStation)?.Cash+" xu":Target.Prompt;
+        public override string Prompt=>!Target?"":(Mode=="deposit"?Target is ProductionStation livestock&&livestock.Animal?"Cho ăn "+Definitions.Item(livestock.FeedItem)?.label+" • "+Target.Label:"Đặt hàng • "+Target.Label:Mode=="withdraw"?"Lấy hàng • "+Target.Label:Mode=="restock"?"Tái đàn • "+Target.Label:Mode=="serve"?"Giao hàng • "+Target.Label:Mode=="cash"?"Thu "+(Target as CheckoutStation)?.Cash+" xu":Target.Prompt)+(Target is StorageStation storage?storage.ReservationSummary:"");
         protected override void LateUpdate()
         {if(StatusLabel){StatusLabel.text=Prompt;StatusLabel.gameObject.SetActive(Available&&GameSession.Instance.Player&&Contains(GameSession.Instance.Player.transform.position));}}
         public override bool Interact(PlayerController player,bool withdraw)
@@ -67,6 +68,7 @@ namespace Tycoon
     public sealed class ProductionStation:Station
     {
         public string ItemId;public float Interval=5;public int Yield=1;public Transform[] Plants;
+        public const int MaximumHerd=3, MaximumFeed=3;
         float remaining,produced,action,cycle=30,breeding;int phase,herd=3,feed;float attendedUntil,tickDelta;
         public float Remaining {get=>Runtime?.progress.remaining??remaining;set{GuardState();remaining=value;}}
         public float Produced {get=>Runtime?.progress.produced??produced;private set{GuardState();produced=value;}}
@@ -76,9 +78,10 @@ namespace Tycoon
         public float Action {get=>Runtime?.progress.action??action;set{GuardState();action=value;}}
         public float Cycle {get=>Runtime?.progress.cycle??cycle;set{GuardState();cycle=value;}}
         public float Breeding {get=>Runtime?.progress.breeding??breeding;set{GuardState();breeding=value;}}
+        public string FeedItem=>Animal?"carrot":null;
         void GuardState(){if(Runtime!=null)throw new InvalidOperationException("Producer chỉ được cập nhật qua transaction.");}
         public bool Animal=>ItemId is "milk" or "egg" or "beef";
-        public override string Prompt=>!IsUnlocked?Label+" • chưa mở":Animal?Label+" • đàn "+Herd+" • thức ăn "+Feed+" • "+(Feed==0?"Cần cà rốt":Herd==0?"Đang tái đàn":Cycle.ToString("0")+"s"):Label+" • "+(Phase==0?"Đứng gieo hạt":Phase==1?"Đứng tưới":Phase==2?"Đang lớn "+Remaining.ToString("0.0")+"s":"Đứng thu hoạch")+" • cấp "+Level;
+        public override string Prompt=>!IsUnlocked?Label+" • chưa mở":Animal?Label+" • đàn "+Herd+"/"+MaximumHerd+" • thức ăn "+Feed+"/"+MaximumFeed+" • "+(Feed<MaximumFeed?"Cần "+Definitions.Item(FeedItem)?.label:Herd==0?"Đang tái đàn":Cycle.ToString("0")+"s"):Label+" • "+(Phase==0?"Đứng gieo hạt":Phase==1?"Đứng tưới":Phase==2?"Đang lớn "+Remaining.ToString("0.0")+"s":"Đứng thu hoạch")+" • cấp "+Level;
         void Update(){Tick(Time.deltaTime);}
         public void Tick(float delta)
         {
@@ -107,8 +110,8 @@ namespace Tycoon
             if(!Lease(actor))return InteractionResult.Reject("Trạm đang có người vận hành.");
             if(Animal)
             {
-                if(Herd<3&&Breeding==0&&Feed>0){Feed--;Breeding=60;return InteractionResult.Success;}
-                if(Feed==0)return InteractionResult.Reject("Hãy đặt cà rốt vào vùng Cho ăn.");
+                if(Herd<MaximumHerd&&Breeding==0&&Feed>0){Feed--;Breeding=60;return InteractionResult.Success;}
+                if(Feed==0)return InteractionResult.Reject("Hãy đặt "+Definitions.Item(FeedItem).label+" vào vùng Cho ăn.");
                 if(Herd==0)return InteractionResult.Reject("Chuồng đang tái đàn.");
                 attendedUntil=Time.time+.1f;
                 return InteractionResult.Success;
@@ -127,7 +130,7 @@ namespace Tycoon
             if(!Lease(actor))return InteractionResult.Reject("Trạm đang có người vận hành.");
             Action+=delta;
             if(Action<1)return InteractionResult.Success;
-            int amount=Animal&&ItemId=="beef"?Mathf.Min(3,carry.FreeFor(ItemId)):1;
+            int amount=1;
             if(!carry.TryAdd(ItemId,amount))return StationPlayerActions.CannotCarry(carry,ItemId);
             Action=0;Produced+=amount;WorkCount++;
             if(Animal){if(ItemId=="beef")Herd--;Feed--;Cycle=ItemId=="beef"?45:30;}
@@ -137,12 +140,34 @@ namespace Tycoon
         public InteractionResult FeedPlayer(Inventory carry,EntityId actor)
         {
             if(!IsUnlocked||!Animal||carry==null)return InteractionResult.Waiting;
-            if(Authority!=null)return Authority.StationAction(TransactionKind.FeedProducer,this,actor,carrier:carry)?InteractionResult.Success:InteractionResult.Reject(Authority.LastReason);
-            if(Feed>=3)return InteractionResult.Reject("Máng ăn đã đầy.");
-            if(carry.Available("carrot")==0)return InteractionResult.Reject("Chuồng chỉ nhận cà rốt làm thức ăn.");
+            if(Feed>=MaximumFeed)return InteractionResult.Reject("Máng ăn đã đầy.");
+            if(string.IsNullOrEmpty(FeedItem))return InteractionResult.Reject("Trạm không có thức ăn đã cấu hình.");
+            if(carry.Available(FeedItem)>0)
+            {
+                if(Authority!=null)return Authority.StationAction(TransactionKind.FeedProducer,this,actor,carrier:carry)?InteractionResult.Success:InteractionResult.Reject(Authority.LastReason);
+                if(!Lease(actor))return InteractionResult.Reject("Trạm đang có người vận hành.");
+                if(!carry.TryRemove(FeedItem,1))return InteractionResult.Waiting;
+                Feed++;WorkCount++;return InteractionResult.Success;
+            }
+            if(Inventory!=null&&Inventory.Available(FeedItem)>0)
+            {
+                if(Authority!=null)return Authority.StationAction(TransactionKind.FeedProducer,this,actor,carrier:Inventory)?InteractionResult.Success:InteractionResult.Reject(Authority.LastReason);
+                if(!Lease(actor)||!Inventory.TryRemove(FeedItem,1))return InteractionResult.Waiting;
+                Feed++;WorkCount++;return InteractionResult.Success;
+            }
+            if(Authority!=null)return InteractionResult.Reject("Thiếu "+Definitions.Item(FeedItem).label+" trong giỏ và máng.");
             if(!Lease(actor))return InteractionResult.Reject("Trạm đang có người vận hành.");
-            if(!carry.TryRemove("carrot",1))return InteractionResult.Waiting;
-            Feed++;WorkCount++;return InteractionResult.Success;
+            return InteractionResult.Reject("Thiếu "+Definitions.Item(FeedItem).label+" trong giỏ và máng.");
+        }
+        public InteractionResult RestockPlayer(EntityId actor)
+        {
+            if(!IsUnlocked||!Animal)return InteractionResult.Waiting;
+            if(Herd>=MaximumHerd)return InteractionResult.Reject("Đàn đã đủ số lượng.");
+            if(Breeding>0)return InteractionResult.Reject("Vật nuôi đang tái đàn • "+Breeding.ToString("0")+"s.");
+            if(Feed<=0)return InteractionResult.Reject("Cần cho ăn trước khi tái đàn.");
+            if(Authority!=null)return Authority.StationAction(TransactionKind.RestockProducer,this,actor)?InteractionResult.Success:InteractionResult.Reject(Authority.LastReason);
+            if(!Lease(actor))return InteractionResult.Reject("Trạm đang có người vận hành.");
+            Feed--;Breeding=60;WorkCount++;return InteractionResult.Success;
         }
         public override void EndInteraction(EntityId actor)
         {
@@ -154,24 +179,23 @@ namespace Tycoon
             if(Authority!=null)
             {
                 if(!IsUnlocked||carrier==null||delta<=0||!float.IsFinite(delta))return false;
-                if(Animal&&Feed<3&&carrier.Available("carrot")>0)return FeedPlayer(carrier,actorId).Worked;
+                if(Animal&&Feed<MaximumFeed&&(carrier.Available(FeedItem)>0||Inventory.Available(FeedItem)>0))return FeedPlayer(carrier,actorId).Worked;
                 if(!Animal&&Phase==3||Animal&&Cycle==0&&Herd>0&&Feed>0)return PickupPlayer(carrier,delta,actorId).Worked;
                 return OperatePlayer(delta,actorId).Worked;
             }
             if(!IsUnlocked||carrier==null||delta<=0||float.IsNaN(delta)||float.IsInfinity(delta)||!Lease(actorId))return false;
             if(Animal)
             {
-                if(Feed<3)
+                if(Feed<MaximumFeed)
                 {
-                    // Thức ăn được giữ riêng tại chuồng; nhân viên lấy từ kho rồi đặt vào đây.
-                    if(carrier.TryRemove("carrot",1)||(Inventory!=null&&Inventory.TryRemove("carrot",1))){Feed++;WorkCount++;return true;}
+                    if(carrier.TryRemove(FeedItem,1)||(Inventory!=null&&Inventory.TryRemove(FeedItem,1))){Feed++;WorkCount++;return true;}
                 }
-                if(Herd<3&&Breeding==0&&Feed>0){Feed--;Breeding=60;return true;}
+                if(Herd<MaximumHerd&&Breeding==0&&Feed>0){Feed--;Breeding=60;return true;}
                 if(Feed==0)return false;
                 attendedUntil=Time.time+.1f;
                 if(Herd==0||Cycle>0||carrier.FreeFor(ItemId)<=0)return false;
                 Action+=delta;if(Action<1)return true;
-                int amount=ItemId=="beef"?Mathf.Min(3,carrier.FreeFor(ItemId)):1;
+                int amount=1;
                 if(!carrier.TryAdd(ItemId,amount))return false;
                 if(ItemId=="beef")Herd--;Feed--;Produced+=amount;WorkCount++;Action=0;Cycle=ItemId=="beef"?45:30;return true;
             }
@@ -192,7 +216,33 @@ namespace Tycoon
     }
     public sealed class StorageStation:Station
     {
-        public override string Prompt=>Label+" • "+Inventory.Total+"/"+Inventory.Capacity+" • chọn vùng Lấy hoặc Đặt hàng";
+        public string ReservationSummary
+        {
+            get
+            {
+                if(Inventory==null)return "";
+                var rows=new System.Collections.Generic.List<string>();
+                foreach(var item in Definitions.Items)
+                {int held=Inventory.Reserved(item.id),incoming=Inventory.ReservedSpace(item.id);if(held>0||incoming>0)rows.Add(Definitions.Item(item.id).label+" "+held+" giữ / "+incoming+" chờ nhận");}
+                return rows.Count==0?"":" • "+string.Join("; ",rows);
+            }
+        }
+        public void ConfigureItemBins(int capacity)
+        {if(Inventory!=null)foreach(var item in Definitions.Items)Inventory.SetLimit(item.id,capacity);}
+        public int SharedReserveThreshold(string itemId)
+        {
+            int reserve=0;var game=GameSession.Instance;
+            if(game==null||Inventory==null)return 0;
+            foreach(var animal in game.Producers)if(animal.IsUnlocked&&animal.AreaId==AreaId&&animal.Animal&&animal.FeedItem==itemId)
+                reserve+=Mathf.Max(0,ProductionStation.MaximumFeed-animal.Feed-animal.Inventory.Available(itemId));
+            foreach(var machine in game.Machines)if(machine.IsUnlocked&&!machine.Broken&&!machine.Running&&SourceArea(machine.AreaId)==AreaId)
+                foreach(var input in machine.Recipe.inputs)if(input.id==itemId)
+                    reserve+=Mathf.Max(0,input.count*2-machine.Input.Available(itemId));
+            return reserve;
+        }
+        public int AvailableAboveReserve(string itemId)=>Mathf.Max(0,Inventory.Available(itemId)-SharedReserveThreshold(itemId));
+        static string SourceArea(string sku)=>sku is "flour" or "cheese" or "sauce"?"processing":sku is "bread" or "cake"?"bakery":sku=="meal"?"restaurant":"farm";
+        public override string Prompt=>Label+" • "+Inventory.Total+"/"+Inventory.Capacity+" • theo khu / loại hàng"+ReservationSummary;
         public override bool Interact(PlayerController player,bool withdraw)
         {
             if(!IsUnlocked)return false;

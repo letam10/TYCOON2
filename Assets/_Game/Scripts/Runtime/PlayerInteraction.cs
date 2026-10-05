@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Tycoon
 {
-    public enum InteractionKind { Pickup, Drop, Operate, Serve, Collect, Purchase }
+    public enum InteractionKind { Pickup, Drop, Operate, Serve, Collect, Purchase, Restock }
     public readonly struct InteractionResult
     {
         public readonly bool Worked;
@@ -69,7 +69,7 @@ namespace Tycoon
         }
         public static bool Supports(Station target,InteractionKind kind)=>target switch
         {
-            ProductionStation p=>kind is InteractionKind.Pickup or InteractionKind.Operate||p.Animal&&kind==InteractionKind.Drop,
+            ProductionStation p=>kind is InteractionKind.Pickup or InteractionKind.Operate||p.Animal&&kind is InteractionKind.Drop or InteractionKind.Restock,
             MachineStation=>kind is InteractionKind.Pickup or InteractionKind.Drop or InteractionKind.Operate,
             StorageStation or ShelfStation=>kind is InteractionKind.Pickup or InteractionKind.Drop,
             CheckoutStation=>kind is InteractionKind.Drop or InteractionKind.Serve or InteractionKind.Collect,
@@ -136,6 +136,11 @@ namespace Tycoon
                 if(target is TableStation cleaning)
                     return cleaning.Cleaning>0&&cleaning.Occupant==null?new InteractionResult(cleaning.Work(carry,delta,context.Actor)):InteractionResult.Reject("Bàn chưa cần dọn.");
             }
+            if(kind==InteractionKind.Restock&&target is ProductionStation livestock)
+            {
+                if(!livestock.Animal)return InteractionResult.Reject("Chỉ chuồng vật nuôi mới cần tái đàn.");
+                return livestock.RestockPlayer(context.Actor);
+            }
             if(kind==InteractionKind.Pickup)
             {
                 string item=target is ProductionStation producer?producer.ItemId:target is MachineStation machine?machine.Recipe.output:context.SelectedItem;
@@ -153,7 +158,7 @@ namespace Tycoon
                 string item=carry.Snapshot()[0].id;
                 if(target is ProductionStation animal)
                 {
-                    if(!animal.Animal||item!="carrot")return InteractionResult.Reject("Chuồng chỉ nhận cà rốt làm thức ăn.");
+                    if(!animal.Animal||item!=animal.FeedItem)return InteractionResult.Reject("Chuồng chỉ nhận "+Definitions.Item(animal.FeedItem)?.label+" làm thức ăn.");
                     return animal.FeedPlayer(carry,context.Actor);
                 }
                 if(target is ShelfStation shelf&&!shelf.Accepts(item))return InteractionResult.Reject("Quầy không nhận "+Name(item)+".");

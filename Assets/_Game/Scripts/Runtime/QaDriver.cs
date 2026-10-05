@@ -30,12 +30,12 @@ namespace Tycoon
             var routines = new Stack<IEnumerator>();
             var arguments = Environment.GetCommandLineArgs();
             bool load = Array.Exists(arguments,x=>x=="--qa-load"), full = Array.Exists(arguments,x=>x=="--qa-progression");
-            bool stage45=Array.Exists(arguments,x=>x=="--qa-stage45");
+            bool stage45=Array.Exists(arguments,x=>x=="--qa-stage45");bool stage67=Array.Exists(arguments,x=>x=="--qa-stage67");
             bool art = Array.Exists(arguments,x=>x=="--qa-art");
             bool redesign=Array.Exists(arguments,x=>x=="--qa-v2");
-            string mode = redesign ? "redesign" : art ? "visual" : load ? "load" : stage45?"stage45":full ? "progression" : game.Milestone == 0 ? "foundation" : "vertical";
+            string mode = redesign ? "redesign" : art ? "visual" : load ? "load" : stage67?"stage67":stage45?"stage45":full ? "progression" : game.Milestone == 0 ? "foundation" : "vertical";
             bool resume = Array.Exists(arguments,x=>x=="--qa-resume");
-            routines.Push(redesign ? Redesign() : art ? VisualInspection() : load ? LoadCheck() : stage45?FarmStarterAndPurchase():game.Milestone == 0 ? Foundation() : (full || resume) ? Progression(resume) : Vertical());
+            routines.Push(redesign ? Redesign() : art ? VisualInspection() : load ? LoadCheck() : stage67?LivestockAndCrew():stage45?FarmStarterAndPurchase():game.Milestone == 0 ? Foundation() : (full || resume) ? Progression(resume) : Vertical());
             while (routines.Count > 0)
             {
                 object yielded = null; bool running = false;

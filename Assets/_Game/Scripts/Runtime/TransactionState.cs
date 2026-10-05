@@ -4,13 +4,14 @@ using System.Collections.Generic;
 namespace Tycoon
 {
     public enum OwnerKind { Player, Worker, Customer, Storage, Counter, Machine, Conveyor, Station, Escrow }
+    public enum MachinePhase { WaitingInput, Ready, Operating, CompletedWaitingPickup }
     public enum TransactionKind
     {
         Take, Place, Transfer, Reserve, Release, Split, Merge, CreateOrder, DeliverOrder,
         CompleteOrder, FailOrder, CreatePayment, CollectPayment, ContributePurchase, CompletePurchase,
         StartMachine, AdvanceMachine, CompleteMachine, AcknowledgeEvent,
         RegisterOwner, OperateProducer, TickProducer, HarvestProducer, FeedProducer,
-        ReleaseOperator, BreakMachine, RepairMachine, UpgradeCrew, CleanTable, AdvanceDiner, Checkpoint
+        ReleaseOperator, BreakMachine, RepairMachine, UpgradeCrew, CleanTable, AdvanceDiner, Checkpoint, RestockProducer
     }
     public enum OrderStatus { Open, Complete, Failed }
     public enum ReservationStatus { Active, Used, Released, Expired }
@@ -70,7 +71,8 @@ namespace Tycoon
     [Serializable] public sealed class StationRuntimeState
     {
         public string id, definitionId, input, output, jobId, reservationId, operatorId, escrow;
-        public int definitionVersion = 1, level = 1, workCount, batches;
+        public int definitionVersion = 1, level = 1, workCount, playerWorkCount, batches;
+        public MachinePhase machinePhase;
         public double remaining;
         public bool running;
         public string kind = "machine", item, area, requirement;
@@ -91,7 +93,7 @@ namespace Tycoon
     }
     [Serializable] public sealed class TransactionState
     {
-        public int schemaVersion = 1, catalogVersion = Definitions.Version;
+        public int schemaVersion = 2, catalogVersion = Definitions.Version;
         public long revision;
         public int money, revenue;
         public double simulationTime;
