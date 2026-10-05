@@ -114,6 +114,7 @@ namespace Tycoon
         public int money, revenue, cashCollected, assistedCash;
         public bool assisted;
         public int contentVersion;
+        public int layoutRevision;
         public double simulationTime;
         public int legacyRevenue, legacyTransactions;
         public List<long> legacyPaid = new();

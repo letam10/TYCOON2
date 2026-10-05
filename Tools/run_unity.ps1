@@ -63,10 +63,8 @@ if ($Task -in @('Tests','Stage08','Stage09','Stage10','Stage11','Stage12','Stage
     if ($Task -eq 'Scene') { $arguments += @('-executeMethod','Tycoon.Editor.ProjectBuilder.CreateScene') }
 }
 $process = Start-Process -FilePath $unityExe -ArgumentList $arguments -PassThru -WindowStyle Hidden
-[pscustomobject]@{Task=$Task;ProcessId=$process.Id;Exe=$unityExe;Arguments=$arguments;StartedUtc=[DateTime]::UtcNow.ToString('o')} |
-    ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $taskRoot ('work\unity-' + $Task.ToLower() + '-process.json')) -Encoding utf8
-[pscustomobject]@{Task=$Task;ProcessId=$process.Id;Exe=$unityExe;StartedUtc=[DateTime]::UtcNow.ToString('o')} |
-    ConvertTo-Json -Compress | Add-Content -LiteralPath (Join-Path $taskRoot 'work\process-history.jsonl') -Encoding utf8
+. (Join-Path $PSScriptRoot 'process_record.ps1')
+Write-TaskProcessRecord -Root $taskRoot -Name ('unity-'+$Task.ToLower()) -Record ([pscustomobject]@{Task=$Task;ProcessId=$process.Id;Exe=$unityExe;Arguments=$arguments;StartedUtc=[DateTime]::UtcNow.ToString('o')})
 Write-Output ('Unity ' + $Task + ' PID ' + $process.Id)
 $process.WaitForExit()
 Write-Output ('Unity exit code ' + $process.ExitCode)

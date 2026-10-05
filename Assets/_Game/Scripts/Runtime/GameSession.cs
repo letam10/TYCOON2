@@ -42,7 +42,9 @@ namespace Tycoon
         public float ToastUntil;
         public List<string> RuntimeErrors = new();
         public RuntimeTransactions Transactions { get; private set; }
-        public bool CanSimulate => !SaveBlocked;
+        public bool IsRestoring {get;private set;}
+        public bool CanRestore=>!SaveBlocked;
+        public bool CanSimulate => !SaveBlocked&&!IsRestoring;
 
         void Awake()
         {
@@ -82,6 +84,7 @@ namespace Tycoon
         void Start()
         {
             if (!enabled) return;
+            IsRestoring=true;
             Catalog = Resources.Load<GameCatalog>("GameCatalog");
             if (!Catalog) throw new InvalidOperationException("Thiếu GameCatalog.");
             Art.Catalog = Catalog;
@@ -97,10 +100,10 @@ namespace Tycoon
             Player.CanControl = false;
             var basket = new GameObject("CarryStack");
             basket.transform.SetParent(playerRoot.transform, false);
-            basket.transform.localPosition = new Vector3(0, .8f, -.5f);
+            basket.transform.localPosition = new Vector3(0, .8f, .5f);
             var stack = basket.AddComponent<InventoryStack>();
             stack.Inventory = Player.Carry; stack.Pool = Pool; stack.Maximum = 24;
-            stack.Columns = 1; stack.Rows = 1; stack.Scale = .85f; stack.Spacing = .18f; stack.LayerHeight = .31f;
+            stack.Columns = 2; stack.Rows = 3; stack.Scale = .45f; stack.Spacing = .3f; stack.LayerHeight = .28f;
             var ring = playerRoot.AddComponent<LineRenderer>(); ring.sharedMaterial = Art.Material("#78FF2D"); ring.useWorldSpace = false; ring.loop = true; ring.widthMultiplier = .04f; ring.positionCount = 32;
             for (int i = 0; i < 32; i++) ring.SetPosition(i, new Vector3(Mathf.Cos(i * Mathf.PI / 16) * .65f, .045f, Mathf.Sin(i * Mathf.PI / 16) * .65f));
             var cameraObject = new GameObject("MainCamera");
@@ -117,11 +120,12 @@ namespace Tycoon
             if (File.Exists(SavePath)&&!baseline) LoadGame();
             ApplyProgression();
             if (!baseline && Transactions == null && !SaveBlocked)
-                try { InitializeTransactions(); Player.CanControl = !SaveBlocked; } catch(Exception error) { BlockRecovery(error); }
+                try { InitializeTransactions(); Player.CanControl = false; } catch(Exception error) { BlockRecovery(error); }
             Feedback = gameObject.AddComponent<GameFeedback>();
             Commerce = gameObject.AddComponent<CommerceDirector>();
             Restaurant = gameObject.AddComponent<RestaurantDirector>();
             Logistics=gameObject.AddComponent<TruckLogistics>();
+            new GameObject("InteractionFocus").AddComponent<InteractionFocusView>().transform.SetParent(transform);
             if(IsQa&&Array.Exists(Environment.GetCommandLineArgs(),x=>x=="--qa-stage23"))gameObject.AddComponent<QaStages>();
             else if(IsQa&&baseline)gameObject.AddComponent<QaBaseline>();
             else if (IsQa) gameObject.AddComponent<QaDriver>();
@@ -129,8 +133,14 @@ namespace Tycoon
         }
         void Update()
         {
-            if (!Player || !NavigationReady || !CanSimulate) return;
+            if (!Player || !NavigationReady || SaveBlocked) return;
             SyncWorkers();
+            if(IsRestoring)
+            {
+                if(PendingCustomers.Count+PendingDiners.Count+PendingWorkers.Count>0)return;
+                Transactions?.ResumeClock();IsRestoring=false;Player.CanControl=true;
+                foreach(var agent in GetComponentsInChildren<UnityEngine.AI.NavMeshAgent>())if(agent.enabled&&agent.isOnNavMesh)agent.isStopped=false;
+            }
             TickEvents(Time.deltaTime);
             if (!IsQa && Time.time > nextAutosave) { nextAutosave = Time.time + 60; SaveGame(); }
         }
@@ -234,7 +244,7 @@ namespace Tycoon
         {
             foreach(var machine in Machines)machine.ConfigureInputLimits();
             foreach(var station in Stations)if(station is StorageStation storage&&storage.Inventory!=null)storage.ConfigureItemBins(storage.Inventory.Capacity);
-            var initial=state??RuntimeTransactions.Migrate(this,CaptureSaveData());
+            var initial=state??RuntimeTransactions.Migrate(this,CaptureSaveData());initial.layoutRevision=TownLayout.Revision;
             RuntimeTransactions.UpgradeCounterOwners(initial,this);
             Transactions = new RuntimeTransactions(this,initial,persist);
             Transactions.CompletePurchases();
@@ -249,7 +259,8 @@ namespace Tycoon
             {
                 var data = SaveStore.Read(SavePath);
                 if (data == null) return;
-                bool worldChanged=EnsureWorldProjection(data);
+                IsRestoring=Application.isPlaying;Player.CanControl=false;
+                bool worldChanged=TownLayout.Migrate(data);worldChanged|=EnsureWorldProjection(data);
                 if(data.transactionState!=null)
                 {
                     worldChanged|=RuntimeTransactions.ReconcileWorld(data.transactionState,this);
@@ -290,7 +301,7 @@ namespace Tycoon
                 if(data.transactionState!=null)InitializeTransactions(data.transactionState);
                 CameraRig?.Snap();
                 SaveBlocked=false;
-                Player.CanControl=true;
+                Player.CanControl=!IsRestoring;
                 Say("Đã tải trò chơi");
             }
             catch (Exception error) { BlockRecovery(error); }
@@ -372,7 +383,8 @@ namespace Tycoon
         void OnApplicationQuit() { if (Player != null && !IsQa) SaveGame(); }
         void OnLog(string condition, string trace, LogType type)
         {
-            if (type == LogType.Exception || type == LogType.Error || type == LogType.Assert) RuntimeErrors.Add(condition);
+            if (type == LogType.Exception || type == LogType.Error || type == LogType.Assert)
+            {RuntimeErrors.Add(condition);if(IsQa&&Player==null)Application.Quit(2);}
         }
         void OnDestroy()
         {

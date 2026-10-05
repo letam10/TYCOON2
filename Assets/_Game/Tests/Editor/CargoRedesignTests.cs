@@ -53,6 +53,19 @@ namespace Tycoon.Tests
             var result=core.Snapshot();Assert.That(result.stacks.Where(x=>x.owner=="storage_farm_shop"&&x.item=="carrot").Sum(x=>x.quantity),Is.EqualTo(6));
             Assert.That(result.stacks.Where(x=>x.item=="carrot").Sum(x=>x.quantity),Is.EqualTo(10));Assert.That(result.crates,Is.Empty);Assert.That(result.truck.completedTrips,Is.EqualTo(1));TransactionCore.Validate(result);
         }
+        [Test] public void LoaderClaimCannotBeExecutedByTwoWorkersOrWrongArea()
+        {
+            var seed=Seed();seed.unlocked.AddRange(new[]{"truck_bundle","loader_processing"});seed.crews.Add(new(){id="truck_bundle",role="Driver",area="processing"});seed.crews.Add(new(){id="loader_processing",role="Loader",area="processing"});
+            var worker=seed.owners.First(x=>x.id=="worker");worker.worker=new(){id="loader:0",upgrade="loader_processing"};worker.capacity=6;
+            seed.owners.Add(new(){id="worker2",actor="worker2",location="worker2",kind=OwnerKind.Worker,capacity=6,singleItem=true,worker=new(){id="loader:1",upgrade="loader_processing"}});
+            var core=new TransactionCore(seed,null,()=>100);
+            var take=C(core,TransactionKind.Take,"take");take.source="storage";take.destination="player";take.item="carrot";take.quantity=6;core.Execute(take);
+            var pack=C(core,TransactionKind.PackCrate,"pack","box");pack.source="player";pack.item="carrot";pack.quantity=6;core.Execute(pack);
+            var claim=C(core,TransactionKind.ClaimCrate,"claim","box");claim.actor="worker";core.Execute(claim);core.Execute(claim);
+            claim=C(core,TransactionKind.ClaimCrate,"claim2","box");claim.actor="worker2";Assert.Throws<TransactionRejectedException>(()=>core.Execute(claim));
+            var load=C(core,TransactionKind.LoadCrate,"load","box");load.actor="worker";core.Execute(load);core.Execute(load);
+            Assert.That(core.Snapshot().crates.Single().holder,Is.EqualTo(core.Snapshot().truck.id));Assert.That(core.Snapshot().stacks.Single(x=>x.owner=="box").quantity,Is.EqualTo(6));
+        }
         [Test] public void FullDestinationRejectsDispatchWithoutLosingCargo()
         {
             var seed=Seed();seed.unlocked.Add("truck_bundle");seed.crews.Add(new(){id="truck_bundle",role="Driver",area="processing"});

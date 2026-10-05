@@ -39,7 +39,7 @@ namespace Tycoon
         {
             if(!agent||!agent.isOnNavMesh||!NavMesh.SamplePosition(point,out var hit,1.8f,NavMesh.AllAreas))return false;
             if(!forceRepath&&(agent.pathPending||agent.hasPath)&&Vector3.SqrMagnitude(agent.destination-hit.position)<.16f)return true;
-            return agent.SetDestination(hit.position);
+            bool accepted=agent.SetDestination(hit.position);if(GameSession.Instance?.IsRestoring==true)agent.isStopped=true;return accepted;
         }
         public static bool Arrived(NavMeshAgent agent) => agent.isOnNavMesh && !agent.pathPending && agent.remainingDistance < .5f;
     }

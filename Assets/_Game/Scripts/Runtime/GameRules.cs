@@ -38,7 +38,8 @@ namespace Tycoon
         public int ItemPrice(string id)
         {
             var item = Definitions.Item(id); if (item == null) return 0;
-            int quality = Definitions.IsCrop(id) ? Progression.AxisLevel("farm", UpgradeAxis.QualityValue) : 1;
+            string family=Definitions.IsCrop(id)||id=="animal_feed"?"farm":Definitions.IsAnimal(id)?"animal":id is "flour" or "cheese" or "sauce" or "soy_sauce" or "bottled_milk" or "yarn" or "cloth"?"mill":id is "bread" or "cake" or "bread_dough" or "cake_batter"?"oven":"kitchen";
+            int quality = Progression.AxisLevel(family,UpgradeAxis.QualityValue);
             int price = Mathf.CeilToInt(item.price * (1 + .25f * (quality - 1)));
             // Thành phẩm luôn có lãi so với bán trực tiếp lượng nguyên liệu tương ứng.
             var recipe = Array.Find(Definitions.Recipes, x => x.output == id);

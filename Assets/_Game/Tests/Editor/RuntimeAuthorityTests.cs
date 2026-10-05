@@ -233,7 +233,7 @@ namespace Tycoon.Tests
             var speed=Definitions.Upgrade("farm_speed2");Assert.That(game.Contribute(speed,20),Is.EqualTo(20));
             Assert.That(game.Progression.Evaluate(speed).State,Is.EqualTo(PurchaseState.Contributing));Assert.That(farmSpeedPad.Prompt,Does.Contain("ĐANG GÓP"));
             game.SaveGame();game.LoadGame();Assert.That(game.Contribution(speed.id),Is.EqualTo(20));
-            Assert.That(game.Contribute(speed,40),Is.EqualTo(40));Assert.That(game.Progression.AxisLevel("farm",UpgradeAxis.Speed),Is.EqualTo(2));Assert.That(farmSpeedPad.Prompt,Is.EqualTo("ĐÃ MUA"));
+            Assert.That(game.Contribute(speed,40),Is.EqualTo(40));Assert.That(game.Progression.AxisLevel("farm",UpgradeAxis.Speed),Is.EqualTo(2));Assert.That(farmSpeedPad.Prompt,Does.Contain("ĐÃ MUA"));Assert.That(farmSpeedPad.Prompt,Does.Contain(speed.label));
             Assert.That(game.Progression.FarmGrowSeconds,Is.LessThan(2));Assert.That(game.ItemPrice("carrot"),Is.EqualTo(10));
             Assert.That(game.Player.Carry.Capacity,Is.EqualTo(6));Assert.That(crop.Level,Is.EqualTo(1));Assert.That(crop.Inventory.Capacity,Is.EqualTo(24));
             Assert.That(game.Contribute(Definitions.Upgrade("farm_value2"),250),Is.EqualTo(250));

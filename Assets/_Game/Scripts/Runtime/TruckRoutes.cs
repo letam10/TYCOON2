@@ -36,8 +36,8 @@ namespace Tycoon
             foreach(var storage in game.Stations.ToArray())if(storage is StorageStation)
             {
                 var root=new GameObject("dock_"+storage.Id);root.transform.SetParent(world);root.transform.position=Dock(storage.Id);
-                var dock=root.AddComponent<CargoDock>();dock.Id=root.name;dock.WarehouseId=storage.Id;dock.AreaId=storage.AreaId;dock.Requirement=storage.Requirement;dock.InteractionPoint=root.transform.position+Vector3.left*2;dock.Inventory=new Inventory(0);dock.Label="BẾN "+GameHud.AreaLabel(dock.AreaId).ToUpperInvariant();
-                Art.Model("crate_empty",new(-1.7f,.05f,0),root.transform,.9f);dock.StatusLabel=Art.Label(dock.Label,new(-1.7f,1.5f,0),root.transform,.16f);
+                var dock=root.AddComponent<CargoDock>();dock.Id=root.name;dock.WarehouseId=storage.Id;dock.AreaId=storage.AreaId;dock.Requirement=storage.Requirement;dock.InteractionPoint=root.transform.position+Vector3.left*1.7f;dock.TownWaitingPoint=root.transform.position+Vector3.back*3.5f;dock.HasTownWaitingPoint=true;dock.Inventory=new Inventory(0);dock.Label="BẾN "+GameHud.AreaLabel(dock.AreaId).ToUpperInvariant();
+                Art.Model("supply_crate",new(-1.7f,.05f,0),root.transform,.9f);dock.StatusLabel=Art.Label(dock.Label,new(-1.7f,1.5f,0),root.transform,.16f);
                 root.AddComponent<UnlockVisual>().Requirement=dock.Requirement;game.Stations.Add(dock);
             }
         }

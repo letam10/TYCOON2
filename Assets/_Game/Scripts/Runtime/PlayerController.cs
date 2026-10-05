@@ -54,7 +54,8 @@ namespace Tycoon
             var direction = CameraRelativeDirection(input, Camera.main ? Camera.main.transform : null);
             float speed = Sprint.IsPressed() && Carry.Total == 0 ? 6.2f : Carry.Total > 0 ? 3.8f : 4.8f;
             Vector3 before = transform.position;
-            Controller.Move((direction * speed + Vector3.down * 3) * Time.deltaTime);
+            var goal=before+direction*speed*Time.deltaTime;goal.x=Mathf.Clamp(goal.x,-48,58);goal.z=Mathf.Clamp(goal.z,-18,58);
+            Controller.Move(goal-before+Vector3.down*3*Time.deltaTime);
             Vector3 travelled = transform.position - before; travelled.y = 0;
             DistanceWalked += travelled.magnitude;
             if (direction.sqrMagnitude > .01f)

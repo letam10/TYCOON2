@@ -145,6 +145,8 @@ namespace Tycoon
             if(s.truck==null){Require(s.crates.Count==0,"cargo","Có thùng nhưng chưa có xe.");return;}
             Require(s.crates.Count(x=>x.holder==s.truck.id)<=6,"cargo","Xe vượt 6 thùng.");Owner(s,s.truck.id);Warehouse(s,s.truck.current);
             Require(s.truck.phase is "Idle" or "Loading" or "Travelling" or "WaitingUnload","truck","Sai phase xe.");
+            Require(double.IsFinite(s.truck.distance)&&double.IsFinite(s.truck.travelled)&&s.truck.distance>=0&&s.truck.travelled>=0&&s.truck.travelled<=s.truck.distance,"truck","Progress xe không hợp lệ.");
+            Require(s.truck.path!=null&&s.truck.path.All(p=>p!=null&&float.IsFinite(p.x)&&float.IsFinite(p.z)),"truck","Đường xe không hợp lệ.");
             foreach(var box in s.crates)
             {
                 var owner=Owner(s,box.id);Require(owner.kind==OwnerKind.Crate&&owner.singleItem&&CrateCount(s,box) is >0 and <=6&&owner.location==box.holder+"/"+box.id,"cargo","Thùng/owner không hợp lệ.");

@@ -73,11 +73,17 @@ namespace Tycoon
         }
         void Update()
         {
-            if(!game.CanSimulate||State==null)return;
+            if(State==null)return;
             if(Vehicle==null){Vehicle=BuildTruck();Vehicle.position=TruckRoutes.Position(State);}
+            if(!game.CanSimulate)return;
             elapsedTick+=Time.deltaTime;if(elapsedTick<.2f)return;float elapsed=elapsedTick;elapsedTick=0;
             if(State.phase=="Travelling")
-            {var c=game.Transactions.Command(TransactionKind.TickTruck,"simulation");c.secondary=State.trip;c.duration=elapsed;game.Transactions.TryExecute(c,out _);Reason="Đến kho "+GameHud.AreaLabel(game.Stations.Find(x=>x.Id==State.tripTarget)?.AreaId??"");}
+            {
+                var point=TruckRoutes.Position(State);var next=State.Copy();next.travelled=System.Math.Min(next.distance,next.travelled+3);var direction=TruckRoutes.Position(next)-point;
+                if(direction.sqrMagnitude>.01f&&People().Any(p=>Vector3.Dot(p-point,direction.normalized)>0&&Vector3.Dot(p-point,direction.normalized)<4&&Vector3.Cross(p-point,direction.normalized).magnitude<1.5f))
+                {Reason="Chờ nhường đường tại giao lộ / người qua đường";return;}
+                var c=game.Transactions.Command(TransactionKind.TickTruck,"simulation");c.secondary=State.trip;c.duration=elapsed;game.Transactions.TryExecute(c,out _);Reason="Đến kho "+GameHud.AreaLabel(game.Stations.Find(x=>x.Id==State.tripTarget)?.AreaId??"");
+            }
             else if(State.repeat&&State.phase is "Idle" or "Loading")
             {
                 int count=game.Transactions.View.crates.Count(x=>x.holder==State.id);
@@ -97,7 +103,7 @@ namespace Tycoon
             {
                 if(!visuals.TryGetValue(box.id,out var model))
                 {
-                    model=new GameObject(box.id);model.transform.SetParent(transform);Art.Model("crate_empty",Vector3.zero,model.transform,.7f);
+                    model=new GameObject(box.id);model.transform.SetParent(transform);Art.Model("supply_crate",Vector3.zero,model.transform,.7f);
                     var icon=Art.Model(Definitions.Item(box.item).model,new(0,.35f,-.35f),model.transform,.35f);icon.transform.localScale=new(.35f,.35f,.05f);
                     int quantity=game.Transactions.View.stacks.Where(x=>x.owner==box.id).Sum(x=>x.quantity);Art.Label("×"+quantity,new(0,.75f,0),model.transform,.14f);visuals.Add(box.id,model);
                 }
@@ -106,6 +112,13 @@ namespace Tycoon
                 else
                 {var worker=game.Workers.Find(w=>game.Transactions.Actor(w.GetEntityId())==box.holder);if(worker){int n=hands.TryGetValue(box.holder,out int value)?value:0;hands[box.holder]=n+1;model.transform.SetParent(worker.transform,false);model.transform.localPosition=new(0,.8f+n*.65f,.4f);}}
             }
+        }
+        IEnumerable<Vector3> People()
+        {
+            yield return game.Player.transform.position;
+            foreach(var c in game.Commerce.Customers)if(c&&c.gameObject.activeInHierarchy)yield return c.transform.position;
+            foreach(var d in game.Restaurant.Diners)if(d&&d.gameObject.activeInHierarchy)yield return d.transform.position;
+            foreach(var w in game.Workers)if(w&&w.Role!="Driver")yield return w.transform.position;
         }
         Transform BuildTruck()
         {

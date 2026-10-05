@@ -20,7 +20,7 @@ namespace Tycoon
         void Update()
         {
             var game = GameSession.Instance;
-            if (!game.NavigationReady || !game.CanSimulate) return;
+            if (!game.NavigationReady || !game.CanRestore) return;
             if (!restored)
             {
                 // Nạp theo vị trí đã lưu trước khi sinh khách mới để giữ nguyên FIFO.
@@ -34,7 +34,7 @@ namespace Tycoon
                 restored = game.PendingCustomers.Count == 0;
                 if (!restored) return;
             }
-            if (game.Milestone == 0) return;
+            if (!game.CanSimulate || game.Milestone == 0) return;
             if (Time.time < nextSpawn || ActiveCount >= MaximumActive) return;
             nextSpawn = Time.time + (game.RushActive ? .65f : game.BusinessStage==1 ? 10f : 2.5f);
             int limit = game.RushActive ? MaximumActive : game.Economy.Has("supermarket") ? 24 : 15;
@@ -52,13 +52,14 @@ namespace Tycoon
         {
             CheckoutStation result = null;
             foreach (var lane in GameSession.Instance.Checkouts)
-                if (lane.ShopId == shop && lane.IsUnlocked && (!result || lane.Queue.Count < result.Queue.Count)) result = lane;
+                if (lane.ShopId == shop && lane.IsUnlocked && (!result || Pressure(lane)<Pressure(result))) result = lane;
             return result;
         }
+        static int Pressure(CheckoutStation lane)=>lane.Queue.Count+(GameSession.Instance.Commerce?.Customers.Count(c=>c.Current==CustomerAgent.State.Approaching&&c.Lane==lane)??0);
 
         bool Spawn(CheckoutStation lane, CustomerSave saved)
         {
-            Vector3 point = saved == null ? lane.transform.position + new Vector3((sequence % 6 - 3) * .85f, 0, -9) : new Vector3(saved.x, saved.y, saved.z);
+            Vector3 point = saved == null ? TownLayout.Spawn(sequence) : new Vector3(saved.x, saved.y, saved.z);
             if (!NavMesh.SamplePosition(point, out var hit, 3, NavMesh.AllAreas)) return false;
             CustomerAgent customer;
             if (pool.Count > 0)
@@ -71,7 +72,7 @@ namespace Tycoon
                 var model = Art.Model(sequence % 2 == 0 ? "customer" : "customer_beach", Vector3.zero, root.transform);
                 model.AddComponent<ActorView>(); customer = root.AddComponent<CustomerAgent>(); customer.Initialize();
             }
-            if (saved == null) customer.Begin(lane.ShopId, sequence); else customer.Restore(saved);
+            if (saved == null) customer.Begin(lane.ShopId, sequence,true); else customer.Restore(saved);
             Customers.Add(customer); PeakCustomers = Mathf.Max(PeakCustomers, ActiveCount);
             return true;
         }
@@ -90,7 +91,7 @@ namespace Tycoon
 
     public sealed class CustomerAgent : MonoBehaviour
     {
-        public enum State { Waiting, Shopping, Queue, Leaving }
+        public enum State { Waiting, Shopping, Queue, Leaving, Approaching }
         public State Current;
         public string Shop;
         public NavMeshAgent Agent;
@@ -100,6 +101,7 @@ namespace Tycoon
         public CheckoutStation Lane;
         public OrderState Order { get; private set; }
         float decideAt;
+        int approachStep;
         Vector3 exitPoint;
         TextMesh bubble;
         GameObject icon;
@@ -114,7 +116,7 @@ namespace Tycoon
             Agent = Navigation.Agent(gameObject,true); View = GetComponentInChildren<ActorView>(); View.Initialize();
             orderBubble = new GameObject("OrderBubble").transform; orderBubble.SetParent(transform, false); orderBubble.localPosition = new Vector3(0, 2.4f, 0);
             orderBubble.gameObject.AddComponent<BillboardLabel>();
-            var disk = Art.Cylinder("BubbleBackground", new Vector3(0, 0, .03f), new Vector3(.95f, .04f, .95f), "#FFFFFF", orderBubble);
+            var disk = Art.Cylinder("BubbleBackground", new Vector3(0, 0, .03f), new Vector3(2.5f, .04f, 2.3f), "#FFFFFF", orderBubble);
             disk.transform.localRotation = Quaternion.Euler(90, 0, 0);
             bubble = Art.Label("", new Vector3(0, -.15f, -.08f), orderBubble, .11f, "#34483D", false);
             orderBubble.gameObject.SetActive(false);
@@ -123,12 +125,22 @@ namespace Tycoon
             stack.Columns = 1; stack.Rows = 1; stack.Scale = .45f; stack.LayerHeight = .2f; stack.Maximum = 3;
         }
 
-        public void Begin(string shop, int index)
+        public void Begin(string shop, int index,bool approach=false)
         {
             var game = GameSession.Instance;
             Lane?.Queue.Remove(this); Shop = shop;
             if(Basket.Authority!=null)Basket.Unbind();Basket.Restore(null); Receipt = game.NextReceipt++;
             Lane = CommerceDirector.FindLane(shop); exitPoint = transform.position; decideAt = 0;
+            if(approach){Current=State.Approaching;approachStep=0;Order=null;Go(ApproachPoint());return;}
+            JoinQueue();
+        }
+        Vector3 FrontStreet=>Shop=="market"?new(60,0,19):Shop=="bakery"?new(21,0,21):new(Lane.transform.position.x,0,-12);
+        Vector3 FrontEntry=>Shop=="market"?new(Lane.transform.position.x,0,19):Lane.transform.position+Vector3.back*6;
+        Vector3 ApproachPoint()=>approachStep==0?TownLayout.Gate:approachStep==1?FrontStreet:FrontEntry;
+        Vector3 ExitStep()=>approachStep==0?FrontEntry:approachStep==1?FrontStreet:approachStep==2?TownLayout.Gate:exitPoint;
+        void JoinQueue()
+        {
+            var game=GameSession.Instance;string shop=Shop;
             var available = new List<string>();
             foreach (var shelf in game.Shelves)
             {
@@ -143,7 +155,7 @@ namespace Tycoon
             if (shop == "farm")
             {
                 // Khi chưa mở vật nuôi, Farm tiếp tục chỉ bán cà rốt.
-                var livestock=available.FindAll(id=>id is "milk" or "egg" or "beef");
+                var livestock=available.FindAll(Definitions.IsAnimal);
                 string item=livestock.Count==0||Random.value<.65f?"carrot":livestock[Random.Range(0,livestock.Count)];
                 int quantity=item=="carrot"?Random.Range(1,4):1;
                 lines.Add(new OrderLine(item, quantity, game.ItemPrice(item)));
@@ -170,6 +182,11 @@ namespace Tycoon
         {
             Lane?.Queue.Remove(this); Shop = saved.shop; Receipt = saved.receipt;
             Lane = GameSession.Instance.Checkouts.Find(x => x.Id == saved.lane);
+            if(saved.phase==(int)State.Approaching)
+            {
+                if(Basket.Authority!=null)Basket.Unbind();Basket.Restore(saved.basket);Order=null;Current=State.Approaching;approachStep=saved.approachStep;
+                exitPoint=TownLayout.Spawn((int)(Receipt%3));Go(ApproachPoint());RefreshBubble();return;
+            }
             if(Basket.Authority!=null)Basket.Unbind();Basket.Restore(saved.basket); Order = OrderState.Restore(saved, Time.time);
             exitPoint = new Vector3(saved.exitX, saved.exitY, saved.exitZ); decideAt = 0;
             Current = saved.phase == (int)State.Leaving || Order.Finished ? State.Leaving : State.Queue;
@@ -177,7 +194,7 @@ namespace Tycoon
             {
                 int index = Mathf.Clamp(saved.queueIndex, 0, Lane.Queue.Count); Lane.Queue.Insert(index, this); Go(Lane.QueuePoint(this));
             }
-            else Go(exitPoint);
+            else {approachStep=transform.position.x>58?3:saved.approachStep;Go(ExitStep());}
             RefreshBubble();
             if(GameSession.Instance.Transactions!=null)GameSession.Instance.Transactions.BindCustomer(this,saved,GameSession.Instance.Transactions.Order(saved.receipt)==null);
         }
@@ -186,6 +203,11 @@ namespace Tycoon
         {
             if(!GameSession.Instance.CanSimulate)return;
             if (View && Agent) View.SetMotion(Agent.velocity.magnitude, Basket.Total > 0);
+            if(Current==State.Approaching)
+            {
+                if(Agent&&Navigation.Arrived(Agent)){if(approachStep<2){approachStep++;Go(ApproachPoint());}else JoinQueue();}
+                return;
+            }
             if (Current == State.Queue)
             {
                 Order.Expire(Basket, GameSession.Instance.Economy, Time.time);
@@ -193,7 +215,8 @@ namespace Tycoon
                 if (Time.time >= decideAt) { decideAt = Time.time + .4f; Go(Lane.QueuePoint(this)); }
                 RefreshBubble();
             }
-            else if (Current == State.Leaving && Agent && Navigation.Arrived(Agent)) GameSession.Instance.Commerce.Recycle(this);
+            else if (Current == State.Leaving && Agent && Navigation.Arrived(Agent))
+            {if(approachStep<3){approachStep++;Go(ExitStep());}else GameSession.Instance.Commerce.Recycle(this);}
         }
 
         void Go(Vector3 point) { if (Agent) Navigation.Go(Agent, point); }
@@ -201,7 +224,7 @@ namespace Tycoon
         void RefreshBubble()
         {
             if (!orderBubble) return;
-            bool visible = Current == State.Queue && Order != null;
+            bool visible = Current == State.Queue && Order != null && (Lane.Queue.IndexOf(this)==0||(transform.position-GameSession.Instance.Player.transform.position).sqrMagnitude<3);
             orderBubble.gameObject.SetActive(visible);
             if (!visible) return;
             orderText.Clear(); string first = null;
@@ -210,13 +233,15 @@ namespace Tycoon
                 orderText.Append(Definitions.Item(line.id).label).Append(' ').Append(line.delivered).Append('/').Append(line.requested).Append('\n');
                 if (first == null && line.Remaining > 0) first = line.id;
             }
-            orderText.Append(Mathf.CeilToInt(Order.RemainingPatience(Time.time))).Append("s"); bubble.text = orderText.ToString();
+            orderText.Append(Mathf.CeilToInt(Order.RemainingPatience(Time.time))).Append("s");
+            bool detail=Lane.Queue.IndexOf(this)<1||(transform.position-GameSession.Instance.Player.transform.position).sqrMagnitude<16;
+            bubble.text=detail?orderText.ToString():Mathf.CeilToInt(Order.RemainingPatience(Time.time))+"s";
             if (first == iconItem) return;
             if (icon) GameSession.Instance.Pool.Return(icon);
             iconItem = first; icon = null;
             if (first == null) return;
-            icon = GameSession.Instance.Pool.Take(first, orderBubble); icon.transform.localPosition = new Vector3(0, .48f, -.08f); icon.transform.localScale = Vector3.one * .3f;
-            icon.transform.localRotation = Quaternion.Euler(first is "beef" or "meal" ? 70 : 15, 0, 0);
+            icon = GameSession.Instance.Pool.Take(first, orderBubble); icon.transform.localPosition = new Vector3(0, .8f, -.08f); icon.transform.localScale = Vector3.one * .6f;
+            icon.transform.localRotation = Quaternion.Euler(first is "beef" or "meal" ||Definitions.KitchenRecipes.Any(r=>Definitions.Recipe(r).output==first)?70:15, 0, 0);
         }
 
         public void Leave()
@@ -224,12 +249,12 @@ namespace Tycoon
             if (icon) { GameSession.Instance.Pool.Return(icon); icon = null; } iconItem = null;
             if (orderBubble) orderBubble.gameObject.SetActive(false);
             // Hàng đã giao thuộc khách, kể cả khi hết giờ; không chuyển lại vào kho.
-            Lane?.Queue.Remove(this); Current = State.Leaving; Go(exitPoint);
+            Lane?.Queue.Remove(this); Current = State.Leaving;approachStep=0; Go(ExitStep());
         }
 
         public CustomerSave Snapshot() => new()
         {
-            receipt = Receipt, shop = Shop, lane = Lane ? Lane.Id : "", phase = (int)Current,
+            receipt = Receipt, shop = Shop, lane = Lane ? Lane.Id : "", phase = (int)Current,approachStep=approachStep,
             queueIndex = Lane ? Lane.Queue.IndexOf(this) : -1, remaining = Order?.RemainingPatience(Time.time) ?? 0,
             paid = Order?.Paid ?? false, timedOut = Order?.TimedOut ?? false, order = Order?.SnapshotLines() ?? new List<OrderLine>(), basket = Basket.Snapshot(),
             x = transform.position.x, y = transform.position.y, z = transform.position.z, exitX = exitPoint.x, exitY = exitPoint.y, exitZ = exitPoint.z
@@ -239,7 +264,7 @@ namespace Tycoon
     public sealed class CheckoutStation : Station
     {
         public override Vector3 WorkPoint=>transform.position+Vector3.forward*1.65f;
-        public override Vector3 WaitingPoint=>transform.position+Vector3.right*4.8f+Vector3.forward*1.9f;
+        public override Vector3 WaitingPoint=>HasTownWaitingPoint?TownWaitingPoint:transform.position+Vector3.right*4.8f+Vector3.forward*1.9f;
         public string ShopId;
         public StationZone CashZone;
         public Vector3 CollectionPoint=>transform.position+new Vector3(2.7f,0,.6f);

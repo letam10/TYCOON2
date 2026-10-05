@@ -96,6 +96,7 @@ namespace Tycoon
             string json=JsonUtility.ToJson(payload);
             // Command cũ không có path; giữ fingerprint cũ cho các giao dịch không gửi xe.
             if(payload.kind!=TransactionKind.DispatchTruck)json=json.Replace(",\"path\":[]","");
+            json=json.Replace(",\"approachStep\":0","");
             return FileTransactionStore.Hash(json);
         }
         int Apply(TransactionState s, TransactionCommand c)
@@ -512,7 +513,7 @@ namespace Tycoon
             if (!Definitions.IsAnimal(m.item))
             { if (p.phase == 2) { p.remaining = Math.Max(0, p.remaining - (float)c.duration); if (p.remaining == 0) p.phase = 3; } return 1; }
             if (p.breeding > 0) { p.breeding = Math.Max(0, p.breeding - (float)c.duration); if (p.breeding == 0) p.herd++; }
-            if (p.herd > 0 && p.feed > 0) { p.cycle = Math.Max(0, p.cycle - (float)c.duration * (clock() < m.operatorUntil ? 2 : 1)); p.remaining = p.cycle; }
+            if (p.herd > 0 && p.feed > 0) { p.cycle = Math.Max(0, p.cycle - (float)c.duration * (clock() < m.operatorUntil ? 2 : 1)*(1+.15f*(ProgressionTracker.AxisLevel(s,"animal",UpgradeAxis.Speed)-1))); p.remaining = p.cycle; }
             return 1;
         }
         int HarvestProducer(TransactionState s, TransactionCommand c)
@@ -563,12 +564,19 @@ namespace Tycoon
             UnlockCrops(s);
             foreach (var owner in s.owners)
             {
-                if (owner.kind == OwnerKind.Player) owner.capacity = ProgressionTracker.AxisCapacity(s, "player", 6);
+                if (owner.kind == OwnerKind.Player) owner.capacity = Math.Max(owner.capacity,ProgressionTracker.AxisCapacity(s, "player", 6));
                 if (owner.kind == OwnerKind.Worker && !string.IsNullOrEmpty(owner.worker?.upgrade))
                 { var crew = s.crews.Find(x => x.id == owner.worker.upgrade); if (crew != null) owner.capacity = crew.role=="Loader"?6*crew.carryLevel:crew.carryLevel == 3 ? 16 : crew.carryLevel == 2 ? 10 : 6; }
                 var station = s.stations.Find(x => x.id == owner.id);
-                if (station?.kind == "producer" && station.area == "farm" && station.item is "carrot" or "tomato" or "wheat")
+                if (station?.kind == "producer" && station.area == "farm" && Definitions.IsCrop(station.item))
                     owner.capacity = ProgressionTracker.AxisCapacity(s, "farm", 24);
+                var machine=s.stations.Find(x=>x.kind=="machine"&&(x.input==owner.id||x.output==owner.id));
+                string family=owner.kind==OwnerKind.Storage&&station!=null?"storage_"+station.area:machine!=null?ProgressionTracker.Family(machine):station?.kind is "shelf" or "counter"?ProgressionTracker.Family(station):null;
+                if(family!=null&&owner.capacity>0)
+                {
+                    int capacity=ProgressionTracker.AxisCapacity(s,family,owner.capacity);
+                    if(capacity>owner.capacity){owner.limits=owner.limits.Select(x=>new ItemAmount(x.id,Math.Max(x.count,(int)Math.Ceiling(x.count*(double)capacity/owner.capacity)))).ToList();owner.capacity=capacity;}
+                }
             }
             foreach (var m in s.stations)
             {

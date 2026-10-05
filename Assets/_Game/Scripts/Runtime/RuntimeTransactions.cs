@@ -15,16 +15,17 @@ namespace Tycoon
         readonly Dictionary<EntityId, string> actors = new();
         readonly GameplayTransactionStore store;
         TransactionState view;
-        readonly double origin, restoredTime;
+        double origin;readonly double restoredTime;bool frozen;
         public bool Ready => core.Lifecycle == CoreLifecycle.Ready && !game.SaveBlocked;
         public long Revision => core.Revision;
-        public double Now => restoredTime + Time.timeAsDouble - origin;
+        public double Now => frozen?restoredTime:restoredTime + Time.timeAsDouble - origin;
+        internal void ResumeClock(){if(frozen){origin=Time.timeAsDouble;frozen=false;}}
         public string LastReason { get; private set; } = "";
         internal TransactionState View => view;
         public TransactionState Snapshot() => core.Snapshot();
         public RuntimeTransactions(GameSession game, TransactionState state, bool persist = true)
         {
-            this.game = game; origin = Time.timeAsDouble; restoredTime = state.simulationTime;
+            this.game = game; origin = Time.timeAsDouble; restoredTime = state.simulationTime;frozen=game.IsRestoring;
             store = persist ? new GameplayTransactionStore(game) : null;
             try{core = new TransactionCore(state, store, () => Now, true); view = core.RuntimeSnapshot();}
             catch{store?.Dispose();throw;}
@@ -96,13 +97,13 @@ namespace Tycoon
             var input=route.Target.Recipe.inputs.SingleOrDefault(x=>x.id==route.ItemId);
             if(input==null)return false;
             string relay=OwnerId(route.Inventory),destination=OwnerId(route.Target.Input);
-            var active=view.reservations.FirstOrDefault(x=>x.status==ReservationStatus.Active&&x.destination==destination&&x.item==route.ItemId&&(x.relay==relay||x.source==relay));
+            var active=view.reservations.FirstOrDefault(x=>x.status==ReservationStatus.Active&&x.item==route.ItemId&&(x.relay==relay||x.source==relay));
             if(active!=null)
             {
                 string key="belt:"+active.id+":"+(active.source==relay?"deliver":"load");
                 return active.source==relay
-                    ?Transfer(route.Inventory,route.Target.Input,route.ItemId,active.quantity,key,"effect:"+key,active.id)>0
-                    :route.Sources.FirstOrDefault(x=>x&&OwnerId(x.Inventory)==active.source) is StorageStation source&&route.Inventory.FreeFor(route.ItemId)>=active.quantity&&
+                    ?game.Machines.FirstOrDefault(x=>OwnerId(x.Input)==active.destination) is MachineStation destinationMachine&&Transfer(route.Inventory,destinationMachine.Input,route.ItemId,active.quantity,key,"effect:"+key,active.id)>0
+                    :game.Stations.OfType<StorageStation>().FirstOrDefault(x=>OwnerId(x.Inventory)==active.source) is StorageStation source&&route.Inventory.FreeFor(route.ItemId)>=active.quantity&&
                         Transfer(source.Inventory,route.Inventory,route.ItemId,active.quantity,key,"effect:"+key,active.id)>0;
             }
             if(route.Inventory.Total>0)return false;
@@ -337,6 +338,7 @@ namespace Tycoon
             foreach (var shared in s.owners.Where(x => x.kind is not (OwnerKind.Player or OwnerKind.Worker))) shared.writers.AddRange(s.owners.Where(x => x.kind == OwnerKind.Worker).Select(x => x.actor));
             foreach (var customer in data.customers)
             {
+                if(customer.phase==(int)CustomerAgent.State.Approaching)continue;
                 Owner(CustomerId(customer.receipt), new Inventory(Math.Max(3, customer.order.Sum(x => x.requested))), OwnerKind.Customer, CustomerId(customer.receipt), customer.basket);
                 s.owners[^1].customer = customer;
                 s.orders.Add(new OrderRuntimeState { id = OrderId(customer.receipt), customer = CustomerId(customer.receipt), counter = customer.lane,
@@ -344,6 +346,7 @@ namespace Tycoon
             }
             foreach (var diner in data.diners)
             {
+                if(diner.phase==4)continue;
                 Owner(CustomerId(diner.receipt), new Inventory(1), OwnerKind.Customer, CustomerId(diner.receipt), diner.basket); s.owners[^1].diner = diner;
                 s.orders.Add(new OrderRuntimeState { id = OrderId(diner.receipt), customer = CustomerId(diner.receipt), counter = game.Checkouts.Find(x => x.ShopId == "restaurant").Id,
                     table = diner.table, dinerPhase = diner.phase, eatingRemaining = diner.phase == 2 ? diner.remaining : 0,

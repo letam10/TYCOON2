@@ -115,7 +115,7 @@ namespace Tycoon
                 {
                     if(carry.Total==0)return InteractionResult.Reject("Giỏ đang trống.");
                     if(!table.NeedsMeal)return InteractionResult.Reject("Bàn chưa cần phục vụ.");
-                    if(carry.Available(table.Occupant.WantedItem)==0)return InteractionResult.Reject("Bàn chỉ nhận món ăn.");
+                    if(carry.Available(table.Occupant.WantedItem)==0)return InteractionResult.Reject(table.Label+" cần "+Name(table.Occupant.WantedItem)+".");
                     return new InteractionResult(table.DeliverMeal(carry));
                 }
             }
@@ -150,10 +150,13 @@ namespace Tycoon
             if(kind==InteractionKind.Pickup)
             {
                 string item=target is ProductionStation producer?producer.ItemId:context.SelectedItem;
+                var pickup=target.Inventory;
                 if(target is MachineStation output)
                 {
                     string held=carry.Total>0?carry.Snapshot()[0].id:null;
                     if(held!=null&&output.Inventory.Available(held)>0)item=held;
+                    else if(output.Inventory.Available(item)==0&&output.Inventory.Available(output.Recipe.output)>0)item=output.Recipe.output;
+                    else if(output.Input.Available(item)>0&&output.Inventory.Available(item)==0&&!Array.Exists(output.Recipe.inputs,x=>x.id==item))pickup=output.Input;
                     else if(output.Inventory.Available(item)==0)item=output.Inventory.Total>0?output.Inventory.Snapshot()[0].id:output.Recipe.output;
                 }
                 if(target is ShelfStation shelf&&!shelf.Accepts(item))
@@ -161,8 +164,8 @@ namespace Tycoon
                 if(string.IsNullOrEmpty(item)||Definitions.Item(item)==null)return InteractionResult.Reject("Chưa có hàng để lấy.");
                 if(carry.FreeFor(item)==0)return CannotCarry(carry,item);
                 if(target is ProductionStation harvest)return harvest.PickupPlayer(carry,delta,context.Actor);
-                if(target.Inventory==null||target.Inventory.Available(item)==0)return InteractionResult.Reject("Chưa có "+Name(item)+" để lấy.");
-                return new InteractionResult(Inventory.Transfer(target.Inventory,carry,item,1)>0);
+                if(pickup==null||pickup.Available(item)==0)return InteractionResult.Reject("Chưa có "+Name(item)+" để lấy.");
+                return new InteractionResult(Inventory.Transfer(pickup,carry,item,1)>0);
             }
             if(kind==InteractionKind.Drop)
             {

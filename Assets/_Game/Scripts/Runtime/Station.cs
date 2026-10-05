@@ -19,11 +19,12 @@ namespace Tycoon
         public int WorkCount { get=>Runtime?.workCount??workCount;set{if(Runtime!=null&&value!=WorkCount)throw new InvalidOperationException("Station work chỉ được cập nhật qua transaction.");workCount=value;} }
         public int PlayerWorkCount { get=>Runtime?.playerWorkCount??playerWorkCount;set{if(Runtime!=null&&value!=PlayerWorkCount)throw new InvalidOperationException("Player work chỉ được cập nhật qua transaction.");playerWorkCount=value;} }
         public float InteractionRadius=1.15f;public bool PlayerUsesZones;
+        public Vector3 TownWaitingPoint;public bool HasTownWaitingPoint;
         public virtual Vector3 WorkPoint=>InteractionPoint;
-        public virtual Vector3 WaitingPoint=>WorkPoint+Vector3.left*2.6f+Vector3.forward*3;
+        public virtual Vector3 WaitingPoint=>HasTownWaitingPoint?TownWaitingPoint:WorkPoint+Vector3.left*2.6f+Vector3.forward*3;
         public bool ContainsInteractionPoint(Vector3 position){if(Mathf.Abs(position.y-InteractionPoint.y)>1.2f)return false;position.y=InteractionPoint.y;return (position-InteractionPoint).sqrMagnitude<=InteractionRadius*InteractionRadius;}
         [NonSerialized]public Inventory Inventory;public TextMesh StatusLabel;protected EntityId operatorId;protected float operatorUntil;
-        public bool IsUnlocked=>GameSession.Instance!=null&&GameSession.Instance.CanSimulate&&GameSession.Instance.Economy.Has(Requirement);
+        public bool IsUnlocked=>GameSession.Instance!=null&&GameSession.Instance.CanRestore&&GameSession.Instance.Economy.Has(Requirement);
         public virtual string Prompt=>Label;
         public abstract bool Interact(PlayerController player,bool withdraw);
         protected bool Lease(EntityId actorId){if(operatorId!=actorId&&Time.time<operatorUntil)return false;operatorId=actorId;operatorUntil=Time.time+.08f;return true;}
@@ -73,7 +74,7 @@ namespace Tycoon
     }
     public sealed class ProductionStation:Station
     {
-        public override Vector3 WaitingPoint=>Animal?WorkPoint+Vector3.right*5+Vector3.back*3:base.WaitingPoint;
+        public override Vector3 WaitingPoint=>HasTownWaitingPoint?TownWaitingPoint:Animal?WorkPoint+Vector3.right*5+Vector3.back*3:base.WaitingPoint;
         public string ItemId;public float Interval=5;public int Yield=1;public Transform[] Plants;
         public const int MaximumHerd=3, MaximumFeed=3;
         float remaining,produced,action,cycle=30,breeding;int phase,herd=3,feed;float attendedUntil,tickDelta;
@@ -93,7 +94,7 @@ namespace Tycoon
         void Update(){Tick(Time.deltaTime);}
         public void Tick(float delta)
         {
-            if(!IsUnlocked||delta<=0||float.IsNaN(delta)||float.IsInfinity(delta))return;
+            if(!IsUnlocked||!GameSession.Instance.CanSimulate||delta<=0||float.IsNaN(delta)||float.IsInfinity(delta))return;
             if(Authority!=null)
             {
                 tickDelta+=delta;if(tickDelta>=.2f){Authority.TickProducer(this,tickDelta);tickDelta=0;}
@@ -250,8 +251,8 @@ namespace Tycoon
             return reserve;
         }
         public int AvailableAboveReserve(string itemId)=>Mathf.Max(0,Inventory.Available(itemId)-SharedReserveThreshold(itemId));
-        static string SourceArea(string sku)=>sku is "flour" or "cheese" or "sauce"?"processing":sku is "bread" or "cake"?"bakery":sku=="meal"?"restaurant":"farm";
-        public override string Prompt=>Label+" • "+Inventory.Total+"/"+Inventory.Capacity+" • theo khu / loại hàng"+ReservationSummary;
+        static string SourceArea(string sku)=>sku is "flour" or "cheese" or "sauce" or "soy_sauce" or "bottled_milk" or "yarn" or "cloth"?"processing":sku is "bread" or "cake" or "bread_dough" or "cake_batter"?"bakery":sku=="meal"||Array.Exists(Definitions.KitchenRecipes,r=>Definitions.Recipe(r).output==sku)?"restaurant":"farm";
+        public override string Prompt=>Label+"\n"+Inventory.Total+"/"+Inventory.Capacity+" • chờ đến "+Inventory.IncomingTotal;
         public override bool Interact(PlayerController player,bool withdraw)
         {
             if(!IsUnlocked)return false;
@@ -274,7 +275,14 @@ namespace Tycoon
     }
     public sealed class PurchasePad:Station,IPlayerInteractionArea
     {
-        public UpgradeDefinition Upgrade;float held,settled;PurchaseState previousState;bool hasVisualState;
+        UpgradeDefinition upgrade;
+        // Các trục nâng cấp mới dùng lại pad cho cấp tiếp theo, tránh rải thêm ô quanh máy.
+        public UpgradeDefinition Upgrade
+        {
+            get{if(upgrade?.axisLevel==2&&upgrade.axis is UpgradeAxis.QualityValue or UpgradeAxis.Speed or UpgradeAxis.Capacity&&upgrade.family is not ("farm" or "player")&&GameSession.Instance?.Economy.Has(upgrade.id)==true)return Definitions.Upgrade(upgrade.id[..^1]+"3")??upgrade;return upgrade;}
+            set=>upgrade=value;
+        }
+        float held,settled;PurchaseState previousState;bool hasVisualState;string shownUpgrade;
         public InteractionKind Kind=>InteractionKind.Purchase;
         public Vector3 Center=>InteractionPoint;
         public PurchaseEvaluation Evaluation=>GameSession.Instance.Progression.Evaluate(Upgrade);
@@ -294,15 +302,16 @@ namespace Tycoon
             held-=amount;return game.Contribute(Upgrade,amount)>0;
         }
         public void StopContributing(){held=settled=0;}
-        public override string Prompt=>StatusText(Evaluation);
+        public override string Prompt=>Upgrade.label+"\n"+StatusText(Evaluation);
         public override bool Interact(PlayerController player,bool withdraw)=>!withdraw&&player&&ContainsInteractionPoint(player.transform.position)&&HoldToBuy(Time.deltaTime);
         protected override void LateUpdate()
         {
             var g=GameSession.Instance;var evaluation=Evaluation;bool visible=evaluation.State!=PurchaseState.Locked;
+            if(shownUpgrade!=Upgrade.id){shownUpgrade=Upgrade.id;StopContributing();foreach(var label in GetComponentsInChildren<TextMesh>())if(label!=StatusLabel)label.text=Upgrade.cost>=1000?Upgrade.cost/1000f+"k":Upgrade.cost.ToString();}
             if(!hasVisualState||previousState!=evaluation.State)
             {foreach(var renderer in GetComponentsInChildren<Renderer>())renderer.enabled=visible;previousState=evaluation.State;hasVisualState=true;}
             if((g.Player.transform.position-InteractionPoint).sqrMagnitude>3)held=0;
-            if(StatusLabel){bool nearby=(g.Player.transform.position-InteractionPoint).sqrMagnitude<36;StatusLabel.gameObject.SetActive(visible&&nearby);if(visible&&nearby)StatusLabel.text=StatusText(evaluation);}
+            if(StatusLabel){bool nearby=(g.Player.transform.position-InteractionPoint).sqrMagnitude<36;StatusLabel.gameObject.SetActive(visible&&nearby);if(visible&&nearby)StatusLabel.text=Prompt;}
         }
         static string StatusText(PurchaseEvaluation e)=>e.State switch
         {

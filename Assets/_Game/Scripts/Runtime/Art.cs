@@ -59,8 +59,8 @@ namespace Tycoon
             var go = new GameObject("Label");
             go.transform.SetParent(parent, false); go.transform.localPosition = position;
             var mesh = go.AddComponent<TextMesh>();
-            mesh.text = text; mesh.font = Catalog.font; mesh.fontSize = 64;
-            mesh.characterSize = size * 15f / 64f; mesh.anchor = TextAnchor.MiddleCenter;
+            mesh.text = text; mesh.font = Catalog.font; mesh.fontSize = 128;
+            mesh.characterSize = size * 30f / 128f; mesh.anchor = TextAnchor.MiddleCenter;
             mesh.alignment = TextAlignment.Center; mesh.color = Hex(color).linear;
             var renderer = go.GetComponent<MeshRenderer>();
             renderer.sharedMaterial = Catalog.font.material;

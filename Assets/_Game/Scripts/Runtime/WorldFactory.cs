@@ -9,7 +9,7 @@ namespace Tycoon
         public static void Build(GameSession game)
         {
             var world = new GameObject("World").transform; world.SetParent(game.transform);
-            Art.Box("Grass", new Vector3(8, -.13f, 12), new Vector3(112, .25f, 92), "#9BC984", world, true);
+            Art.Box("Grass", new Vector3(8, -.13f, 22), new Vector3(200, .25f, 136), "#9BC984", world, true);
             Lighting(world);
             WorldDressing.Environment(world);
             Art.Box("StarterField", new Vector3(-13, .012f, 18), new Vector3(18, .04f, 30), "#A7D96B", world);
@@ -50,7 +50,7 @@ namespace Tycoon
             var sheep=Pen(world,new Vector3(-38,0,39),new Vector2(8,8),"user_sheep",3,1,"sheep_line");
             AnimalProducer(game,world,"sheep_wool","wool","LEN CỪU",new Vector3(-32,0,39),18,"sheep_line");
             sheep.Bind(game.Producers.FindAll(x=>x.ItemId=="wool").ToArray());
-            Machine(game,world,"feedmill",new Vector3(-24,0,25),"farm_level2");
+            Machine(game,world,"feedmill",new Vector3(-24,0,25),"feed_route");
             game.Storage = Warehouse(game, world, new Vector3(-6, 0, 14), "storage_farm", "farm", 72);
             var farmShopStorage=Warehouse(game, world, new Vector3(3, 0, 13), "storage_farm_shop", "farm_shop", 72);farmShopStorage.Requirement="farm_shop";Locked(farmShopStorage);
             Shelf(game, world, "shelf_farm_1", "CÀ RỐT", new Vector3(-4, 0, 0), new[] { "carrot" }, "farm");
@@ -77,12 +77,13 @@ namespace Tycoon
             var marketStorage=Warehouse(game,world,new Vector3(18.7f,0,32),"storage_supermarket","supermarket",72);marketStorage.Requirement="supermarket";Locked(marketStorage);
             var bakeryStorage=Warehouse(game,world,new Vector3(-4,0,44),"storage_bakery","bakery",72);bakeryStorage.Requirement="bakery";Locked(bakeryStorage);
             var restaurantStorage=Warehouse(game,world,new Vector3(-30.7f,0,44),"storage_restaurant","restaurant",72);restaurantStorage.Requirement="restaurant";Locked(restaurantStorage);
-            var bakeryBelt=Conveyor(game,world,"conveyor_oven","flour",processingStorage,processingStorage,game.Machines.Find(m=>m.Recipe.id=="oven"),0);
+            var bakeryBelt=Conveyor(game,world,"conveyor_oven","flour",bakeryStorage,bakeryStorage,game.Machines.Find(m=>m.Recipe.id=="breadmixer"),0);
             bakeryBelt.Requirement="conveyor_bakery";bakeryBelt.AreaId="bakery";
             int farmPad = 0, processPad = 0;
             foreach (var upgrade in Definitions.Upgrades)
             {
                 if(upgrade.kind=="legacy")continue;
+                if(upgrade.axisLevel==3&&upgrade.axis is UpgradeAxis.QualityValue or UpgradeAxis.Speed or UpgradeAxis.Capacity&&upgrade.family is not ("farm" or "player"))continue;
                 if (System.Array.IndexOf(new[] { "supermarket", "restocker_market", "cashier_market", "bakery", "cook_bakery", "restaurant", "cook", "waiter" }, upgrade.id) >= 0) continue;
                 bool processing = upgrade.id is "mill" or "processor" or "dairy" or "machine_upgrade" or "transport_processing" or "conveyor_processing";
                 int index = processing ? processPad++ : farmPad++;
@@ -93,6 +94,7 @@ namespace Tycoon
             }
             LayoutPurchasePads(game);
             WorldDressing.BackRooms(world);
+            TownLayout.Apply(game,world);
             TruckRoutes.BuildDocks(game,world);
             world.gameObject.AddComponent<NavigationWorld>();
         }
@@ -205,7 +207,7 @@ namespace Tycoon
             var plants = new List<Transform>();
             for (int i = 0; i < 9; i++)
             {
-                var plant=Art.Model(item=="carrot"?"carrot_crop":item=="wheat"?"wheat_crop":"crop_leaves",new Vector3(-.95f+i%3*.95f,.14f,-.75f+i/3*.75f),station.transform);
+                var plant=Art.Model(item=="carrot"?"carrot_crop":item=="wheat"?"wheat_crop":item=="corn"?"corn_plant":item=="soybean"?"soybean_plant":"crop_leaves",new Vector3(-.95f+i%3*.95f,.14f,-.75f+i/3*.75f),station.transform);
                 if(item=="tomato")Art.Model("tomato",new Vector3(0,.20f,0),plant.transform,.65f);
                 plants.Add(plant.transform);
             }

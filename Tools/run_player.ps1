@@ -1,8 +1,9 @@
 param(
-    [ValidateSet('Probe','Foundation','Vertical','Progression','Load','Diagnostic','Visual','Assets','Stage23','Stage45','Stage67','Stage14','Stage14Layout','Stage14Visual','Stage14Milestones')] [string]$Task = 'Foundation',
+    [ValidateSet('Probe','Foundation','Vertical','Progression','Load','Diagnostic','Visual','Assets','Stage23','Stage45','Stage67','Stage14','Stage14Layout','Stage14Visual','Stage14Milestones','Town','TownLayout','TownLoad')] [string]$Task = 'Foundation',
     [string]$LoadFrom = 'Vertical',
     [string]$BuildPath = '',
     [string]$LoadPath = '',
+    [switch]$FixtureOnly,
     [switch]$Visible
 )
 $ErrorActionPreference = 'Stop'
@@ -19,6 +20,7 @@ if($Task.StartsWith('Stage14')){
     $outputRoot=Join-Path $taskRoot ('work\stage14\player-'+$Task.ToLower()+'-'+[DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'))
 }
 if($Task -eq 'Assets'){$outputRoot=Join-Path $taskRoot ('work\art-refresh\player-assets-'+[DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'))}
+if($Task.StartsWith('Town')){$outputRoot=Join-Path $taskRoot ('work\town-redesign\player-'+$Task.ToLower()+'-'+[DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'));$mode=@{Town='--qa-town';TownLayout='--qa-town-layout';TownLoad='--qa-town-load'}[$Task]}
 New-Item -ItemType Directory -Path $outputRoot -Force | Out-Null
 if ($Task -notin @('Probe','Load')) {
     $qaSavePath = [System.IO.Path]::GetFullPath((Join-Path $outputRoot 'qa-save.json'))
@@ -43,14 +45,16 @@ if($Task -in @('Stage14','Stage14Layout','Stage14Milestones')){$arguments=@('-ba
 if($Task -eq 'Stage14'){$arguments+=@('--qa-fixture',('"'+(Join-Path $taskRoot 'mod\test\stage14-balance.json')+'"'))}
 if($Task -eq 'Stage14Milestones'){$arguments+=@('--qa-fixture',('"'+(Join-Path $taskRoot 'mod\test\stage14-player-near-thresholds.json')+'"'))}
 if($Task -eq 'Assets'){$arguments+=@('--qa-fixture',('"'+(Join-Path $taskRoot 'mod\test\asset-preview.json')+'"'))}
-if($LoadPath){if($Task -eq 'Assets'){$arguments+=@('--qa-preview-fixture',('"'+$LoadPath+'"'))}else{$arguments+=@('--qa-load','--qa-load-from',('"'+$LoadPath+'"'));if($Task -eq 'Stage14'){$arguments+='--qa-stage14-resume'}}}
+if($Task -in @('Town','TownLayout')){$arguments+=@('--qa-fixture',('"'+(Join-Path $taskRoot 'mod\test\town-redesign-near-thresholds.json')+'"'))}
+if($Task -eq 'Town' -and $FixtureOnly){$arguments+='--qa-town-fixture-only'}
+if($LoadPath){if($Task -eq 'TownLoad'){$arguments+=@('--qa-town-load-from',('"'+$LoadPath+'"'))}elseif($Task -eq 'Assets'){$arguments+=@('--qa-preview-fixture',('"'+$LoadPath+'"'))}else{$arguments+=@('--qa-load','--qa-load-from',('"'+$LoadPath+'"'));if($Task -eq 'Stage14'){$arguments+='--qa-stage14-resume'}}}
 if ($Task -eq 'Load') { $arguments += @('--qa-load-from', ('"' + (Join-Path $taskRoot ('QA\Evidence\' + $LoadFrom.ToLower() + '\qa-save.json')) + '"'), '--qa-mode', 'load') }
 if ($Task -eq 'Diagnostic') { $arguments += @('--qa-resume-from', ('"' + (Join-Path $taskRoot ('QA\Evidence\' + $LoadFrom.ToLower() + '\qa-save.json')) + '"')) }
 $windowStyle=if($Visible){'Normal'}else{'Hidden'}
 $process = Start-Process -FilePath $exe -ArgumentList $arguments -PassThru -WindowStyle $windowStyle
 $record = [pscustomobject]@{Task=$Task;ProcessId=$process.Id;Exe=$exe;Arguments=$arguments;StartedUtc=[DateTime]::UtcNow.ToString('o')}
-$record | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $taskRoot ('work\player-' + $Task.ToLower() + '-process.json')) -Encoding utf8
-$record | ConvertTo-Json -Compress -Depth 4 | Add-Content -LiteralPath (Join-Path $taskRoot 'work\process-history.jsonl') -Encoding utf8
+. (Join-Path $PSScriptRoot 'process_record.ps1')
+Write-TaskProcessRecord -Root $taskRoot -Record $record -Name ('player-'+$Task.ToLower())
 Write-Output ('Player ' + $Task + ' PID ' + $process.Id)
 $process.WaitForExit()
 Write-Output ('Player exit code ' + $process.ExitCode)

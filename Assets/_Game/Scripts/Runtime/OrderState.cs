@@ -21,7 +21,7 @@ namespace Tycoon
     {
         public long receipt;
         public string shop, lane;
-        public int phase, queueIndex;
+        public int phase, queueIndex, approachStep;
         public float remaining, x, y, z, exitX, exitY, exitZ;
         public bool paid, timedOut;
         public List<OrderLine> order = new();

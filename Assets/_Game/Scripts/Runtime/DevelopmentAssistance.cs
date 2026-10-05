@@ -32,6 +32,7 @@ namespace Tycoon
         internal static void UnlockCrops(TransactionState s, bool migrate=false)
         {
             int tier=ProgressionTracker.StationLevel(s,"farm");
+            if((s.assisted||tier>=2)&&!s.unlocked.Contains("feed_route"))s.unlocked.Add("feed_route");
             foreach(string id in new[]{"wheat","corn","soybean","tomato"})
             {
                 bool legacy=migrate && s.contentVersion==0 && s.unlocked.Contains("farm_shop") && id is "wheat" or "tomato";

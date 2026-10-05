@@ -12,17 +12,17 @@ namespace Tycoon
             for (int i = 0; i < 19; i++)
                 for (int row = 0; row < 2; row++)
                 {
-                    Tree(new Vector3(-44 + i * 6, 0, 55 + row * 6), i + row * 7);
+                    Tree(new Vector3(-44 + i * 6, 0, 62 + row * 10), i + row * 7);
                     Tree(new Vector3(-44 + i * 6, 0, -29 - row * 6), i + row * 11);
                 }
             for (int i = 0; i < 13; i++)
             {
-                Tree(new Vector3(-47, 0, -20 + i * 6), i + 4);
-                Tree(new Vector3(60, 0, -20 + i * 6), i + 9);
+                Tree(new Vector3(-51, 0, -20 + i * 6), i + 4);
+                Tree(new Vector3(64, 0, -20 + i * 6), i + 9);
             }
             for (int i = 0; i < 16; i++)
             {
-                var point = new Vector3(-44 + i * 6.6f, 0, 52.8f);
+                var point = new Vector3(-44 + i * 6.6f, 0, 61);
                 Art.Model(i % 4 == 0 ? "garden_rock" : "garden_bush", point, scenery, .9f + i % 3 * .12f, i * 43);
             }
             void Tree(Vector3 point, int index) => Art.Model(trees[index % trees.Length], point, scenery, .9f + index % 4 * .08f, index * 47);
@@ -129,10 +129,13 @@ namespace Tycoon
     {
         public TableStation Table;
         public GameObject Meal, Dirty, Empty;
+        string item="meal";
         void LateUpdate()
         {
             // Món chỉ hiện khi basket thật đã nhận; không tạo thêm inventory hoặc payment.
             bool occupied = Table.IsUnlocked && Table.Occupant && Table.Occupant.Phase == 2 && Table.Occupant.Basket.Total > 0;
+            if(occupied&&Table.Occupant.WantedItem!=item)
+            {Object.Destroy(Meal);item=Table.Occupant.WantedItem;Meal=Art.Model(Definitions.Item(item).model,new(.1f,.87f,0),transform);}
             Meal.SetActive(occupied); Dirty.SetActive(Table.IsUnlocked && Table.Cleaning > 0);
             Empty.SetActive(Table.IsUnlocked && Table.Occupant && Table.Occupant.Phase == 1);
         }

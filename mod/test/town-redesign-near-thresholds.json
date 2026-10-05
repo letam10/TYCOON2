@@ -1,0 +1,29 @@
+{
+  "wallet": 4990,
+  "handJobs": 29,
+  "repairJobs": 29,
+  "timeScale": 3,
+  "owned": ["farm_level2", "farm_level3", "barn", "milk_line", "egg_line", "sheep_line", "farm_shop", "mill", "dairy", "supermarket", "bakery", "restaurant", "storage_processing_level2", "storage_processing_level3"],
+  "stock": [
+    {"owner":"storage_farm", "item":"carrot", "quantity":6},
+    {"owner":"storage_farm", "item":"wheat", "quantity":6},
+    {"owner":"storage_farm", "item":"corn", "quantity":6},
+    {"owner":"storage_farm", "item":"soybean", "quantity":6},
+    {"owner":"storage_farm", "item":"milk", "quantity":6},
+    {"owner":"storage_farm", "item":"egg", "quantity":6},
+    {"owner":"storage_farm", "item":"wool", "quantity":6},
+    {"owner":"storage_farm", "item":"animal_feed", "quantity":6},
+    {"owner":"storage_restaurant", "item":"beef", "quantity":2},
+    {"owner":"storage_restaurant", "item":"soy_sauce", "quantity":2},
+    {"owner":"storage_restaurant", "item":"tomato", "quantity":4},
+    {"owner":"storage_restaurant", "item":"carrot", "quantity":6},
+    {"owner":"storage_restaurant", "item":"corn", "quantity":4},
+    {"owner":"storage_restaurant", "item":"milk", "quantity":2},
+    {"owner":"storage_restaurant", "item":"flour", "quantity":6},
+    {"owner":"storage_restaurant", "item":"egg", "quantity":4},
+    {"owner":"storage_restaurant", "item":"sauce", "quantity":4},
+    {"owner":"storage_restaurant", "item":"cheese", "quantity":2},
+    {"owner":"storage_restaurant", "item":"bread", "quantity":2},
+    {"owner":"storage_restaurant", "item":"soybean", "quantity":4}
+  ]
+}

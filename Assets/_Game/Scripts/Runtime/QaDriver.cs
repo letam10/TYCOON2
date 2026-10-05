@@ -36,12 +36,14 @@ namespace Tycoon
             bool stage14=Array.Exists(arguments,x=>x=="--qa-stage14"),layout14=Array.Exists(arguments,x=>x=="--qa-stage14-layout"),visual14=Array.Exists(arguments,x=>x=="--qa-stage14-visual");
             bool milestones14=Array.Exists(arguments,x=>x=="--qa-stage14-milestones");
             bool assets=Array.Exists(arguments,x=>x=="--qa-assets");
+            bool town=Array.Exists(arguments,x=>x=="--qa-town"),townLayout=Array.Exists(arguments,x=>x=="--qa-town-layout"),townLoad=Array.Exists(arguments,x=>x=="--qa-town-load");
             string mode = redesign ? "redesign" : art ? "visual" : load ? "load" : stage67?"stage67":stage45?"stage45":full ? "progression" : game.Milestone == 0 ? "foundation" : "vertical";
             bool resume = Array.Exists(arguments,x=>x=="--qa-resume");
             if(stage14||layout14||visual14)mode=stage14?"stage14-progression":layout14?"stage14-layout":"stage14-visual";
             if(milestones14)mode="stage14-milestones";
             if(assets)mode="asset-library";
-            routines.Push(assets?AssetLibraryVisual():milestones14?FinalMilestones():stage14?FinalProgression():layout14?FinalLayout():visual14?FinalVisual():redesign ? Redesign() : art ? VisualInspection() : load ? LoadCheck() : stage67?LivestockAndCrew():stage45?FarmStarterAndPurchase():game.Milestone == 0 ? Foundation() : (full || resume) ? Progression(resume) : Vertical());
+            if(town||townLayout||townLoad)mode=townLoad?"town-load":townLayout?"town-layout":"town-redesign";
+            routines.Push(townLoad?TownRelaunch():town||townLayout?TownRedesign(townLayout):assets?AssetLibraryVisual():milestones14?FinalMilestones():stage14?FinalProgression():layout14?FinalLayout():visual14?FinalVisual():redesign ? Redesign() : art ? VisualInspection() : load ? LoadCheck() : stage67?LivestockAndCrew():stage45?FarmStarterAndPurchase():game.Milestone == 0 ? Foundation() : (full || resume) ? Progression(resume) : Vertical());
             while (routines.Count > 0)
             {
                 object yielded = null; bool running = false;
@@ -200,15 +202,26 @@ namespace Tycoon
         IEnumerator WalkTo(Vector3 target,bool settle=true)
         {
             float end = Time.realtimeSinceStartup + 25;
+            Vector3 previous=game.Player.transform.position;float blocked=0;int repaths=0,corner=0;Vector3[] detour=Array.Empty<Vector3>();
             while (Vector2.Distance(new Vector2(target.x, target.z), new Vector2(game.Player.transform.position.x, game.Player.transform.position.z)) > (settle?.4f:.2f))
             {
                 if (Time.realtimeSinceStartup > end) throw new Exception("Movement timeout: " + target + " from " + game.Player.transform.position);
-                Vector3 direction = target - game.Player.transform.position; direction.y = 0; direction.Normalize();
+                float moved=(game.Player.transform.position-previous).sqrMagnitude;previous=game.Player.transform.position;blocked=moved<.0001f?blocked+Time.deltaTime:0;
+                if(blocked>2&&repaths<3)
+                {
+                    var path=new UnityEngine.AI.NavMeshPath();var start=previous;
+                    if(UnityEngine.AI.NavMesh.SamplePosition(start,out var hit,1,UnityEngine.AI.NavMesh.AllAreas))start=hit.position;
+                    if(UnityEngine.AI.NavMesh.CalculatePath(start,target,UnityEngine.AI.NavMesh.AllAreas,path)&&path.status==UnityEngine.AI.NavMeshPathStatus.PathComplete){detour=path.corners;corner=Vector3.Distance(previous,start)>.2f?0:1;}
+                    repaths++;blocked=0;
+                }
+                while(corner<detour.Length&&Vector3.Distance(game.Player.transform.position,detour[corner])<.3f)corner++;
+                Vector3 goal=corner<detour.Length?detour[corner]:target;
+                Vector3 direction = goal - game.Player.transform.position; direction.y = 0; direction.Normalize();
                 Vector3 forward = Camera.main.transform.forward; forward.y = 0; forward.Normalize();
                 Vector3 right = Camera.main.transform.right; right.y = 0; right.Normalize();
                 float x = Vector3.Dot(direction, right), y = Vector3.Dot(direction, forward);
                 // Stick liên tục theo góc NavMesh; WASD tám hướng có thể cắt góc tường.
-                float distance=Vector3.Distance(game.Player.transform.position,target);
+                float distance=Vector3.Distance(game.Player.transform.position,goal);
                 float approach=Mathf.Clamp01(distance/Mathf.Max(.5f,6.2f*Time.deltaTime*1.4f));
                 Keys();InputSystem.QueueStateEvent(gamepad,new GamepadState{leftStick=new Vector2(x,y)*approach});yield return null;
             }
@@ -502,15 +515,16 @@ namespace Tycoon
             if(SystemInfo.graphicsDeviceType==UnityEngine.Rendering.GraphicsDeviceType.Null)yield break;
             string path = Path.Combine(game.QaDirectory, name);
             yield return null;
-            var target = RenderTexture.GetTemporary(1920, 1080, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+            int width=Screen.width,height=Screen.height;
+            var target = RenderTexture.GetTemporary(width, height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
             var previous = RenderTexture.active;
-            var pixels = new Texture2D(1920, 1080, TextureFormat.RGBA32, false);
+            var pixels = new Texture2D(width, height, TextureFormat.RGBA32, false);
             try
             {
                 var request = new UnityEngine.Rendering.Universal.UniversalRenderPipeline.SingleCameraRequest { destination = target };
                 UnityEngine.Rendering.RenderPipeline.SubmitRenderRequest(Camera.main, request);
                 RenderTexture.active = target;
-                pixels.ReadPixels(new Rect(0, 0, 1920, 1080), 0, 0);
+                pixels.ReadPixels(new Rect(0, 0, width, height), 0, 0);
                 pixels.Apply();
                 File.WriteAllBytes(path, pixels.EncodeToPNG());
             }

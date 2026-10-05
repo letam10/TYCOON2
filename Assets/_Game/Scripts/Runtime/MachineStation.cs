@@ -46,7 +46,7 @@ namespace Tycoon
         float tick;
         void Update()
         {
-            if(!IsUnlocked || Authority==null)return;
+            if(!IsUnlocked || !GameSession.Instance.CanSimulate || Authority==null)return;
             tick+=Time.deltaTime;if(tick<.2f)return;float elapsed=tick;tick=0;
             if(Authority.TickMachine(this,elapsed)&&Rotor)Rotor.Rotate(Vector3.up,130*elapsed,Space.Self);
         }

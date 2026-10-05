@@ -219,8 +219,8 @@ namespace Tycoon
             new("carry10", "Sức mang 10", 100, "", "upgrade", family:"player", axis:UpgradeAxis.Capacity, axisLevel:2, capacityValue:10),
             new("carry16", "Sức mang 16", 600, "carry10", "upgrade", family:"player", axis:UpgradeAxis.Capacity, axisLevel:3, capacityValue:16),
             new("carry24", "Sức mang 24", 2500, "carry16", "upgrade", family:"player", axis:UpgradeAxis.Capacity, axisLevel:4, capacityValue:24),
-            new("conveyor_processing", "Băng chuyền Farm → Processing", 3000, "mill"),
-            new("conveyor_bakery", "Băng chuyền Processing → Bakery", 8000, "bakery"),
+            new("conveyor_processing", "Băng chuyền kho → máy Chế biến", 3000, "mill"),
+            new("conveyor_bakery", "Băng chuyền kho → mixer Tiệm bánh", 8000, "bakery"),
             new("farmer_2", "Nhân viên cũ", 200, "farmer", "legacy"),
             new("carry_upgrade", "Giỏ cũ", 110, "", "legacy"),
             new("farm_upgrade", "Nâng cấp cũ", 160, "farmer", "legacy"),
@@ -237,6 +237,25 @@ namespace Tycoon
         static readonly Dictionary<string, UpgradeDefinition> byUpgrade = new();
         static Definitions()
         {
+            var axes=new List<UpgradeDefinition>(upgrades);
+            void Axis(string family,string suffix,string label,UpgradeAxis axis,int price,string requirement,int capacity2=0,int capacity3=0)
+            {
+                axes.Add(new(family+"_"+suffix+"2",label+" cấp 2",price,requirement,"upgrade",family:family,axis:axis,axisLevel:2,capacityValue:capacity2));
+                axes.Add(new(family+"_"+suffix+"3",label+" cấp 3",price*3,family+"_"+suffix+"2","upgrade",family:family,axis:axis,axisLevel:3,capacityValue:capacity3));
+            }
+            foreach(var row in new[]{("mill","Chế biến","mill",600),("oven","Tiệm bánh","bakery",2500),("kitchen","Nhà hàng","restaurant",2500)})
+            {
+                Axis(row.Item1,"value","Chất lượng "+row.Item2,UpgradeAxis.QualityValue,row.Item4,row.Item3);
+                Axis(row.Item1,"speed","Tốc độ "+row.Item2,UpgradeAxis.Speed,row.Item4,row.Item3);
+                Axis(row.Item1,"capacity","Sức chứa "+row.Item2,UpgradeAxis.Capacity,row.Item4,row.Item3,54,72);
+            }
+            Axis("animal","value","Chất lượng chăn nuôi",UpgradeAxis.QualityValue,400,"farm_level2");
+            Axis("animal","speed","Tốc độ chăn nuôi",UpgradeAxis.Speed,400,"farm_level2");
+            Axis("counter","capacity","Sức chứa quầy nông sản",UpgradeAxis.Capacity,300,"",54,72);
+            Axis("market","capacity","Sức chứa quầy Siêu thị",UpgradeAxis.Capacity,2500,"supermarket",54,72);
+            foreach(var area in new[]{"farm","farm_shop","processing","supermarket","bakery","restaurant"})
+            {string requirement=area=="farm"?"":area=="processing"?"mill":area;Axis("storage_"+area,"capacity","Sức chứa kho "+GameHud.AreaLabel(area),UpgradeAxis.Capacity,area=="farm"?300:area=="farm_shop"?600:area=="processing"?1200:3000,requirement,144,216);}
+            upgrades=axes.ToArray();
             foreach (var item in Items) byItem.Add(item.id, item);
             foreach (var recipe in Recipes) byRecipe.Add(recipe.id, recipe);
             foreach (var upgrade in Upgrades) byUpgrade.Add(upgrade.id, upgrade);

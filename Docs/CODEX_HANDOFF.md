@@ -512,6 +512,45 @@ Build để chơi: `work/art-refresh/Build/TYCOON2.exe`. Audit/mapping/license: 
 - Mốc 3: `1169255`, đã push. Commit mốc 4: `feat: add owned cargo crates and truck logistics`.
 - Còn mốc 5: bố trí lại town/đường theo TruckRoutes, spawn ngoài đường chính, UI 2×, visual/animation, Windows Player + fixture QA ngắn. Chưa coi route/layout/Player của mốc 4 đã nghiệm thu.
 
+## Thiết kế thị trấn mới — mốc 5 và chốt bản điều chỉnh — 2026-10-06
+
+Đã triển khai năm mốc trên project hiện có. Giữ inventory/ownership, stable ID, Input System/gamepad, pooling, transaction journal và Save v2; không tạo project mới. Gameplay máy tự chạy thay thế yêu cầu đứng vận hành của prototype.
+
+### Hệ thống và file chính
+
+- `ProximityTarget`, `PlayerInteraction`, `InteractionFocusView`: dừng 0,25 s, khoảng cách mặt vật thể 1,2 m, raycast chặn xuyên tường, khóa hướng kho trong một lượt. Không sinh action tile. Quầy dùng FIFO và transaction giao hàng chung; cash chỉ thu bởi player ở cọc tiền. Nguyên liệu cũ không còn thuộc recipe vẫn lấy lại được; kitchen ưu tiên output của món hiện tại.
+- `WorldFactory`, `TownLayout`, `WorldDressing`, `FarmPlotView`, `TownArt`: ruộng vuông/rãnh, cây ngô/đậu, Farm 1/2/3 và yield snapshot; chuồng cừu và máy mới. Dời kho/Processing/Market/Bakery; đường chính 6 m, logistics 5 m, đường khách riêng, spawn x=104 ngoài giới hạn player x=58. Pad nằm ngoài footprint và có model cây/máy/kho/người, tên và giá rõ. Các trục nâng cấp mới tái dùng pad cho cấp 3; giữ ID pad cũ.
+- `Definitions`, `TransactionCore`, `AutomaticMachines`, `RepairJobs`, `DevelopmentAssistance`: feed ba nguyên liệu, milk bottler, soy sauce, wool/yarn/cloth, mixer/dough/oven, năm món có SKU riêng. Quality, speed, capacity riêng; máy 36→54→72, kho 72→144→216, không lấy station level để tăng tất cả. Animal speed độc lập với care ×2. Repair player 5 s, Repairer 30/20/10 s, normalized progress và một fee/incident.
+- `WorkerAgent`: sửa đúng Role + Area, nhường player; processor/baker xoay vòng các việc nạp/lấy, ưu tiên kho trong khu và thành phẩm giữa máy. Animal care có thể chuẩn bị/lấy feed từ mixer. Cashier dùng cả hàng quầy; Loader có bounded repath, không giữ nhiều thùng khác SKU.
+- `CargoState`, `CargoTransactions`, `CargoDock`, `TruckRoutes`, `TruckLogistics`: gói xe/tài xế/bến 5.000, kho Processing cấp 3 + 30 hand jobs; thùng một SKU ≤6, xe 6 thùng, source/destination rõ, destination reservation trước gửi, optional repeat mặc định tắt. Xe nhường người qua đường; một hệ thống ghi transform. Loader theo Area thuê riêng.
+- `GameSession`, `RuntimeTransactions`, `CommerceDirector`, `RestaurantDirector`: restore actors trước simulation/input, clock đơn hàng đóng băng khi restore, bảo toàn FIFO/partial/price/cargo/repair/contributions. Migration layout không dịch Driver/Loader đã dùng dock mới. Không offline progression. Prototype save không bị overwrite.
+- `GameHud`, `Art`: font/icon tăng 2×, reflow ba độ phân giải; wallet/revenue/thực thu/loss, stock/reserved theo khu và bảng chọn SKU có scroll, crew Role + Area, chọn nguồn/đích/gửi xe. Nút đổi món tại kitchen. Nút hỗ trợ luôn trên HUD.
+- `QaTownRedesign`, `TownRedesignTests`, `CargoRedesignTests`, `Tools/run_player.ps1`, `Tools/process_record.ps1`: fixture sát ngưỡng và kiểm thử input thật; log tiến trình có mutex để không ghi cụt khi chạy độc lập đồng thời.
+
+### Kiểm chứng bản cuối
+
+| Kiểm tra | Kết quả / bằng chứng |
+|---|---|
+| Compile + EditMode | 135/135 pass, 0 fail; `QA/editmode-results.xml` |
+| Windows build | Succeeded, 0 errors / 2 warnings, 117.843.403 bytes, 20:37 UTC ngày 05-10; `work/town-redesign/Build/build-report.json` |
+| Player cuối RTX 4060 / D3D11 | 70 checks, 0 runtime errors, khoảng 3 phút 11 giây; `work/town-redesign/player-town-20261005T203933317Z/town-redesign-report.json` |
+| Ví 0 | Tự gieo/tưới/grow/harvest/carry → khách đi từ ngoài đường chính → FIFO/payment → player Collect; kiểm tra stack đúng quantity, tiền hỗ trợ không tăng revenue/thực thu/orders; hỗ trợ mở cả feed mixer |
+| Fixture mua xe | File `mod/test/town-redesign-near-thresholds.json`: 4.990 xu, 29 hand jobs; player giao túi để đạt job 30, bán/Collect để đạt 5.000, mua đủ xe+tài xế; đóng/chất/gửi/dỡ thật |
+| Save giữa chuyến | Ba lần load giữ distance/cargo/reservation, không clone; unload đúng kho và giữ tổng quantity. Relaunch riêng pass tại `work/town-redesign/player-townload-20261005T204401358Z` (đường dẫn chính xác xem `work/player-townload-process.json`) |
+| Feed/repair | Ba nguyên liệu thật → feed; break → một fee → player sửa → rời/load/tiếp tục, job solo 29→30; unit thêm sai role, takeover, 30/20/10 và retry |
+| Restaurant | Cook và giao đủ năm SKU đúng bàn → eat → payment → dirty → player clean → Collect; receipt/value snapshot dùng cùng OrderState |
+| Navigation/UI | 361 điểm reachable, không action tile; 30 khách thử 15 s simulation, cap/repath pass; restore khách còn đang vào town. 720p/1080p/1440p và các ảnh khu đã được xem; UI lớn không cắt dòng wallet/carry/title/support |
+
+Fixture là dữ liệu QA riêng, không phải bằng chứng chơi hết progression bằng cash sản xuất. Có `-FixtureOnly` để bỏ lượt ví 0 đã kiểm tra và chạy nhanh sát mốc; không chạy benchmark/soak/campaign 3–4 giờ. `TownLoad -LoadPath` chỉ đọc nguồn và ghi save riêng tại output. Giữ các mốc 500/1.000 → 2.000 → 12.000 → 65.000 → 100.000 → 80.000 và order/batch prerequisites. Chỉ dùng `cashCollected` cho tốc độ tiến triển; `assistedCash` không tính. Chưa coi 180–240 phút đã pass.
+
+### Chơi, kiểm tra và gỡ nút hỗ trợ
+
+- Build: `work/town-redesign/Build/TYCOON2.exe`; không ship thư mục chẩn đoán `TYCOON2_BackUpThisFolder_ButDontShipItWithYourGame`.
+- CLI: `Tools/run_unity.ps1 -Task Tests/Build`, `Tools/run_player.ps1 -Task Town [-FixtureOnly]`, `-Task TownLayout`, `-Task TownLoad -LoadPath <save QA>`. Các harness Stage14 cũ còn dùng helper zone, chưa dùng để nghiệm thu proximity mới; chọn Town cho bản này.
+- Gỡ hỗ trợ: thêm **`TYCOON_DISABLE_ASSIST`** vào Scripting Define Symbols của Windows rồi build lại. `DevelopmentAssistance.Enabled=false` bỏ HUD và từ chối command runtime mới; journal cũ vẫn replay được để không mất tài sản đã có. QA mới kiểm tra nút cần build có hỗ trợ. Tiền trợ giúp và flag `assisted` đã lưu riêng.
+- Mốc 1 `9a13764`, mốc 2 `1b25892`, mốc 3 `1169255`, mốc 4 `e98b4b9`: đã push `origin/main`. Mốc 5: commit `feat: finish rural town layout and verify player workflows`, hash ghi ở phần cập nhật Git kế tiếp.
+- Giữ ngoài commit: QualitySettings có sẵn, raw ASSET chưa track, build/save/log QA. Log thử lỗi khởi tạo đã giữ excerpt ở `work/town-redesign/initialization-failure.txt`; bản chạy tiếp đã thay log lớn bằng log mới.
+
 ## Những gì chưa thực hiện được / chưa nghiệm thu — cập nhật cuối Công đoạn 14
 
 - **Công đoạn 14: chưa pass lượt liên tục new game 0 → Restaurant bằng sản xuất/thu tiền thực tế, không nạp state. Chưa pass mục tiêu mở toàn chuỗi trong 180–240 phút.** Preset sát ngưỡng xác nhận từng gate/gameplay nhưng không thay thế hai tiêu chí này; chưa chốt acceptance toàn Công đoạn 14.
@@ -527,3 +566,12 @@ Build để chơi: `work/art-refresh/Build/TYCOON2.exe`. Audit/mapping/license: 
 - **Công đoạn 14 — asset refresh:** đã hoàn tất 48 model phù hợp và compile/play như bảng trên. Chưa nghiệm thu nghệ thuật với người dùng, chưa retarget/deformation-test mọi character/animation trong raw library, chưa kiểm tra FPS 165 hoặc congestion dài với art mới. Rig/clip cũ được giữ; hướng nhìn/pose ngồi theo ghế mới và độ tự nhiên mọi action vẫn cần nghiệm thu riêng.
 - **CLI/process audit:** một dòng history bị cụt do append đồng thời; audit cuối đã khôi phục phạm vi từ process JSON riêng và xác nhận 0 process task. Chưa sửa logger để hỗ trợ append đồng thời; lần tiếp tục nên chạy CLI tuần tự hoặc bổ sung lock.
 - **Dọn output asset:** automatic command review vẫn chặn việc xóa ba thư mục trung gian/chẩn đoán nêu trên. Đây là phần cleanup chưa thực hiện được; các report/ảnh giữ để đối chiếu đã được nêu mục đích riêng.
+
+### Bản điều chỉnh thị trấn — chưa nghiệm thu / thử nhiều lần chưa pass
+
+- **Chưa pass** lượt liên tục ví 0 → Restaurant và mục tiêu 180–240 phút bằng cash thực thu; chưa chạy campaign dài theo yêu cầu kiểm thử gọn. Giá/gate và các trục tách biệt đã triển khai; cần nghiệm thu cân bằng trong lượt chơi dài riêng.
+- **Chưa nghiệm thu Player toàn tổ hợp** các nghề/khu cùng hoạt động, Loader/Repairer mọi mức nâng cấp, mọi recipe Processing/Bakery dưới full-stock/shortage/congestion, crew đổi việc sau relaunch và Rush Hour đủ 15+90 s. Có core tests và vòng player/manual mới; không nhận là đã pass mọi tổ hợp.
+- **Chưa nghiệm thu nghệ thuật với người dùng:** hình dựng local của cừu/máy/xe/món mới, độ tự nhiên mọi action và mức giống video reference. Giữ rig/clip cũ; chưa retarget toàn raw library. Không benchmark FPS hoặc soak dài.
+- **Các lượt thử đã thất bại nhiều lần nhưng ca cuối đã pass:** thiếu key model thùng khi bootstrap; fixture dùng CaptureSaveData không có core; wait point bị wall/storage chặn; input harness dừng ngoài 1,2 m; harness đi thẳng vào xe; view carry kiểm tra trước LateUpdate; fixture diner thiếu owner. Đã sửa và 70 checks / 0 runtime errors pass trong Player cuối. Đây không còn là lỗi đang mở của những ca đã chạy.
+- **Các yêu cầu vẫn chưa pass sau nhiều lượt:** toàn progression và toàn mục tiêu thời lượng như danh sách Công đoạn 14 bên trên. Các harness zone cũ chưa chuyển hết sang proximity; tool compile/build/Town đã phù hợp, không dùng harness cũ làm bằng chứng gameplay mới.
+- **Cleanup:** automatic command review từ chối lệnh xóa bằng `blocked by policy`, không nêu thêm lý do; không lách chặn. Các artifact debug/empty resources và thư mục thử thất bại được giữ ngoài Git nếu chưa dọn được. Process audit cuối ghi riêng; không kết luận còn task process nếu audit chưa xác nhận.

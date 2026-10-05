@@ -5,7 +5,26 @@ namespace Tycoon.Tests
 {
     public sealed class TownRedesignTests
     {
+        [Test] public void AllLiteralRuntimeModelKeysExistInCatalogOrTownArt()
+        {
+            var catalog=UnityEngine.Resources.Load<GameCatalog>("GameCatalog");Assert.That(catalog,Is.Not.Null);
+            string root=System.IO.Path.Combine(UnityEngine.Application.dataPath,"_Game/Scripts/Runtime");
+            foreach(string file in System.IO.Directory.GetFiles(root,"*.cs"))
+                foreach(System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(System.IO.File.ReadAllText(file),"Art\\.Model\\(\"([^\"]+)\""))
+                    Assert.That(catalog.Model(match.Groups[1].Value)||TownArt.Supports(match.Groups[1].Value),Is.True,file+" model "+match.Groups[1].Value);
+        }
         static TransactionCommand C(TransactionCore core,TransactionKind kind,string key,string target=null)=>new(){kind=kind,key=key,effectId="effect:"+key,actor="player",expectedRevision=core.Revision,target=target};
+        [Test] public void MachineCapacitySpeedAndQualityAreSeparateTransactions()
+        {
+            var seed=TransactionCoreTests.Seed();seed.money=5000;seed.unlocked.Add("mill");seed.stations[0].kind="machine";seed.stations[0].area="processing";
+            var core=new TransactionCore(seed);
+            foreach(string id in new[]{"mill_capacity2","mill_speed2","mill_value2"})
+            {var c=C(core,TransactionKind.ContributePurchase,"pay:"+id,id);c.quantity=600;core.Execute(c);core.Execute(C(core,TransactionKind.CompletePurchase,"buy:"+id,id));}
+            var s=core.Snapshot();Assert.That(s.owners.Single(x=>x.id=="mill-input").capacity,Is.EqualTo(54));Assert.That(s.owners.Single(x=>x.id=="mill-output").capacity,Is.EqualTo(54));
+            Assert.That(ProgressionTracker.StationLevel(s,"mill"),Is.EqualTo(1));Assert.That(ProgressionTracker.AxisLevel(s,"mill",UpgradeAxis.Speed),Is.EqualTo(2));Assert.That(ProgressionTracker.AxisLevel(s,"mill",UpgradeAxis.QualityValue),Is.EqualTo(2));Assert.That(s.revenue,Is.Zero);
+        }
+        [Test] public void AssistanceOpensFeedWithoutGrantingFarmLevels()
+        {var seed=TransactionCoreTests.Seed();seed.unlocked.Clear();var core=new TransactionCore(seed);core.Execute(C(core,TransactionKind.GrantAssistance,"support"));Assert.That(core.Snapshot().unlocked,Does.Contain("feed_route"));Assert.That(core.Snapshot().unlocked,Does.Not.Contain("farm_level2"));}
         [Test] public void AutonomousBatchContinuesWithoutOperatorAndCreditsInitiatorOnce()
         {
             var seed=TransactionCoreTests.Seed();seed.stations[0].autonomous=true;seed.stations[0].lastInputActor="player";
