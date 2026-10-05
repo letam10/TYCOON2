@@ -7,7 +7,7 @@ using UnityEngine;
 namespace Tycoon
 {
     // Một writer, một khóa và một durable envelope cho toàn bộ thay đổi nghiệp vụ.
-    public sealed class TransactionCore
+    public sealed partial class TransactionCore
     {
         readonly object gate = new();
         readonly ITransactionStore store;
@@ -140,6 +140,7 @@ namespace Tycoon
                     return 1;
                 case TransactionKind.OperateProducer: return OperateProducer(s, c);
                 case TransactionKind.RestockProducer: return RestockProducer(s, c);
+                case TransactionKind.GrantAssistance: return GrantAssistance(s, c);
                 case TransactionKind.TickProducer: return TickProducer(s, c);
                 case TransactionKind.HarvestProducer: return HarvestProducer(s, c);
                 case TransactionKind.FeedProducer: return FeedProducer(s, c);
@@ -475,6 +476,7 @@ namespace Tycoon
             }
             Require(p.phase < 2, "phase", p.phase == 2 ? "Cây đang lớn." : "Cây đã chín; hãy sang vùng Lấy hàng.");
             p.action += (float)c.duration;
+            if (p.phase == 0 && p.cycleYield == 0) p.cycleYield = m.batchYield + ProgressionTracker.StationLevel(s, "farm") - 1;
             if (p.action >= 1) { p.action = 0; if (p.phase == 0) p.phase = 1; else { p.phase = 2; p.remaining = ProgressionTracker.FarmGrowDuration(s); } }
             return 1;
         }
@@ -500,7 +502,7 @@ namespace Tycoon
             var m = Producer(s, c); var p = m.progress; var carrier = Owner(s, c.destination); WriteAccess(carrier, c.actor);
             Require(carrier.actor == c.actor && carrier.kind is OwnerKind.Player or OwnerKind.Worker, "authority", "Chỉ lấy vào giỏ người thao tác.");
             bool animal = m.item is "milk" or "egg" or "beef";
-            int count=animal?1:Math.Max(1,m.batchYield+ProgressionTracker.AxisLevel(s,"farm",UpgradeAxis.Capacity)-1);
+            int count=animal?1:Math.Max(1,p.cycleYield > 0 ? p.cycleYield : m.batchYield);
             Require(double.IsFinite(c.duration) && c.duration > 0 && Free(s, carrier, m.item) >= count, "capacity", "Giỏ cần đủ chỗ cho cả lượt thu "+count+" "+Definitions.Item(m.item).label+".");
             Require(animal ? p.herd > 0 && p.feed > 0 && p.cycle == 0 : p.phase == 3, "phase", "Chưa đến lúc thu hoạch.");
             p.action += (float)c.duration;
@@ -508,7 +510,7 @@ namespace Tycoon
             // Một lần lấy thịt luôn tiêu thụ đúng một con và tạo một đơn vị thịt.
             AddStack(s, "harvest:" + c.effectId, carrier.id, m.item, count);
             p.action = 0; p.produced += count; m.workCount++;if(c.actor=="player")m.playerWorkCount++;
-            if (animal) { if (m.item == "beef") p.herd--; p.feed--; p.cycle = m.cycleSeconds>0?m.cycleSeconds:m.item == "beef" ? 45 : 30; } else p.phase = 0;
+            if (animal) { if (m.item == "beef") p.herd--; p.feed--; p.cycle = m.cycleSeconds>0?m.cycleSeconds:m.item == "beef" ? 45 : 30; } else { p.phase = 0; p.cycleYield = 0; }
             return count;
         }
         int FeedProducer(TransactionState s, TransactionCommand c)
@@ -543,6 +545,7 @@ namespace Tycoon
         }
         static void RefreshProgression(TransactionState s)
         {
+            UnlockCrops(s);
             foreach (var owner in s.owners)
             {
                 if (owner.kind == OwnerKind.Player) owner.capacity = ProgressionTracker.AxisCapacity(s, "player", 6);
@@ -596,7 +599,10 @@ namespace Tycoon
                 foreach(var stack in s.stacks.Where(x=>x.owner==owner.id))stack.location=StackLocation(owner,stack.item);
             }
             s.schemaVersion=2;
+            UnlockCrops(s,true);s.contentVersion=Math.Max(1,s.contentVersion);
             foreach(var station in s.stations)if(station.batchYield==0)station.batchYield=1;
+            foreach(var station in s.stations.Where(x=>x.kind=="producer" && x.progress.phase>0 && x.progress.cycleYield==0))
+                station.progress.cycleYield=station.batchYield+ProgressionTracker.AxisLevel(s,"farm",UpgradeAxis.Capacity)-1;
             RefreshMachinePhases(s);
             return s;
         }

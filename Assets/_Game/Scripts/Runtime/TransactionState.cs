@@ -11,7 +11,8 @@ namespace Tycoon
         CompleteOrder, FailOrder, CreatePayment, CollectPayment, ContributePurchase, CompletePurchase,
         StartMachine, AdvanceMachine, CompleteMachine, AcknowledgeEvent,
         RegisterOwner, OperateProducer, TickProducer, HarvestProducer, FeedProducer,
-        ReleaseOperator, BreakMachine, RepairMachine, UpgradeCrew, CleanTable, AdvanceDiner, Checkpoint, RestockProducer
+        ReleaseOperator, BreakMachine, RepairMachine, UpgradeCrew, CleanTable, AdvanceDiner, Checkpoint, RestockProducer,
+        GrantAssistance
     }
     public enum OrderStatus { Open, Complete, Failed }
     public enum ReservationStatus { Active, Used, Released, Expired }
@@ -106,7 +107,9 @@ namespace Tycoon
         internal TransactionState ShallowCopy()=>(TransactionState)MemberwiseClone();
         public int schemaVersion = 2, catalogVersion = Definitions.Version;
         public long revision;
-        public int money, revenue, cashCollected;
+        public int money, revenue, cashCollected, assistedCash;
+        public bool assisted;
+        public int contentVersion;
         public double simulationTime;
         public int legacyRevenue, legacyTransactions;
         public List<long> legacyPaid = new();

@@ -163,8 +163,19 @@ namespace Tycoon
         public IEnumerable<IPlayerInteractionArea> PlayerInteractionAreas()
         {
             foreach (var station in Stations)
-                if (station && station is IPlayerInteractionArea area) yield return area;
+            {
+                if(!station || station is StationZone or ConveyorStation)continue;
+                if(station is IPlayerInteractionArea area){yield return area;continue;}
+                if(!proximity.TryGetValue(station,out var target)){target=new ProximityTarget(station);proximity.Add(station,target);}
+                yield return target;
+                if(station is CheckoutStation)
+                {
+                    if(!cashProximity.TryGetValue(station,out var cash)){cash=new ProximityTarget(station,true);cashProximity.Add(station,cash);}
+                    yield return cash;
+                }
+            }
         }
+        readonly Dictionary<Station,ProximityTarget> proximity=new(),cashProximity=new();
         public Station NearestStation(Vector3 position)
         {
             Station nearest = null; float distance = float.PositiveInfinity;

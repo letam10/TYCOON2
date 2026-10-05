@@ -480,6 +480,14 @@ Build để chơi: `work/art-refresh/Build/TYCOON2.exe`. Audit/mapping/license: 
 - Đã dọn material derivative mồ côi qua Unity khi import. Lệnh dọn các output trung gian đã xác minh bị automatic command review từ chối với `blocked by policy`; không có lý do chi tiết hơn được trả về và không lách chặn. Các thư mục `work/art-refresh/player-assets-20261005T130637596Z`, `player-assets-20261005T131608073Z` và `Build/TYCOON2_BackUpThisFolder_ButDontShipItWithYourGame` còn tồn tại, không có process sử dụng. Không ship thư mục chẩn đoán này.
 - Giữ `work/art-refresh/library-audit.json`, reports/source hash/process audit, `player-assets-20261005T133111975Z` cùng ảnh, build và các report Player cuối để xem/reproduce kết quả. Các file này nằm ngoài Git; raw ASSET không bị đổi.
 
+## Thiết kế thị trấn mới — mốc 1 — 2026-10-05
+
+- Đã chuyển player sang proximity 1,2 m/dwell 0,25 s; không sinh action tile. NPC giữ work slot riêng; Collect dùng cọc tiền.
+- Nút hỗ trợ +999.999 và mở tuyến dùng transaction có receipt; không cộng revenue/cashCollected/jobs. Gỡ bằng define `TYCOON_DISABLE_ASSIST`.
+- Farm cấp 2/3 mở ruộng ngô, đậu nành và ruộng bổ sung; đất vuông có rãnh. Yield snapshot giữ mẻ đang dở khi nâng cấp.
+- EditMode/compile: 120/120 pass. Chưa nghiệm thu hình ảnh/Windows Player của mốc này; tiếp tục máy tự động, repair, logistics và polish.
+- Commit/push mốc: `feat: add proximity interaction and expanding farm foundation` (hash sẽ được ghi khi chốt các mốc).
+
 ## Những gì chưa thực hiện được / chưa nghiệm thu — cập nhật cuối Công đoạn 14
 
 - **Công đoạn 14: chưa pass lượt liên tục new game 0 → Restaurant bằng sản xuất/thu tiền thực tế, không nạp state. Chưa pass mục tiêu mở toàn chuỗi trong 180–240 phút.** Preset sát ngưỡng xác nhận từng gate/gameplay nhưng không thay thế hai tiêu chí này; chưa chốt acceptance toàn Công đoạn 14.

@@ -12,19 +12,27 @@ namespace Tycoon
             Art.Box("Grass", new Vector3(8, -.13f, 12), new Vector3(112, .25f, 92), "#9BC984", world, true);
             Lighting(world);
             WorldDressing.Environment(world);
-            Art.Box("StarterField", new Vector3(-13, .012f, 10), new Vector3(18, .04f, 14), "#A7D96B", world);
+            Art.Box("StarterField", new Vector3(-13, .012f, 18), new Vector3(18, .04f, 30), "#A7D96B", world);
             Art.Box("StarterSelling",new Vector3(-13,.012f,0),new Vector3(17,.04f,6),"#EDB5A2",world);
             var shopFloor=Floor(world, "02  CỬA HÀNG NÔNG SẢN", new Vector3(7, 0, 6), new Vector2(22, 20));
             shopFloor.gameObject.AddComponent<UnlockVisual>().Requirement="farm_shop";
             Crop(game, world, "field_carrot", "carrot", "CÀ RỐT • LUỐNG 1", new Vector3(-19, 0, 8), 3.8f);
             Crop(game, world, "field_carrot_2", "carrot", "CÀ RỐT • LUỐNG 2", new Vector3(-13, 0, 8), 3.8f);
             Crop(game, world, "field_carrot_3", "carrot", "CÀ RỐT • LUỐNG 3", new Vector3(-7, 0, 8), 3.8f);
-            Crop(game, world, "field_tomato", "tomato", "CÀ CHUA", new Vector3(-19, 0, 14), 4.1f);
+            Crop(game, world, "field_tomato", "tomato", "CÀ CHUA", new Vector3(-13, 0, 26), 4.1f);
             Crop(game, world, "field_wheat", "wheat", "LÚA MÌ", new Vector3(-13, 0, 14), 4.3f);
+            Crop(game,world,"field_corn","corn","NGÔ",new Vector3(-19,0,14),4);
+            Crop(game,world,"field_soybean","soybean","ĐẬU NÀNH",new Vector3(-7,0,14),4);
+            Crop(game,world,"field_wheat_2","wheat","LÚA MÌ • 2",new Vector3(-19,0,20),4);
+            Crop(game,world,"field_corn_2","corn","NGÔ • 2",new Vector3(-13,0,20),4);
+            Crop(game,world,"field_soybean_2","soybean","ĐẬU NÀNH • 2",new Vector3(-7,0,20),4);
+            foreach(var plot in game.Producers)
+                if((plot.Id.EndsWith("_2") && plot.ItemId!="carrot") || plot.ItemId is "corn" or "soybean")
+                {plot.Requirement=plot.Id.EndsWith("_2")?"crop_expansion3":"crop_"+plot.ItemId;plot.gameObject.AddComponent<UnlockVisual>().Requirement=plot.Requirement;}
             foreach (var id in new[] { "field_tomato", "field_wheat" })
             {
-                var locked = game.Producers.Find(x => x.Id == id); locked.Requirement = "farm_shop";
-                locked.gameObject.AddComponent<UnlockVisual>().Requirement = "farm_shop";
+                var locked = game.Producers.Find(x => x.Id == id); locked.Requirement = "crop_"+locked.ItemId;
+                locked.gameObject.AddComponent<UnlockVisual>().Requirement = locked.Requirement;
                 foreach (var station in game.Stations)
                     if (station is StationZone zone && zone.Target == locked)
                     {
@@ -184,7 +192,7 @@ namespace Tycoon
         {
             var station = Register<ProductionStation>(game, parent, id, label, point, 24); station.AreaId = "farm"; station.ItemId = item; station.Interval = interval; station.Remaining = interval;
             station.Yield=item=="carrot"?2:4;
-            Art.Model("crop_soil",Vector3.zero,station.transform);
+            station.gameObject.AddComponent<FarmPlotView>().Build();
             var plants = new List<Transform>();
             for (int i = 0; i < 9; i++)
             {
@@ -243,15 +251,9 @@ namespace Tycoon
         }
         public static void Zone(GameSession game, Transform parent, Station target, string mode, Vector3 point)
         {
-            string label = mode switch { "withdraw" => "LẤY HÀNG", "deposit" => "ĐẶT HÀNG", "operate" => "VẬN HÀNH", "serve" => "GIAO HÀNG", "cash" => "THU TIỀN", "repair" => "SỬA MÁY", _ => mode };
-            var zone = Register<StationZone>(game, parent, target.Id + "_" + mode, label, point);
-            zone.Target = target; zone.Mode = mode; zone.AreaId = target.AreaId; zone.Requirement = target.Requirement; zone.InteractionPoint = point;
-            target.PlayerUsesZones = true; zone.InteractionRadius = .85f;
-            if (target is CheckoutStation checkout && mode == "cash") checkout.CashZone = zone;
-            string color = mode switch { "serve" => "#73CF4F", "withdraw" => "#39A4D8", "deposit" => "#F5AB3D", "operate" => "#9A72D8", "repair"=>"#E65D43", _ => "#FFD63E" };
-            Art.Box("InteractionZone", new Vector3(0, .035f, 0), new Vector3(1.8f, .07f, 1.8f), color, zone.transform);
-            var caption=Art.Label(mode=="operate"&&target is ProductionStation p&&!p.Animal?"GIEO / TƯỚI":label,new Vector3(0,.083f,0),zone.transform,.1f,"#FFFFFF",false);caption.transform.rotation=Quaternion.Euler(90,0,0);
-            zone.gameObject.AddComponent<UnlockVisual>().Target=target;
+            // Điểm work của NPC được giữ; player tương tác với vật thể, không sinh ô hành động.
+            if(target is CheckoutStation && mode=="cash")
+                Art.Box("CashStand",new Vector3(2.7f,.35f,.6f),new Vector3(1.1f,.7f,.7f),"#8B6B49",target.transform);
         }
         public static MachineStation Machine(GameSession game, Transform parent, string key, Vector3 point, string requirement)
         {

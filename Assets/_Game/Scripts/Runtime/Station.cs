@@ -5,7 +5,7 @@ namespace Tycoon
     [Serializable] public sealed class StationProgressSave
     {
         internal StationProgressSave ShallowCopy()=>(StationProgressSave)MemberwiseClone();
-        public string id; public int level=1,workCount,playerWorkCount,playerServeCount,playerCleanCount,phase,herd=3,feed,batches,playerBatches,repairFee;public float remaining,action,cycle,breeding,repairRemaining;public bool running,broken,repairPaid;public float produced;
+        public string id; public int level=1,workCount,playerWorkCount,playerServeCount,playerCleanCount,phase,herd=3,feed,batches,playerBatches,repairFee,cycleYield;public float remaining,action,cycle,breeding,repairRemaining;public bool running,broken,repairPaid;public float produced;
     }
     public abstract class Station:MonoBehaviour,IPlayerInteractionTarget
     {
@@ -85,7 +85,7 @@ namespace Tycoon
         public string FeedItem=>Animal?"carrot":null;
         void GuardState(){if(Runtime!=null)throw new InvalidOperationException("Producer chỉ được cập nhật qua transaction.");}
         public bool Animal=>ItemId is "milk" or "egg" or "beef";
-        public int HarvestQuantity=>Animal?1:Mathf.Max(1,Yield+(GameSession.Instance?.Progression.AxisLevel("farm",UpgradeAxis.Capacity)??1)-1);
+        public int HarvestQuantity=>Animal?1:Mathf.Max(1,Runtime?.progress.cycleYield > 0 ? Runtime.progress.cycleYield : Yield+Level-1);
         public override string Prompt=>!IsUnlocked?Label+" • chưa mở":Animal?Label+" • đàn "+Herd+"/"+MaximumHerd+" • thức ăn "+Feed+"/"+MaximumFeed+" • "+(Feed<MaximumFeed?"Cần "+Definitions.Item(FeedItem)?.label:Herd==0?"Đang tái đàn":Cycle.ToString("0")+"s"):Label+" • "+(Phase==0?"Đứng gieo hạt":Phase==1?"Đứng tưới":Phase==2?"Đang lớn "+Remaining.ToString("0.0")+"s":"Đứng thu hoạch")+" • cấp "+Level;
         void Update(){Tick(Time.deltaTime);}
         public void Tick(float delta)

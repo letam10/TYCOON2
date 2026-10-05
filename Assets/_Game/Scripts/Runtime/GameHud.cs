@@ -60,6 +60,11 @@ namespace Tycoon
             Button(menu.transform,"Lưu trò chơi",-85,()=>game.SaveGame());
             Button(menu.transform,"Lưu & thoát",-165,()=> { game.SaveGame(); Application.Quit(); });
             menu.SetActive(false);
+            if(DevelopmentAssistance.Enabled)
+            {
+                var support=Button(root.transform,"Hỗ trợ +999.999 / mở khu",0,()=>{if(DevelopmentAssistance.Apply(game))game.Say("Đã cộng 999.999 xu và mở tuyến cơ bản.");});
+                Rect(support.GetComponent<RectTransform>(),new Vector2(1,1),new Vector2(1,1),new Vector2(-640,-125),new Vector2(-28,-28));
+            }
             crewPanel=Panel("CrewManagement",root.transform,Vector2.zero,Vector2.one,Vector2.zero,Vector2.zero,"#143627",.97f);
             var crewTitle=Text("CrewTitle",crewPanel.transform,"ĐỘI NGŨ • VAI TRÒ VÀ KHU VỰC",34,TextAnchor.MiddleCenter,"#FFFFFF");
             Rect(crewTitle.rectTransform,new Vector2(.1f,.88f),new Vector2(.9f,.97f),Vector2.zero,Vector2.zero);
@@ -84,7 +89,7 @@ namespace Tycoon
             var carried = game.Player.Carry.Snapshot();
             carry.text = (carried.Count == 0 ? "Giỏ trống" : Definitions.Item(carried[0].id).label) + ": " + game.Player.Carry.Total + "/" + game.Player.Carry.Capacity + "\nChọn lấy: " + Definitions.Items[game.SelectedItem].label;
             var station = game.NearestStation(game.Player.transform.position);
-            prompt.text = !string.IsNullOrEmpty(game.Player.InteractionReason) ? game.Player.InteractionReason : station ? station.Prompt : "Đứng vào vùng: Lấy → Đặt → Vận hành → Giao → Thu tiền";
+            prompt.text = !string.IsNullOrEmpty(game.Player.InteractionReason) ? game.Player.InteractionReason : game.Player.ActiveInteraction is ProximityTarget target ? target.Cash?"Thu tiền tại cọc tiền":target.Target.Prompt : station ? station.Prompt : "Dừng gần vật thể để thao tác tự động";
             toast.transform.parent.gameObject.SetActive(Time.time < game.ToastUntil); toast.text = game.Toast;
             if(Time.unscaledTime>=nextStatusRefresh){nextStatusRefresh=Time.unscaledTime+.3f;RefreshStatus();}
         }

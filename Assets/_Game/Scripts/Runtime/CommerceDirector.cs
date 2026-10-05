@@ -242,6 +242,7 @@ namespace Tycoon
         public override Vector3 WaitingPoint=>transform.position+Vector3.right*4.8f+Vector3.forward*1.9f;
         public string ShopId;
         public StationZone CashZone;
+        public Vector3 CollectionPoint=>transform.position+new Vector3(2.7f,0,.6f);
         public string[] AcceptedItems => GameSession.Instance.Shelves.Where(x=>x.ShopId==ShopId&&x.AllowedItems!=null)
             .SelectMany(x=>x.AllowedItems).Distinct().ToArray();
         public bool AcceptsItem(string id)
@@ -276,7 +277,7 @@ namespace Tycoon
             while (bills.Count < count) bills.Add(Art.Box("CashBill", Vector3.zero, new Vector3(.55f, .075f, .28f), "#66E932", transform));
             for (int i = 0; i < bills.Count; i++)
             {
-                bills[i].SetActive(i < count); bills[i].transform.localPosition = new Vector3(-1.3f + (i % 2) * .6f, .06f + (i / 2) * .08f, .15f);
+                bills[i].SetActive(i < count); bills[i].transform.localPosition = new Vector3(2.4f + (i % 2) * .6f, .8f + (i / 2) * .08f, .6f);
             }
             shownCash = Cash;
         }
@@ -308,7 +309,7 @@ namespace Tycoon
         public int CollectCash(PlayerController player)
         {
             var game = GameSession.Instance;
-            if (!IsUnlocked || !player || player != game.Player || !CashZone || !CashZone.ContainsInteractionPoint(player.transform.position)) return 0;
+            if (!IsUnlocked || !player || player != game.Player || (CashZone ? !CashZone.ContainsInteractionPoint(player.transform.position) : Vector3.Distance(player.transform.position,CollectionPoint)>1.2f)) return 0;
             int collected = Authority!=null?Authority.Collect(Id):game.Economy.CollectCash(Cash); if(Authority==null)Cash -= collected;
             if (collected > 0) { game.Say("+" + collected + " xu"); game.Feedback?.PlaySale(); }
             return collected;

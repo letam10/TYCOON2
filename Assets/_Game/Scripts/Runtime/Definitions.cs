@@ -104,6 +104,8 @@ namespace Tycoon
             new("carrot", "Cà rốt", 10, "#F68D4C"),
             new("tomato", "Cà chua", 14, "#EF6461"),
             new("wheat", "Lúa mì", 12, "#E9C26A"),
+            new("corn", "Ngô", 14, "#F5D64F", "wheat"),
+            new("soybean", "Đậu nành", 16, "#B8BD70", "tomato"),
             new("milk", "Sữa", 35, "#E3F2F5"),
             new("egg", "Trứng", 25, "#F6E5BA"),
             new("flour", "Bột mì", 120, "#EED9AD"),

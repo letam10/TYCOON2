@@ -48,7 +48,7 @@ namespace Tycoon
         {
             if (!CanControl || Move == null || GameSession.Instance == null || !GameSession.Instance.CanSimulate) { StopInteraction(); return; }
             var game = GameSession.Instance;
-            if (Cycle.WasPressedThisFrame()) game.SelectedItem = (game.SelectedItem + 1) % Definitions.Items.Length;
+            if (Cycle.WasPressedThisFrame()) { game.SelectedItem = (game.SelectedItem + 1) % Definitions.Items.Length; StopInteraction(); }
             if (Save.WasPressedThisFrame()) game.SaveGame();
             Vector2 input = Move.ReadValue<Vector2>();
             var direction = CameraRelativeDirection(input, Camera.main ? Camera.main.transform : null);
@@ -92,6 +92,8 @@ namespace Tycoon
                 }
                 else if(interaction.Current is StationZone zone&&zone.Kind is InteractionKind.Operate or InteractionKind.Serve or InteractionKind.Repair)
                     View?.Work(ActorView.WorkState(zone.Target,zone.Kind));
+                else if(interaction.Current is ProximityTarget target&&target.Kind is InteractionKind.Operate or InteractionKind.Serve or InteractionKind.Repair)
+                    View?.Work(ActorView.WorkState(target.Target,target.Kind));
             }
             return result.Worked;
         }

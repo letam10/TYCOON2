@@ -44,6 +44,7 @@ namespace Tycoon
     {
         public IPlayerInteractionArea Current {get;private set;}
         EntityId actor;
+        float dwell;
         public InteractionResult Tick(IEnumerable<IPlayerInteractionArea> areas,InteractionContext context,Vector3 position,float delta)
         {
             if(delta<=0||float.IsNaN(delta)||float.IsInfinity(delta)){Stop();return InteractionResult.Waiting;}
@@ -52,12 +53,15 @@ namespace Tycoon
                 if(area!=null&&area.Contains(position)&&area.Available)
                 {
                     var offset=position-area.Center;offset.y=0;
-                    if(offset.sqrMagnitude<distance){distance=offset.sqrMagnitude;nearest=area;}
+                    float square=area is ProximityTarget target?Mathf.Pow(target.Distance(position),2):offset.sqrMagnitude;
+                    if(square<distance){distance=square;nearest=area;}
                 }
+            if(Current is ProximityTarget && Current.Available && Current.Contains(position)) nearest=Current;
             if(!ReferenceEquals(Current,nearest)||actor!=context.Actor){Stop();Current=nearest;actor=context.Actor;}
+            if(Current is ProximityTarget){dwell+=delta;if(dwell<.25f)return InteractionResult.Waiting;}
             return Current==null?InteractionResult.Waiting:Current.Perform(context,delta);
         }
-        public void Stop(){var previous=Current;Current=null;previous?.Exit(actor);}
+        public void Stop(){var previous=Current;Current=null;dwell=0;previous?.Exit(actor);}
     }
     public static class StationPlayerActions
     {
