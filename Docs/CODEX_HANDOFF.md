@@ -474,7 +474,7 @@ Build để chơi: `work/art-refresh/Build/TYCOON2.exe`. Audit/mapping/license: 
 ### GitHub, tiến trình và file trung gian
 
 - `bdf34b7` — `feat: import curated local tycoon asset library`; đã push `origin/main`.
-- Mốc runtime có message `feat: dress tycoon areas with local assets and verify play`; hash/push được bổ sung ở commit bàn giao cuối.
+- `dd60c5f` — `feat: dress tycoon areas with local assets and verify play`; đã push `origin/main`. Commit tài liệu cuối có message `docs: finalize local asset refresh handoff`.
 - Không đưa `ProjectSettings/QualitySettings.asset` hoặc các raw ASSET có sẵn chưa track vào commit. GPU probe report tạm ở đường dẫn QA có sẵn đã khôi phục về baseline.
 - Đối chiếu 30 process records (PID/executable/creation time/parent) với tiến trình hệ thống: 0 process/helper task còn chạy. `process-history.jsonl` có một dòng cuối bị ghi cụt khi hai CLI append cùng lúc; đã đối chiếu thêm file process JSON riêng và các exit result để không bỏ sót PID. Bằng chứng: `work/art-refresh/owned-process-records.json`, `process-cleanup.json`.
 - Đã dọn material derivative mồ côi qua Unity khi import. Lệnh dọn các output trung gian đã xác minh bị automatic command review từ chối với `blocked by policy`; không có lý do chi tiết hơn được trả về và không lách chặn. Các thư mục `work/art-refresh/player-assets-20261005T130637596Z`, `player-assets-20261005T131608073Z` và `Build/TYCOON2_BackUpThisFolder_ButDontShipItWithYourGame` còn tồn tại, không có process sử dụng. Không ship thư mục chẩn đoán này.
