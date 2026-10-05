@@ -59,6 +59,7 @@ namespace Tycoon
 
     public static class SaveStore
     {
+        public const int CurrentTransactionVersion = 2;
         public static void Write(string path, SaveData data, Action<CommitBoundary> fault = null)
         {
             Validate(data);
@@ -85,7 +86,10 @@ namespace Tycoon
             // Unity có thể tạo inline class rỗng khi JSON thiếu field; marker phân biệt save v2 cũ.
             if(data!=null&&data.transactionVersion==0)data.transactionState=null;
             if(data?.transactionVersion==1&&data.transactionState!=null)
+            {
                 data.transactionState=TransactionCore.NormalizeState(data.transactionState);
+                data.transactionVersion=CurrentTransactionVersion;
+            }
             if (data == null || data.version != 2 || data.money < 0 || data.inventories == null || data.unlocked == null)
                 throw new InvalidDataException("Save không hợp lệ hoặc phiên bản chưa hỗ trợ.");
             Validate(data);
@@ -122,8 +126,9 @@ namespace Tycoon
                 cash+=counter.amount;
             }
             if(cash!=data.pendingCash)throw new InvalidDataException("Tiền tại quầy không khớp sổ tiền chờ thu.");
-            if(data.transactionVersion is <0 or >1)throw new InvalidDataException("Transaction save version chưa hỗ trợ.");
-            if (data.transactionVersion==1) TransactionCore.Validate(data.transactionState);
+            if(data.transactionVersion is <0 or >CurrentTransactionVersion)throw new InvalidDataException("Transaction save version chưa hỗ trợ.");
+            if(data.transactionVersion==CurrentTransactionVersion&&data.transactionState==null)throw new InvalidDataException("Save v2 thiếu transaction state.");
+            if (data.transactionVersion==CurrentTransactionVersion) TransactionCore.Validate(data.transactionState);
         }
     }
 }

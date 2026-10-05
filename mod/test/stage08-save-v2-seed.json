@@ -1,0 +1,5 @@
+{
+  "money": 600,
+  "storageCarrots": 10,
+  "purpose": "Seed used by SaveV2Tests for repeat-read ownership and money checks; this is test data, not a player save."
+}

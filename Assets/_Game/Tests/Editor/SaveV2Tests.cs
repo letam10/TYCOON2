@@ -1,4 +1,6 @@
 using NUnit.Framework;
+using System;
+using System.IO;
 using UnityEngine;
 namespace Tycoon.Tests
 {
@@ -39,5 +41,41 @@ namespace Tycoon.Tests
             Assert.That(Definitions.Item("carrot").price,Is.EqualTo(10));Assert.That(Definitions.Upgrade("barn").cost,Is.EqualTo(500));
             Assert.That(Definitions.Upgrade("milk_line").cost,Is.EqualTo(1000));Assert.That(Definitions.Upgrade("egg_line").cost,Is.EqualTo(1000));
         }
+        [Test] public void TransactionSaveV2SurvivesRepeatedReadsWithoutCloningOwnersOrMoney()
+        {
+            var fixture=JsonUtility.FromJson<SaveFixture>(File.ReadAllText(FixturePath("stage08-save-v2-seed.json")));
+            var state=new TransactionCore(TransactionCoreTests.Seed()).Snapshot();
+            var save=new SaveData{transactionVersion=SaveStore.CurrentTransactionVersion,transactionState=state,money=fixture.money};
+            save.cash.Add(new CashSave{id="counter",amount=0});
+            string path=TemporarySavePath();
+            try
+            {
+                SaveStore.Write(path,save);
+                var first=SaveStore.Read(path);var second=SaveStore.Read(path);
+                Assert.That(first.transactionVersion,Is.EqualTo(SaveStore.CurrentTransactionVersion));
+                Assert.That(first.transactionState.stacks.Find(x=>x.owner=="storage"&&x.item=="carrot").quantity,Is.EqualTo(fixture.storageCarrots));
+                Assert.That(second.transactionState.stacks.Find(x=>x.owner=="storage"&&x.item=="carrot").quantity,Is.EqualTo(fixture.storageCarrots));
+                Assert.That(second.money,Is.EqualTo(fixture.money));Assert.That(second.transactionState.revision,Is.Zero);
+            }
+            finally{DeleteTemporarySave(path);}
+        }
+        [Test] public void TransactionVersionOneIsNormalizedAndUpgradedToVersionTwo()
+        {
+            var state=TransactionCoreTests.Seed();state.schemaVersion=1;
+            var save=new SaveData{transactionVersion=1,transactionState=state,money=state.money};save.cash.Add(new CashSave{id="counter"});
+            string path=TemporarySavePath();
+            try
+            {
+                SaveStore.Write(path,save);var read=SaveStore.Read(path);
+                Assert.That(read.transactionVersion,Is.EqualTo(SaveStore.CurrentTransactionVersion));
+                Assert.That(read.transactionState.schemaVersion,Is.EqualTo(2));
+            }
+            finally{DeleteTemporarySave(path);}
+        }
+        static string FixturePath(string name)=>Path.Combine(Directory.GetParent(Application.dataPath).FullName,"mod","test",name);
+        static string TemporarySavePath()=>Path.Combine(Directory.GetParent(Application.dataPath).FullName,"work","stage08-save-tests",Guid.NewGuid().ToString("N"),"save-v2.json");
+        static void DeleteTemporarySave(string path)
+        {string directory=Path.GetDirectoryName(path);if(Directory.Exists(directory))Directory.Delete(directory,true);}
+        [Serializable]sealed class SaveFixture{public int money,storageCarrots;}
     }
 }

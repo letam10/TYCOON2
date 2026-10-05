@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('Import','Tests','Build','Scene','Baseline','Stage23','Stage45','Stage67')] [string]$Task = 'Import'
+    [ValidateSet('Import','Tests','Build','Scene','Baseline','Stage23','Stage45','Stage67','Stage08')] [string]$Task = 'Import'
 )
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
@@ -13,8 +13,10 @@ if (!(Test-Path -LiteralPath $baselinePath)) {
 }
 $logPath = Join-Path $logDirectory ($Task.ToLower() + '.log')
 $arguments = @('-batchmode','-nographics','-projectPath',('"' + $taskRoot + '"'),'-logFile',('"' + $logPath + '"'))
-if ($Task -eq 'Tests') {
-    $arguments += @('-runTests','-testPlatform','EditMode','-testResults',('"' + (Join-Path $taskRoot 'QA\editmode-results.xml') + '"'))
+if ($Task -in @('Tests','Stage08')) {
+    $results=if($Task -eq 'Stage08'){Join-Path $taskRoot 'work\stage08\editmode-results.xml'}else{Join-Path $taskRoot 'QA\editmode-results.xml'}
+    $arguments += @('-runTests','-testPlatform','EditMode','-testResults',('"' + $results + '"'))
+    if($Task -eq 'Stage08'){$arguments += @('-testFilter','Tycoon.Tests.SaveV2Tests')}
 } else {
     if($Task -notin @('Baseline','Stage23','Stage45','Stage67')) { $arguments += '-quit' }
     if($Task -eq 'Baseline') {

@@ -142,7 +142,7 @@ namespace Tycoon
             var state=game.Transactions.Snapshot();TransactionCore.Validate(state);
             Check(state.receipts.Count==state.revision&&state.outbox.Count==state.revision,"All live mutations have receipt and outbox in the same save");
             Check(state.stacks.All(x=>state.owners.Any(o=>o.id==x.owner&&o.location==x.location)),"Every stack has one valid owner and location");
-            game.SaveGame();Check(SaveStore.Read(game.SavePath).transactionVersion==1,"One durable gameplay envelope retains the core");
+            game.SaveGame();Check(SaveStore.Read(game.SavePath).transactionVersion==SaveStore.CurrentTransactionVersion,"One durable gameplay envelope retains the core");
         }
         [Serializable]sealed class Report{public string result,unity,utc,failure,graphics;public string[]checks,errors;public long revision;public int receipts,events;}
     }

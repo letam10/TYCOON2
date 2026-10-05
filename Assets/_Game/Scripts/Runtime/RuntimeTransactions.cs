@@ -341,7 +341,7 @@ namespace Tycoon
         }
         internal static SaveData Project(TransactionState state, SaveData data)
         {
-            data.transactionState = TransactionCore.Copy(state); data.transactionVersion=1;data.money = state.money; data.revenue = state.revenue;
+            data.transactionState = TransactionCore.Copy(state); data.transactionVersion=SaveStore.CurrentTransactionVersion;data.money = state.money; data.revenue = state.revenue;
             data.transactions = state.legacyTransactions + state.payments.Count;
             data.unlocked = new(state.unlocked); data.crews = state.crews.Select(TransactionCore.Copy).ToList();
             data.purchases = state.purchases.Select(x => new PurchaseProgress { id = x.id, paid = x.contributed, total = Definitions.Upgrade(x.id).cost, complete = x.complete }).ToList();

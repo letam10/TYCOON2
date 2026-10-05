@@ -91,6 +91,8 @@ namespace Tycoon
             actor.AddComponent<ActorView>();
             Player = playerRoot.AddComponent<PlayerController>();
             Player.Initialize();
+            // Không nhận input khi save đang được khôi phục và core chưa sẵn sàng.
+            Player.CanControl = false;
             var basket = new GameObject("CarryStack");
             basket.transform.SetParent(playerRoot.transform, false);
             basket.transform.localPosition = new Vector3(0, .8f, -.5f);
@@ -113,7 +115,7 @@ namespace Tycoon
             if (File.Exists(SavePath)&&!baseline) LoadGame();
             ApplyProgression();
             if (!baseline && Transactions == null && !SaveBlocked)
-                try { InitializeTransactions(); } catch(Exception error) { BlockRecovery(error); }
+                try { InitializeTransactions(); Player.CanControl = !SaveBlocked; } catch(Exception error) { BlockRecovery(error); }
             Feedback = gameObject.AddComponent<GameFeedback>();
             Commerce = gameObject.AddComponent<CommerceDirector>();
             Restaurant = gameObject.AddComponent<RestaurantDirector>();
@@ -263,10 +265,11 @@ namespace Tycoon
                 Player.transform.position = new Vector3(data.playerX, .05f, data.playerZ);
                 if(Player.Controller)Player.Controller.enabled = true;
                 ApplyProgression();
-                SaveBlocked=false;Player.CanControl=true;
+                SaveBlocked=false;Player.CanControl=false;
                 if(data.transactionState!=null)InitializeTransactions(data.transactionState);
                 CameraRig?.Snap();
                 SaveBlocked=false;
+                Player.CanControl=true;
                 Say("Đã tải trò chơi");
             }
             catch (Exception error) { BlockRecovery(error); }
