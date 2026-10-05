@@ -135,3 +135,27 @@ Công đoạn 01 hoàn tất; code commit 3582a92 và CLI follow-up 3a4a6d6 đã
 - Công đoạn 01/02/03 không còn bước bàn giao mở. Nội dung gameplay phía sau kế hoạch chưa được triển khai hoặc nghiệm thu.
 - `ProjectSettings/QualitySettings.asset` là thay đổi có sẵn trước lượt này và vẫn được giữ ngoài commit. `ProjectSettings/ProjectSettings.asset` bị Unity BuildPipeline tự thêm Input Actions vào `preloadedAssets`; thay đổi build-generated này được hoàn nguyên, không đưa vào commit.
 - Báo cáo EditMode/build/QA và ảnh được giữ trong `work/stage02-03/`. File save QA, binary Windows và log tạm cũng còn ở đó vì các lệnh PowerShell xóa bị Windows command policy từ chối (`Remove-Item: blocked by policy`) dù đã khoanh đường dẫn task; chúng không nằm trong Git. Không còn Unity/Player/process con nào chạy.
+
+## Rà soát cuối 3 công đoạn — phần chưa làm và chưa nghiệm thu
+
+### Hạng mục chưa thực hiện hoặc chưa có bằng chứng pass
+
+- Công đoạn 01: các tiêu chí baseline có báo cáo pass; không tìm thấy lỗi acceptance còn mở trong phạm vi công đoạn.
+- Công đoạn 02: chưa chạy bài xác minh save/load bằng cách đóng hẳn rồi khởi chạy lại Windows Player. Đã có test load lặp, save atomic/recovery và tương thích save cũ trong cùng tiến trình; đây chưa phải bằng chứng relaunch thực tế.
+- Công đoạn 03: chưa chơi hết luồng worker đã tuyển/mở khóa trong Windows Player và chưa chạy end-to-end toàn bộ vòng đời khách nhà hàng trên Player. Worker relay, bàn và các vùng thao tác có test/integration coverage, nhưng chưa thay thế được hai lượt chơi trọn luồng này.
+- Công đoạn 03: ảnh xác minh chỉ bao phủ một trạng thái; nhãn một số vùng station có vẻ chồng nhau ở góc camera đó, cần kiểm tra/chỉnh thị giác riêng.
+- Xuyên suốt: chưa đo nghiệm thu mục tiêu 165 FPS ở 1080p trong thời gian dài hoặc phiên tiến trình 3–4 giờ.
+- Ngoài phạm vi Công đoạn 01–03: chưa xây nội dung gameplay riêng cho Farm Shop, Processing, Supermarket, Bakery và Restaurant; các trạm/zone hiện có chỉ được giữ hoặc nối vào core và framework chung.
+- Dọn artifact QA/build tạm của Công đoạn 02/03 dưới `work/stage02-03/` đã được thử nhiều lần nhưng chưa xong: lệnh `Remove-Item` bị command policy từ chối (`blocked by policy`). Các file còn lại không đưa vào Git; không còn tiến trình Unity/Player của lượt làm việc giữ chúng mở.
+
+### Lượt thử lỗi lặp đã được khắc phục; kết quả cuối pass
+
+- Công đoạn 02: lỗi trùng tên biến cục bộ `WorkerAgent.IsAnimal`, thiếu tham chiếu assembly Input System trong test interaction và tương thích save cũ khi Unity tạo object giao dịch rỗng đã được sửa. Bộ EditMode cuối đạt 81/81.
+- Công đoạn 03: hai ảnh QA Player đầu không dùng được (Player ẩn cho ảnh đen; lần chụp kế tiếp trước khi HUD cập nhật nên hiện 0/6). Harness đã chờ thêm một frame; lượt Player cuối hiển thị 6/6 và đạt 167/167 checks.
+- Công đoạn 02/03: lần Windows BuildPipeline đầu không tự thoát; tiến trình task-owned đã được kết thúc và lần build cuối có `-quit` thành công. Build cuối báo 0 lỗi và 2 cảnh báo.
+- Không có lỗi compile, test hoặc Player QA nào còn được ghi là thất bại trong báo cáo cuối: Công đoạn 01 EditMode 65/65, Editor/Windows Player 180 checks mỗi lượt; Công đoạn 02/03 EditMode 81/81, Editor/Windows Player 167 checks mỗi lượt, errors rỗng. Kết quả Editor là `-nographics`; kiểm tra đồ họa nhìn thấy được chỉ có lượt Windows Player trên RTX 4060 đã nêu ở trên.
+
+### Git của lượt rà soát này
+
+- Trước khi sửa handoff: `main` trùng `origin/main` tại `2218095`; chỉ file này được đưa vào commit audit cuối và commit được push lên `origin/main` sau khi cập nhật mục này.
+- `ProjectSettings/QualitySettings.asset` vẫn là thay đổi có sẵn của người dùng (`antiAliasing: 0` → `2`); được giữ nguyên và không đưa vào commit/push.
