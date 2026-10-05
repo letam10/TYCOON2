@@ -371,4 +371,73 @@ Cập nhật này là ghi chép lịch sử tại mốc bàn giao Công đoạn 
 - File chính: `TransactionCore.cs`, `TransactionRuntimeCopy.cs`, `GameplayTransactionStore.cs`, `RuntimeTransactions.cs`, `TransactionState.cs`, `SaveData.cs`, `Inventory.cs`, `Station.cs`, `MachineStation.cs`, `ProgressionTracker.cs`, `GameHud.cs`; fixture `mod/test/stage14-boundaries.json`.
 - Kiểm chứng mốc: EditMode 117/117 pass, 0 fail, 0 skip (`QA/editmode-results.xml`); compile và layout NavMesh pass. Windows build đầu Stage14: Succeeded, 0 errors, 2 warnings (`work/stage14/Build/build-report.json`). Player visual đầu trên RTX 4060/Direct3D11 pass vòng ví 0 → gieo/tưới/thu → giao → Collect (`work/stage14/player-stage14visual-20261005T092655022Z/`).
 - Chưa chốt Công đoạn 14: lượt progression đầu dừng vì đi ngang pad khác góp 16 xu, purchase cây trồng cấp 3 còn thiếu 7 xu. Đã sửa delay và harness tiếp tục purchase dở; cần chạy lại. Mục tiêu 180–240 phút và toàn vòng 0 → Restaurant chưa pass. Animation/layout/economy và QA Player cuối đang tiếp tục.
-- Git mốc này dùng commit `fix: harden runtime transactions and purchase interactions`; hash/trạng thái push sẽ ghi trong phần chốt Công đoạn 14. `QualitySettings.asset` của người dùng tiếp tục nằm ngoài commit.
+- Git mốc này: `a2c843f` — `fix: harden runtime transactions and purchase interactions`; đã push `origin/main`. `QualitySettings.asset` của người dùng tiếp tục nằm ngoài commit.
+
+## Công đoạn 14 — mốc polish và QA sát ngưỡng — 2026-10-05
+
+**Trạng thái: compile/Windows Player và các ca sát ngưỡng đã pass; chưa nghiệm thu toàn bộ Công đoạn 14.** Lượt cuối dùng file dữ liệu trong `mod/test` theo yêu cầu, không chạy benchmark. Tiền để vượt ngưỡng được kiếm bằng sản xuất → giao hàng → player Collect sau khi nạp preset.
+
+### Hệ thống đã thay đổi
+
+- Layout: đưa ba ô cà rốt, kho và quầy khởi đầu gần nhau; tách phía khách và điểm làm việc/chờ phía sau. Dời chuồng, kho, máy, quầy, purchase pad; mở cổng 4 m giữa tường. NavMesh bake cả footprint công trình chưa unlock. Vùng thao tác chỉ hiện khi trạm tương ứng mở. Bổ sung các pad crew Bakery/Restaurant bị thiếu và sửa purchase conveyor Bakery để có tuyến bột tới oven thật.
+- Navigation: giảm radius NPC xuống 0,38 m, dùng avoidance mức vừa; customer/diner phát hiện đứng kẹt, repath tối đa ba lần rồi nghỉ 5 giây. Chỉ NavMeshAgent điều khiển transform NPC. Queue Supermarket và điểm work/wait/interaction tách riêng.
+- Camera/animation: perspective pitch 55°, distance 18, follow damping 0,18; đã đối chiếu video reference có sẵn. Giữ idle/walk/carry/pickup/drop và thêm bảy clip work từ animation nguồn, nối Farming/AnimalCare/Operate/Cashier/Cooking/Serving/Cleaning cho player/worker. Tốc độ walk lấy từ chuyển động thực tế; không sửa FBX nguồn.
+- Interaction: dừng di chuyển trong zone mới thao tác, tránh đi ngang kho tự lấy sai SKU. Thu hoạch cả batch chỉ thành công khi đủ sức mang; từ chối giữ nguyên cây và hàng. Farmer ưu tiên SKU thiếu, dừng khi kho đã đủ để không làm đầy toàn kho bằng cà rốt và chặn wheat/tomato.
+- Economy: cà rốt vẫn 10 xu; harvest cơ bản cà rốt 2, wheat/tomato 4; Capacity của Farm tăng yield riêng. Milk/egg cycle cơ bản 12 giây, chăm ×2; thịt vẫn tiêu thụ một con. Giá ứng viên: flour 120, cheese 240, sauce 120, bread 300, cake/meal 600. `cashCollected` chỉ tăng khi player thu payment; giá từng order vẫn snapshot. Đây là số đang tune, chưa xác nhận mục tiêu 180–240 phút.
+- Save/transaction: cập nhật yield/cycle trong runtime state và migration save cũ; giải phóng escrow rỗng sau khi máy hoàn tất. Các sửa durability, receipt/idempotency, batch do player hoàn tất, purchase dwell và HUD đã ghi tại mốc `a2c843f` phía trên. Journal chưa checkpoint là dữ liệu save bắt buộc.
+- CLI/QA: thêm layout, visual, progression và near-threshold Player runners. `-LoadPath` từ chối file không tồn tại, tránh báo nhầm pass khi thực tế tạo new game. Preset chỉ ghi save QA riêng; `milestone-details.json` có `seededFixture=true`.
+
+### File chính
+
+- Runtime: `WorldFactory.cs`, `FinalBusinesses.cs`, `NavigationWorld.cs`, `FollowCamera.cs`, `Art.cs`, `PlayerController.cs`, `Station.cs`, `WorkerAgent.cs`, `CommerceDirector.cs`, `RestaurantDirector.cs`, `Definitions.cs`, `TransactionState.cs`, `TransactionCore.cs`, `RuntimeTransactions.cs`, `ConveyorStation.cs`.
+- Animation/editor: `Assets/_Game/Art/Animations/Player_*.anim`, `Assets/_Game/Art/Imported/Models/player.controller`, `Assets/_Game/Scripts/Editor/Stage14Tools.cs`.
+- QA: `QaDriver.cs`, `QaStage14.cs`, `QaStage14Play.cs`, `QaStage14Milestones.cs`, `Stage14Tests.cs`, `Tools/run_unity.ps1`, `Tools/run_player.ps1`.
+- Dữ liệu: `mod/test/stage14-boundaries.json`, `stage14-economy.json`, `stage14-balance.json`, `stage14-player-near-thresholds.json`; hướng dẫn chạy `mod/test/README_STAGE14.md`.
+
+### Kiểm chứng cuối
+
+| Kiểm chứng | Kết quả | Bằng chứng |
+|---|---|---|
+| Unity EditMode toàn bộ | 118/118 pass; 0 fail/skip | `QA/editmode-results.xml`, 2026-10-05 11:23 UTC |
+| Windows build | Succeeded; 0 errors, 2 warnings; 115.678.495 bytes | `work/stage14/Build/build-report.json`, 11:22 UTC |
+| Layout trên Windows Player | 424 điểm trạm/pad/work/wait/seat/queue reachable; 0 overlap/failure | `work/stage14/player-stage14layout-20261005T105115195Z/layout-details.json` |
+| New game ví 0 trên RTX 4060 | Pass; gieo/tưới/thu/carry/serve/Collect; đi ngang pickup không lấy nhầm | `work/stage14/player-stage14visual-20261005T105119599Z/stage14-visual-report.json` |
+| Preset sát ngưỡng, gameplay Player thật | 87 checks pass; 0 runtime errors; khoảng 92 giây thời gian thực | `work/stage14/player-stage14milestones-20261005T111621404Z/stage14-milestones-report.json` |
+| Đóng/mở lại Windows Player | 15 checks pass; restore ví/thực thu/unlock trước input; RTX 4060/D3D11, 1920×1080 | `work/stage14/player-stage14visual-20261005T112257057Z/stage14-visual-report.json` |
+
+Ảnh starter, carry và Restaurant/overview đã xem lại. Lượt relaunch dùng `work/stage14/player-stage14milestones-20261005T110523261Z/qa-save-v2.json`: ví 890, thực thu 18.600 và các khu đã mở đúng dữ liệu đã lưu. Giá trị lịch sử trong preset không được dùng làm bằng chứng tốc độ kiếm tiền từ 0.
+
+| Purchase | Ví nạp | Ví sau bán/Collect thật | Chi phí | Ví sau mua |
+|---|---:|---:|---:|---:|
+| Meat route | 490 | 510 | 500 | 10 |
+| Milk route | 990 | 1.010 | 1.000 | 10 |
+| Farm Shop | 1.990 | 2.010 | 2.000 | 10 |
+| Processing (`mill`) | 11.990 | 12.010 | 12.000 | 10 |
+| Supermarket | 64.990 | 65.010 | 65.000 | 10 |
+| Bakery | 99.990 | 100.010 | 100.000 | 10 |
+| Restaurant | 79.990 | 80.290 | 80.000 | 290 |
+
+Farm Shop 49→50 và Processing 199→200 đơn qua sale thật; Supermarket chạy cả ba máy 49→50 batches rồi bán đơn thứ 600; Bakery 59→60 đơn bằng bánh player vận hành oven. Gói meat/milk tiếp tục cho ăn → chăm → lấy → bán → Collect; meat giảm đàn đúng một con. Restaurant player cook → giao đúng bàn → eat/payment → dirty → clean → Collect.
+
+Regression Player cuối còn xác nhận: rời máy giữ input/job/progress, load rồi tiếp tục đúng batch; đơn 3 cà rốt nhận 2 rồi hết đủ 90 giây giữ 2 ở owner customer, ghi loss 2 và 0 payment; load/retry không ghi loss lần hai; ba lần load không clone hàng/tiền; 30 customer có model/NavMesh thật tồn tại đồng thời, không vượt cap và repath được giới hạn trong ca congestion ngắn. Unit suite kiểm tra thêm payment/timeout sát deadline, reserve hết nguồn, capacity, retry, purchase partial/one-shot và journal recovery.
+
+### GitHub và artifact
+
+- `a2c843f` — `fix: harden runtime transactions and purchase interactions`; đã push `origin/main`.
+- `b738066` — `feat: polish world flow and add near-threshold player QA`; đã push `origin/main`.
+- Tài liệu cập nhật ở commit kế tiếp có message `docs: record stage 14 QA and remaining acceptance`. Remote: `https://github.com/letam10/TYCOON2.git`, branch `main`.
+- Build để tiếp tục chơi: `work/stage14/Build/TYCOON2.exe`. Report/ảnh và save QA được giữ làm bằng chứng; không track binary/save vào Git. Save của lượt 0→Farm Shop còn tại `work/stage14/player-stage14-20261005T103237113Z/qa-save-v2.json` cùng journal, phục vụ tiếp tục acceptance còn thiếu.
+- `ProjectSettings/QualitySettings.asset` có sẵn của người dùng và các file mới `ASSET/Downloaded/**`, `ASSET/downloaded_summary.json` từ công việc khác được giữ ngoài commit này.
+- Đã đối chiếu PID/executable/thời điểm/parent với lịch sử task: không còn Unity/Player/helper của lượt này chạy; không có process cần giữ. Lệnh dọn các file tạm đã xác minh bị cơ chế tự động duyệt lệnh từ chối với `blocked by policy`; không lách chặn. Thư mục debug Unity `work/stage14/Build/TYCOON2_BackUpThisFolder_ButDontShipItWithYourGame`, ảnh contact sheet `work/stage14/reference-1971.png`, save tạo nhầm `work/stage14/player-stage14milestones-20261005T110523261Z/qa-save.json` và `.journal`, cùng các thư mục rỗng `QA/Evidence/stage14*` còn tồn tại, không còn process sử dụng. Khi có cơ chế dọn được cho phép, chỉ xóa đúng các artifact này.
+
+## Những gì chưa thực hiện được / chưa nghiệm thu — cập nhật cuối Công đoạn 14
+
+- **Công đoạn 14: chưa pass lượt liên tục new game 0 → Restaurant bằng sản xuất/thu tiền thực tế, không nạp state. Chưa pass mục tiêu mở toàn chuỗi trong 180–240 phút.** Preset sát ngưỡng xác nhận từng gate/gameplay nhưng không thay thế hai tiêu chí này; chưa chốt acceptance toàn Công đoạn 14.
+- **Công đoạn 14 — đã xử lý nhiều lần nhưng lượt progression đầy đủ vẫn chưa pass:** lượt đầu góp nhầm pad khi đi ngang; lượt tiếp theo mang nhầm cà rốt khi cần sữa; lượt resume bị tolerance dừng 0,25 m quá chặt. Đã sửa dwell, chỉ thao tác khi dừng, bỏ pause tại NavMesh corner trung gian, kiểm tra SKU lại trong harness và tolerance cuối 0,4 m. Player visual/near-threshold cuối pass các hành vi sửa; lượt hợp lệ dài nhất đạt Farm Shop khoảng phút 38,3 rồi dừng ở khoảng phút 77, chưa tới Restaurant. Theo yêu cầu mới đã chuyển sang dữ liệu sát mốc để chốt kiểm tra nhanh.
+- **Công đoạn 07/10/11/12:** chưa có lượt Player cuối nghiệm thu tất cả đội Role + Area cùng làm việc, mọi tuyến vận chuyển full destination/thiếu nguồn/reservation đang đi sau relaunch, player+worker cùng phục vụ nhiều SKU trong cảnh thật. Có regression transaction và các lượt trước, chưa coi là acceptance trọn hệ thống.
+- **Công đoạn 13:** chưa nghiệm thu Player trọn Rush Hour báo trước 15 giây → rush 90 giây → hồi phục; breakdown giữa batch → phí/repair tại zone → worker resume. Ca 30 khách hiện tại chỉ kiểm tra congestion 15 giây simulation, không chứng minh toàn sự kiện hoặc traffic dài hạn.
+- **Công đoạn 08:** relaunch đã xác nhận ví/thực thu/unlock; partial timeout, máy đang chạy và load lặp đã pass trong cùng process. Chưa có relaunch riêng bao phủ đồng thời mọi worker job, cargo/reservation, herd và event đang dở.
+- **Công đoạn 12/14:** vòng Restaurant cook/serve/clean bằng player đã pass; chưa nghiệm thu toàn bộ recipe Bread/Cake cùng crew Bakery/Restaurant trong Player cuối. Clip work hiện là biến thể từ animation nguồn; độ tự nhiên từng action, mật độ props và mức giống video reference chưa được người dùng nghiệm thu ở toàn bộ khu.
+- **Công đoạn 14:** full-stock, shortage, service/worker bottleneck có kiểm tra core và mã chờ; chưa có đủ ca Player cuối cho toàn tổ hợp. Không chạy soak/benchmark/FPS dài hạn theo yêu cầu test gọn.
+- **Công đoạn 04/05 — acceptance cũ về purchase từng bị thử nhiều lần chưa pass:** các mốc purchase nay đã pass bằng fixture sát ngưỡng trên Windows Player; yêu cầu toàn progression từ 0 vẫn nằm ở Công đoạn 14 chưa pass như trên. Lỗi fixture Input System trong EditMode đã được thay bằng kiểm tra input/interaction trong Player thật; bộ EditMode cuối 118/118 pass.
+- **Dọn file tạm, xuyên nhiều công đoạn:** lệnh PowerShell dọn vẫn bị command policy chặn. Các artifact được liệt kê ở trên để lần tiếp tục xử lý đúng đường dẫn; không có process task còn giữ chúng mở.
