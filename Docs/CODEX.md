@@ -1,53 +1,55 @@
 # TYCOON2 — đồ họa, model, tương tác và UI
 
-Cập nhật: 06/10/2026, Asia/Bangkok. Tiếp tục trực tiếp dự án này; mục tiêu `/goal` đang active.
+Cập nhật: 06/10/2026, Asia/Bangkok. Dự án D:\GAME\TYCOON2, GitHub letam10/TYCOON2, branch main. Mục tiêu /goal đang active để tiếp tục qua đêm.
 
-## Phạm vi lượt phát triển
+## Bản chạy và cách kiểm tra
 
-Nâng cấp cách trình bày của toàn bộ town hiện có: Farm/Livestock, Farm Shop, Processing, Supermarket, Bakery và Restaurant. Giữ nền tảng ownership/transaction, progression, giá/gate, Save v2 và tài nguyên có sẵn. Không tạo project mới.
+- Bản Windows: D:\GAME\TYCOON2\work\compact-presentation\Build\TYCOON2.exe.
+- Ảnh cuối: work/compact-presentation/presentation-final/; gameplay tổng hợp: work/compact-presentation/player-full/.
+- WASD/phím mũi tên/gamepad để di chuyển; dừng 0,25 giây gần vật thể để thao tác; Q chọn hàng; F5 lưu; Esc menu; cuộn chuột/cần phải zoom 12–27 m.
+- Kho, xe tải và thông tin kinh doanh mở bằng nút nhỏ góc phải. Mục tiêu, doanh thu và tồn kho xem trong bảng Thông tin.
 
 ## Thay đổi đã triển khai
 
-- Model procedural có hình dáng riêng cho ngô/đậu, cừu, hàng đóng chai, feed/len/sợi/vải/bột và năm món ăn; bảy loại máy có chi tiết riêng. Tái dùng mesh ít đỉnh và palette cream/wood/sage.
-- Cảnh quan, sàn từng khu, bảng tên, hoa, cây, bàn ăn, kho và quầy thanh toán thống nhất. Đèn máy và món trên bàn đọc state/inventory thật.
-- Ánh sáng ấm, shadow rõ hơn, nền dịu; grade dùng Volume profile runtime riêng. Không sửa QualitySettings có sẵn của người dùng.
-- Player tăng tốc ngắn/dừng nhanh; WASD, phím mũi tên và gamepad; camera 55 độ, nhìn trước theo chuyển động, zoom chuột/cần phải giới hạn 12–27 m.
-- Focus ring và progress/state theo thao tác; đất ẩm, bốn pha canh tác, dấu sẵn thu hoạch; âm thanh và hiệu ứng nhặt/đặt/thu tiền phân biệt.
-- HUD gọn, safe area và reflow theo kích thước; ví, thực thu, doanh thu, thất thoát, sức mang, mục tiêu và hàng tại khu. Menu pause, quản lý đội, kho/SKU và tuyến xe có scroll/focus tay cầm.
-- Sửa restore mở input dưới menu pause: chỉ cho phép điều khiển khi HUD ở màn chơi. Đã có ca QA tái hiện fail trước sửa.
-- QA mới kiểm tra material, bounds nút, mở/đóng các bảng ở 720p/1080p/1440p, pause/load/resume; báo cáo frame theo độ phân giải và bộ nhớ.
-- Harness traffic bật lại director khi restore actor; director bị tắt bởi fixture phải được chạy trước khi kiểm tra input/UI.
+- HUD mặc định chỉ có ví nhỏ, giỏ, hàng nút và hướng dẫn tương tác. Các bảng lớn mở khi cần, hỗ trợ safe area/reflow. Thông tin/pause/đội dừng simulation và khóa điều khiển; kho/xe khóa điều khiển. Đóng bảng chỉ mở input khi game hợp lệ.
+- Ô nâng cấp dùng sprite 2D tự vẽ đúng vật/nghề, không đặt model/asset 3D thu nhỏ. Huy hiệu phân biệt chất lượng/tốc độ/sức chứa/cấp, tự đổi cấp 2→3. Sprite/texture cũ được giải phóng. Giá vừa dải nền; tên/điều kiện/tiến độ mua hiện trong HUD khi chọn ô để không đè icon.
+- Nhãn trạm gần người chơi tối đa hai dòng, giới hạn 192–210 px. HUD vẫn đọc Prompt đầy đủ. Bubble khách hàng không có TextMesh trực tiếp vẫn billboard được.
+- Model riêng cho cây/hàng, cừu, feed/len/sợi/vải/bột, năm món và bảy máy; thêm chi tiết máy, hạt ngô dùng mesh gộp chia sẻ. Giữ model thư viện hiện có.
+- Piston/vòi/con thoi/bàn đạp/mẻ trộn chuyển động theo Operating thật; hơi nóng chỉ khi máy hoạt động; nguyên liệu/đầu ra đọc inventory. Cây lớn nghiêng nhẹ, không ghi phase/timer/inventory hoặc scale cây.
+- Cảnh quan/sàn từng khu, bảng tên, hoa/cây, kho/quầy/bàn ăn đồng bộ palette. Đèn/progress máy, món ăn, đất ẩm và dấu thu hoạch đọc state thật.
+- Ánh sáng ấm/shadow, backdrop dịu, grade runtime riêng. Player tăng tốc ngắn/dừng nhanh; camera 55 độ/nhìn trước/zoom; focus/progress ring và âm thanh/hiệu ứng nhặt/đặt/thu tiền phân biệt.
+- Giữ ownership/transaction, giá/gate/progression và Save v2. Không tạo project mới; QualitySettings và raw ASSET/Downloaded có sẵn được giữ ngoài commit.
 
-## Môi trường và kiểm chứng
+## Kiểm chứng
 
-Unity 6000.6.3f1, URP 17.6.0, Input System 1.19.0, Windows/Direct3D11.
+Unity 6000.6.3f1, URP 17.6.0, Input System 1.19.0; Windows/Direct3D11. Probe riêng và guard --require-4060 xác nhận NVIDIA GeForce RTX 4060 Laptop GPU trước lượt render.
 
-- Baseline đầu lượt: EditMode 135/135 pass.
-- Sau thay đổi: EditMode 138/138 pass, 0 fail/skip.
-- Build Windows: Succeeded, 0 errors, 4 warnings, 117.877.355 bytes; báo cáo cuối tại `work/overnight-polish/Build/build-report.json`.
-- Probe và các lượt Player xác nhận NVIDIA GeForce RTX 4060 Laptop GPU; có guard `--require-4060`, không fallback iGPU.
-- Layout/UI ban đầu pass ba độ phân giải. Ca restore-pause tái hiện fail ở `work/overnight-polish/restore-repro/town-layout-report.json`.
-- Lượt Player kết hợp trước sửa harness: các ca gameplay đi tới restaurant/logistics, 1.097 m, 1.020 thao tác, 3.077 material slots hợp lệ, 0 runtime errors; dừng ở UI vì fixture tắt director trước load.
-- Lượt cuối: PASS 106/106 checks, 0 runtime errors, 3.107 material slots, 361 điểm reachable; 1.097,5 m và 1.008 thao tác. Output: `work/overnight-polish/player-verified/`.
+| Kiểm tra | Kết quả |
+| --- | --- |
+| EditMode | 153/153 pass, 0 fail/skip; QA/editmode-results.xml |
+| Build cuối | Succeeded, 0 errors, 2 warnings, 117.909.115 bytes; work/compact-presentation/Build/build-report.json |
+| Gameplay tổng hợp | PASS 313 checks, 0 runtime errors, 2.411 material slots, 1.122,9 m và 1.042 thao tác; player-full/town-redesign-report.json |
+| Trình bày cuối sau sửa nhỏ | PASS 252 checks, 0 runtime errors; presentation-final/town-layout-report.json |
+| HUD mặc định | Khoảng 4,82% tại 1280×720, 1920×1080, 2560×1440; hợp vùng Image lấy mẫu 160×90, không cộng trùng; presentation-final/hud-coverage.json |
+| Nhãn gần luống | 192/210/210 px tại ba độ phân giải |
 
-## Bản chạy và bằng chứng
+QA dùng keyboard/gamepad/chuột tổng hợp của Input System. Nút được click qua EventSystem, không gọi trực tiếp onClick. Đã kiểm tra pause/đội/thông tin/kho/xe ở ba độ phân giải, save/load dưới pause và resume; mọi ô nâng cấp có sprite vẽ và không còn model con. Đã xem ảnh thực của HUD, bảng đội và cận icon máy.
 
-- Bản Windows để kiểm tra: `work/overnight-polish/Build/TYCOON2.exe`.
-- Ảnh trước nâng cấp: `work/overnight-polish/before/`.
-- Ảnh/báo cáo cuối: `work/overnight-polish/player-verified/`.
-- `presentation-audit.json`: median/p95/max của frame unscaled, bỏ 3 giây khởi tạo; frame limiter, resize, save/load và thao tác QA đều có thể tạo spike. Không phải GPU time hay benchmark/soak dài hạn.
-- Thử bằng CLI: `Tools/run_player.ps1 -Task Town -BuildPath <đường dẫn bản Windows>`.
-- Preview dùng save QA riêng: chạy bản Windows với `--qa-preview --require-4060 --qa-output <thư mục QA mới> -force-d3d11 -force-device-index 0`.
+Gameplay có starter ví 0, giao hàng/thu tiền, xe tải giữ ownership qua repeated load, sửa máy, năm món nhà hàng và traffic ngắn 30 khách. Phần sau dùng fixture gần ngưỡng; chưa chứng minh campaign ví 0→Restaurant đầy đủ trong 180–240 phút hoặc phiên dài xuyên đêm. Bằng chứng gameplay 313 ca trước tinh chỉnh trình bày cuối được giữ riêng; lượt 252 ca bổ sung cho bản build cuối.
 
-## Git, dọn dẹp và tiếp tục
+player-full/presentation-audit.json: managed 29 MiB, allocated 360 MiB; 1080p p95 khoảng 6,061 ms. Frame có limiter/resize/capture/lưu QA, không phải GPU time/benchmark 165 FPS/soak dài. Chưa coi đây là nghiệm thu nghệ thuật của người dùng hoặc xác nhận input vật lý native.
 
-- Repository `letam10/TYCOON2`, branch `main`. Đã push `d168c40` (tương tác/camera/feedback) và `eb577d1` (model/cảnh quan/ánh sáng). Mốc UI/QA đang được chốt trước đợt sửa theo phản hồi mới.
-- Giữ ngoài commit: QualitySettings có sẵn, raw ASSET/Downloaded, build, save/journal/log QA. Docs/CODEX.md đầu lượt là file trống; tài liệu lịch sử Docs/CODEX_HANDOFF.md được giữ.
-- Trước khi bàn giao phải audit PID/parent/command line của các Unity/Player/helper do lượt này tạo, xác nhận hết rồi dọn file QA/diagnostic không cần thiết. Giữ build, report và ảnh được chỉ định làm sản phẩm/bằng chứng.
-- Mục tiêu đang tiếp tục; chưa coi lượt fixture là chứng minh campaign ví 0 → Restaurant trong 180–240 phút hoặc nghiệm thu nghệ thuật của người dùng.
+## Git và tiếp tục qua đêm
 
-## Phản hồi tiếp theo — 06/10/2026
+- Đã push đợt đầu: d168c40 (tương tác/camera), eb577d1 (town/model/ánh sáng), 57293d5 (UI/QA ban đầu).
+- Đã push theo phản hồi: 24593be (HUD gọn + icon vẽ), 0a4fd32 (model + chuyển động máy/cây). Mốc QA/tài liệu đang chốt.
+- Heartbeat tycoon2-qua-m đã ACTIVE, gắn cuộc chat này, tiếp tục mỗi hai giờ. Prompt yêu cầu kết thúc công việc qua đêm lúc 07:00 ngày 07/10/2026 giờ Bangkok và tắt lịch; chỉ thông báo khi có thay đổi có ý nghĩa/lỗi/cần người dùng.
+- Ưu tiên nghiệm thu gameplay liên tục, máy/cây operating/idle/pause/restore và phiên dài; tiếp tục nâng theo bằng chứng. GPU vừa/nặng phải preflight RTX 4060, chờ theo AGENTS, không polling mỗi phút.
 
-Người dùng yêu cầu UI chiếm ít màn hình hơn, tiếp tục nâng đồ họa/model và dùng icon vẽ theo vật/nghề trên ô nâng cấp thay vì đặt asset/model 3D. Tiêu chí lượt tiếp: HUD mặc định nhỏ, thông tin chi tiết mở khi cần; icon 2D có ánh xạ cho toàn bộ upgrade; giữ gameplay/giá/gate/save và kiểm tra lại Player trên RTX 4060.
+## Dọn dẹp
 
-Preview cũ có save QA riêng, PID 6188 và crash helper 1508. Computer Use đã xem được cửa sổ đúng nhưng guard phát hiện input người dùng nên phím/nút native chưa được nghiệm thu. Lượt tiếp sẽ đóng preview cũ để build/kiểm tra bản mới và audit lại tiến trình.
+- Các Unity/Player/probe của đợt này đã thoát tự nhiên. Preview cũ PID 6188 và helper 1508 đã đóng. Audit hiện tại không có Player hoặc Unity cần giữ.
+- Hai file .rsp tại work/interaction-icon-check-a17b09/ đã dọn. Bốn compiler output Tycoon.Runtime.dll/.pdb và Tycoon.Tests.dll/.pdb còn lại: duyệt tự động chặn xóa, lý do blocked by policy; không có tiến trình dùng. Kiểm tra/dọn lại khi chính sách cho phép.
+- Ký hiệu Burst work/compact-presentation/Build/TYCOON2_BackUpThisFolder_ButDontShipItWithYourGame/x86_64/lib_burst_generated.pdb cũng bị chặn xóa. Đây là ký hiệu do Unity tự sinh, không phải sao lưu nguồn chủ động; không cần để chơi.
+- Giữ build/report/ảnh chỉ định làm sản phẩm và bằng chứng. Không dọn hàng loạt work/cache có sẵn hoặc nguồn/asset người dùng.
+

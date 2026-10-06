@@ -14,6 +14,7 @@ namespace Tycoon
         GameSession game;
         Keyboard keyboard;
         Gamepad gamepad;
+        Mouse mouse;
         QaReport report = new();
         string failure;
         readonly List<InputDevice> physicalDevices = new();
@@ -22,9 +23,10 @@ namespace Tycoon
             game = GameSession.Instance;
             // Chỉ cô lập input trong tiến trình QA để phím người dùng không làm sai phép thử.
             foreach(var device in InputSystem.devices)
-                if(device.enabled && (device is Keyboard || device is Gamepad)) { physicalDevices.Add(device); InputSystem.DisableDevice(device); }
+                if(device.enabled && (device is Keyboard || device is Gamepad || device is Mouse)) { physicalDevices.Add(device); InputSystem.DisableDevice(device); }
             keyboard = InputSystem.AddDevice<Keyboard>("QA_Keyboard");
             gamepad = InputSystem.AddDevice<Gamepad>("QA_Gamepad");
+            mouse = InputSystem.AddDevice<Mouse>("QA_Mouse");
             report.startedUtc = DateTime.UtcNow.ToString("o");
             report.graphicsDevice = SystemInfo.graphicsDeviceName;
             var routines = new Stack<IEnumerator>();
@@ -63,7 +65,7 @@ namespace Tycoon
             report.interactions = game.Player.SuccessfulInteractions;
             report.finishedUtc = DateTime.UtcNow.ToString("o");
             File.WriteAllText(Path.Combine(game.QaDirectory, mode + "-report.json"), JsonUtility.ToJson(report, true));
-            InputSystem.RemoveDevice(keyboard); InputSystem.RemoveDevice(gamepad);
+            InputSystem.RemoveDevice(keyboard); InputSystem.RemoveDevice(gamepad); InputSystem.RemoveDevice(mouse);
             foreach(var device in physicalDevices) if(device.added) InputSystem.EnableDevice(device);
             Debug.Log(mode.ToUpperInvariant()+"_QA " + (report.passed ? "PASS" : "FAIL " + report.failure));
 #if UNITY_EDITOR

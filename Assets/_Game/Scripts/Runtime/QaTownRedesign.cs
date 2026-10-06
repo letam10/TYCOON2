@@ -138,7 +138,7 @@ namespace Tycoon
         }
         IEnumerator TownLayoutChecks()
         {
-            yield return null;var layout=new LayoutReport();
+            yield return null;CheckDrawnPurchasePads();var layout=new LayoutReport();
             void Point(string id,Vector3 point)
             {var path=new NavMeshPath();if(!NavMesh.SamplePosition(point,out var hit,.65f,NavMesh.AllAreas)||!NavMesh.CalculatePath(game.Player.transform.position,hit.position,NavMesh.AllAreas,path)||path.status!=NavMeshPathStatus.PathComplete)layout.failures.Add(id+" "+point);else layout.checkedPoints.Add(id);}
             foreach(var s in game.Stations.Where(x=>x is not ConveyorStation)){Point(s.Id,Near(s));if(s is not PurchasePad){Point(s.Id+":work",s.WorkPoint);Point(s.Id+":wait",s.WaitingPoint);}if(s is CheckoutStation c){Point(c.Id+":cash",c.CollectionPoint);for(int i=0;i<15;i++)Point(c.Id+":queue:"+i,c.QueuePoint(i));}if(s is TableStation t)Point(s.Id+":seat",t.Seat);}
@@ -165,15 +165,24 @@ namespace Tycoon
         }
         IEnumerator TownScreens()
         {
+            yield return Travel(Near(game.Producers.First(p=>p.IsUnlocked&&!p.Animal)));
             game.Player.StopInteraction();game.Player.CanControl=false;float speed=Time.timeScale;Time.timeScale=0;
             game.ToastUntil=0;var canvas=game.Hud.GetComponentInChildren<Canvas>();canvas.enabled=false;
             game.CameraRig.Overview=true;game.CameraRig.Snap();yield return Capture("03-town-overview.png");game.CameraRig.Overview=false;
             foreach(var point in new[]{new Vector3(-13,0,15),new Vector3(36,0,9),new Vector3(40,0,33),new Vector3(11,0,38),new Vector3(-20,0,39)})
             {game.CameraRig.FocusOffset=point-game.Player.transform.position;game.CameraRig.Distance=25;game.CameraRig.Snap();yield return Capture("area-"+point.x+".png");}
+            foreach(var family in new[]{"farm","mill","player"})
+            {
+                var pad=game.Stations.OfType<PurchasePad>().FirstOrDefault(p=>p.Upgrade.family==family&&p.GetComponentInChildren<SpriteRenderer>().enabled);
+                if(!pad)continue;
+                game.CameraRig.FocusOffset=pad.transform.position-game.Player.transform.position;
+                game.CameraRig.Distance=6;game.CameraRig.Snap();yield return Capture("drawn-icons-"+family+".png");
+            }
+            game.CameraRig.Distance=18;
             game.CameraRig.FocusOffset=new(2,.8f,3);game.CameraRig.Target=game.Player.transform;game.CameraRig.Snap();
             canvas.enabled=true;
             foreach(var size in new[]{new Vector2Int(1280,720),new Vector2Int(1920,1080),new Vector2Int(2560,1440)})
-            {Screen.SetResolution(size.x,size.y,FullScreenMode.Windowed);yield return new WaitForSecondsRealtime(.5f);Canvas.ForceUpdateCanvases();Check(Screen.width==size.x&&Screen.height==size.y,"UI resolution "+size);yield return Capture("ui-"+size.x+".png");}
+            {Screen.SetResolution(size.x,size.y,FullScreenMode.Windowed);yield return new WaitForSecondsRealtime(.5f);Canvas.ForceUpdateCanvases();Check(Screen.width==size.x&&Screen.height==size.y,"UI resolution "+size);CheckCompactHud();yield return Capture("ui-"+size.x+".png");}
             Time.timeScale=speed;game.Player.CanControl=true;
             yield return PresentationPanels();
         }
