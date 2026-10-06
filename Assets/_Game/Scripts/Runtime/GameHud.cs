@@ -11,291 +11,558 @@ namespace Tycoon
 {
     public sealed class GameHud : MonoBehaviour
     {
+        const string Surface = "#173C35", Card = "#244D42", Accent = "#CBE78B", Ink = "#F6F6E9", Muted = "#B9CEC2";
+        enum ScreenMode { Play, Pause, Crew, Stock, Cargo }
         GameSession game;
         Canvas canvas;
-        Text money, progress, objective, carry, prompt, toast,finance,stock;
-        float nextStatusRefresh;
-        readonly Dictionary<string,Text> crewStatuses=new();
-        readonly StringBuilder stockLines=new();
-        GameObject menu,crewPanel;
-        Button continueButton;
-        Button recipeButton;
-        GameObject cargoPanel;
-        Text cargoText;
-        GameObject stockPanel;
-        Transform stockContent;
-        Transform crewContent;
-        Text crewSummary;
-        bool paused;
-        static Sprite rounded;
+        RectTransform safeArea;
+        GameObject hud, menu, crewPanel, stockPanel, cargoPanel, toastRoot;
+        RectTransform walletRect, titleRect, objectiveRect, financeRect, stockRect, carryRect, actionRect, dockRect;
+        Text money, progress, objective, carry, prompt, toast, finance, stock, cargoText, crewSummary, help;
+        Image carryFill;
+        Button continueButton, crewBack, stockClose, cargoClose, recipeButton;
+        readonly List<Button> cargoActions = new();
+        readonly Dictionary<string, Text> crewStatuses = new();
+        readonly List<(StorageStation storage, string item, Text label)> stockRows = new();
+        readonly StringBuilder stockLines = new();
+        Transform stockContent, crewContent;
+        ScreenMode mode;
+        public bool AllowsPlayerControl => mode == ScreenMode.Play;
+        float nextRefresh, nextStatusRefresh, resumeTimeScale = 1, lastCanvasScale;
+        int screenWidth, screenHeight;
+        UnityEngine.Rect lastSafeArea;
+        GameObject ownedEvents;
+        Sprite rounded;
+        Texture2D roundedTexture;
+
         public void Initialize()
         {
             game = GameSession.Instance;
-            var root = new GameObject("HUD"); root.transform.SetParent(transform);
-            canvas = root.AddComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceCamera; canvas.worldCamera = Camera.main; canvas.planeDistance = .5f;
-            var scaler = root.AddComponent<CanvasScaler>(); scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize; scaler.referenceResolution = new Vector2(1920,1080); scaler.matchWidthOrHeight = .5f;
+            var root = new GameObject("HUD", typeof(RectTransform));
+            root.transform.SetParent(transform, false);
+            canvas = root.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceCamera;
+            canvas.worldCamera = Camera.main; canvas.planeDistance = .5f; canvas.sortingOrder = 10;
+            var scaler = root.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920, 1080); scaler.matchWidthOrHeight = .5f;
             root.AddComponent<GraphicRaycaster>();
-            var events = new GameObject("EventSystem"); events.AddComponent<EventSystem>(); events.AddComponent<InputSystemUIInputModule>();
-            var wallet = Panel("Wallet", root.transform, new Vector2(1,1), new Vector2(1,1), new Vector2(-288,-94), new Vector2(-28,-28), "#275D34", .92f);
-            money = Text("Money", wallet.transform, "0", 36, TextAnchor.MiddleLeft, "#FFFFFF"); Rect(money.rectTransform, Vector2.zero, Vector2.one, new Vector2(116,0), new Vector2(-12,0));
-            var cashIcon = Panel("CashIcon", wallet.transform, new Vector2(0,.5f), new Vector2(0,.5f), new Vector2(16,-36), new Vector2(98,36), "#A8EE25", 1);
-            cashIcon.transform.localRotation = Quaternion.Euler(0,0,15);
-            Panel("BillInner",cashIcon.transform,Vector2.zero,Vector2.one,new Vector2(5,5),new Vector2(-5,-5),"#45A722",1);
-            var financePanel=Panel("Finance",root.transform,Vector2.one,Vector2.one,new Vector2(-355,-245),new Vector2(-28,-106),"#275D34",.9f);
-            finance=Text("FinanceText",financePanel.transform,"",20,TextAnchor.MiddleLeft,"#FFFFFF");Rect(finance.rectTransform,Vector2.zero,Vector2.one,new Vector2(14,5),new Vector2(-12,-5));
-            var stockPanel=Panel("AreaStock",root.transform,new Vector2(1,0),new Vector2(1,0),new Vector2(-355,145),new Vector2(-28,440),"#275D34",.86f);
-            stock=Text("StockText",stockPanel.transform,"",18,TextAnchor.UpperLeft,"#FFFFFF");Rect(stock.rectTransform,Vector2.zero,Vector2.one,new Vector2(14,10),new Vector2(-12,-10));
-            var title = Panel("Title", root.transform, new Vector2(0,1), new Vector2(0,1), new Vector2(28,-110), new Vector2(465,-28), "#275D34", .8f);
-            progress = Text("Progress", title.transform, "", 22, TextAnchor.MiddleLeft, "#FFFFFF"); Rect(progress.rectTransform, Vector2.zero, Vector2.one, new Vector2(16,8), new Vector2(-8,-8));
-            var objectivePanel=Panel("Objective",root.transform,new Vector2(0,1),new Vector2(0,1),new Vector2(28,-220),new Vector2(685,-112),"#275D34",.82f);
-            objective=Text("ObjectiveText",objectivePanel.transform,"",17,TextAnchor.MiddleLeft,"#FFFFFF");Rect(objective.rectTransform,Vector2.zero,Vector2.one,new Vector2(13,5),new Vector2(-13,-5));
-            var bag = Panel("Carry", root.transform, Vector2.zero, Vector2.zero, new Vector2(28,55), new Vector2(340,135), "#275D34", .8f);
-            carry = Text("CarryText", bag.transform, "", 22, TextAnchor.MiddleLeft, "#FFFFFF"); Rect(carry.rectTransform, Vector2.zero, Vector2.one, new Vector2(16,6), new Vector2(-8,-6));
-            var action = Panel("Action", root.transform, new Vector2(.5f,0), new Vector2(.5f,0), new Vector2(-430,55), new Vector2(430,115), "#275D34", .8f);
-            prompt = Text("ActionText", action.transform, "", 22, TextAnchor.MiddleCenter, "#FFFFFF"); Rect(prompt.rectTransform, Vector2.zero, Vector2.one, new Vector2(10,0), new Vector2(-10,0));
-            var toastRoot = Panel("Toast", root.transform, new Vector2(.5f,1), new Vector2(.5f,1), new Vector2(-500,-100), new Vector2(500,-36), "#275D34", .9f);
-            toast = Text("ToastText", toastRoot.transform, "", 22, TextAnchor.MiddleCenter, "#FFFFFF"); Rect(toast.rectTransform, Vector2.zero, Vector2.one, new Vector2(12,0), new Vector2(-12,0));
-            var help = Text("Help", root.transform, "WASD / cần trái: di chuyển • Dừng 0,25 giây: thao tác • Q / RB: hàng • F5 / Start: lưu • Esc / Back: menu", 18, TextAnchor.MiddleCenter, "#FFFFFF");
-            Rect(help.rectTransform, Vector2.zero, new Vector2(1,0), new Vector2(10,10), new Vector2(-10,42));
-            menu = Panel("Pause", root.transform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, "#143627", .95f);
-            var heading = Text("PauseHeading", menu.transform, "TYCOON2\nNông trại → Đế chế kinh doanh", 40, TextAnchor.MiddleCenter, "#FFFFFF");
-            Rect(heading.rectTransform, new Vector2(.5f,.5f), new Vector2(.5f,.5f), new Vector2(-500,120), new Vector2(500,290));
-            continueButton = Button(menu.transform,"Tiếp tục",140,TogglePause);
-            Button(menu.transform,"Quản lý đội",-20,OpenCrewMenu);
-            Button(menu.transform,"Lưu trò chơi",-180,()=>game.SaveGame());
-            Button(menu.transform,"Lưu & thoát",-340,()=> { game.SaveGame(); Application.Quit(); });
-            menu.SetActive(false);
-            recipeButton=Button(root.transform,"Đổi món",0,CycleRecipe);
-            Rect(recipeButton.GetComponent<RectTransform>(),new Vector2(.5f,0),new Vector2(.5f,0),new Vector2(-280,310),new Vector2(280,420));
-            recipeButton.gameObject.SetActive(false);
-            if(DevelopmentAssistance.Enabled)
+            if (!EventSystem.current)
             {
-                var support=Button(root.transform,"Hỗ trợ +999.999 / mở khu",0,()=>{if(DevelopmentAssistance.Apply(game))game.Say("Đã cộng 999.999 xu và mở tuyến cơ bản.");});
-                Rect(support.GetComponent<RectTransform>(),new Vector2(1,1),new Vector2(1,1),new Vector2(-640,-125),new Vector2(-28,-28));
+                ownedEvents = new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
+                ownedEvents.transform.SetParent(transform, false);
             }
-            crewPanel=Panel("CrewManagement",root.transform,Vector2.zero,Vector2.one,Vector2.zero,Vector2.zero,"#143627",.97f);
-            var crewTitle=Text("CrewTitle",crewPanel.transform,"ĐỘI NGŨ • VAI TRÒ VÀ KHU VỰC",34,TextAnchor.MiddleCenter,"#FFFFFF");
-            Rect(crewTitle.rectTransform,new Vector2(.1f,.88f),new Vector2(.9f,.97f),Vector2.zero,Vector2.zero);
-            crewSummary=Text("CrewSummary",crewPanel.transform,"",18,TextAnchor.MiddleCenter,"#FFFFFF");
-            Rect(crewSummary.rectTransform,new Vector2(.1f,.81f),new Vector2(.9f,.88f),Vector2.zero,Vector2.zero);
-            var viewport=new GameObject("CrewViewport",typeof(RectTransform),typeof(Image),typeof(Mask));viewport.transform.SetParent(crewPanel.transform,false);
-            Rect(viewport.GetComponent<RectTransform>(),new Vector2(.08f,.17f),new Vector2(.92f,.8f),Vector2.zero,Vector2.zero);
-            viewport.GetComponent<Image>().color=new Color(0,0,0,.12f);viewport.GetComponent<Mask>().showMaskGraphic=false;
-            var content=new GameObject("CrewRows",typeof(RectTransform));content.transform.SetParent(viewport.transform,false);crewContent=content.transform;
-            var contentRect=content.GetComponent<RectTransform>();contentRect.anchorMin=new Vector2(0,1);contentRect.anchorMax=new Vector2(1,1);contentRect.pivot=new Vector2(.5f,1);contentRect.anchoredPosition=Vector2.zero;contentRect.sizeDelta=Vector2.zero;
-            var scroll=viewport.AddComponent<ScrollRect>();scroll.viewport=viewport.GetComponent<RectTransform>();scroll.content=contentRect;scroll.horizontal=false;scroll.vertical=true;scroll.movementType=ScrollRect.MovementType.Clamped;
-            Button(crewPanel.transform,"Quay lại",-435,BackToPauseMenu);
-            crewPanel.SetActive(false);
-            var cargoOpen=Button(root.transform,"Vận chuyển xe tải",0,()=>{cargoPanel.SetActive(!cargoPanel.activeSelf);game.Player.CanControl=!cargoPanel.activeSelf;});
-            Rect(cargoOpen.GetComponent<RectTransform>(),Vector2.one,Vector2.one,new Vector2(-510,-245),new Vector2(-28,-140));
-            cargoPanel=Panel("CargoRoutes",root.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(-800,-450),new Vector2(800,450),"#143627",.98f);
-            cargoText=Text("CargoSummary",cargoPanel.transform,"",24,TextAnchor.UpperLeft,"#FFFFFF");Rect(cargoText.rectTransform,new Vector2(.05f,.56f),new Vector2(.95f,.94f),Vector2.zero,Vector2.zero);
-            Button(cargoPanel.transform,"Đổi kho nguồn",0,()=>CycleCargo(true));Button(cargoPanel.transform,"Đổi kho đích",-90,()=>CycleCargo(false));
-            Button(cargoPanel.transform,"Gửi xe",-180,()=>{if(game.Logistics!=null&&!game.Logistics.Dispatch())game.Say(game.Logistics.Reason);});
-            Button(cargoPanel.transform,"Bật / tắt tuyến tự động",-270,()=>{var t=game.Transactions?.View.truck;if(t!=null)game.Logistics.Select(t.source,t.destination,!t.repeat);});
-            Button(cargoPanel.transform,"Đóng",-360,()=>{cargoPanel.SetActive(false);game.Player.CanControl=true;});cargoPanel.SetActive(false);
-            LayoutHud(root.transform);
-            var cargoButtons=cargoPanel.GetComponentsInChildren<Button>(true);
-            for(int i=0;i<cargoButtons.Length;i++)
-            {
-                Vector2 center=i==4?new(0,-310):new(i%2==0?-390:390,-(i/2)*155);
-                Rect(cargoButtons[i].GetComponent<RectTransform>(),new(.5f,.5f),new(.5f,.5f),center-new Vector2(370,62),center+new Vector2(370,62));
-                cargoButtons[i].GetComponentInChildren<Text>().fontSize=44;
-            }
-            var stockOpen=Button(root.transform,"Xem kho / chọn hàng",0,OpenStock);
-            Rect(stockOpen.GetComponent<RectTransform>(),new(1,0),new(1,0),new(-590,180),new(-24,280));stockOpen.GetComponentInChildren<Text>().fontSize=44;
-            stockPanel=Panel("StockDetails",root.transform,Vector2.zero,Vector2.one,Vector2.zero,Vector2.zero,"#143627",.98f);
-            var stockTitle=Text("StockTitle",stockPanel.transform,"KHO THEO KHU • CHỌN HÀNG CẦN LẤY",32,TextAnchor.MiddleCenter,"#FFFFFF");Rect(stockTitle.rectTransform,new(.05f,.86f),new(.95f,.98f),Vector2.zero,Vector2.zero);
-            var stockViewport=new GameObject("StockViewport",typeof(RectTransform),typeof(Image),typeof(Mask));stockViewport.transform.SetParent(stockPanel.transform,false);
-            Rect(stockViewport.GetComponent<RectTransform>(),new(.08f,.2f),new(.92f,.85f),Vector2.zero,Vector2.zero);stockViewport.GetComponent<Image>().color=new(0,0,0,.1f);stockViewport.GetComponent<Mask>().showMaskGraphic=false;
-            stockContent=new GameObject("StockRows",typeof(RectTransform)).transform;stockContent.SetParent(stockViewport.transform,false);
-            var sr=(RectTransform)stockContent;sr.anchorMin=new(0,1);sr.anchorMax=new(1,1);sr.pivot=new(.5f,1);
-            var stockScroll=stockViewport.AddComponent<ScrollRect>();stockScroll.viewport=(RectTransform)stockViewport.transform;stockScroll.content=sr;stockScroll.horizontal=false;stockScroll.movementType=ScrollRect.MovementType.Clamped;
-            Button(stockPanel.transform,"Đóng",-440,CloseStock);stockPanel.SetActive(false);
+            safeArea = NewRect("SafeArea", root.transform);
+            Rect(safeArea, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            hud = new GameObject("PlayingHud", typeof(RectTransform));
+            hud.transform.SetParent(safeArea, false);
+            Rect((RectTransform)hud.transform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            BuildPlayingHud(); BuildPause(); BuildCrew(); BuildStock(); BuildCargo();
+            toastRoot.transform.SetParent(safeArea, false); toastRoot.transform.SetAsLastSibling();
+            menu.SetActive(false); crewPanel.SetActive(false); stockPanel.SetActive(false); cargoPanel.SetActive(false);
+            Canvas.ForceUpdateCanvases(); LayoutHud(); RefreshPlayingHud(); RefreshStatus();
         }
-        static void LayoutHud(Transform root)
+
+        void BuildPlayingHud()
         {
-            Place("Wallet",new(0,1),new(24,-140),new(594,-24));Place("Finance",Vector2.zero,new(24,285),new(570,530));
-            Place("Title",new(.5f,1),new(-330,-190),new(330,-24));Place("Objective",new(0,1),new(24,-350),new(594,-154));
-            Place("AreaStock",new(1,1),new(-590,-710),new(-24,-310));Place("Carry",Vector2.zero,new(24,110),new(570,268));
-            Place("Action",new(.5f,0),new(-354,110),new(354,290));Place("Toast",new(.5f,1),new(-354,-326),new(354,-198));
-            Place("Hỗ trợ +999.999 / mở khu",Vector2.one,new(-620,-166),new(-24,-24));Place("Vận chuyển xe tải",Vector2.one,new(-620,-290),new(-24,-178));
-            foreach(var label in root.GetComponentsInChildren<Text>(true))if(label.transform.parent.name=="Hỗ trợ +999.999 / mở khu"){label.text="Hỗ trợ +999.999\nMở toàn bộ khu";label.fontSize=44;}
-            var heading=root.Find("Pause/PauseHeading")?.GetComponent<RectTransform>();if(heading)Rect(heading,new(.5f,.5f),new(.5f,.5f),new(-800,235),new(800,460));
-            var help=root.Find("Help")?.GetComponent<RectTransform>();if(help)Rect(help,Vector2.zero,new(1,0),new(20,12),new(-20,92));
-            void Place(string name,Vector2 anchor,Vector2 min,Vector2 max){var target=root.Cast<Transform>().FirstOrDefault(x=>x.name==name)?.GetComponent<RectTransform>();if(target)Rect(target,anchor,anchor,min,max);}
+            var root = hud.transform;
+            walletRect = (RectTransform)Panel("Wallet", root, Surface).transform;
+            var badge = Panel("CashIcon", walletRect, Accent);
+            Rect((RectTransform)badge.transform, new(0, .5f), new(0, .5f), new(16, -28), new(72, 28));
+            var badgeText = Text("Currency", badge.transform, "XU", 21, TextAnchor.MiddleCenter, Surface); Inset(badgeText.rectTransform, 2);
+            var walletLabel = Text("WalletLabel", walletRect, "VÍ CỦA BẠN", 16, TextAnchor.MiddleLeft, Muted);
+            Rect(walletLabel.rectTransform, new(0, 1), new(1, 1), new(88, -34), new(-16, -8));
+            money = Text("Money", walletRect, "0", 38, TextAnchor.MiddleLeft, Ink);
+            Rect(money.rectTransform, Vector2.zero, Vector2.one, new(88, 8), new(-16, -34));
+            money.resizeTextForBestFit = true; money.resizeTextMinSize = 24; money.resizeTextMaxSize = 38;
+            titleRect = (RectTransform)Panel("Title", root, Surface).transform;
+            var title = Text("Brand", titleRect, "TYCOON2", 18, TextAnchor.MiddleLeft, Accent);
+            Rect(title.rectTransform, new(0, 1), new(1, 1), new(18, -35), new(-16, -8));
+            progress = Text("Progress", titleRect, "", 22, TextAnchor.MiddleLeft, Ink);
+            Rect(progress.rectTransform, Vector2.zero, Vector2.one, new(18, 10), new(-16, -37));
+            objectiveRect = (RectTransform)Panel("Objective", root, Surface, .93f).transform;
+            var objectiveTitle = Text("ObjectiveTitle", objectiveRect, "BƯỚC TIẾP THEO", 16, TextAnchor.MiddleLeft, Accent);
+            Rect(objectiveTitle.rectTransform, new(0, 1), new(1, 1), new(18, -34), new(-16, -8));
+            objective = Text("ObjectiveText", objectiveRect, "", 22, TextAnchor.UpperLeft, Ink);
+            Rect(objective.rectTransform, Vector2.zero, Vector2.one, new(18, 14), new(-16, -42));
+            objective.resizeTextForBestFit = true; objective.resizeTextMinSize = 18; objective.resizeTextMaxSize = 22;
+            financeRect = (RectTransform)Panel("Finance", root, Surface, .9f).transform;
+            finance = Text("FinanceText", financeRect, "", 21, TextAnchor.MiddleLeft, Muted); Inset(finance.rectTransform, 18);
+            stockRect = (RectTransform)Panel("AreaStock", root, Surface, .9f).transform;
+            stock = Text("StockText", stockRect, "", 20, TextAnchor.UpperLeft, Ink); Inset(stock.rectTransform, 18);
+            carryRect = (RectTransform)Panel("Carry", root, Surface).transform;
+            carry = Text("CarryText", carryRect, "", 22, TextAnchor.MiddleLeft, Ink);
+            Rect(carry.rectTransform, Vector2.zero, Vector2.one, new(18, 30), new(-16, -10));
+            var capacity = Panel("CarryCapacity", carryRect, "#102C27");
+            Rect((RectTransform)capacity.transform, Vector2.zero, new(1, 0), new(18, 14), new(-18, 22));
+            carryFill = Panel("CarryFill", capacity.transform, Accent).GetComponent<Image>();
+            Rect(carryFill.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            actionRect = (RectTransform)Panel("Action", root, Surface, .96f).transform;
+            var actionTitle = Text("ActionTitle", actionRect, "ĐỨNG GẦN • TỰ ĐỘNG THAO TÁC", 16, TextAnchor.MiddleCenter, Accent);
+            Rect(actionTitle.rectTransform, new(0, 1), new(1, 1), new(16, -32), new(-16, -6));
+            prompt = Text("ActionText", actionRect, "", 22, TextAnchor.MiddleCenter, Ink);
+            Rect(prompt.rectTransform, Vector2.zero, Vector2.one, new(18, 12), new(-18, -34));
+            prompt.resizeTextForBestFit = true; prompt.resizeTextMinSize = 18; prompt.resizeTextMaxSize = 22;
+            recipeButton = Button(root, "Đổi món", CycleRecipe, true); recipeButton.gameObject.SetActive(false);
+            dockRect = NewRect("QuickActions", root);
+            var stockOpen = Button(dockRect, "Xem kho / chọn hàng", OpenStock);
+            stockOpen.GetComponentInChildren<Text>().text = "Kho • chọn hàng";
+            Rect((RectTransform)stockOpen.transform, new(0, 1), new(1, 1), new(0, -58), Vector2.zero);
+            var cargoOpen = Button(dockRect, "Vận chuyển xe tải", OpenCargo);
+            Rect((RectTransform)cargoOpen.transform, new(0, 1), new(1, 1), new(0, -124), new(0, -66));
+            var menuOpen = Button(dockRect, "Menu", TogglePause);
+            Rect((RectTransform)menuOpen.transform, new(0, 1), new(1, 1), new(0, -190), new(0, -132));
+            if (DevelopmentAssistance.Enabled)
+            {
+                var support = Button(dockRect, "Hỗ trợ +999.999 / mở khu",
+                    () => { if (game.CanSimulate && DevelopmentAssistance.Apply(game)) game.Say("Đã cộng 999.999 xu và mở tuyến cơ bản."); });
+                support.GetComponentInChildren<Text>().fontSize = 17;
+                Rect((RectTransform)support.transform, new(0, 1), new(1, 1), new(0, -242), new(0, -198));
+            }
+            help = Text("Help", root, "", 17, TextAnchor.MiddleCenter, Ink);
+            toastRoot = Panel("Toast", root, "#3C5936");
+            toast = Text("ToastText", toastRoot.transform, "", 22, TextAnchor.MiddleCenter, Ink); Inset(toast.rectTransform, 16);
+            toastRoot.SetActive(false);
+        }
+
+        void BuildPause()
+        {
+            menu = Modal("Pause");
+            var card = Panel("PauseCard", menu.transform, Surface);
+            Rect((RectTransform)card.transform, new(.5f, .5f), new(.5f, .5f), new(-320, -430), new(320, 430));
+            var heading = Text("PauseHeading", card.transform, "TYCOON2", 48, TextAnchor.MiddleCenter, Ink);
+            Rect(heading.rectTransform, new(0, 1), new(1, 1), new(20, -108), new(-20, -35));
+            var subtitle = Text("PauseSubtitle", card.transform, "Từ nông trại đến đế chế kinh doanh", 22, TextAnchor.MiddleCenter, Muted);
+            Rect(subtitle.rectTransform, new(0, 1), new(1, 1), new(26, -160), new(-26, -108));
+            continueButton = PauseButton(card.transform, "Tiếp tục", -210, TogglePause, true);
+            PauseButton(card.transform, "Kho • chọn hàng", -298, OpenStock);
+            PauseButton(card.transform, "Vận chuyển xe tải", -386, OpenCargo);
+            PauseButton(card.transform, "Quản lý đội", -474, OpenCrewMenu);
+            PauseButton(card.transform, "Lưu trò chơi", -562, () => game.SaveGame());
+            PauseButton(card.transform, "Lưu & thoát", -650, () => { game.SaveGame(); Application.Quit(); });
+            var note = Text("PauseNote", card.transform, "Trò chơi đang tạm dừng.\nEsc / nút Back để tiếp tục.", 20, TextAnchor.MiddleCenter, Muted);
+            Rect(note.rectTransform, Vector2.zero, new(1, 0), new(24, 28), new(-24, 112));
+        }
+        void BuildCrew()
+        {
+            crewPanel = Modal("CrewManagement");
+            var board = ManagementBoard(crewPanel.transform, "ĐỘI NGŨ", "Vai trò, khu vực và nâng cấp cho từng đội");
+            crewSummary = Text("CrewSummary", board.transform, "", 21, TextAnchor.MiddleCenter, Muted);
+            Rect(crewSummary.rectTransform, new(0, 1), new(1, 1), new(30, -155), new(-30, -115));
+            crewContent = ScrollContent("Crew", board.transform);
+            crewBack = FooterButton(board.transform, "Quay lại", BackToPauseMenu);
+        }
+        void BuildStock()
+        {
+            stockPanel = Modal("StockDetails");
+            var board = ManagementBoard(stockPanel.transform, "KHO HÀNG", "Chọn mặt hàng muốn lấy • giữ chỗ và hàng đang đến được cập nhật riêng");
+            stockContent = ScrollContent("Stock", board.transform);
+            stockClose = FooterButton(board.transform, "Đóng", CloseStock);
+        }
+        void BuildCargo()
+        {
+            cargoPanel = Modal("CargoRoutes");
+            var board = ManagementBoard(cargoPanel.transform, "VẬN CHUYỂN XE TẢI", "Chọn hai kho khác nhau để điều phối tuyến hàng");
+            cargoText = Text("CargoSummary", board.transform, "", 24, TextAnchor.MiddleLeft, Ink);
+            Rect(cargoText.rectTransform, new(.04f, .64f), new(.96f, .8f), Vector2.zero, Vector2.zero);
+            var source = Button(board.transform, "Đổi kho nguồn", () => CycleCargo(true));
+            Rect((RectTransform)source.transform, new(.05f, .51f), new(.48f, .61f), Vector2.zero, Vector2.zero);
+            var destination = Button(board.transform, "Đổi kho đích", () => CycleCargo(false));
+            Rect((RectTransform)destination.transform, new(.52f, .51f), new(.95f, .61f), Vector2.zero, Vector2.zero);
+            var dispatch = Button(board.transform, "Gửi xe", () => { if (game.Logistics != null && !game.Logistics.Dispatch()) game.Say(game.Logistics.Reason); }, true);
+            Rect((RectTransform)dispatch.transform, new(.2f, .36f), new(.8f, .46f), Vector2.zero, Vector2.zero);
+            var repeat = Button(board.transform, "Bật / tắt tuyến tự động", () =>
+            {
+                var truck = game.Transactions?.View.truck;
+                if (truck != null) game.Logistics.Select(truck.source, truck.destination, !truck.repeat);
+            });
+            Rect((RectTransform)repeat.transform, new(.2f, .21f), new(.8f, .31f), Vector2.zero, Vector2.zero);
+            cargoActions.AddRange(new[] { source, destination, dispatch, repeat });
+            cargoClose = FooterButton(board.transform, "Đóng", CloseCargo);
+        }
+
+        void LayoutHud()
+        {
+            screenWidth = Screen.width; screenHeight = Screen.height; lastSafeArea = Screen.safeArea;
+            // Mọi mép HUD nằm trong vùng an toàn, kể cả khi đổi tỷ lệ cửa sổ.
+            safeArea.anchorMin = new(lastSafeArea.xMin / Mathf.Max(1, screenWidth), lastSafeArea.yMin / Mathf.Max(1, screenHeight));
+            safeArea.anchorMax = new(lastSafeArea.xMax / Mathf.Max(1, screenWidth), lastSafeArea.yMax / Mathf.Max(1, screenHeight));
+            safeArea.offsetMin = safeArea.offsetMax = Vector2.zero;
+            float scale = Mathf.Max(.01f, canvas.scaleFactor); lastCanvasScale = scale;
+            float width = lastSafeArea.width / scale, height = lastSafeArea.height / scale;
+            bool compact = width < 1460;
+            float side = Mathf.Min(330, (width - 72) * .5f);
+            TopLeft(walletRect, 24, 24, side, 106); TopLeft(objectiveRect, 24, 142, side, 190);
+            TopRight(titleRect, 24, 24, side, 106); TopRight(financeRect, 24, 142, side, 156);
+            float actionsWidth = Mathf.Min(740, width - 48), sideBottom = compact ? 192 : 62;
+            float dockHeight = DevelopmentAssistance.Enabled ? 242 : 190;
+            float stockHeight = Mathf.Min(230, height - 310 - sideBottom - dockHeight - 16);
+            stockRect.gameObject.SetActive(stockHeight >= 130);
+            TopRight(stockRect, 24, 310, side, Mathf.Max(130, stockHeight));
+            BottomCenter(actionRect, 62, actionsWidth, 116);
+            Rect(help.rectTransform, Vector2.zero, new(1, 0), new(24, 14), new(-24, 48));
+            BottomLeft(carryRect, 24, sideBottom, side, 116); BottomRight(dockRect, 24, sideBottom, side, dockHeight);
+            BottomCenter((RectTransform)toastRoot.transform, compact ? 450 : 198, Mathf.Min(700, width - 48), 76);
+            BottomCenter((RectTransform)recipeButton.transform, 314, Mathf.Min(300, width - 48), 54);
+            var pauseCard = menu.transform.Find("PauseCard") as RectTransform;
+            pauseCard.localScale = Vector3.one * Mathf.Min(1, (height - 48) / 860, (width - 48) / 640);
         }
         void Update()
         {
-            canvas.GetComponent<GraphicRaycaster>().enabled=game.CanSimulate;
+            if (!game || !game.Player || !canvas) return;
+            if (Screen.width != screenWidth || Screen.height != screenHeight || Screen.safeArea != lastSafeArea ||
+                !Mathf.Approximately(canvas.scaleFactor, lastCanvasScale)) LayoutHud();
             if (Keyboard.current?.escapeKey.wasPressedThisFrame == true || Gamepad.current?.selectButton.wasPressedThisFrame == true) TogglePause();
-            money.text = game.Economy.Money.ToString("N0");
-            if(cargoPanel.activeSelf)
+            if (Time.unscaledTime >= nextRefresh)
             {
-                var t=game.Transactions?.View.truck;
-                cargoText.text=t==null?"Xe tải + tài xế: mở Processing, kho cấp 3 và 30 jobs vận chuyển tay.\nGóp tiền tại pad xe cạnh kho Processing.":
-                    "Nguồn: "+CargoWarehouse(t.source)+" → "+CargoWarehouse(t.destination)+"\n"+(t.phase switch{"Idle"=>"Đỗ tại bến","Loading"=>"Đang chất hàng","Travelling"=>"Đang vận chuyển",_=>"Chờ dỡ hàng"})+" • "+game.Logistics.Reason+" • tự động "+(t.repeat?"BẬT":"TẮT")+"\n"+
-                    string.Join(" • ",game.Transactions.View.crates.Where(x=>x.holder==t.id).Select(x=>Definitions.Item(x.item).label+" ×"+game.Transactions.View.stacks.Where(s=>s.owner==x.id).Sum(s=>s.quantity)));
+                nextRefresh = Time.unscaledTime + .15f; RefreshPlayingHud();
+                if (mode == ScreenMode.Cargo) RefreshCargo();
             }
-            var active=game.Player.ActiveInteraction as ProximityTarget;
-            recipeButton.gameObject.SetActive(active?.Target is MachineStation m && m.Options.Length>1);
-            string area = game.BusinessStage switch { 5 => "Nhà hàng & tiệm bánh", 4 => "Tiệm bánh", 3 => "Siêu thị", 2 => game.Economy.Has("mill")?"Chế biến":"Cửa hàng nông sản", _ => "Nông trại & cửa hàng" };
-            progress.text = area + "\n" + game.Workers.Count + " nhân viên • " + game.Economy.Transactions + " đơn";
-            objective.text=game.ObjectiveText;
+            if (Time.unscaledTime >= nextStatusRefresh) { nextStatusRefresh = Time.unscaledTime + .4f; RefreshStatus(); }
+        }
+        void RefreshPlayingHud()
+        {
+            SetText(money, game.Economy.Money.ToString("N0"));
+            string area = game.BusinessStage switch
+            {
+                5 => "Nhà hàng & tiệm bánh", 4 => "Tiệm bánh", 3 => "Siêu thị",
+                2 => game.Economy.Has("mill") ? "Chế biến" : "Cửa hàng nông sản", _ => "Nông trại & cửa hàng"
+            };
+            SetText(progress, area + "\n" + game.Workers.Count + " nhân viên • " + game.Economy.Transactions + " đơn");
             var carried = game.Player.Carry.Snapshot();
-            carry.text = (carried.Count == 0 ? "Giỏ trống" : Definitions.Item(carried[0].id).label) + ": " + game.Player.Carry.Total + "/" + game.Player.Carry.Capacity + "\nChọn lấy: " + Definitions.Items[game.SelectedItem].label;
+            SetText(carry, (carried.Count == 0 ? "Giỏ trống" : Definitions.Item(carried[0].id).label) + "  " +
+                game.Player.Carry.Total + "/" + game.Player.Carry.Capacity + "\nChọn: " + Definitions.Items[game.SelectedItem].label);
+            float capacity = game.Player.Carry.Capacity > 0 ? (float)game.Player.Carry.Total / game.Player.Carry.Capacity : 0;
+            carryFill.rectTransform.anchorMax = new(Mathf.Clamp01(capacity), 1); carryFill.enabled = capacity > 0;
+            var active = game.Player.ActiveInteraction as ProximityTarget;
+            bool canSelectRecipe = mode == ScreenMode.Play && game.CanSimulate && active?.Target is MachineStation machine && machine.Options.Length > 1;
+            recipeButton.gameObject.SetActive(canSelectRecipe);
             var station = game.NearestStation(game.Player.transform.position);
-            prompt.text = !string.IsNullOrEmpty(game.Player.InteractionReason) ? game.Player.InteractionReason : game.Player.ActiveInteraction is ProximityTarget target ? target.Cash?"Thu tiền tại cọc tiền":target.Target.Prompt : station ? station.Prompt : "Dừng gần vật thể để thao tác tự động";
-            toast.transform.parent.gameObject.SetActive(Time.time < game.ToastUntil); toast.text = game.Toast;
-            if(Time.unscaledTime>=nextStatusRefresh){nextStatusRefresh=Time.unscaledTime+.3f;RefreshStatus();}
+            string reason = !game.CanSimulate ? "Gameplay đang tạm dừng • mở menu để kiểm tra lưu game." :
+                !string.IsNullOrEmpty(game.Player.InteractionReason) ? game.Player.InteractionReason :
+                active != null ? active.Cash ? "Thu tiền tại cọc tiền" : active.Target.Prompt :
+                game.Player.ActiveInteraction is StationZone zone ? zone.Prompt :
+                station ? station.Prompt : "Dừng 0,25 giây gần vật thể để bắt đầu";
+            SetText(prompt, reason);
+            prompt.color = Art.Hex(string.IsNullOrEmpty(game.Player.InteractionReason) && game.CanSimulate ? Ink : "#FFE5A4");
+            SetText(help, Gamepad.current != null ?
+                "Cần trái: di chuyển    RB: chọn hàng    Start: lưu    Back: menu" :
+                "WASD: di chuyển    Dừng 0,25 giây: thao tác    Q: chọn hàng    F5: lưu    Esc: menu");
+            bool showToast = Time.time < game.ToastUntil && !string.IsNullOrEmpty(game.Toast);
+            toastRoot.SetActive(showToast); SetText(toast, game.Toast);
         }
         void RefreshStatus()
         {
-            finance.text="Chưa thu: "+game.Economy.PendingCash.ToString("N0")+" xu\nDoanh thu: "+game.Economy.Revenue.ToString("N0")+" xu\nThực thu: "+game.Economy.CashCollected.ToString("N0")+" xu\nThất thoát: "+game.Economy.LostItems+" món";
-            var nearby=game.Stations.Where(x=>x&&x.IsUnlocked&&x is not StationZone and not PurchasePad and not ConveyorStation)
-                .OrderBy(x=>(x.transform.position-game.Player.transform.position).sqrMagnitude).FirstOrDefault();
-            string area=nearby?.AreaId??"farm";var storage=game.StorageFor(area);
-            if(!storage||!storage.IsUnlocked){area="farm";storage=game.StorageFor(area);}stockLines.Clear();stockLines.AppendLine("KHO • "+AreaLabel(area));
-            if(storage)
+            SetText(objective, game.ObjectiveText);
+            SetText(finance, "Chưa thu  " + game.Economy.PendingCash.ToString("N0") + " xu\nDoanh thu  " +
+                game.Economy.Revenue.ToString("N0") + " xu\nĐã thu  " + game.Economy.CashCollected.ToString("N0") +
+                " xu\nThất thoát  " + game.Economy.LostItems + " món");
+            var nearby = game.Stations.Where(x => x && x.IsUnlocked && x is not StationZone and not PurchasePad and not ConveyorStation)
+                .OrderBy(x => (x.transform.position - game.Player.transform.position).sqrMagnitude).FirstOrDefault();
+            string area = nearby?.AreaId ?? "farm"; var storage = game.StorageFor(area);
+            if (!storage || !storage.IsUnlocked) { area = "farm"; storage = game.StorageFor(area); }
+            stockLines.Clear(); stockLines.AppendLine("KHO • " + AreaLabel(area));
+            if (storage)
             {
-                int rows=0;
-                foreach(var item in Definitions.Items.OrderByDescending(x=>x.id==Definitions.Items[game.SelectedItem].id))
+                int rows = 0;
+                foreach (var item in Definitions.Items.OrderByDescending(x => x.id == Definitions.Items[game.SelectedItem].id))
                 {
-                    int total=storage.Inventory.Count(item.id),held=storage.Inventory.Reserved(item.id),incoming=storage.Inventory.ReservedSpace(item.id);
-                    if(total+held+incoming==0&&item.id!=Definitions.Items[game.SelectedItem].id)continue;
-                    if(++rows>4){stockLines.AppendLine("Xem kho để chọn hàng khác");break;}
-                    stockLines.Append(item.label).Append(": ").Append(total).Append(" / ").Append(storage.Inventory.Capacity);
-                    if(held+incoming>0)stockLines.Append(" • giữ ").Append(held).Append(" / đến ").Append(incoming);
+                    int total = storage.Inventory.Count(item.id), held = storage.Inventory.Reserved(item.id), incoming = storage.Inventory.ReservedSpace(item.id);
+                    if (total + held + incoming == 0 && item.id != Definitions.Items[game.SelectedItem].id) continue;
+                    if (++rows > 3) { stockLines.AppendLine("Mở Kho để xem toàn bộ hàng"); break; }
+                    stockLines.Append(item.label).Append("  ").Append(total);
+                    if (held + incoming > 0) stockLines.Append(" • giữ ").Append(held).Append(" / đến ").Append(incoming);
                     stockLines.AppendLine();
                 }
-                if(rows==0)stockLines.AppendLine("Kho trống");
+                stockLines.Append("Sức chứa  ").Append(storage.Inventory.Total).Append("/").Append(storage.Inventory.Capacity);
             }
-            foreach(var route in game.Stations.OfType<ConveyorStation>().Where(x=>x.AreaId==area&&x.IsUnlocked).Take(1))stockLines.AppendLine(route.Prompt);
-            var waiting=game.Workers.FirstOrDefault(x=>x&&GameSession.CrewFor(Definitions.Upgrade(x.UpgradeId)).area==area&&x.Reason.StartsWith("Chờ"));
-            if(waiting)stockLines.AppendLine("Đội: "+waiting.Reason);
-            stock.text=stockLines.ToString();
-            var stockRect=stock.transform.parent.GetComponent<RectTransform>();var low=stockRect.offsetMin;low.y=stockRect.offsetMax.y-Mathf.Clamp(stock.preferredHeight+24,135,400);stockRect.offsetMin=low;
-            if(crewPanel.activeSelf)foreach(var row in crewStatuses)
-                row.Value.text=string.Join(" • ",game.Workers.Where(x=>x&&x.UpgradeId==row.Key).Select(x=>x.Reason).Distinct().Take(3));
+            SetText(stock, stockLines.ToString());
+            if (mode == ScreenMode.Crew)
+                foreach (var row in crewStatuses)
+                    SetText(row.Value, string.Join(" • ", game.Workers.Where(x => x && x.UpgradeId == row.Key).Select(x => x.Reason).Distinct().Take(3)));
+            if (mode == ScreenMode.Stock) RefreshStockCounts();
         }
         void CycleRecipe()
         {
-            if(game.Player.ActiveInteraction is not ProximityTarget target || target.Target is not MachineStation machine || machine.Running)return;
-            int i=System.Array.IndexOf(machine.Options,machine.Recipe.id);
-            if(game.Transactions.SelectRecipe(machine,machine.Options[(i+1)%machine.Options.Length]))game.Say("Chuẩn bị: "+machine.Recipe.label);
+            if (game.Player.ActiveInteraction is not ProximityTarget target || target.Target is not MachineStation machine || machine.Running) return;
+            int i = System.Array.IndexOf(machine.Options, machine.Recipe.id);
+            if (game.Transactions.SelectRecipe(machine, machine.Options[(i + 1) % machine.Options.Length])) game.Say("Chuẩn bị: " + machine.Recipe.label);
         }
         void OpenStock()
         {
-            game.Player.StopInteraction();game.Player.CanControl=false;stockPanel.SetActive(true);
-            foreach(Transform child in stockContent)Destroy(child.gameObject);
-            int row=0;
-            foreach(var storage in game.Stations.OfType<StorageStation>().Where(x=>x.IsUnlocked))
-                foreach(var item in Definitions.Items.Where(x=>game.Progression.CanProduce(x.id)||storage.Inventory.Count(x.id)>0))
+            if (!game.CanSimulate) return;
+            ShowScreen(ScreenMode.Stock);
+            foreach (Transform child in stockContent) { child.gameObject.SetActive(false); Destroy(child.gameObject); }
+            stockRows.Clear(); Button first = null; int row = 0;
+            foreach (var storage in game.Stations.OfType<StorageStation>().Where(x => x.IsUnlocked))
+                foreach (var item in Definitions.Items.Where(x => game.Progression.CanProduce(x.id) || storage.Inventory.Count(x.id) > 0))
                 {
-                    var line=Panel("StockRow",stockContent,new(0,1),new(1,1),new(0,-row*105-100),new(0,-row*105),"#275D34",.95f);
-                    var select=line.AddComponent<Button>();string sku=item.id;
-                    select.onClick.AddListener(()=>{game.Player.StopInteraction();game.SelectedItem=System.Array.FindIndex(Definitions.Items,x=>x.id==sku);CloseStock();});
-                    var text=Text("StockRowText",line.transform,AreaLabel(storage.AreaId)+" • "+item.label+": "+storage.Inventory.Count(sku)+" / "+storage.Inventory.Capacity+" • giữ "+storage.Inventory.Reserved(sku)+" • đến "+storage.Inventory.ReservedSpace(sku),22,TextAnchor.MiddleLeft,"#FFFFFF");
-                    Rect(text.rectTransform,Vector2.zero,Vector2.one,new(18,3),new(-18,-3));row++;
+                    var line = Panel("StockRow", stockContent, Card);
+                    Rect((RectTransform)line.transform, new(0, 1), new(1, 1), new(0, -row * 96 - 88), new(0, -row * 96));
+                    var select = line.AddComponent<Button>(); StyleButton(select);
+                    string sku = item.id;
+                    select.onClick.AddListener(() => { game.Player.StopInteraction(); game.SelectedItem = System.Array.FindIndex(Definitions.Items, x => x.id == sku); CloseStock(); });
+                    var label = Text("StockRowText", line.transform, "", 22, TextAnchor.MiddleLeft, Ink); Inset(label.rectTransform, 18);
+                    stockRows.Add((storage, sku, label)); first ??= select; row++;
                 }
-            ((RectTransform)stockContent).sizeDelta=new(0,row*105);
+            if (row == 0)
+            {
+                var empty = Text("EmptyStock", stockContent, "Chưa có kho hoặc mặt hàng đã mở.", 24, TextAnchor.MiddleCenter, Muted);
+                Rect(empty.rectTransform, new(0, 1), new(1, 1), new(0, -120), Vector2.zero);
+            }
+            ((RectTransform)stockContent).sizeDelta = new(0, Mathf.Max(120, row * 96));
+            stockContent.parent.GetComponent<ScrollRect>().verticalNormalizedPosition = 1;
+            RefreshStockCounts(); Select(first ? first : stockClose);
         }
-        void CloseStock(){stockPanel.SetActive(false);game.Player.CanControl=!paused;}
-        string CargoWarehouse(string id)=>AreaLabel(game.Stations.Find(x=>x.Id==id)?.AreaId??id);
+        void RefreshStockCounts()
+        {
+            foreach (var row in stockRows)
+                SetText(row.label, AreaLabel(row.storage.AreaId) + " • " + Definitions.Item(row.item).label +
+                    "  " + row.storage.Inventory.Count(row.item) + "\nGiữ chỗ: " + row.storage.Inventory.Reserved(row.item) +
+                    " • Đang đến: " + row.storage.Inventory.ReservedSpace(row.item) + " • Sức chứa kho: " + row.storage.Inventory.Capacity);
+        }
+        void CloseStock() { ShowScreen(ScreenMode.Play); }
+        void OpenCargo()
+        {
+            if (!game.CanSimulate) return;
+            ShowScreen(ScreenMode.Cargo); RefreshCargo();
+            Select(game.Transactions?.View.truck != null ? cargoActions[0] : cargoClose);
+        }
+        void CloseCargo() { ShowScreen(ScreenMode.Play); }
+        void RefreshCargo()
+        {
+            var truck = game.Transactions?.View.truck;
+            foreach (var button in cargoActions) button.interactable = truck != null && game.CanSimulate;
+            SetText(cargoText, truck == null ?
+                "Xe tải + tài xế: mở khu Chế biến, kho cấp 3 và tự chở hàng 30 chuyến.\nGóp tiền tại điểm mua xe bên kho Chế biến." :
+                "Nguồn: " + CargoWarehouse(truck.source) + " → Đích: " + CargoWarehouse(truck.destination) + "\n" +
+                (truck.phase switch { "Idle" => "Đỗ tại bến", "Loading" => "Đang chất hàng", "Travelling" => "Đang vận chuyển", _ => "Chờ dỡ hàng" }) +
+                " • Tự động: " + (truck.repeat ? "BẬT" : "TẮT") + "\n" + game.Logistics.Reason + "\n" +
+                string.Join(" • ", game.Transactions.View.crates.Where(x => x.holder == truck.id).Select(x =>
+                    Definitions.Item(x.item).label + " ×" + game.Transactions.View.stacks.Where(s => s.owner == x.id).Sum(s => s.quantity))));
+        }
+        string CargoWarehouse(string id) => AreaLabel(game.Stations.Find(x => x.Id == id)?.AreaId ?? id);
         void CycleCargo(bool source)
         {
-            var t=game.Transactions?.View.truck;if(t==null)return;
-            var options=game.Stations.OfType<StorageStation>().Where(x=>x.IsUnlocked).Select(x=>x.Id).ToArray();if(options.Length<2)return;
-            int index=System.Array.IndexOf(options,source?t.source:t.destination);
-            for(int i=1;i<=options.Length;i++){string id=options[(index+i)%options.Length];if(id==(source?t.destination:t.source))continue;game.Logistics.Select(source?id:t.source,source?t.destination:id,t.repeat);break;}
+            var truck = game.Transactions?.View.truck; if (truck == null) return;
+            var options = game.Stations.OfType<StorageStation>().Where(x => x.IsUnlocked).Select(x => x.Id).ToArray();
+            if (options.Length < 2) return;
+            int index = System.Array.IndexOf(options, source ? truck.source : truck.destination);
+            for (int i = 1; i <= options.Length; i++)
+            {
+                string id = options[(index + i) % options.Length];
+                if (id == (source ? truck.destination : truck.source)) continue;
+                game.Logistics.Select(source ? id : truck.source, source ? truck.destination : id, truck.repeat); break;
+            }
+            RefreshCargo();
         }
         public void TogglePause()
         {
-            crewPanel?.SetActive(false);cargoPanel?.SetActive(false);stockPanel?.SetActive(false);paused = !paused; menu.SetActive(paused); Time.timeScale = paused ? 0 : 1; game.Player.CanControl = !paused;
-            if (paused) EventSystem.current.SetSelectedGameObject(continueButton.gameObject);
+            if (mode == ScreenMode.Stock || mode == ScreenMode.Cargo) { ShowScreen(ScreenMode.Play); return; }
+            if (mode == ScreenMode.Crew) { BackToPauseMenu(); return; }
+            ShowScreen(mode == ScreenMode.Pause ? ScreenMode.Play : ScreenMode.Pause);
+            if (mode == ScreenMode.Pause) Select(continueButton);
+        }
+        void ShowScreen(ScreenMode next)
+        {
+            bool wasPaused = mode is ScreenMode.Pause or ScreenMode.Crew;
+            bool isPaused = next is ScreenMode.Pause or ScreenMode.Crew;
+            // Đóng bảng không được mở lại điều khiển khi save/load đang bị chặn.
+            if (!wasPaused && isPaused) { resumeTimeScale = Time.timeScale; Time.timeScale = 0; }
+            else if (wasPaused && !isPaused) Time.timeScale = resumeTimeScale;
+            mode = next; game.Player.StopInteraction();
+            game.Player.CanControl = mode == ScreenMode.Play && game.CanSimulate;
+            menu.SetActive(mode == ScreenMode.Pause); crewPanel.SetActive(mode == ScreenMode.Crew);
+            stockPanel.SetActive(mode == ScreenMode.Stock); cargoPanel.SetActive(mode == ScreenMode.Cargo);
+            hud.SetActive(mode == ScreenMode.Play);
+            if (EventSystem.current) EventSystem.current.SetSelectedGameObject(null);
         }
         void OpenCrewMenu()
         {
-            menu.SetActive(false);crewPanel.SetActive(true);RefreshCrewMenu();
+            ShowScreen(ScreenMode.Crew); RefreshCrewMenu();
+            Select(crewContent.GetComponentsInChildren<Button>().FirstOrDefault(x => x.interactable) ?? crewBack);
         }
-        void BackToPauseMenu()
-        {
-            crewPanel.SetActive(false);menu.SetActive(true);EventSystem.current.SetSelectedGameObject(continueButton.gameObject);
-        }
+        void BackToPauseMenu() { ShowScreen(ScreenMode.Pause); Select(continueButton); }
         void RefreshCrewMenu()
         {
-            foreach(Transform child in crewContent)Destroy(child.gameObject);
-            crewStatuses.Clear();
-            var crews=game.CrewStates;
-            if(crews.Count==0)
+            foreach (Transform child in crewContent) { child.gameObject.SetActive(false); Destroy(child.gameObject); }
+            crewStatuses.Clear(); var crews = game.CrewStates;
+            if (crews.Count == 0)
             {
-                crewSummary.text="Chưa có đội. Trạm cấp 3 + 30 công việc bạn tự hoàn thành để mở ô thuê.";
-                crewContent.GetComponent<RectTransform>().sizeDelta=new Vector2(0,crewContent.parent.GetComponent<RectTransform>().rect.height);
-                var empty=Text("NoCrew",crewContent,"Bạn vẫn có thể tự sản xuất, vận chuyển và phục vụ.",20,TextAnchor.MiddleCenter,"#FFFFFF");
-                empty.transform.SetParent(crewContent,false);Rect(empty.rectTransform,new Vector2(.05f,.35f),new Vector2(.95f,.65f),Vector2.zero,Vector2.zero);return;
+                SetText(crewSummary, "Trạm cấp 3 và 30 công việc tự làm sẽ mở điểm thuê đội.");
+                ((RectTransform)crewContent).sizeDelta = new(0, 140);
+                var empty = Text("NoCrew", crewContent, "Bạn có thể tự sản xuất, vận chuyển và phục vụ.", 24, TextAnchor.MiddleCenter, Muted);
+                Rect(empty.rectTransform, new(0, 1), new(1, 1), new(20, -130), new(-20, -20)); return;
             }
-            crewSummary.text="Mỗi nâng cấp chỉ tác động đội cùng nghề và khu. Tiền được trừ ngay khi chọn.";
-            int index=0;
-            foreach(var crew in crews)
+            SetText(crewSummary, "Nâng cấp áp dụng đúng nghề và khu • tiền được trừ ngay khi chọn.");
+            int index = 0;
+            foreach (var crew in crews)
             {
-                var row=new GameObject("CrewRow_"+crew.id,typeof(RectTransform),typeof(Image));row.transform.SetParent(crewContent,false);
-                var rect=row.GetComponent<RectTransform>();rect.anchorMin=new Vector2(0,1);rect.anchorMax=new Vector2(1,1);rect.pivot=new Vector2(.5f,1);rect.anchoredPosition=new Vector2(0,-index*310);rect.sizeDelta=new Vector2(0,300);
-                var image=row.GetComponent<Image>();image.color=new Color(.15f,.36f,.2f,.9f);image.raycastTarget=false;
-                string title=RoleLabel(crew.role)+" • "+AreaLabel(crew.area)+" • "+crew.count+" người";
-                var name=Text("CrewName",row.transform,title,22,TextAnchor.MiddleLeft,"#FFFFFF");Rect(name.rectTransform,new Vector2(.02f,.7f),new Vector2(.98f,.98f),Vector2.zero,Vector2.zero);
-                var status=Text("CrewStatus",row.transform,"",17,TextAnchor.MiddleLeft,"#CBE9BA");Rect(status.rectTransform,new Vector2(.02f,.43f),new Vector2(.98f,.72f),Vector2.zero,Vector2.zero);crewStatuses[crew.id]=status;
-                CrewButton(row.transform,.18f,UpgradeLabel(crew,"speed"),()=>UpgradeCrew(crew.id,"speed"));
-                CrewButton(row.transform,.50f,crew.role is "Cashier" or "Driver" or "Repairer"?"Không dùng sức mang":UpgradeLabel(crew,"carry"),crew.role is "Cashier" or "Driver" or "Repairer"?null:()=>UpgradeCrew(crew.id,"carry"));
-                CrewButton(row.transform,.82f,crew.role=="Driver"?"Một tài xế / xe":UpgradeLabel(crew,"count"),crew.role=="Driver"?null:()=>UpgradeCrew(crew.id,"count"));
-                index++;
+                var row = Panel("CrewRow_" + crew.id, crewContent, Card);
+                Rect((RectTransform)row.transform, new(0, 1), new(1, 1), new(0, -index * 232 - 220), new(0, -index * 232));
+                string title = RoleLabel(crew.role) + " • " + AreaLabel(crew.area) + " • " + crew.count + " người";
+                var name = Text("CrewName", row.transform, title, 25, TextAnchor.MiddleLeft, Ink);
+                Rect(name.rectTransform, new(0, 1), new(1, 1), new(18, -53), new(-18, -8));
+                var status = Text("CrewStatus", row.transform, "", 20, TextAnchor.MiddleLeft, Muted);
+                Rect(status.rectTransform, new(0, 1), new(1, 1), new(18, -110), new(-18, -57)); crewStatuses[crew.id] = status;
+                CrewButton(row.transform, 0, UpgradeLabel(crew, "speed"), crew.speedLevel < 3 ? () => UpgradeCrew(crew.id, "speed") : null);
+                bool hasCarry = crew.role is not "Cashier" and not "Driver" and not "Repairer";
+                CrewButton(row.transform, 1, hasCarry ? UpgradeLabel(crew, "carry") : "Không dùng sức mang",
+                    hasCarry && crew.carryLevel < 3 ? () => UpgradeCrew(crew.id, "carry") : null);
+                CrewButton(row.transform, 2, crew.role == "Driver" ? "Một tài xế / xe" : UpgradeLabel(crew, "count"),
+                    crew.role != "Driver" && crew.count < 3 ? () => UpgradeCrew(crew.id, "count") : null); index++;
             }
-            var size=crewContent.GetComponent<RectTransform>().sizeDelta;crewContent.GetComponent<RectTransform>().sizeDelta=new Vector2(size.x,Mathf.Max(crewContent.parent.GetComponent<RectTransform>().rect.height,index*310));
+            ((RectTransform)crewContent).sizeDelta = new(0, index * 232);
+            crewContent.parent.GetComponent<ScrollRect>().verticalNormalizedPosition = 1; RefreshStatus();
         }
-        string UpgradeLabel(CrewState crew,string type)
+        string UpgradeLabel(CrewState crew, string type)
         {
-            int level=type=="speed"?crew.speedLevel:type=="carry"?crew.carryLevel:crew.count;
-            if(level>=3)return (type=="speed"?"Tốc độ":type=="carry"?"Sức mang":"Số người")+" • TỐI ĐA";
-            string next=type=="speed"?"Tốc độ cấp "+(level+1):type=="carry"?"Sức mang cấp "+(level+1):"Thêm người • "+(crew.count+1);
-            return next+" • "+game.CrewUpgradeCost(crew.id,type)+" xu";
+            int level = type == "speed" ? crew.speedLevel : type == "carry" ? crew.carryLevel : crew.count;
+            string label = type == "speed" ? "Tốc độ" : type == "carry" ? "Sức mang" : "Số người";
+            if (level >= 3) return label + " • TỐI ĐA";
+            return (type == "count" ? "Thêm người • " + (level + 1) : label + " cấp " + (level + 1)) +
+                "\n" + game.CrewUpgradeCost(crew.id, type).ToString("N0") + " xu";
         }
-        void CrewButton(Transform parent,float center,string label,UnityEngine.Events.UnityAction click)
+        void CrewButton(Transform parent, int column, string label, UnityEngine.Events.UnityAction click)
         {
-            var buttonRoot=Panel("CrewUpgrade",parent,new Vector2(center-.15f,.05f),new Vector2(center+.15f,.39f),Vector2.zero,Vector2.zero,"#59C840",click==null?.35f:1);
-            var button=buttonRoot.AddComponent<Button>();button.interactable=click!=null;if(click!=null)button.onClick.AddListener(click);
-            var text=Text("Label",buttonRoot.transform,label,17,TextAnchor.MiddleCenter,"#FFFFFF");Rect(text.rectTransform,Vector2.zero,Vector2.one,new Vector2(3,0),new Vector2(-3,0));
+            var button = Button(parent, "CrewUpgrade", click);
+            button.GetComponentInChildren<Text>().text = label; button.GetComponentInChildren<Text>().fontSize = 20;
+            button.interactable = click != null;
+            Rect((RectTransform)button.transform, new(column / 3f, 0), new((column + 1) / 3f, 0), new(12, 14), new(-12, 98));
         }
-        void UpgradeCrew(string id,string type)
+        void UpgradeCrew(string id, string type)
         {
-            bool changed=game.UpgradeCrew(id,type);game.Say(changed?"Đã nâng đội "+(Definitions.Upgrade(id)?.label??id):"Không đủ xu hoặc nâng cấp đã tối đa.");RefreshCrewMenu();
+            bool changed = game.UpgradeCrew(id, type);
+            game.Say(changed ? "Đã nâng đội " + (Definitions.Upgrade(id)?.label ?? id) : "Không đủ xu hoặc nâng cấp đã tối đa.");
+            RefreshCrewMenu(); Select(crewBack);
         }
-        public static string AreaLabel(string area)=>area switch{"farm"=>"Nông trại","farm_shop"=>"Cửa hàng nông sản","processing"=>"Chế biến","supermarket" or "market"=>"Siêu thị","bakery"=>"Tiệm bánh","restaurant"=>"Nhà hàng",_=>area};
-        static string RoleLabel(string role)=>role switch{"Farmer"=>"Nông dân","AnimalWorker"=>"Chăm vật nuôi","Restocker"=>"Xếp hàng","Cashier"=>"Bán hàng","Processor"=>"Chế biến","Cook"=>"Đầu bếp / thợ bánh","Waiter"=>"Phục vụ","Transporter"=>"Vận chuyển","Repairer"=>"Kỹ thuật viên sửa chữa","Loader"=>"Bốc hàng","Driver"=>"Tài xế",_=>role};
-        static GameObject Panel(string name, Transform parent, Vector2 min, Vector2 max, Vector2 offsetMin, Vector2 offsetMax, string color, float alpha)
+        public static string AreaLabel(string area) => area switch
         {
-            var root = new GameObject(name, typeof(RectTransform)); root.transform.SetParent(parent,false);
-            var image = root.AddComponent<Image>(); var tint=Art.Hex(color); tint.a=alpha; image.color=tint;
-            if(!rounded)
+            "farm" => "Nông trại", "farm_shop" => "Cửa hàng nông sản", "processing" => "Chế biến",
+            "supermarket" or "market" => "Siêu thị", "bakery" => "Tiệm bánh", "restaurant" => "Nhà hàng", _ => area
+        };
+        static string RoleLabel(string role) => role switch
+        {
+            "Farmer" => "Nông dân", "AnimalWorker" => "Chăm vật nuôi", "Restocker" => "Xếp hàng", "Cashier" => "Bán hàng",
+            "Processor" => "Chế biến", "Cook" => "Đầu bếp / thợ bánh", "Waiter" => "Phục vụ", "Transporter" => "Vận chuyển",
+            "Repairer" => "Kỹ thuật viên sửa chữa", "Loader" => "Bốc hàng", "Driver" => "Tài xế", _ => role
+        };
+        GameObject Modal(string name)
+        {
+            var root = Panel(name, safeArea, "#071C19", .92f);
+            Rect((RectTransform)root.transform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            root.GetComponent<Image>().raycastTarget = true; return root;
+        }
+        GameObject ManagementBoard(Transform parent, string title, string subtitle)
+        {
+            var board = Panel("ManagementBoard", parent, Surface);
+            Rect((RectTransform)board.transform, new(.06f, .08f), new(.94f, .92f), Vector2.zero, Vector2.zero);
+            var heading = Text("Heading", board.transform, title, 34, TextAnchor.MiddleCenter, Ink);
+            Rect(heading.rectTransform, new(0, 1), new(1, 1), new(26, -80), new(-26, -20));
+            var subheading = Text("Subtitle", board.transform, subtitle, 21, TextAnchor.MiddleCenter, Muted);
+            Rect(subheading.rectTransform, new(0, 1), new(1, 1), new(26, -112), new(-26, -76)); return board;
+        }
+        Transform ScrollContent(string name, Transform board)
+        {
+            var viewport = Panel(name + "Viewport", board, "#102F29");
+            Rect((RectTransform)viewport.transform, Vector2.zero, Vector2.one, new(24, 114), new(-24, -172));
+            viewport.AddComponent<RectMask2D>(); viewport.GetComponent<Image>().raycastTarget = true;
+            var content = NewRect(name + "Rows", viewport.transform);
+            content.anchorMin = new(0, 1); content.anchorMax = new(1, 1); content.pivot = new(.5f, 1);
+            content.anchoredPosition = Vector2.zero; content.sizeDelta = Vector2.zero;
+            var scroll = viewport.AddComponent<ScrollRect>(); scroll.viewport = (RectTransform)viewport.transform; scroll.content = content;
+            scroll.horizontal = false; scroll.vertical = true; scroll.movementType = ScrollRect.MovementType.Clamped;
+            scroll.scrollSensitivity = 40; return content;
+        }
+        Button FooterButton(Transform board, string label, UnityEngine.Events.UnityAction click)
+        {
+            var button = Button(board, label, click);
+            Rect((RectTransform)button.transform, new(.5f, 0), new(.5f, 0), new(-190, 24), new(190, 88)); return button;
+        }
+        Button PauseButton(Transform parent, string label, float y, UnityEngine.Events.UnityAction click, bool accent = false)
+        {
+            var button = Button(parent, label, click, accent);
+            Rect((RectTransform)button.transform, new(0, 1), new(1, 1), new(40, y - 36), new(-40, y + 36)); return button;
+        }
+        GameObject Panel(string name, Transform parent, string color, float alpha = 1)
+        {
+            var rect = NewRect(name, parent); var image = rect.gameObject.AddComponent<Image>();
+            var tint = Art.Hex(color); tint.a = alpha; image.color = tint; image.raycastTarget = false;
+            if (!rounded)
             {
-                var texture=new Texture2D(32,32,TextureFormat.RGBA32,false);texture.wrapMode=TextureWrapMode.Clamp;
-                for(int y=0;y<32;y++)for(int x=0;x<32;x++)
-                {float dx=Mathf.Max(11-x,x-20,0),dy=Mathf.Max(11-y,y-20,0);texture.SetPixel(x,y,new Color(1,1,1,Mathf.Clamp01(11.5f-Mathf.Sqrt(dx*dx+dy*dy))));}
-                texture.Apply();rounded=Sprite.Create(texture,new UnityEngine.Rect(0,0,32,32),Vector2.one*.5f,100,0,SpriteMeshType.FullRect,new Vector4(12,12,12,12));
+                roundedTexture = new Texture2D(32, 32, TextureFormat.RGBA32, false);
+                roundedTexture.name = "HudRoundedCorners"; roundedTexture.wrapMode = TextureWrapMode.Clamp;
+                for (int y = 0; y < 32; y++) for (int x = 0; x < 32; x++)
+                {
+                    float dx = Mathf.Max(11 - x, x - 20, 0), dy = Mathf.Max(11 - y, y - 20, 0);
+                    roundedTexture.SetPixel(x, y, new Color(1, 1, 1, Mathf.Clamp01(11.5f - Mathf.Sqrt(dx * dx + dy * dy))));
+                }
+                roundedTexture.Apply(false, true);
+                rounded = Sprite.Create(roundedTexture, new UnityEngine.Rect(0, 0, 32, 32), Vector2.one * .5f,
+                    100, 0, SpriteMeshType.FullRect, new Vector4(12, 12, 12, 12)); rounded.name = "HudRoundedCorners";
             }
-            image.sprite=rounded;image.type=Image.Type.Sliced;
-            Rect((RectTransform)root.transform,min,max,offsetMin,offsetMax); return root;
+            image.sprite = rounded; image.type = Image.Type.Sliced; return rect.gameObject;
         }
         static Text Text(string name, Transform parent, string value, int size, TextAnchor alignment, string color)
         {
-            var root = new GameObject(name,typeof(RectTransform)); root.transform.SetParent(parent,false); var text=root.AddComponent<Text>();
-            text.font=Art.Catalog.font; text.text=value; text.fontSize=size*2; text.alignment=alignment; text.color=Art.Hex(color); text.raycastTarget=false; return text;
+            var root = NewRect(name, parent); var text = root.gameObject.AddComponent<Text>();
+            text.font = Art.Catalog.font; text.text = value; text.fontSize = size; text.alignment = alignment;
+            text.color = Art.Hex(color); text.raycastTarget = false;
+            text.horizontalOverflow = HorizontalWrapMode.Wrap; text.verticalOverflow = VerticalWrapMode.Truncate; return text;
         }
-        static Button Button(Transform parent, string label, float y, UnityEngine.Events.UnityAction click)
+        Button Button(Transform parent, string label, UnityEngine.Events.UnityAction click, bool accent = false)
         {
-            var root=Panel(label,parent,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(-425,y-62),new Vector2(425,y+62),"#59C840",1);
-            var button=root.AddComponent<Button>(); button.onClick.AddListener(click);
-            var text=Text("Label",root.transform,label,30,TextAnchor.MiddleCenter,"#FFFFFF"); Rect(text.rectTransform,Vector2.zero,Vector2.one,Vector2.zero,Vector2.zero); return button;
+            var root = Panel(label, parent, accent ? Accent : "#356754");
+            var button = root.AddComponent<Button>(); StyleButton(button);
+            if (click != null) button.onClick.AddListener(click);
+            var text = Text("Label", root.transform, label, 24, TextAnchor.MiddleCenter, accent ? Surface : Ink);
+            Inset(text.rectTransform, 10); return button;
         }
+        static void StyleButton(Button button)
+        {
+            button.targetGraphic = button.GetComponent<Image>(); button.targetGraphic.raycastTarget = true;
+            var colors = button.colors;
+            colors.normalColor = Color.white; colors.highlightedColor = new(1.12f, 1.12f, 1.02f);
+            colors.selectedColor = new(1.12f, 1.12f, 1.02f); colors.pressedColor = new(.78f, .9f, .76f);
+            colors.disabledColor = new(.55f, .6f, .56f, .6f); colors.fadeDuration = .1f; button.colors = colors;
+            button.gameObject.AddComponent<HudButtonFocus>().Target = button;
+        }
+        static void Select(Button button) { if (button && EventSystem.current) EventSystem.current.SetSelectedGameObject(button.gameObject); }
+        static void SetText(Text label, string value) { if (label.text != value) label.text = value; }
+        static RectTransform NewRect(string name, Transform parent)
+        {
+            var root = new GameObject(name, typeof(RectTransform)); root.transform.SetParent(parent, false); return (RectTransform)root.transform;
+        }
+        static void Inset(RectTransform rect, float amount) => Rect(rect, Vector2.zero, Vector2.one, new(amount, amount), new(-amount, -amount));
+        static void TopLeft(RectTransform rect, float x, float y, float width, float height) => Rect(rect, new(0, 1), new(0, 1), new(x, -y - height), new(x + width, -y));
+        static void TopRight(RectTransform rect, float x, float y, float width, float height) => Rect(rect, Vector2.one, Vector2.one, new(-x - width, -y - height), new(-x, -y));
+        static void BottomLeft(RectTransform rect, float x, float y, float width, float height) => Rect(rect, Vector2.zero, Vector2.zero, new(x, y), new(x + width, y + height));
+        static void BottomRight(RectTransform rect, float x, float y, float width, float height) => Rect(rect, new(1, 0), new(1, 0), new(-x - width, y), new(-x, y + height));
+        static void BottomCenter(RectTransform rect, float y, float width, float height) => Rect(rect, new(.5f, 0), new(.5f, 0), new(-width * .5f, y), new(width * .5f, y + height));
         static void Rect(RectTransform rect, Vector2 min, Vector2 max, Vector2 offsetMin, Vector2 offsetMax)
-        { rect.anchorMin=min;rect.anchorMax=max;rect.offsetMin=offsetMin;rect.offsetMax=offsetMax; }
+        { rect.anchorMin = min; rect.anchorMax = max; rect.offsetMin = offsetMin; rect.offsetMax = offsetMax; }
+        void OnDestroy()
+        {
+            if (mode is ScreenMode.Pause or ScreenMode.Crew) Time.timeScale = resumeTimeScale;
+            if (ownedEvents) Destroy(ownedEvents); if (rounded) Destroy(rounded); if (roundedTexture) Destroy(roundedTexture);
+        }
+    }
+
+    // Chỉ nhận hover/chọn để thao tác kéo vẫn truyền tới danh sách cuộn.
+    sealed class HudButtonFocus : MonoBehaviour, IPointerEnterHandler, ISelectHandler
+    {
+        public Button Target;
+        public void OnPointerEnter(PointerEventData eventData)
+        { if (Target && Target.interactable && EventSystem.current) EventSystem.current.SetSelectedGameObject(Target.gameObject); }
+        public void OnSelect(BaseEventData eventData)
+        {
+            var scroll = GetComponentInParent<ScrollRect>();
+            if (!scroll || !scroll.content || !scroll.viewport) return;
+            var bounds = RectTransformUtility.CalculateRelativeRectTransformBounds(scroll.viewport, transform);
+            var view = scroll.viewport.rect;
+            float move = bounds.max.y > view.yMax ? view.yMax - bounds.max.y :
+                bounds.min.y < view.yMin ? view.yMin - bounds.min.y : 0;
+            scroll.content.anchoredPosition += new Vector2(0, move);
+        }
     }
 }

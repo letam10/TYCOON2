@@ -110,7 +110,7 @@ namespace Tycoon
             cameraObject.tag = "MainCamera";
             var camera = cameraObject.AddComponent<Camera>();
             camera.fieldOfView = 45; camera.nearClipPlane = .15f; camera.farClipPlane = 180;
-            camera.backgroundColor = Art.Hex("#80D94A"); camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = Art.Hex("#BEDADE"); camera.clearFlags = CameraClearFlags.SolidColor;
             camera.allowHDR = true;
             cameraObject.AddComponent<AudioListener>();
             cameraObject.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>().renderPostProcessing = true;
@@ -126,9 +126,10 @@ namespace Tycoon
             Restaurant = gameObject.AddComponent<RestaurantDirector>();
             Logistics=gameObject.AddComponent<TruckLogistics>();
             new GameObject("InteractionFocus").AddComponent<InteractionFocusView>().transform.SetParent(transform);
+            if (IsQa) gameObject.AddComponent<QaPresentationAudit>();
             if(IsQa&&Array.Exists(Environment.GetCommandLineArgs(),x=>x=="--qa-stage23"))gameObject.AddComponent<QaStages>();
             else if(IsQa&&baseline)gameObject.AddComponent<QaBaseline>();
-            else if (IsQa) gameObject.AddComponent<QaDriver>();
+            else if (IsQa && !Array.Exists(Environment.GetCommandLineArgs(),x=>x=="--qa-preview")) gameObject.AddComponent<QaDriver>();
             Say("Đứng gần để thu / xếp hàng • đến quầy nhận tiền • WASD di chuyển");
         }
         void Update()
@@ -138,7 +139,7 @@ namespace Tycoon
             if(IsRestoring)
             {
                 if(PendingCustomers.Count+PendingDiners.Count+PendingWorkers.Count>0)return;
-                Transactions?.ResumeClock();IsRestoring=false;Player.CanControl=true;
+                Transactions?.ResumeClock();IsRestoring=false;Player.CanControl=!Hud || Hud.AllowsPlayerControl;
                 foreach(var agent in GetComponentsInChildren<UnityEngine.AI.NavMeshAgent>())if(agent.enabled&&agent.isOnNavMesh)agent.isStopped=false;
             }
             TickEvents(Time.deltaTime);

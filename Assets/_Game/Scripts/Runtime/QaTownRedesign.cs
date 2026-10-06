@@ -160,6 +160,8 @@ namespace Tycoon
             Check(game.Commerce.Customers.All(c=>c.GetComponent<CustomerNavigationRecovery>().Repaths<=3),"customer repaths bounded during short traffic case");
             game.Commerce.enabled=false;game.SaveGame();var before=SaveStore.Read(game.SavePath);int approaching=before.customers.Count(c=>c.phase==(int)CustomerAgent.State.Approaching);
             game.LoadGame();Check(!game.SaveBlocked&&game.PendingCustomers.Count(c=>c.phase==(int)CustomerAgent.State.Approaching)==approaching,"save restores approaching customers before queue patience begins");
+            // Director phải được chạy để khôi phục actor trước khi kiểm tra input/UI.
+            game.Commerce.enabled=true;game.Restaurant.enabled=true;
         }
         IEnumerator TownScreens()
         {
@@ -173,6 +175,7 @@ namespace Tycoon
             foreach(var size in new[]{new Vector2Int(1280,720),new Vector2Int(1920,1080),new Vector2Int(2560,1440)})
             {Screen.SetResolution(size.x,size.y,FullScreenMode.Windowed);yield return new WaitForSecondsRealtime(.5f);Canvas.ForceUpdateCanvases();Check(Screen.width==size.x&&Screen.height==size.y,"UI resolution "+size);yield return Capture("ui-"+size.x+".png");}
             Time.timeScale=speed;game.Player.CanControl=true;
+            yield return PresentationPanels();
         }
         IEnumerator TownRelaunch()
         {
