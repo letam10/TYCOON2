@@ -10,6 +10,7 @@ namespace Tycoon
         public static Vector3 ModelSize(string key)
         {
             foreach(var entry in Catalog.models)if(entry.key==key)return entry.size;
+            if(TownArt.Supports(key))return TownArt.Size(key);
             return Vector3.one*.4f;
         }
         public static GameCatalog Catalog;

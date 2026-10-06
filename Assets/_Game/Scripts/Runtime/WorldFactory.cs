@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 namespace Tycoon
 {
@@ -9,10 +10,10 @@ namespace Tycoon
         public static void Build(GameSession game)
         {
             var world = new GameObject("World").transform; world.SetParent(game.transform);
-            Art.Box("Grass", new Vector3(8, -.13f, 22), new Vector3(200, .25f, 136), "#9BC984", world, true);
+            Art.Box("Grass", new Vector3(8, -.13f, 22), new Vector3(200, .25f, 136), "#94B985", world, true);
             Lighting(world);
             WorldDressing.Environment(world);
-            Art.Box("StarterField", new Vector3(-13, .012f, 18), new Vector3(18, .04f, 30), "#A7D96B", world);
+            Art.Box("StarterField", new Vector3(-13, .012f, 18), new Vector3(18, .04f, 30), "#A2C587", world);
             Art.Box("StarterSelling",new Vector3(-13,.012f,0),new Vector3(17,.04f,6),"#EDB5A2",world);
             var shopFloor=Floor(world, "02  CỬA HÀNG NÔNG SẢN", new Vector3(7, 0, 6), new Vector2(22, 20));
             shopFloor.gameObject.AddComponent<UnlockVisual>().Requirement="farm_shop";
@@ -181,10 +182,17 @@ namespace Tycoon
         static void Lighting(Transform parent)
         {
             RenderSettings.ambientMode = AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(.42f,.50f,.40f); RenderSettings.ambientEquatorColor = new Color(.22f,.28f,.20f); RenderSettings.ambientGroundColor = new Color(.15f,.19f,.12f); RenderSettings.fog = false;
+            RenderSettings.ambientSkyColor = new Color(.46f,.53f,.57f); RenderSettings.ambientEquatorColor = new Color(.28f,.32f,.27f); RenderSettings.ambientGroundColor = new Color(.18f,.20f,.15f); RenderSettings.fog = false;
             var sun = new GameObject("Sun"); sun.transform.SetParent(parent); sun.transform.rotation = Quaternion.Euler(55, -35, 0);
-            var light = sun.AddComponent<Light>(); light.type = LightType.Directional; light.intensity = .95f; light.color = Color.white; light.shadows = LightShadows.Soft; light.shadowStrength = .48f; light.shadowBias = .04f; RenderSettings.sun = light;
+            var light = sun.AddComponent<Light>(); light.type = LightType.Directional; light.intensity = 1.1f; light.color = new Color(1f,.96f,.88f); light.shadows = LightShadows.Soft; light.shadowStrength = .58f; light.shadowBias = .035f; light.shadowNormalBias = .22f; RenderSettings.sun = light;
             var volume = new GameObject("ColorGrade"); volume.transform.SetParent(parent); var component = volume.AddComponent<Volume>(); component.isGlobal = true; component.sharedProfile = Art.Catalog.lightingProfile;
+            // profile tạo bản runtime riêng; không sửa asset màu hoặc QualitySettings của người chơi.
+            var profile = component.profile;
+            if (profile.TryGet<ColorAdjustments>(out var grade))
+            {
+                grade.postExposure.Override(.12f); grade.contrast.Override(8); grade.saturation.Override(-6);
+                grade.colorFilter.Override(new Color(1f,.99f,.96f));
+            }
         }
         static T Register<T>(GameSession game, Transform parent, string id, string label, Vector3 position, int capacity = 0) where T : Station
         {
