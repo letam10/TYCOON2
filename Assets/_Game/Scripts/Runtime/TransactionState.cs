@@ -12,7 +12,8 @@ namespace Tycoon
         StartMachine, AdvanceMachine, CompleteMachine, AcknowledgeEvent,
         RegisterOwner, OperateProducer, TickProducer, HarvestProducer, FeedProducer,
         ReleaseOperator, BreakMachine, RepairMachine, UpgradeCrew, CleanTable, AdvanceDiner, Checkpoint, RestockProducer,
-        GrantAssistance, SelectRecipe, PackCrate, ClaimCrate, LoadCrate, UnloadCrate, SelectTruckRoute, DispatchTruck, TickTruck
+        GrantAssistance, SelectRecipe, PackCrate, ClaimCrate, LoadCrate, UnloadCrate, SelectTruckRoute, DispatchTruck, TickTruck,
+        GrantModCash
     }
     public enum OrderStatus { Open, Complete, Failed }
     public enum ReservationStatus { Active, Used, Released, Expired }

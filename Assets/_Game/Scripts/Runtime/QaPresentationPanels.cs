@@ -110,6 +110,22 @@ namespace Tycoon
         IEnumerator PresentationPanels()
         {
             CheckPresentationMaterials();
+            if(DevelopmentAssistance.Enabled)
+            {
+                float speed=Time.timeScale;bool controls=game.Player.CanControl;
+                Time.timeScale=0;game.Player.CanControl=false;game.Player.StopInteraction();yield return null;
+                var before=game.Transactions.Snapshot();
+                yield return ClickPresentationButton("Mod game");
+                var after=game.Transactions.Snapshot();
+                Check(after.money==before.money+999999,"mod click adds exactly 999999 wallet cash");
+                after.money=before.money;after.revision=before.revision;after.receipts=before.receipts;after.outbox=before.outbox;after.consumers=before.consumers;
+                Check(JsonUtility.ToJson(after)==JsonUtility.ToJson(before),"mod click preserves all other gameplay state");
+                yield return new WaitForSecondsRealtime(.2f);
+                var wallet=game.Hud.GetComponentsInChildren<Text>().First(t=>t.name=="Money");
+                Check(wallet.text==game.Economy.Money.ToString("N0"),"mod wallet display matches authoritative balance");
+                yield return Capture("mod-game-cash-only.png");
+                Time.timeScale=speed;game.Player.CanControl=controls;
+            }
             float originalSpeed = Time.timeScale;
             foreach (var size in new[] { new Vector2Int(1280,720), new Vector2Int(1920,1080), new Vector2Int(2560,1440) })
             {

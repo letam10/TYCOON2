@@ -112,8 +112,11 @@ namespace Tycoon
             AddQuickAction("Thông tin", "Thông tin", OpenInformation);
             AddQuickAction("Menu", "Menu", TogglePause);
             if (DevelopmentAssistance.Enabled)
-                AddQuickAction("Hỗ trợ +999.999 / mở khu", "Hỗ trợ",
-                    () => { if (game.CanSimulate && DevelopmentAssistance.Apply(game)) game.Say("Đã cộng 999.999 xu và mở tuyến cơ bản."); });
+                AddQuickAction("Mod game", "Mod game", () =>
+                {
+                    if(!game.CanSimulate)return;
+                    game.Say(DevelopmentAssistance.ApplyCashOnly(game)?"Đã cộng 999.999 xu.":game.Transactions.LastReason);
+                });
             help = Text("Help", root, "", 14, TextAnchor.MiddleCenter, Ink);
             toastRoot = Panel("Toast", root, "#3C5936");
             toast = Text("ToastText", toastRoot.transform, "", 22, TextAnchor.MiddleCenter, Ink); Inset(toast.rectTransform, 16);
@@ -124,6 +127,7 @@ namespace Tycoon
         {
             var button = Button(dockRect, name, click);
             var text = button.GetComponentInChildren<Text>(); text.text = label; text.fontSize = 19;
+            if(name=="Mod game"){text.resizeTextForBestFit=true;text.resizeTextMinSize=14;text.resizeTextMaxSize=19;text.horizontalOverflow=HorizontalWrapMode.Overflow;}
             Inset(text.rectTransform, 3); quickActions.Add(button);
         }
         void BuildInformation()

@@ -17,9 +17,21 @@ namespace Tycoon
             if (!Enabled || game?.Transactions == null) return false;
             return game.Transactions.TryExecute(game.Transactions.Command(TransactionKind.GrantAssistance,"player"),out _);
         }
+        public static bool ApplyCashOnly(GameSession game)
+        {
+            if (!Enabled || game?.Transactions == null) return false;
+            return game.Transactions.TryExecute(game.Transactions.Command(TransactionKind.GrantModCash,"player"),out _);
+        }
     }
     public sealed partial class TransactionCore
     {
+        int GrantModCash(TransactionState s, TransactionCommand c)
+        {
+            Player(s,c.actor); Require(DevelopmentAssistance.Enabled || !runtime,"assist","Nút mod đã được gỡ khỏi bản này.");
+            Require(s.money<=int.MaxValue-DevelopmentAssistance.Grant,"money-limit","Ví đã chạm giới hạn tiền.");
+            s.money+=DevelopmentAssistance.Grant;
+            return DevelopmentAssistance.Grant;
+        }
         int GrantAssistance(TransactionState s, TransactionCommand c)
         {
             Player(s,c.actor); Require(DevelopmentAssistance.Enabled || !runtime,"assist","Nút hỗ trợ đã được gỡ khỏi bản này.");

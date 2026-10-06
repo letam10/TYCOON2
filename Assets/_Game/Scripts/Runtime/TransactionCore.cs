@@ -51,10 +51,12 @@ namespace Tycoon
                 Require(c.expectedRevision == state.revision, "stale", "State version đã thay đổi.");
                 var draft = runtime ? state.RuntimeCopy(true,c.kind==TransactionKind.AcknowledgeEvent?c.target:null,
                     c.kind is TransactionKind.RegisterOwner or TransactionKind.CompletePurchase or TransactionKind.UpgradeCrew or TransactionKind.PackCrate or TransactionKind.ClaimCrate or TransactionKind.LoadCrate or TransactionKind.UnloadCrate) : Copy(state);
-                Expire(draft, clock());
+                // Mod chỉ đổi ví, không tranh thủ hết hạn đặt chỗ hoặc cập nhật pha máy.
+                bool cashOnly = c.kind == TransactionKind.GrantModCash;
+                if(!cashOnly)Expire(draft, clock());
                 int amount = Apply(draft, c);
-                RefreshMachinePhases(draft);
-                draft.simulationTime = clock();
+                if(!cashOnly)RefreshMachinePhases(draft);
+                if(!cashOnly)draft.simulationTime = clock();
                 draft.revision = checked(state.revision + 1);
                 receipt = new TransactionReceipt {
                     id = "receipt:" + c.key, key = c.key, effectId = c.effectId,
@@ -145,6 +147,7 @@ namespace Tycoon
                 case TransactionKind.OperateProducer: return OperateProducer(s, c);
                 case TransactionKind.RestockProducer: return RestockProducer(s, c);
                 case TransactionKind.GrantAssistance: return GrantAssistance(s, c);
+                case TransactionKind.GrantModCash: return GrantModCash(s, c);
                 case TransactionKind.SelectRecipe:
                     var selected=Machine(s,c);Require(!selected.running && selected.recipeOptions.Contains(c.secondary),"recipe","Recipe không thuộc máy hoặc mẻ đang chạy.");
                     selected.definitionId=c.secondary;selected.definitionVersion=Definitions.Recipe(c.secondary).version;selected.manualRecipe=c.actor=="player";return 1;
