@@ -309,7 +309,7 @@ namespace Tycoon
         public static PurchasePad Pad(GameSession game, Transform parent, UpgradeDefinition upgrade, Vector3 point)
         {
             var station = Register<PurchasePad>(game, parent, "pad_" + upgrade.id, upgrade.label, point); station.Upgrade = upgrade; station.Requirement = upgrade.requirement; station.InteractionPoint = point; station.InteractionRadius=1.35f;
-            Art.Box("PadBorder", new Vector3(0, .03f, 0), new Vector3(1.5f, .04f, 1.5f), "#FFFFFF", station.transform); Art.Box("PadFace", new Vector3(0, .06f, 0), new Vector3(1.3f, .025f, 1.3f), "#343B4A", station.transform);
+            Art.Box("PadBorder", new Vector3(0, .03f, 0), new Vector3(1.5f, .04f, 1.5f), "#F3E9CC", station.transform); Art.Box("PadFace", new Vector3(0, .06f, 0), new Vector3(1.3f, .025f, 1.3f), "#36564B", station.transform);
             Art.Label("↑\n" + upgrade.cost, new Vector3(0, .08f, 0), station.transform, .31f, "#FFFFFF", false).transform.rotation = Quaternion.Euler(90, 0, 0);
             station.StatusLabel.transform.localPosition = new Vector3(0, .8f, 0); station.StatusLabel.characterSize *= .7f; return station;
         }

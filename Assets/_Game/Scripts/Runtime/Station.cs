@@ -283,6 +283,27 @@ namespace Tycoon
             set=>upgrade=value;
         }
         float held,settled;PurchaseState previousState;bool hasVisualState;string shownUpgrade;
+        PurchaseIconView icon;
+        public void InitializeIcon()
+        {
+            if(!icon)
+            {
+                var root=new GameObject("PurchaseIcon2D");root.transform.SetParent(transform,false);
+                root.transform.localPosition=new(0,.72f,.1f);root.transform.localScale=Vector3.one*.95f;
+                icon=root.AddComponent<PurchaseIconView>();
+            }
+            icon.SetUpgrade(Upgrade);
+            if(!priceLabel)foreach(var text in GetComponentsInChildren<TextMesh>())if(text!=StatusLabel){priceLabel=text;priceMesh=text.GetComponent<MeshRenderer>();break;}
+        }
+        TextMesh priceLabel;
+        MeshRenderer priceMesh;
+        void FitPriceLabel()
+        {
+            if(!priceLabel||!priceMesh)return;
+            // Giá nằm trong dải dưới icon, không trải dài ra lối đi.
+            var size=priceMesh.localBounds.size;
+            if(size.x>0&&size.y>0)priceLabel.transform.localScale=Vector3.one*Mathf.Min(1,Mathf.Min(1.15f/size.x,.3f/size.y));
+        }
         public InteractionKind Kind=>InteractionKind.Purchase;
         public Vector3 Center=>InteractionPoint;
         public PurchaseEvaluation Evaluation=>GameSession.Instance.Progression.Evaluate(Upgrade);
@@ -307,11 +328,13 @@ namespace Tycoon
         protected override void LateUpdate()
         {
             var g=GameSession.Instance;var evaluation=Evaluation;bool visible=evaluation.State!=PurchaseState.Locked;
-            if(shownUpgrade!=Upgrade.id){shownUpgrade=Upgrade.id;StopContributing();foreach(var label in GetComponentsInChildren<TextMesh>())if(label!=StatusLabel)label.text=Upgrade.cost>=1000?Upgrade.cost/1000f+"k":Upgrade.cost.ToString();}
+            if(shownUpgrade!=Upgrade.id){shownUpgrade=Upgrade.id;StopContributing();InitializeIcon();foreach(var label in GetComponentsInChildren<TextMesh>())if(label!=StatusLabel)label.text=Upgrade.cost.ToString("N0");}
+            FitPriceLabel();
             if(!hasVisualState||previousState!=evaluation.State)
             {foreach(var renderer in GetComponentsInChildren<Renderer>())renderer.enabled=visible;previousState=evaluation.State;hasVisualState=true;}
             if((g.Player.transform.position-InteractionPoint).sqrMagnitude>3)held=0;
-            if(StatusLabel){bool nearby=(g.Player.transform.position-InteractionPoint).sqrMagnitude<36;StatusLabel.gameObject.SetActive(visible&&nearby);if(visible&&nearby)StatusLabel.text=Prompt;}
+            // Tên, điều kiện và tiến độ mua đã có trong HUD khi chọn ô; giữ icon luôn rõ.
+            if(StatusLabel)StatusLabel.gameObject.SetActive(false);
         }
         static string StatusText(PurchaseEvaluation e)=>e.State switch
         {

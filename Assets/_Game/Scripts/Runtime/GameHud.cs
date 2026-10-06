@@ -12,16 +12,17 @@ namespace Tycoon
     public sealed class GameHud : MonoBehaviour
     {
         const string Surface = "#173C35", Card = "#244D42", Accent = "#CBE78B", Ink = "#F6F6E9", Muted = "#B9CEC2";
-        enum ScreenMode { Play, Pause, Crew, Stock, Cargo }
+        enum ScreenMode { Play, Pause, Crew, Stock, Cargo, Information }
         GameSession game;
         Canvas canvas;
         RectTransform safeArea;
-        GameObject hud, menu, crewPanel, stockPanel, cargoPanel, toastRoot;
+        GameObject hud, menu, crewPanel, stockPanel, cargoPanel, informationPanel, toastRoot;
         RectTransform walletRect, titleRect, objectiveRect, financeRect, stockRect, carryRect, actionRect, dockRect;
         Text money, progress, objective, carry, prompt, toast, finance, stock, cargoText, crewSummary, help;
         Image carryFill;
-        Button continueButton, crewBack, stockClose, cargoClose, recipeButton;
+        Button continueButton, crewBack, stockClose, cargoClose, informationClose, recipeButton;
         readonly List<Button> cargoActions = new();
+        readonly List<Button> quickActions = new();
         readonly Dictionary<string, Text> crewStatuses = new();
         readonly List<(StorageStation storage, string item, Text label)> stockRows = new();
         readonly StringBuilder stockLines = new();
@@ -57,9 +58,9 @@ namespace Tycoon
             hud = new GameObject("PlayingHud", typeof(RectTransform));
             hud.transform.SetParent(safeArea, false);
             Rect((RectTransform)hud.transform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-            BuildPlayingHud(); BuildPause(); BuildCrew(); BuildStock(); BuildCargo();
+            BuildPlayingHud(); BuildInformation(); BuildPause(); BuildCrew(); BuildStock(); BuildCargo();
             toastRoot.transform.SetParent(safeArea, false); toastRoot.transform.SetAsLastSibling();
-            menu.SetActive(false); crewPanel.SetActive(false); stockPanel.SetActive(false); cargoPanel.SetActive(false);
+            menu.SetActive(false); crewPanel.SetActive(false); stockPanel.SetActive(false); cargoPanel.SetActive(false); informationPanel.SetActive(false);
             Canvas.ForceUpdateCanvases(); LayoutHud(); RefreshPlayingHud(); RefreshStatus();
         }
 
@@ -68,13 +69,13 @@ namespace Tycoon
             var root = hud.transform;
             walletRect = (RectTransform)Panel("Wallet", root, Surface).transform;
             var badge = Panel("CashIcon", walletRect, Accent);
-            Rect((RectTransform)badge.transform, new(0, .5f), new(0, .5f), new(16, -28), new(72, 28));
-            var badgeText = Text("Currency", badge.transform, "XU", 21, TextAnchor.MiddleCenter, Surface); Inset(badgeText.rectTransform, 2);
-            var walletLabel = Text("WalletLabel", walletRect, "VÍ CỦA BẠN", 16, TextAnchor.MiddleLeft, Muted);
-            Rect(walletLabel.rectTransform, new(0, 1), new(1, 1), new(88, -34), new(-16, -8));
-            money = Text("Money", walletRect, "0", 38, TextAnchor.MiddleLeft, Ink);
-            Rect(money.rectTransform, Vector2.zero, Vector2.one, new(88, 8), new(-16, -34));
-            money.resizeTextForBestFit = true; money.resizeTextMinSize = 24; money.resizeTextMaxSize = 38;
+            Rect((RectTransform)badge.transform, new(0, .5f), new(0, .5f), new(10, -18), new(46, 18));
+            var badgeText = Text("Currency", badge.transform, "XU", 15, TextAnchor.MiddleCenter, Surface); Inset(badgeText.rectTransform, 2);
+            var walletLabel = Text("WalletLabel", walletRect, "TYCOON2 • VÍ", 13, TextAnchor.MiddleLeft, Muted);
+            Rect(walletLabel.rectTransform, new(0, 1), new(1, 1), new(56, -25), new(-10, -5));
+            money = Text("Money", walletRect, "0", 28, TextAnchor.MiddleLeft, Ink);
+            Rect(money.rectTransform, Vector2.zero, Vector2.one, new(56, 5), new(-10, -25));
+            money.resizeTextForBestFit = true; money.resizeTextMinSize = 20; money.resizeTextMaxSize = 28;
             titleRect = (RectTransform)Panel("Title", root, Surface).transform;
             var title = Text("Brand", titleRect, "TYCOON2", 18, TextAnchor.MiddleLeft, Accent);
             Rect(title.rectTransform, new(0, 1), new(1, 1), new(18, -35), new(-16, -8));
@@ -91,55 +92,68 @@ namespace Tycoon
             stockRect = (RectTransform)Panel("AreaStock", root, Surface, .9f).transform;
             stock = Text("StockText", stockRect, "", 20, TextAnchor.UpperLeft, Ink); Inset(stock.rectTransform, 18);
             carryRect = (RectTransform)Panel("Carry", root, Surface).transform;
-            carry = Text("CarryText", carryRect, "", 22, TextAnchor.MiddleLeft, Ink);
-            Rect(carry.rectTransform, Vector2.zero, Vector2.one, new(18, 30), new(-16, -10));
+            carry = Text("CarryText", carryRect, "", 20, TextAnchor.MiddleLeft, Ink);
+            Rect(carry.rectTransform, Vector2.zero, Vector2.one, new(12, 14), new(-12, -4));
+            carry.resizeTextForBestFit = true; carry.resizeTextMinSize = 18; carry.resizeTextMaxSize = 20;
             var capacity = Panel("CarryCapacity", carryRect, "#102C27");
-            Rect((RectTransform)capacity.transform, Vector2.zero, new(1, 0), new(18, 14), new(-18, 22));
+            Rect((RectTransform)capacity.transform, Vector2.zero, new(1, 0), new(12, 6), new(-12, 10));
             carryFill = Panel("CarryFill", capacity.transform, Accent).GetComponent<Image>();
             Rect(carryFill.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             actionRect = (RectTransform)Panel("Action", root, Surface, .96f).transform;
-            var actionTitle = Text("ActionTitle", actionRect, "ĐỨNG GẦN • TỰ ĐỘNG THAO TÁC", 16, TextAnchor.MiddleCenter, Accent);
-            Rect(actionTitle.rectTransform, new(0, 1), new(1, 1), new(16, -32), new(-16, -6));
-            prompt = Text("ActionText", actionRect, "", 22, TextAnchor.MiddleCenter, Ink);
-            Rect(prompt.rectTransform, Vector2.zero, Vector2.one, new(18, 12), new(-18, -34));
-            prompt.resizeTextForBestFit = true; prompt.resizeTextMinSize = 18; prompt.resizeTextMaxSize = 22;
+            var actionTitle = Text("ActionTitle", actionRect, "ĐỨNG GẦN • TỰ ĐỘNG", 13, TextAnchor.MiddleCenter, Accent);
+            Rect(actionTitle.rectTransform, new(0, 1), new(1, 1), new(12, -22), new(-12, -4));
+            prompt = Text("ActionText", actionRect, "", 20, TextAnchor.MiddleCenter, Ink);
+            Rect(prompt.rectTransform, Vector2.zero, Vector2.one, new(12, 6), new(-12, -24));
+            prompt.resizeTextForBestFit = true; prompt.resizeTextMinSize = 18; prompt.resizeTextMaxSize = 20;
             recipeButton = Button(root, "Đổi món", CycleRecipe, true); recipeButton.gameObject.SetActive(false);
             dockRect = NewRect("QuickActions", root);
-            var stockOpen = Button(dockRect, "Xem kho / chọn hàng", OpenStock);
-            stockOpen.GetComponentInChildren<Text>().text = "Kho • chọn hàng";
-            Rect((RectTransform)stockOpen.transform, new(0, 1), new(1, 1), new(0, -58), Vector2.zero);
-            var cargoOpen = Button(dockRect, "Vận chuyển xe tải", OpenCargo);
-            Rect((RectTransform)cargoOpen.transform, new(0, 1), new(1, 1), new(0, -124), new(0, -66));
-            var menuOpen = Button(dockRect, "Menu", TogglePause);
-            Rect((RectTransform)menuOpen.transform, new(0, 1), new(1, 1), new(0, -190), new(0, -132));
+            AddQuickAction("Xem kho / chọn hàng", "Kho", OpenStock);
+            AddQuickAction("Vận chuyển xe tải", "Xe tải", OpenCargo);
+            AddQuickAction("Thông tin", "Thông tin", OpenInformation);
+            AddQuickAction("Menu", "Menu", TogglePause);
             if (DevelopmentAssistance.Enabled)
-            {
-                var support = Button(dockRect, "Hỗ trợ +999.999 / mở khu",
+                AddQuickAction("Hỗ trợ +999.999 / mở khu", "Hỗ trợ",
                     () => { if (game.CanSimulate && DevelopmentAssistance.Apply(game)) game.Say("Đã cộng 999.999 xu và mở tuyến cơ bản."); });
-                support.GetComponentInChildren<Text>().fontSize = 17;
-                Rect((RectTransform)support.transform, new(0, 1), new(1, 1), new(0, -242), new(0, -198));
-            }
-            help = Text("Help", root, "", 17, TextAnchor.MiddleCenter, Ink);
+            help = Text("Help", root, "", 14, TextAnchor.MiddleCenter, Ink);
             toastRoot = Panel("Toast", root, "#3C5936");
             toast = Text("ToastText", toastRoot.transform, "", 22, TextAnchor.MiddleCenter, Ink); Inset(toast.rectTransform, 16);
             toastRoot.SetActive(false);
         }
 
+        void AddQuickAction(string name, string label, UnityEngine.Events.UnityAction click)
+        {
+            var button = Button(dockRect, name, click);
+            var text = button.GetComponentInChildren<Text>(); text.text = label; text.fontSize = 19;
+            Inset(text.rectTransform, 3); quickActions.Add(button);
+        }
+        void BuildInformation()
+        {
+            informationPanel = Modal("BusinessInformation");
+            var board = ManagementBoard(informationPanel.transform, "TỔNG QUAN KINH DOANH", "Mục tiêu, doanh thu và kho gần bạn");
+            foreach (var panel in new[] { titleRect, objectiveRect, financeRect, stockRect }) panel.SetParent(board.transform, false);
+            informationClose = FooterButton(board.transform, "Đóng", () => ShowScreen(ScreenMode.Play));
+        }
+        void OpenInformation()
+        {
+            if (!game.CanSimulate) return;
+            ShowScreen(ScreenMode.Information); RefreshStatus(); Select(informationClose);
+        }
         void BuildPause()
         {
             menu = Modal("Pause");
             var card = Panel("PauseCard", menu.transform, Surface);
-            Rect((RectTransform)card.transform, new(.5f, .5f), new(.5f, .5f), new(-320, -430), new(320, 430));
+            Rect((RectTransform)card.transform, new(.5f, .5f), new(.5f, .5f), new(-320, -474), new(320, 474));
             var heading = Text("PauseHeading", card.transform, "TYCOON2", 48, TextAnchor.MiddleCenter, Ink);
             Rect(heading.rectTransform, new(0, 1), new(1, 1), new(20, -108), new(-20, -35));
             var subtitle = Text("PauseSubtitle", card.transform, "Từ nông trại đến đế chế kinh doanh", 22, TextAnchor.MiddleCenter, Muted);
             Rect(subtitle.rectTransform, new(0, 1), new(1, 1), new(26, -160), new(-26, -108));
             continueButton = PauseButton(card.transform, "Tiếp tục", -210, TogglePause, true);
-            PauseButton(card.transform, "Kho • chọn hàng", -298, OpenStock);
-            PauseButton(card.transform, "Vận chuyển xe tải", -386, OpenCargo);
-            PauseButton(card.transform, "Quản lý đội", -474, OpenCrewMenu);
-            PauseButton(card.transform, "Lưu trò chơi", -562, () => game.SaveGame());
-            PauseButton(card.transform, "Lưu & thoát", -650, () => { game.SaveGame(); Application.Quit(); });
+            PauseButton(card.transform, "Thông tin kinh doanh", -298, OpenInformation);
+            PauseButton(card.transform, "Kho • chọn hàng", -386, OpenStock);
+            PauseButton(card.transform, "Vận chuyển xe tải", -474, OpenCargo);
+            PauseButton(card.transform, "Quản lý đội", -562, OpenCrewMenu);
+            PauseButton(card.transform, "Lưu trò chơi", -650, () => game.SaveGame());
+            PauseButton(card.transform, "Lưu & thoát", -738, () => { game.SaveGame(); Application.Quit(); });
             var note = Text("PauseNote", card.transform, "Trò chơi đang tạm dừng.\nEsc / nút Back để tiếp tục.", 20, TextAnchor.MiddleCenter, Muted);
             Rect(note.rectTransform, Vector2.zero, new(1, 0), new(24, 28), new(-24, 112));
         }
@@ -191,21 +205,45 @@ namespace Tycoon
             float scale = Mathf.Max(.01f, canvas.scaleFactor); lastCanvasScale = scale;
             float width = lastSafeArea.width / scale, height = lastSafeArea.height / scale;
             bool compact = width < 1460;
-            float side = Mathf.Min(330, (width - 72) * .5f);
-            TopLeft(walletRect, 24, 24, side, 106); TopLeft(objectiveRect, 24, 142, side, 190);
-            TopRight(titleRect, 24, 24, side, 106); TopRight(financeRect, 24, 142, side, 156);
-            float actionsWidth = Mathf.Min(740, width - 48), sideBottom = compact ? 192 : 62;
-            float dockHeight = DevelopmentAssistance.Enabled ? 242 : 190;
-            float stockHeight = Mathf.Min(230, height - 310 - sideBottom - dockHeight - 16);
-            stockRect.gameObject.SetActive(stockHeight >= 130);
-            TopRight(stockRect, 24, 310, side, Mathf.Max(130, stockHeight));
-            BottomCenter(actionRect, 62, actionsWidth, 116);
-            Rect(help.rectTransform, Vector2.zero, new(1, 0), new(24, 14), new(-24, 48));
-            BottomLeft(carryRect, 24, sideBottom, side, 116); BottomRight(dockRect, 24, sideBottom, side, dockHeight);
-            BottomCenter((RectTransform)toastRoot.transform, compact ? 450 : 198, Mathf.Min(700, width - 48), 76);
-            BottomCenter((RectTransform)recipeButton.transform, 314, Mathf.Min(300, width - 48), 54);
+            TopLeft(walletRect, 16, 16, 228, 66);
+            BottomLeft(carryRect, 16, compact ? 132 : 44, 284, 74);
+            BottomCenter(actionRect, 44, Mathf.Min(560, width - 32), 84);
+            Rect(help.rectTransform, Vector2.zero, new(1, 0), new(16, 6), new(-16, 30));
+            // Bảng lớn chỉ nằm trong modal; HUD chơi thường giữ diện tích che rất nhỏ.
+            int[] buttonWidths = { 76, 96, 104, 76, 98 };
+            bool wrapButtons = width < 850;
+            float dockWidth = wrapButtons ? 224 : quickActions.Select((button, i) => buttonWidths[i]).Sum() + (quickActions.Count - 1) * 8;
+            float dockHeight = wrapButtons ? Mathf.Ceil(quickActions.Count / 2f) * 44 - 8 : 36;
+            TopRight(dockRect, 16, 16, dockWidth, dockHeight);
+            float x = 0;
+            for (int i = 0; i < quickActions.Count; i++)
+            {
+                float left = wrapButtons ? i % 2 * 116 : x;
+                float top = wrapButtons ? i / 2 * 44 : 0;
+                float buttonWidth = wrapButtons ? 108 : buttonWidths[i];
+                Rect((RectTransform)quickActions[i].transform, new(0, 1), new(0, 1),
+                    new(left, -top - 36), new(left + buttonWidth, -top));
+                x += buttonWidth + 8;
+            }
+            BottomCenter((RectTransform)toastRoot.transform, compact ? 266 : 184, Mathf.Min(500, width - 32), 58);
+            BottomCenter((RectTransform)recipeButton.transform, compact ? 222 : 140, 140, 36);
+            var recipeLabel = recipeButton.GetComponentInChildren<Text>(); recipeLabel.fontSize = 19; Inset(recipeLabel.rectTransform, 3);
+            if (compact)
+            {
+                Rect(titleRect, new(.04f, .73f), new(.96f, .84f), Vector2.zero, Vector2.zero);
+                Rect(objectiveRect, new(.04f, .43f), new(.96f, .71f), Vector2.zero, Vector2.zero);
+                Rect(financeRect, new(.04f, .19f), new(.47f, .41f), Vector2.zero, Vector2.zero);
+                Rect(stockRect, new(.53f, .19f), new(.96f, .41f), Vector2.zero, Vector2.zero);
+            }
+            else
+            {
+                Rect(titleRect, new(.04f, .68f), new(.47f, .84f), Vector2.zero, Vector2.zero);
+                Rect(objectiveRect, new(.04f, .19f), new(.47f, .66f), Vector2.zero, Vector2.zero);
+                Rect(financeRect, new(.53f, .62f), new(.96f, .84f), Vector2.zero, Vector2.zero);
+                Rect(stockRect, new(.53f, .19f), new(.96f, .60f), Vector2.zero, Vector2.zero);
+            }
             var pauseCard = menu.transform.Find("PauseCard") as RectTransform;
-            pauseCard.localScale = Vector3.one * Mathf.Min(1, (height - 48) / 860, (width - 48) / 640);
+            pauseCard.localScale = Vector3.one * Mathf.Min(1, (height - 48) / 948, (width - 48) / 640);
         }
         void Update()
         {
@@ -241,6 +279,7 @@ namespace Tycoon
             string reason = !game.CanSimulate ? "Gameplay đang tạm dừng • mở menu để kiểm tra lưu game." :
                 !string.IsNullOrEmpty(game.Player.InteractionReason) ? game.Player.InteractionReason :
                 active != null ? active.Cash ? "Thu tiền tại cọc tiền" : active.Target.Prompt :
+                game.Player.ActiveInteraction is PurchasePad pad ? pad.Prompt :
                 game.Player.ActiveInteraction is StationZone zone ? zone.Prompt :
                 station ? station.Prompt : "Dừng 0,25 giây gần vật thể để bắt đầu";
             SetText(prompt, reason);
@@ -358,15 +397,15 @@ namespace Tycoon
         }
         public void TogglePause()
         {
-            if (mode == ScreenMode.Stock || mode == ScreenMode.Cargo) { ShowScreen(ScreenMode.Play); return; }
+            if (mode is ScreenMode.Stock or ScreenMode.Cargo or ScreenMode.Information) { ShowScreen(ScreenMode.Play); return; }
             if (mode == ScreenMode.Crew) { BackToPauseMenu(); return; }
             ShowScreen(mode == ScreenMode.Pause ? ScreenMode.Play : ScreenMode.Pause);
             if (mode == ScreenMode.Pause) Select(continueButton);
         }
         void ShowScreen(ScreenMode next)
         {
-            bool wasPaused = mode is ScreenMode.Pause or ScreenMode.Crew;
-            bool isPaused = next is ScreenMode.Pause or ScreenMode.Crew;
+            bool wasPaused = mode is ScreenMode.Pause or ScreenMode.Crew or ScreenMode.Information;
+            bool isPaused = next is ScreenMode.Pause or ScreenMode.Crew or ScreenMode.Information;
             // Đóng bảng không được mở lại điều khiển khi save/load đang bị chặn.
             if (!wasPaused && isPaused) { resumeTimeScale = Time.timeScale; Time.timeScale = 0; }
             else if (wasPaused && !isPaused) Time.timeScale = resumeTimeScale;
@@ -374,6 +413,7 @@ namespace Tycoon
             game.Player.CanControl = mode == ScreenMode.Play && game.CanSimulate;
             menu.SetActive(mode == ScreenMode.Pause); crewPanel.SetActive(mode == ScreenMode.Crew);
             stockPanel.SetActive(mode == ScreenMode.Stock); cargoPanel.SetActive(mode == ScreenMode.Cargo);
+            informationPanel.SetActive(mode == ScreenMode.Information);
             hud.SetActive(mode == ScreenMode.Play);
             if (EventSystem.current) EventSystem.current.SetSelectedGameObject(null);
         }
@@ -543,7 +583,7 @@ namespace Tycoon
         { rect.anchorMin = min; rect.anchorMax = max; rect.offsetMin = offsetMin; rect.offsetMax = offsetMax; }
         void OnDestroy()
         {
-            if (mode is ScreenMode.Pause or ScreenMode.Crew) Time.timeScale = resumeTimeScale;
+            if (mode is ScreenMode.Pause or ScreenMode.Crew or ScreenMode.Information) Time.timeScale = resumeTimeScale;
             if (ownedEvents) Destroy(ownedEvents); if (rounded) Destroy(rounded); if (roundedTexture) Destroy(roundedTexture);
         }
     }

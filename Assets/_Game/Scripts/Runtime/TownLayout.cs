@@ -131,11 +131,7 @@ namespace Tycoon
                     }
                 pad.transform.position=best;pad.InteractionPoint=best;pad.InteractionRadius=1;
                 foreach(var label in pad.GetComponentsInChildren<TextMesh>())if(label!=pad.StatusLabel){label.text=pad.Upgrade.cost.ToString("N0");label.transform.localPosition=new(0,.12f,-.56f);}
-                string model=pad.Upgrade.kind=="worker"?"player":target is ProductionStation crop?Definitions.Item(crop.ItemId).model:target is StorageStation?"storage_rack":target is MachineStation m?m.Id is "machine_oven" or "machine_cakeoven"?"oven_asset":m.Id=="machine_kitchen"?"cooking_range":m.Recipe.id:"checkout_counter";
-                var icon=Art.Model(model,new(0,.12f,.12f),pad.transform,model=="player"?.25f:target is MachineStation?.25f:.38f);
-                foreach(var collider in icon.GetComponentsInChildren<Collider>())collider.enabled=false;
-                foreach(var animator in icon.GetComponentsInChildren<Animator>())animator.enabled=false;
-                var renderers=icon.GetComponentsInChildren<Renderer>();if(renderers.Length>0){Bounds bounds=renderers[0].bounds;foreach(var renderer in renderers)bounds.Encapsulate(renderer.bounds);icon.transform.localScale*=.9f/Mathf.Max(.1f,bounds.size.x,bounds.size.y,bounds.size.z);}
+                pad.InitializeIcon();
             }
         }
         public static IEnumerable<Bounds> RoadBounds()

@@ -71,9 +71,49 @@ namespace Tycoon
         }
     }
 
+    [DefaultExecutionOrder(100)]
     public sealed class BillboardLabel : MonoBehaviour
     {
-        void LateUpdate() { if (Camera.main) transform.rotation = Camera.main.transform.rotation; }
+        TextMesh label;
+        MeshRenderer mesh;
+        Station station;
+        float originalSize;
+        void Awake()
+        {
+            label = GetComponent<TextMesh>(); mesh = GetComponent<MeshRenderer>();
+            station = GetComponentInParent<Station>(); originalSize = label ? label.characterSize : 0;
+        }
+        void LateUpdate()
+        {
+            var camera = Camera.main;
+            if (!camera) return;
+            transform.rotation = camera.transform.rotation;
+            if (!label || !mesh) return;
+            if (station && station.StatusLabel == label)
+            {
+                var player = GameSession.Instance ? GameSession.Instance.Player : null;
+                mesh.enabled = player && (player.transform.position - station.InteractionPoint).sqrMagnitude < 12.25f;
+                // Chỉ nhãn gọn ở thế giới; HUD vẫn đọc Prompt đầy đủ của trạm.
+                string title = station is StationZone zone && zone.Target ? zone.Target.Label : station.Label;
+                string detail = station.Prompt;
+                if (detail.StartsWith(title)) detail = detail.Substring(title.Length).Trim(' ', '•', '\n');
+                int separator = detail.IndexOf(" • ", System.StringComparison.Ordinal);
+                if (separator >= 0) detail = detail.Substring(0, separator);
+                if (detail == title) detail = "";
+                label.text = ShortLine(title, 27) + (detail.Length > 0 ? "\n" + ShortLine(detail, 30) : "");
+            }
+            // Giới hạn theo pixel để nhãn không phủ ngang cảnh khi zoom hoặc đổi độ phân giải.
+            label.characterSize = originalSize;
+            float maxPixels = Mathf.Min(210f, Screen.width * .15f);
+            float distance = Vector3.Dot(transform.position - camera.transform.position, camera.transform.forward);
+            if (distance <= camera.nearClipPlane) return;
+            float worldPerPixel = camera.orthographic ? camera.orthographicSize * 2 / Screen.height :
+                2 * distance * Mathf.Tan(camera.fieldOfView * .5f * Mathf.Deg2Rad) / Screen.height;
+            float width = mesh.bounds.size.magnitude;
+            if (width > maxPixels * worldPerPixel)
+                label.characterSize = originalSize * maxPixels * worldPerPixel / width;
+        }
+        static string ShortLine(string text, int limit) => text.Length <= limit ? text : text.Substring(0, limit - 1) + "…";
     }
 
     public sealed class ItemPool
