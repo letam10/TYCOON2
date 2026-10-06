@@ -39,6 +39,30 @@ namespace Tycoon.Tests
             Vector3 destination=game.Player.transform.position+rig.FocusOffset-Quaternion.Euler(rig.Pitch,rig.Yaw,0)*Vector3.forward*rig.Distance;
             Assert.That(Vector3.Distance(camera.transform.position,destination),Is.LessThan(.01f));
         }
+        [Test]public void CameraZoomClampsPlayerRangeAndPreservesOverviewAndExplicitArtDistance()
+        {
+            var camera=Add<Camera>("Camera");var rig=camera.gameObject.AddComponent<FollowCamera>();rig.Target=game.Player.transform;
+            rig.Zoom(100);Assert.That(rig.Distance,Is.EqualTo(FollowCamera.MinimumDistance));
+            rig.Zoom(-100);Assert.That(rig.Distance,Is.EqualTo(FollowCamera.MaximumDistance));
+            rig.Zoom(float.NaN);Assert.That(rig.Distance,Is.EqualTo(FollowCamera.MaximumDistance));
+            rig.Overview=true;rig.Zoom(1);Assert.That(rig.Distance,Is.EqualTo(FollowCamera.MaximumDistance));
+            rig.Overview=false;rig.Distance=4;rig.Snap();
+            Assert.That(Vector3.Distance(camera.transform.position,game.Player.transform.position+rig.FocusOffset),Is.EqualTo(4).Within(.001f));
+        }
+        [Test]public void CameraRejectsInvalidTimeAndSnapsAfterLongDistanceRestore()
+        {
+            var camera=Add<Camera>("Camera");var rig=camera.gameObject.AddComponent<FollowCamera>();rig.Target=game.Player.transform;rig.Snap();
+            Vector3 initial=camera.transform.position;game.Player.transform.position=Vector3.right*35;
+            rig.Follow(0);rig.Follow(float.NaN);rig.Follow(float.PositiveInfinity);Assert.That(camera.transform.position,Is.EqualTo(initial));
+            rig.Follow(.02f);
+            Vector3 destination=game.Player.transform.position+rig.FocusOffset-Quaternion.Euler(rig.Pitch,rig.Yaw,0)*Vector3.forward*rig.Distance;
+            Assert.That(Vector3.Distance(camera.transform.position,destination),Is.LessThan(.001f));
+        }
+        [Test]public void AnalogMovementRetainsInputStrengthWithoutCamera()
+        {
+            Assert.That(PlayerController.CameraRelativeDirection(new Vector2(.25f,.5f),null),Is.EqualTo(new Vector3(.25f,0,.5f)));
+            Assert.That(PlayerController.CameraRelativeDirection(Vector2.zero,null),Is.EqualTo(Vector3.zero));
+        }
         sealed class Area:IPlayerInteractionArea
         {
             public InteractionKind Kind {get;set;}
@@ -76,9 +100,11 @@ namespace Tycoon.Tests
         {
             game.Player.Initialize();
             Assert.That(game.Player.Move.bindings,Has.Some.Matches<InputBinding>(x=>x.path=="<Keyboard>/w"));
+            Assert.That(game.Player.Move.bindings,Has.Some.Matches<InputBinding>(x=>x.path=="<Keyboard>/upArrow"));
             Assert.That(game.Player.Move.bindings,Has.Some.Matches<InputBinding>(x=>x.path=="<Gamepad>/leftStick"));
             Assert.That(game.Player.Cycle.bindings,Has.Some.Matches<InputBinding>(x=>x.path=="<Gamepad>/rightShoulder"));
             game.Player.CanControl=false;Assert.That(game.Player.ActiveInteraction,Is.Null);
+            Assert.That(game.Player.CurrentSpeed,Is.Zero);Assert.That(game.Player.IsSprinting,Is.False);
         }
         [Test]public void FarmMachineCounterAndTableExposeOnlyTheirSeparateActions()
         {
