@@ -4,7 +4,7 @@ Cập nhật: 06/10/2026, Asia/Bangkok. Dự án D:\GAME\TYCOON2, GitHub letam10
 
 ## Bản chạy và cách kiểm tra
 
-- Bản Windows: D:\GAME\TYCOON2\work\compact-presentation\Build\TYCOON2.exe.
+- Bản Windows hiện tại: D:\GAME\TYCOON2\work\cash-only-mod\Build\TYCOON2.exe; mốc UI trước tại work/compact-presentation/Build/.
 - Ảnh cuối: work/compact-presentation/presentation-final/; gameplay tổng hợp: work/compact-presentation/player-full/.
 - WASD/phím mũi tên/gamepad để di chuyển; dừng 0,25 giây gần vật thể để thao tác; Q chọn hàng; F5 lưu; Esc menu; cuộn chuột/cần phải zoom 12–27 m.
 - Kho, xe tải và thông tin kinh doanh mở bằng nút nhỏ góc phải. Mục tiêu, doanh thu và tồn kho xem trong bảng Thông tin.
@@ -52,3 +52,14 @@ player-full/presentation-audit.json: managed 29 MiB, allocated 360 MiB; 1080p p9
 - Hai file .rsp tại work/interaction-icon-check-a17b09/ đã dọn. Bốn compiler output Tycoon.Runtime.dll/.pdb và Tycoon.Tests.dll/.pdb còn lại: duyệt tự động chặn xóa, lý do blocked by policy; không có tiến trình dùng. Kiểm tra/dọn lại khi chính sách cho phép.
 - Ký hiệu Burst work/compact-presentation/Build/TYCOON2_BackUpThisFolder_ButDontShipItWithYourGame/x86_64/lib_burst_generated.pdb cũng bị chặn xóa. Đây là ký hiệu do Unity tự sinh, không phải sao lưu nguồn chủ động; không cần để chơi.
 - Giữ build/report/ảnh chỉ định làm sản phẩm và bằng chứng. Không dọn hàng loạt work/cache có sẵn hoặc nguồn/asset người dùng.
+
+## Mod game chỉ cộng tiền — 06/10/2026
+
+- Theo yêu cầu mới, nút trên HUD là Mod game. Mỗi click hợp lệ cộng đúng 999.999 vào ví; không mở khu/cây, thay upgrade/progression, cấp đồ/worker, đổi máy/đặt chỗ hoặc cộng vào doanh thu/thực thu/thống kê hỗ trợ. Sổ giao dịch vẫn ghi receipt/revision để lưu và chống cộng trùng.
+- Lệnh GrantModCash được thêm cuối enum để giữ mã giao dịch cũ. Chỉ player được gọi; vượt giới hạn int của ví bị từ chối toàn bộ. Lệnh riêng không chạy expiry/refresh pha máy/đồng hồ mô phỏng. GrantAssistance cũ chỉ được giữ cho QA/compatibility, không còn gắn vào nút HUD.
+- Code đã push: 2073421 (feat: add cash-only mod game button).
+- EditMode 158/158 pass: so toàn bộ state trừ tiền/sổ giao dịch, đặt chỗ quá hạn không bị mod đổi, replay/load chỉ cộng một lần, click mới cộng lần tiếp theo, giới hạn ví và quyền player.
+- Build cuối: Succeeded, 0 errors, 2 warnings, 117.910.651 bytes. Bản dùng để kiểm tra hiện tại: D:\GAME\TYCOON2\work\cash-only-mod\Build\TYCOON2.exe.
+- Player trên RTX 4060/D3D11 PASS 256 checks, 0 runtime errors. Click qua EventSystem khi đóng băng simulation xác nhận cộng đúng 999.999, toàn bộ state gameplay khác giữ nguyên và số dư HUD đúng. Ảnh đã xem: work/cash-only-mod/player-final/mod-game-cash-only.png; report: work/cash-only-mod/player-final/town-layout-report.json.
+- Nút Mod game vẫn theo cấu hình TYCOON_DISABLE_ASSIST hiện có; bản đang bàn giao có nút. Không sửa QualitySettings có sẵn. Các Player/probe/build của lượt mod đã kết thúc, không cần giữ tiến trình.
+- Tiếp tục qua đêm phải giữ ràng buộc mới: nút Mod game chỉ cộng tiền, không dùng lại lệnh mở khu. Dọn lại Burst PDB tự sinh ở build cash-only-mod khi chính sách cho phép; không dùng nó để chạy game.
