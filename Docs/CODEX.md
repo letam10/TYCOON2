@@ -42,7 +42,7 @@ player-full/presentation-audit.json: managed 29 MiB, allocated 360 MiB; 1080p p9
 ## Git và tiếp tục qua đêm
 
 - Đã push đợt đầu: d168c40 (tương tác/camera), eb577d1 (town/model/ánh sáng), 57293d5 (UI/QA ban đầu).
-- Đã push theo phản hồi: 24593be (HUD gọn + icon vẽ), 0a4fd32 (model + chuyển động máy/cây). Mốc QA/tài liệu đang chốt.
+- Đã push theo phản hồi: 24593be (HUD gọn + icon vẽ), 0a4fd32 (model + chuyển động máy/cây). Mốc QA/tài liệu 3c1924b đã push.
 - Heartbeat tycoon2-qua-m đã ACTIVE, gắn cuộc chat này, tiếp tục mỗi hai giờ. Prompt yêu cầu kết thúc công việc qua đêm lúc 07:00 ngày 07/10/2026 giờ Bangkok và tắt lịch; chỉ thông báo khi có thay đổi có ý nghĩa/lỗi/cần người dùng.
 - Ưu tiên nghiệm thu gameplay liên tục, máy/cây operating/idle/pause/restore và phiên dài; tiếp tục nâng theo bằng chứng. GPU vừa/nặng phải preflight RTX 4060, chờ theo AGENTS, không polling mỗi phút.
 
@@ -52,4 +52,3 @@ player-full/presentation-audit.json: managed 29 MiB, allocated 360 MiB; 1080p p9
 - Hai file .rsp tại work/interaction-icon-check-a17b09/ đã dọn. Bốn compiler output Tycoon.Runtime.dll/.pdb và Tycoon.Tests.dll/.pdb còn lại: duyệt tự động chặn xóa, lý do blocked by policy; không có tiến trình dùng. Kiểm tra/dọn lại khi chính sách cho phép.
 - Ký hiệu Burst work/compact-presentation/Build/TYCOON2_BackUpThisFolder_ButDontShipItWithYourGame/x86_64/lib_burst_generated.pdb cũng bị chặn xóa. Đây là ký hiệu do Unity tự sinh, không phải sao lưu nguồn chủ động; không cần để chơi.
 - Giữ build/report/ảnh chỉ định làm sản phẩm và bằng chứng. Không dọn hàng loạt work/cache có sẵn hoặc nguồn/asset người dùng.
-
