@@ -10,6 +10,7 @@ namespace Tycoon
         public static void Environment(Transform world)
         {
             var scenery = new GameObject("AssetScenery").transform; scenery.SetParent(world, false);
+            world.gameObject.AddComponent<CozyCropMotion>();
             string[] trees = { "tree_oak", "tree_pine", "tree_small" };
             // Vành cây ở ngoài đường xe và vùng pad; không thêm vật cản cho người chơi.
             for (int i = 0; i < 18; i++)
@@ -123,23 +124,26 @@ namespace Tycoon
         public static void Machine(MachineStation station)
         {
             var root = station.transform;
+            GameObject processModel; bool hot = false;
+            Vector3 steamSource = new(0, 1.75f, .08f);
             Art.Box("MachineFloor", new(0, .023f, .05f), new(2.45f, .04f, 2.12f), "#D6DCC7", root);
             switch (station.Recipe.id)
             {
                 case "oven": case "cakeoven":
-                    Art.Model("oven_asset", Vector3.zero, root);
+                    processModel = Art.Model("oven_asset", Vector3.zero, root); hot = true;
                     Art.Model("extractor", new Vector3(0, 2.1f, .1f), root);
                     Art.Model("rolling_pin", new Vector3(.3f, 1.65f, -.3f), root);
                     break;
                 case "kitchen": case "cook_beef": case "cook_soup": case "cook_pasta": case "cook_sandwich": case "cook_vegetables":
-                    Art.Model("cooking_range", Vector3.zero, root);
+                    processModel = Art.Model("cooking_range", Vector3.zero, root); hot = true;
+                    steamSource = new(.48f, 1.27f, .1f);
                     Art.Model("extractor", new Vector3(0, 2.1f, .1f), root);
                     Art.Model("cooking_pot", new Vector3(.48f, 1.05f, .1f), root);
                     Art.Model("cutting_board", new Vector3(-.55f, 1.05f, -.15f), root);
                     break;
                 default:
-                    var model = Art.Model(station.Recipe.id, Vector3.zero, root, 1.45f);
-                    foreach (var child in model.GetComponentsInChildren<Transform>())
+                    processModel = Art.Model(station.Recipe.id, Vector3.zero, root, 1.45f);
+                    foreach (var child in processModel.GetComponentsInChildren<Transform>())
                         if (child.name.StartsWith("Rotor")) { station.Rotor = child; break; }
                     break;
             }
@@ -150,6 +154,7 @@ namespace Tycoon
             var fill = Art.Box("MachineProgress", new(-.13f, 1.17f, -1.168f), new(.75f, .065f, .015f), Sage, root);
             var status = root.gameObject.AddComponent<MachineStatusLight>(); status.Station = station;
             status.Lamp = lamp.GetComponent<Renderer>(); status.Fill = fill.transform;
+            root.gameObject.AddComponent<CozyMachineMotion>().Initialize(station, processModel.transform, hot, steamSource);
         }
 
         public static void Livestock(Transform pen, Vector3 point, bool chicken)

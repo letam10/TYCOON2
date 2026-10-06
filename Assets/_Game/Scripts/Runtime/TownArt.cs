@@ -7,7 +7,7 @@ namespace Tycoon
     {
         public static bool Supports(string key) => key is "corn_plant" or "soybean_plant" or "corn" or "soybean" or "animal_feed" or "soy_sauce" or "bottled_milk" or "wool" or "yarn" or "cloth" or "bread_dough" or "cake_batter" or "beef_soy" or "corn_soup" or "pasta" or "egg_sandwich" or "soy_vegetables" or "user_sheep" or "feedmill" or "soyextractor" or "milkbottler" or "spinner" or "loom" or "breadmixer" or "cakemixer";
         const string Cream = "#F4EBD6", Wood = "#A07B55", Sage = "#79A48E", Metal = "#CDD9D0", Dark = "#365B55";
-        static Mesh roundMesh;
+        static Mesh roundMesh, cornKernelMesh, warpMesh;
 
         public static Vector3 Size(string key) => key switch
         {
@@ -51,11 +51,39 @@ namespace Tycoon
                 roundMesh = new Mesh { name = "TownSoftShape", vertices = vertices, normals = normals, uv = uv, triangles = triangles };
                 roundMesh.RecalculateBounds();
             }
+            return MeshPart(name, roundMesh, point, size, color, parent);
+        }
+
+        static GameObject MeshPart(string name, Mesh mesh, Vector3 point, Vector3 size, string color, Transform parent)
+        {
             var root = new GameObject(name); root.transform.SetParent(parent, false);
             root.transform.localPosition = point; root.transform.localScale = size;
-            root.AddComponent<MeshFilter>().sharedMesh = roundMesh;
+            root.AddComponent<MeshFilter>().sharedMesh = mesh;
             root.AddComponent<MeshRenderer>().sharedMaterial = Art.Material(color);
             return root;
+        }
+
+        static void Stripes(string name, Vector3 point, Vector3 size, string color, Transform parent)
+        {
+            if (!warpMesh)
+            {
+                const int count = 8;
+                var vertices = new Vector3[count * 4]; var normals = new Vector3[vertices.Length];
+                var triangles = new int[count * 6];
+                for (int i = 0; i < count; i++)
+                {
+                    float x = -.5f + (i + .5f) / count; int v = i * 4, index = i * 6;
+                    vertices[v] = new(x - .012f, -.5f, 0); vertices[v + 1] = new(x - .012f, .5f, 0);
+                    vertices[v + 2] = new(x + .012f, .5f, 0); vertices[v + 3] = new(x + .012f, -.5f, 0);
+                    for (int n = 0; n < 4; n++) normals[v + n] = Vector3.back;
+                    triangles[index] = v; triangles[index + 1] = v + 1; triangles[index + 2] = v + 2;
+                    triangles[index + 3] = v; triangles[index + 4] = v + 2; triangles[index + 5] = v + 3;
+                }
+                warpMesh = new Mesh { name = "TownFineStripes", vertices = vertices, normals = normals, triangles = triangles };
+                warpMesh.RecalculateBounds();
+            }
+            var detail = MeshPart(name, warpMesh, point, size, color, parent).GetComponent<Renderer>();
+            detail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; detail.receiveShadows = false;
         }
 
         public static GameObject Build(string key)
@@ -124,6 +152,7 @@ namespace Tycoon
             bool textile = key is "spinner" or "loom";
             string accent = key == "cakemixer" ? "#CF948B" : key == "feedmill" ? "#B5A16B" : textile ? Wood : Sage;
             Art.Box("MachineBase", new(0, .12f, 0), new(1.6f, .24f, 1.2f), textile ? Wood : Dark, parent);
+            Stripes("BaseVent", new(0, .13f, -.605f), new(.58f, .09f, 1), "#9BAE9E", parent);
             for (int side = -1; side <= 1; side += 2)
             {
                 Art.Box("Foot", new(side * .57f, .05f, -.4f), new(.18f, .1f, .18f), Dark, parent);
@@ -134,7 +163,7 @@ namespace Tycoon
                 for (int side = -1; side <= 1; side += 2) Art.Box("Frame", new(side * .68f, .84f, .17f), new(.15f, 1.32f, .18f), Wood, parent);
                 Art.Box("TopBeam", new(0, 1.51f, .17f), new(1.5f, .15f, .18f), Wood, parent);
                 Art.Box("WovenCloth", new(0, .71f, -.17f), new(1.12f, .07f, .66f), "#80B3B8", parent);
-                for (int i = 0; i < 8; i++) Art.Box("Warp", new(-.49f + i * .14f, 1.12f, .14f), new(.022f, .65f, .025f), Cream, parent);
+                Stripes("WarpThreads", new(0, 1.12f, .128f), new(1.12f, .65f, 1), Cream, parent);
                 var roll = Rotor(parent, new(0, .72f, -.49f), true);
                 Art.Cylinder("FabricRoll", Vector3.zero, new(.24f, .61f, .24f), "#80B3B8", roll);
                 Art.Cylinder("RollCap", new(0, .64f, 0), new(.28f, .035f, .28f), Wood, roll);
@@ -160,6 +189,7 @@ namespace Tycoon
                 var screw = Rotor(parent, new(0, 1.43f, .18f));
                 for (int i = 0; i < 3; i++) Art.Box("HopperBlade", new(0, .015f, 0), new(.65f, .035f, .075f), Dark, screw).transform.localRotation = Quaternion.Euler(0, i * 60, 0);
                 Art.Box("OutputChute", new(0, .58f, -.44f), new(.4f, .24f, .37f), Metal, parent);
+                Art.Box("ChuteLip", new(0, .475f, -.595f), new(.44f, .045f, .055f), Cream, parent);
                 Art.Model("animal_feed", new(0, .23f, -.35f), parent, .62f);
             }
             else if (key == "soyextractor")
@@ -167,6 +197,8 @@ namespace Tycoon
                 Art.Box("PressFrame", new(0, .83f, .3f), new(1.2f, 1.16f, .37f), Sage, parent);
                 Art.Cylinder("PressTank", new(0, .75f, -.16f), new(.82f, .3f, .82f), Metal, parent);
                 Art.Box("PressArm", new(0, 1.39f, -.1f), new(1.2f, .15f, .74f), Cream, parent);
+                Art.Box("PressGauge", new(-.4f, 1.42f, -.485f), new(.23f, .105f, .035f), Dark, parent);
+                Stripes("GaugeMarks", new(-.4f, 1.42f, -.508f), new(.17f, .055f, 1), Cream, parent);
                 Art.Cylinder("Piston", new(0, 1.15f, -.16f), new(.18f, .24f, .18f), Dark, parent);
                 var press = Rotor(parent, new(0, 1.54f, .24f));
                 Art.Box("PressHandle", Vector3.zero, new(.62f, .065f, .07f), Dark, press);
@@ -177,6 +209,7 @@ namespace Tycoon
             {
                 Art.Box("FillingCabinet", new(0, .91f, .34f), new(1.25f, 1.32f, .43f), Cream, parent);
                 Art.Box("MilkStripe", new(0, 1.31f, .113f), new(1.17f, .13f, .032f), Sage, parent);
+                Art.Box("FillingWindow", new(0, 1.07f, .111f), new(.93f, .32f, .033f), "#A7C3BE", parent);
                 Art.Box("Conveyor", new(0, .52f, -.22f), new(1.4f, .16f, .58f), Dark, parent);
                 var carousel = Rotor(parent, new(0, .63f, -.14f));
                 Art.Cylinder("Carousel", Vector3.zero, new(.87f, .05f, .87f), Metal, carousel);
@@ -210,8 +243,20 @@ namespace Tycoon
             if (key == "corn")
             {
                 Ball("Cob", new(0, .31f, 0), new(.22f, .58f, .22f), "#E7BF58", parent);
-                for (int i = 0; i < 4; i++)
-                    for (int j = 0; j < 4; j++) Ball("Kernel", new(Mathf.Cos(j * Mathf.PI * .5f) * .088f, .13f + i * .115f, Mathf.Sin(j * Mathf.PI * .5f) * .088f), new(.072f, .09f, .072f), "#F7D775", parent);
+                // Cả cụm hạt dùng một renderer và một mesh cache thay vì 16 object.
+                if (!cornKernelMesh)
+                {
+                    var kernels = new CombineInstance[16];
+                    for (int i = 0; i < 4; i++)
+                        for (int j = 0; j < 4; j++)
+                        {
+                            Vector3 point = new(Mathf.Cos(j * Mathf.PI * .5f) * .088f, .13f + i * .115f, Mathf.Sin(j * Mathf.PI * .5f) * .088f);
+                            kernels[i * 4 + j] = new CombineInstance { mesh = roundMesh,
+                                transform = Matrix4x4.TRS(point, Quaternion.identity, new(.072f, .09f, .072f)) };
+                        }
+                    cornKernelMesh = new Mesh { name = "TownCornKernels" }; cornKernelMesh.CombineMeshes(kernels, true, true);
+                }
+                MeshPart("KernelCluster", cornKernelMesh, Vector3.zero, Vector3.one, "#F7D775", parent);
                 Ball("Husk", new(.04f, .12f, .055f), new(.16f, .29f, .11f), "#A8B876", parent).transform.localRotation = Quaternion.Euler(-18, 0, -15);
             }
             else if (key == "soybean")
