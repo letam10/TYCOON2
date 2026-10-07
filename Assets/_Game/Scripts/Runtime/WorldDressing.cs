@@ -31,7 +31,7 @@ namespace Tycoon
             }
             for (int i = 0; i < 10; i++)
                 Art.Model("garden_bush", new Vector3(-47 + i * 12, 0, 61), scenery, .7f, i * 71);
-            Sign("01  NÔNG TRẠI\nGIEO HẠT • THU HOẠCH", new Vector3(-19, 0, 33), scenery, 4.2f, "#7DA16A");
+            Sign("01  NÔNG TRẠI\nGIEO HẠT • THU HOẠCH", new Vector3(-19, 0, 3), scenery, 4.2f, "#7DA16A");
             Sign("THỊ TRẤN NHỎ\nCÙNG NHAU LỚN LÊN", new Vector3(69, 0, -22), scenery, 5.2f, Sage);
             Art.Model("park_bench", new Vector3(0, .02f, -25), scenery, 1, 180);
             Art.Model("street_lamp", new Vector3(2.6f, .02f, -25), scenery, .9f);

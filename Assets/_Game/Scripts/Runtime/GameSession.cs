@@ -261,13 +261,16 @@ namespace Tycoon
                 var data = SaveStore.Read(SavePath);
                 if (data == null) return;
                 IsRestoring=Application.isPlaying;Player.CanControl=false;
-                bool worldChanged=TownLayout.Migrate(data);worldChanged|=EnsureWorldProjection(data);
+                bool worldChanged = TownLayout.Migrate(data);
+                worldChanged |= RemoveRetiredPurchasePads(data);
+                worldChanged |= EnsureWorldProjection(data);
                 if(data.transactionState!=null)
                 {
                     worldChanged|=RuntimeTransactions.ReconcileWorld(data.transactionState,this);
-                    if(worldChanged){RuntimeTransactions.Project(data.transactionState,data);SaveStore.Write(SavePath,data);}
+                    if (worldChanged) RuntimeTransactions.Project(data.transactionState, data);
                 }
                 ValidateSaveOwners(data);
+                if (worldChanged && data.transactionState != null) SaveStore.Write(SavePath, data);
                 Player.StopInteraction();
                 Transactions?.Detach();Transactions=null;
                 foreach(var worker in Workers){worker.gameObject.SetActive(false);Destroy(worker.gameObject);}

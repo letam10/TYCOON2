@@ -14,7 +14,7 @@ namespace Tycoon
         void Update()
         {
             var game=GameSession.Instance;
-            if(!game.NavigationReady || !game.CanRestore || !game.Economy.Has("restaurant") || game.Milestone==0)return;
+            if(!game.NavigationReady || !game.CanRestore || !game.Economy.Has("restaurant"))return;
             if(!restored)
             {
                 foreach(var saved in new List<DinerSave>(game.PendingDiners))
@@ -25,7 +25,8 @@ namespace Tycoon
                 restored=game.PendingDiners.Count==0;
                 if(!restored)return;
             }
-            if(!game.CanSimulate||Time.time<nextSpawn)return;nextSpawn=Time.time+(game.RushActive?3:8);
+            if(!game.CanSimulate||game.Milestone==0||Time.deltaTime<=0||Time.time<nextSpawn)return;
+            nextSpawn=Time.time+(game.RushActive?3:8);
             var available=game.Tables.Find(x=>x.Occupant==null && x.Cleaning<=0);
             if(available && game.Commerce.Customers.Count+Diners.Count<30)Spawn(available,null);
         }
@@ -166,7 +167,8 @@ namespace Tycoon
         }
         void Update()
         {
-            var game=GameSession.Instance;if(!game.CanSimulate)return;View.SetMotion(Agent.velocity.magnitude,Basket.Total>0);
+            var game=GameSession.Instance;if(!game.CanSimulate||Time.deltaTime<=0)return;
+            View.SetMotion(Agent.velocity.magnitude,Basket.Total>0);
             if(Phase==4)
             {
                 if(Navigation.Arrived(Agent))

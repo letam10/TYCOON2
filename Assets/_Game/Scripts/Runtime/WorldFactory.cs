@@ -13,7 +13,8 @@ namespace Tycoon
             Art.Box("Grass", new Vector3(8, -.13f, 22), new Vector3(200, .25f, 136), "#94B985", world, true);
             Lighting(world);
             WorldDressing.Environment(world);
-            Art.Box("StarterField", new Vector3(-13, .012f, 18), new Vector3(18, .04f, 30), "#A2C587", world);
+            // Kết thúc nền Farm trước mép Restaurant để hai mặt sàn không chồng nhau.
+            Art.Box("StarterField", new Vector3(-13, .012f, 15.75f), new Vector3(18, .04f, 25.5f), "#A2C587", world);
             Art.Box("StarterSelling",new Vector3(-13,.012f,0),new Vector3(17,.04f,6),"#EDB5A2",world);
             var shopFloor=Floor(world, "02  CỬA HÀNG NÔNG SẢN", new Vector3(7, 0, 6), new Vector2(22, 20));
             shopFloor.gameObject.AddComponent<UnlockVisual>().Requirement="farm_shop";
@@ -63,8 +64,8 @@ namespace Tycoon
             var processFloor=Floor(world, "03  CHẾ BIẾN", new Vector3(28, 0, 7), new Vector2(18, 18));
             processFloor.gameObject.AddComponent<UnlockVisual>().Requirement="mill";
             Machine(game, world, "mill", new Vector3(23, 0, 12), "mill");
-            Machine(game, world, "cheesemaker", new Vector3(28, 0, 12), "dairy");
-            Machine(game, world, "saucemaker", new Vector3(33, 0, 12), "dairy");
+            Machine(game, world, "cheesemaker", new Vector3(28, 0, 12), "mill");
+            Machine(game, world, "saucemaker", new Vector3(33, 0, 12), "mill");
             Machine(game,world,"soyextractor",new Vector3(23,0,5),"mill");
             Machine(game,world,"milkbottler",new Vector3(28,0,5),"mill");
             Machine(game,world,"spinner",new Vector3(33,0,5),"mill");

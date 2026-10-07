@@ -129,7 +129,10 @@ namespace Tycoon
         public GameObject Take(string id, Transform parent)
         {
             if (!available.TryGetValue(id, out var stack)) available[id] = stack = new();
-            var go = stack.Count > 0 ? stack.Pop() : Create(id);
+            // Actor cũ có thể bị hủy sau OnDisable khi load; bỏ model đã chết trong pool.
+            GameObject go = null;
+            while (stack.Count > 0 && !go) go = stack.Pop();
+            if (!go) go = Create(id);
             go.transform.SetParent(parent, false); go.SetActive(true); return go;
         }
         GameObject Create(string id)
@@ -141,6 +144,7 @@ namespace Tycoon
         }
         public void Return(GameObject item, bool detach = true)
         {
+            if (!item) return;
             string id = item.name;
             item.SetActive(false);
             if (detach) item.transform.SetParent(root, false);

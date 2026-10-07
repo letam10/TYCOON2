@@ -34,7 +34,7 @@ namespace Tycoon
                 restored = game.PendingCustomers.Count == 0;
                 if (!restored) return;
             }
-            if (!game.CanSimulate || game.Milestone == 0) return;
+            if (!game.CanSimulate || game.Milestone == 0 || Time.deltaTime <= 0) return;
             if (Time.time < nextSpawn || ActiveCount >= MaximumActive) return;
             nextSpawn = Time.time + (game.RushActive ? .65f : game.BusinessStage==1 ? 10f : 2.5f);
             int limit = game.RushActive ? MaximumActive : game.Economy.Has("supermarket") ? 24 : 15;
@@ -201,7 +201,7 @@ namespace Tycoon
 
         void Update()
         {
-            if(!GameSession.Instance.CanSimulate)return;
+            if(!GameSession.Instance.CanSimulate || Time.deltaTime <= 0)return;
             if (View && Agent) View.SetMotion(Agent.velocity.magnitude, Basket.Total > 0);
             if(Current==State.Approaching)
             {

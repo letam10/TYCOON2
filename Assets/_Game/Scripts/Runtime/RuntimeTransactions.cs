@@ -418,39 +418,74 @@ namespace Tycoon
                     item=(station as ProductionStation)?.ItemId,batchYield=(station as ProductionStation)?.Yield??1,cycleSeconds=(station as ProductionStation)?.Interval??0,running=progress.running,remaining=station is MachineStation?progress.remaining:0,batches=progress.batches,playerBatches=progress.playerBatches};
                 state.stations.Add(runtime);changed=true;
             }
+            changed |= UpgradeCounterOwners(state, game);
             if(!changed)return false;
-            UpgradeCounterOwners(state,game);
             TransactionCore.NormalizeState(state);TransactionCore.Validate(state);
             return true;
         }
 
-        internal static void UpgradeCounterOwners(TransactionState state,GameSession game)
+        internal static bool UpgradeCounterOwners(TransactionState state,GameSession game)
         {
+            bool changed = false;
             foreach(var machine in game.Machines)
             {
                 var runtime=state.stations.Find(x=>x.id==machine.Id);if(runtime==null)continue;
+                changed |= !runtime.autonomous || !runtime.recipeOptions.SequenceEqual(machine.Options);
                 runtime.autonomous=true;runtime.recipeOptions=new(machine.Options);
                 var input=state.owners.Find(x=>x.id==runtime.input);var output=state.owners.Find(x=>x.id==runtime.output);
-                foreach(var i in machine.Input.Limits){var limit=input.limits.Find(x=>x.id==i.id);if(limit==null)input.limits.Add(new ItemAmount(i.id,i.count));else limit.count=Math.Max(limit.count,i.count);}
+                foreach (var item in machine.Input.Limits)
+                {
+                    var limit = input.limits.Find(x => x.id == item.id);
+                    if (limit == null)
+                    {
+                        input.limits.Add(new ItemAmount(item.id, item.count));
+                        changed = true;
+                    }
+                    else if (limit.count < item.count)
+                    {
+                        limit.count = item.count;
+                        changed = true;
+                    }
+                }
                 foreach(string key in machine.Options)
                 {
-                    var d=Definitions.Recipe(key);if(!output.accepts.Contains(d.output))output.accepts.Add(d.output);
-                    foreach(var i in d.inputs)if(!input.accepts.Contains(i.id))input.accepts.Add(i.id);
+                    var definition = Definitions.Recipe(key);
+                    if (!output.accepts.Contains(definition.output))
+                    {
+                        output.accepts.Add(definition.output);
+                        changed = true;
+                    }
+                    foreach (var item in definition.inputs)
+                    {
+                        if (input.accepts.Contains(item.id)) continue;
+                        input.accepts.Add(item.id);
+                        changed = true;
+                    }
                 }
+                changed |= runtime.requirement != machine.Requirement;
                 runtime.requirement=machine.Requirement;
             }
             foreach(var producer in game.Producers)
             {
                 var runtime=state.stations.Find(s=>s.id==producer.Id);if(runtime==null)continue;
+                changed |= runtime.batchYield != producer.Yield || runtime.cycleSeconds != producer.Interval;
                 runtime.batchYield=producer.Yield;runtime.cycleSeconds=producer.Interval;
             }
             foreach(var counter in game.Checkouts.Where(x=>x.Inventory!=null))
             {
                 var owner=state.owners.Find(x=>x.id==counter.Id);
                 if(owner==null)throw new InvalidDataException("Owner quầy không còn tồn tại: "+counter.Id);
+                changed |= owner.capacity < counter.Inventory.Capacity;
                 owner.capacity=Math.Max(owner.capacity,counter.Inventory.Capacity);
-                foreach(string item in counter.AcceptedItems)if(!owner.accepts.Contains(item))owner.accepts.Add(item);
+                foreach (string item in counter.AcceptedItems)
+                {
+                    if (owner.accepts.Contains(item)) continue;
+                    owner.accepts.Add(item);
+                    changed = true;
+                }
             }
+            // LoadGame phải checkpoint cấu hình mới trước khi store đọc lại save cũ.
+            return changed;
         }
         internal static SaveData Project(TransactionState state, SaveData data)
         {

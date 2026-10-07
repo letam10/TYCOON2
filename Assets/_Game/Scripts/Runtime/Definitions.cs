@@ -178,8 +178,8 @@ namespace Tycoon
             new("loader_supermarket","Thuê bốc hàng Supermarket",1500,"truck_bundle","worker","Loader"),
             new("loader_bakery","Thuê bốc hàng Bakery",1500,"truck_bundle","worker","Loader"),
             new("loader_restaurant","Thuê bốc hàng Restaurant",1500,"truck_bundle","worker","Loader"),
-            new("dairy", "Thêm máy phô mai và sốt", 1800, "mill"),
-            new("supermarket", "Mở Supermarket", 65000, "dairy", progression:new ProgressionRequirement {
+            new("dairy", "Gói máy cũ đã gộp vào Processing", 1800, "mill", "legacy"),
+            new("supermarket", "Mở Supermarket", 65000, "mill", progression:new ProgressionRequirement {
                 successfulOrders=600, recipeBatches=new[] { new RecipeBatchRequirement { recipeId="mill", batches=50 },
                     new RecipeBatchRequirement { recipeId="cheesemaker", batches=50 }, new RecipeBatchRequirement { recipeId="saucemaker", batches=50 } } }),
             new("restocker_market", "Thuê xếp hàng Supermarket", 1500, "supermarket", "worker", "RestockerMarket"),

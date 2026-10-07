@@ -13,14 +13,17 @@ namespace Tycoon
         readonly ITransactionStore store;
         readonly Func<double> clock;
         readonly bool runtime;
+        readonly bool replaying;
         readonly Dictionary<string,TransactionReceipt> keys=new(),effects=new();
         TransactionState state;
         public CoreLifecycle Lifecycle { get; private set; }
         public Action<CommitBoundary> Fault { get; set; }
-        public TransactionCore(TransactionState seed, ITransactionStore store = null, Func<double> clock = null, bool runtime = false)
+        public TransactionCore(TransactionState seed, ITransactionStore store = null, Func<double> clock = null,
+            bool runtime = false, bool replaying = false)
         {
             this.store = store;
             this.runtime = runtime;
+            this.replaying = replaying;
             this.clock = clock ?? (() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000d);
             state = NormalizeState(Copy(store?.Read() ?? seed ?? throw new ArgumentNullException(nameof(seed))));
             RefreshMachinePhases(state);
@@ -393,12 +396,15 @@ namespace Tycoon
             if (payment.collected) return 0;
             s.money = checked(s.money + payment.amount);s.cashCollected=checked(s.cashCollected+payment.amount); payment.collected = true; return payment.amount;
         }
-        static int Contribute(TransactionState s, TransactionCommand c)
+        int Contribute(TransactionState s, TransactionCommand c)
         {
             Player(s, c.actor); var definition = Definitions.Upgrade(c.target);
-            Require(definition != null && definition.kind != "legacy" && c.quantity > 0 && !s.unlocked.Contains(c.target), "purchase", "Purchase không khả dụng.");
+            // Chỉ replay lệnh đã ghi của pad vừa nghỉ dùng; gameplay mới không thể góp thêm.
+            bool retiredReplay = replaying && c.target == "dairy";
+            Require(definition != null && (definition.kind != "legacy" || retiredReplay) &&
+                c.quantity > 0 && !s.unlocked.Contains(c.target), "purchase", "Purchase không khả dụng.");
             Require(string.IsNullOrEmpty(definition.requirement) || s.unlocked.Contains(definition.requirement), "requirement", "Thiếu điều kiện mở khóa.");
-            ValidatePurchaseRequirements(s,definition);
+            if (!retiredReplay) ValidatePurchaseRequirements(s,definition);
             var purchase = s.purchases.Find(x => x.id == c.target);
             if (purchase == null) { purchase = new PurchaseRuntimeState { id = c.target, definitionId = c.target }; s.purchases.Add(purchase); }
             int amount = Math.Min(c.quantity, Math.Min(s.money, definition.cost - purchase.contributed));

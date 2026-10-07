@@ -123,7 +123,7 @@ namespace Tycoon.Tests
             state.stations[1].level=3;
             Assert.That(ProgressionTracker.MissingRequirements(state,Definitions.Upgrade("mill")),Is.Empty);
 
-            state.unlocked.Add("dairy");state.legacyTransactions=600;
+            state.unlocked.Add("mill");state.legacyTransactions=600;
             state.stations.Add(new StationRuntimeState{id="mill",kind="machine",definitionId="mill",area="processing",batches=49});
             state.stations.Add(new StationRuntimeState{id="cheesemaker",kind="machine",definitionId="cheesemaker",area="processing",batches=50});
             state.stations.Add(new StationRuntimeState{id="saucemaker",kind="machine",definitionId="saucemaker",area="processing",batches=50});

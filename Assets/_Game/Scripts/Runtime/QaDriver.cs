@@ -45,7 +45,38 @@ namespace Tycoon
             if(milestones14)mode="stage14-milestones";
             if(assets)mode="asset-library";
             if(town||townLayout||townLoad)mode=townLoad?"town-load":townLayout?"town-layout":"town-redesign";
-            routines.Push(townLoad?TownRelaunch():town||townLayout?TownRedesign(townLayout):assets?AssetLibraryVisual():milestones14?FinalMilestones():stage14?FinalProgression():layout14?FinalLayout():visual14?FinalVisual():redesign ? Redesign() : art ? VisualInspection() : load ? LoadCheck() : stage67?LivestockAndCrew():stage45?FarmStarterAndPurchase():game.Milestone == 0 ? Foundation() : (full || resume) ? Progression(resume) : Vertical());
+            if (Array.Exists(arguments, argument => argument == "--qa-completion"))
+            {
+                mode = "completion";
+                routines.Push(CompletionAudit());
+            }
+            else if (Array.Exists(arguments, argument => argument == "--qa-completion-load"))
+            {
+                mode = "completion-load";
+                routines.Push(CompletionRelaunch());
+            }
+            else if (Array.Exists(arguments, argument => argument == "--qa-save-recovery"))
+            {
+                mode = "save-recovery";
+                routines.Push(SaveRecovery());
+            }
+            else
+                routines.Push(
+                    townLoad ? TownRelaunch()
+                    : town || townLayout ? TownRedesign(townLayout)
+                    : assets ? AssetLibraryVisual()
+                    : milestones14 ? FinalMilestones()
+                    : stage14 ? FinalProgression()
+                    : layout14 ? FinalLayout()
+                    : visual14 ? FinalVisual()
+                    : redesign ? Redesign()
+                    : art ? VisualInspection()
+                    : load ? LoadCheck()
+                    : stage67 ? LivestockAndCrew()
+                    : stage45 ? FarmStarterAndPurchase()
+                    : game.Milestone == 0 ? Foundation()
+                    : full || resume ? Progression(resume)
+                    : Vertical());
             while (routines.Count > 0)
             {
                 object yielded = null; bool running = false;

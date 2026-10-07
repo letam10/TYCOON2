@@ -51,7 +51,7 @@ namespace Tycoon
             }
             if(f.id=="supermarket")foreach(var m in game.Machines.Where(m=>m.AreaId=="processing"))foreach(var input in m.Recipe.inputs)Stock(m.Id+"_input",input.id,input.count);
             if(f.id=="restaurant")foreach(var input in Definitions.Recipe("oven").inputs)Stock(game.Machines.First(m=>m.Recipe.id=="oven").Id+"_input",input.id,input.count);
-            if(f.id=="restaurant")foreach(var input in Definitions.Recipe("kitchen").inputs)Stock(game.Machines.First(m=>m.Recipe.id=="kitchen").Id+"_input",input.id,input.count);
+            if(f.id=="restaurant")foreach(var input in Definitions.Recipe("kitchen").inputs)Stock("machine_kitchen_input",input.id,input.count);
             data.customers.Clear();data.diners.Clear();data.workers.Clear();data.events=new(){lastBreakBatch=seed.stations.Sum(s=>s.batches)};data.nextReceipt=200000;data.playerX=-15.5f;data.playerZ=-3.5f;
             TransactionCore.NormalizeState(seed);TransactionCore.Validate(seed);RuntimeTransactions.Project(seed,data);
             game.Transactions.Detach();string journal=game.SavePath+".journal";if(File.Exists(journal))File.Delete(journal);

@@ -1,10 +1,13 @@
 # TYCOON2 — đồ họa, model, tương tác và UI
 
-Cập nhật: 06/10/2026, Asia/Bangkok. Dự án D:\GAME\TYCOON2, GitHub letam10/TYCOON2, branch main. Mục tiêu /goal đang active để tiếp tục qua đêm.
+Cập nhật: 07/10/2026, Asia/Bangkok. Dự án D:\GAME\TYCOON2, GitHub letam10/TYCOON2, branch main.
+Trạng thái audit mới nhất: xem CODEX_HANDOFF.md và QA/audit-20261007.json.
+Các mục qua đêm và sửa Play bên dưới là ghi chép của những lượt trước.
 
 ## Bản chạy và cách kiểm tra
 
-- Bản Windows hiện tại: D:\GAME\TYCOON2\work\cash-only-mod\Build\TYCOON2.exe; mốc UI trước tại work/compact-presentation/Build/.
+- Bản Windows hiện tại: D:\GAME\TYCOON2\Builds\Windows\TYCOON2.exe, build ngày 07/10/2026.
+- Unity: mở Assets/_Game/Scenes/Tycoon.unity và bấm Play; save cũ được chuyển đổi, không cần xóa save.
 - Ảnh cuối: work/compact-presentation/presentation-final/; gameplay tổng hợp: work/compact-presentation/player-full/.
 - WASD/phím mũi tên/gamepad để di chuyển; dừng 0,25 giây gần vật thể để thao tác; Q chọn hàng; F5 lưu; Esc menu; cuộn chuột/cần phải zoom 12–27 m.
 - Kho, xe tải và thông tin kinh doanh mở bằng nút nhỏ góc phải. Mục tiêu, doanh thu và tồn kho xem trong bảng Thông tin.
@@ -43,7 +46,8 @@ player-full/presentation-audit.json: managed 29 MiB, allocated 360 MiB; 1080p p9
 
 - Đã push đợt đầu: d168c40 (tương tác/camera), eb577d1 (town/model/ánh sáng), 57293d5 (UI/QA ban đầu).
 - Đã push theo phản hồi: 24593be (HUD gọn + icon vẽ), 0a4fd32 (model + chuyển động máy/cây). Mốc QA/tài liệu 3c1924b đã push.
-- Heartbeat tycoon2-qua-m đã ACTIVE, gắn cuộc chat này, tiếp tục mỗi hai giờ. Prompt yêu cầu kết thúc công việc qua đêm lúc 07:00 ngày 07/10/2026 giờ Bangkok và tắt lịch; chỉ thông báo khi có thay đổi có ý nghĩa/lỗi/cần người dùng.
+- Heartbeat tycoon2-qua-m và mục tiêu qua đêm hiện PAUSED, xác nhận trực tiếp ngày 07/10/2026.
+  Prompt cũ đặt mốc kết thúc 07:00 ngày 07/10/2026 giờ Bangkok; lượt sửa Play này theo yêu cầu mới.
 - Ưu tiên nghiệm thu gameplay liên tục, máy/cây operating/idle/pause/restore và phiên dài; tiếp tục nâng theo bằng chứng. GPU vừa/nặng phải preflight RTX 4060, chờ theo AGENTS, không polling mỗi phút.
 
 ## Dọn dẹp
@@ -63,3 +67,31 @@ player-full/presentation-audit.json: managed 29 MiB, allocated 360 MiB; 1080p p9
 - Player trên RTX 4060/D3D11 PASS 256 checks, 0 runtime errors. Click qua EventSystem khi đóng băng simulation xác nhận cộng đúng 999.999, toàn bộ state gameplay khác giữ nguyên và số dư HUD đúng. Ảnh đã xem: work/cash-only-mod/player-final/mod-game-cash-only.png; report: work/cash-only-mod/player-final/town-layout-report.json.
 - Nút Mod game vẫn theo cấu hình TYCOON_DISABLE_ASSIST hiện có; bản đang bàn giao có nút. Không sửa QualitySettings có sẵn. Các Player/probe/build của lượt mod đã kết thúc, không cần giữ tiến trình.
 - Tiếp tục qua đêm phải giữ ràng buộc mới: nút Mod game chỉ cộng tiền, không dùng lại lệnh mở khu. Dọn lại Burst PDB tự sinh ở build cash-only-mod khi chính sách cho phép; không dùng nó để chạy game.
+
+## Sửa lỗi không vào được Play — 07/10/2026
+
+- Log Unity tái hiện InvalidDataException: Save thiếu trạng thái trạm. Save v2 cũ vẫn chứa năm ô legacy:
+  pad_farmer_2, pad_carry_upgrade, pad_farm_upgrade, pad_worker_upgrade, pad_machine_upgrade.
+  WorldFactory không còn tạo các ô này, nên validation chặn gameplay trước khi mở điều khiển.
+- Chỉ chuyển đổi bookkeeping của các ô được catalog đánh dấu legacy và không có trong thế giới hiện tại.
+  Giữ tiền, hàng, trạng thái trạm còn dùng, khoản góp, crew, unlock và biên nhận.
+  Owner cũ có capacity, hàng hoặc reservation vẫn bị từ chối; không tự xóa dữ liệu để cho load qua.
+- Save projection chỉ được ghi sau ValidateSaveOwners thành công. Unknown station và save không hợp lệ
+  vẫn bị chặn, với file gốc giữ nguyên. Regression chứng minh lỗi ghi file trước validation đã được sửa.
+- Regression trước sửa: 1/7 pass, 6 fail. Sau sửa: toàn bộ EditMode 165/165 pass, gồm 7 regression mới.
+  Bằng chứng: work/save-recovery/tests/before.xml và QA/editmode-results.xml.
+- Unity Editor đã vào Play hai lần liên tiếp, giữ cấu hình Enter Play Mode hiện có. Cả hai lần đều
+  khôi phục core, mở điều khiển, di chuyển qua Input System, giữ ID trạm hợp lệ và lưu thành công.
+  PASS 14 checks trên RTX 4060/D3D11: work/save-recovery/editor-first/editor-play-report.json.
+- Build Windows: Succeeded, 0 errors, 2 warnings, 117.918.331 bytes; QA/build-report.json.
+  Build lúc 08:15 ngày 07/10/2026 Bangkok. Mã mới ở TYCOON2_Data/Managed/Tycoon.Runtime.dll;
+  timestamp của bootstrap TYCOON2.exe có thể giữ nguyên theo bản Unity, không dùng nó để định tuổi build.
+- Player Windows PASS 294 assertions, 0 runtime errors, RTX 4060, 41,19 m di chuyển và 92 thao tác.
+  Nạp chính dữ liệu save gây lỗi từ fixture riêng; đối chiếu tiền/hàng/unlock/receipts qua repeated load.
+  Thu hoạch cà rốt, phục vụ khách tự đến, thu 10 xu vào ví, lưu và nạp lại không mất hoặc cộng trùng tiền.
+  Bằng chứng: work/save-recovery/player-first/save-recovery-report.json và hai PNG trong cùng thư mục.
+  Ảnh tạm dừng input/simulation để đối chiếu save; không dùng trạng thái tạm dừng QA làm bằng chứng lỗi Play.
+- Save đang dùng tại LocalLow/TamStudio/TYCOON2/save-v2.json được giữ nguyên trong toàn bộ kiểm chứng:
+  SHA256 0AC2E1CAB6B362271220732BD84EF17E089F2C17777C38F173CF43913AFA6369.
+  QualitySettings và raw ASSET/Downloaded có sẵn được giữ ngoài commit sửa lỗi.
+- Không xác nhận campaign ví 0 đến Restaurant 180–240 phút hoặc nghiệm thu đồ họa toàn game trong lượt này.

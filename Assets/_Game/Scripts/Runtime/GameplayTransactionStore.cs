@@ -66,7 +66,7 @@ namespace Tycoon
                 var entry=JsonUtility.FromJson<Entry>(envelope.payload);
                 if(entry==null||entry.command==null||!double.IsFinite(entry.time))throw new InvalidDataException("Journal thiếu command.");
                 if(entry.revision<=initialRevision)continue;
-                core??=new TransactionCore(data.transactionState,null,()=>now,true);
+                core??=new TransactionCore(data.transactionState,null,()=>now,true,replaying:true);
                 if(entry.revision!=core.Revision+1||entry.time<now)throw new InvalidDataException("Journal mất thứ tự hoặc thời gian.");
                 now=entry.time;core.Execute(entry.command);
             }

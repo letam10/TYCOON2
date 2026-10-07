@@ -58,7 +58,7 @@ namespace Tycoon
             var destination=game.Stations.Where(s=>s is StorageStation&&s.IsUnlocked&&s.Inventory.FreeFor(item)>=game.Player.Carry.Total)
                 .OrderBy(s=>Vector3.SqrMagnitude(s.transform.position-game.Player.transform.position)).FirstOrDefault();
             Check(destination!=null,"còn kho nhận "+item);
-            yield return Travel(FinalZone(destination,InteractionKind.Drop).Center);
+            yield return Travel(FinalPoint(destination,InteractionKind.Drop));
             yield return FinalWait(()=>game.Player.Carry.Total==0,8,"cất "+item);
         }
         IEnumerator FinalGetItem(string item,int wanted,int depth=0)
@@ -76,7 +76,7 @@ namespace Tycoon
                     .OrderBy(s=>Vector3.SqrMagnitude(s.transform.position-game.Player.transform.position)).FirstOrDefault();
                 if(source)
                 {
-                    yield return FinalSelect(item);yield return Travel(FinalZone(source,InteractionKind.Pickup).Center);
+                    yield return FinalSelect(item);yield return Travel(FinalPoint(source,InteractionKind.Pickup));
                     yield return FinalWait(()=>game.Player.Carry.Count(item)>=wanted||source.Inventory.Available(item)==0,8,"lấy kho "+item,false);
                     if(game.Player.Carry.Count(item)>0)yield break;
                 }
@@ -91,21 +91,21 @@ namespace Tycoon
                         if(producer.Feed==0)
                         {
                             yield return FinalGetItem(producer.FeedItem,3,depth+1);
-                            yield return Travel(FinalZone(producer,InteractionKind.Drop).Center);
+                            yield return Travel(FinalPoint(producer,InteractionKind.Drop));
                             yield return FinalWait(()=>producer.Feed>0,4,"cho ăn "+item);
                             yield return FinalStash();
                         }
                         if(producer.Herd==0&&producer.Breeding==0)
-                        {yield return Travel(FinalZone(producer,InteractionKind.Restock).Center);yield return FinalWait(()=>producer.Breeding>0,4,"tái đàn "+item);}
-                        yield return Travel(FinalZone(producer,InteractionKind.Operate).Center);
+                        {yield return Travel(FinalPoint(producer,InteractionKind.Restock));yield return FinalWait(()=>producer.Breeding>0,4,"tái đàn "+item);}
+                        yield return Travel(FinalPoint(producer,InteractionKind.Operate));
                         yield return FinalWait(()=>producer.Cycle==0&&producer.Herd>0,90,"chăm "+item,false);
                     }
                     else if(producer.Phase<2)
                     {
-                        yield return Travel(FinalZone(producer,InteractionKind.Operate).Center);
+                        yield return Travel(FinalPoint(producer,InteractionKind.Operate));
                         yield return FinalWait(()=>producer.Phase>=2,8,"gieo/tưới "+item);
                     }
-                    yield return Travel(FinalZone(producer,InteractionKind.Pickup).Center);
+                    yield return Travel(FinalPoint(producer,InteractionKind.Pickup));
                     int before=game.Player.Carry.Count(item);
                     yield return FinalWait(()=>game.Player.Carry.Count(item)>before,12,"thu hoạch "+item,false);
                     if(producer.Animal&&game.Player.Carry.Count(item)>=wanted)yield break;
@@ -131,13 +131,13 @@ namespace Tycoon
                 while(machine.Input.Available(input.id)<input.count&&!machine.Running&&tries++<10)
                 {
                     yield return FinalGetItem(input.id,input.count-machine.Input.Available(input.id),depth);
-                    yield return Travel(FinalZone(machine,InteractionKind.Drop).Center);
+                    yield return Travel(FinalPoint(machine,InteractionKind.Drop));
                     yield return FinalWait(()=>game.Player.Carry.Total==0||machine.Input.FreeFor(input.id)==0,8,"cấp "+input.id);
                     yield return FinalStash();
                 }
             }
             int before=machine.Batches;
-            yield return Travel(FinalZone(machine,InteractionKind.Operate).Center);
+            yield return Travel(FinalPoint(machine,InteractionKind.Operate));
             yield return FinalWait(()=>machine.Batches>before,35,"vận hành "+machine.Id,false);
             if(machine.Inventory.Available(machine.Recipe.output)>0)
             {yield return FinalGetItem(machine.Recipe.output,machine.Recipe.yield,depth);yield return FinalStash();}
@@ -148,13 +148,13 @@ namespace Tycoon
             finalTask="Sửa "+machine.Id;FinalPulse();
             if(!machine.RepairPaid&&game.Economy.Money<machine.RepairFee)yield return FinalCollect();
             Check(machine.RepairPaid||game.Economy.Money>=machine.RepairFee,"tiền sửa máy từ cash thực thu");
-            yield return Travel(FinalZone(machine,InteractionKind.Repair).Center);
+            yield return Travel(FinalPoint(machine,InteractionKind.Repair));
             yield return FinalWait(()=>!machine.Broken,12,"sửa "+machine.Id);
         }
         IEnumerator FinalCollect()
         {
             foreach(var counter in game.Checkouts.Where(c=>c.IsUnlocked&&c.Cash>0).ToArray())
-            {yield return Travel(counter.CashZone.Center);yield return FinalWait(()=>counter.Cash==0,3,"thu tiền "+counter.Id);}
+            {yield return Travel(counter.CollectionPoint);yield return FinalWait(()=>counter.Cash==0,3,"thu tiền "+counter.Id);}
         }
         IEnumerator FinalBuy(string id)
         {
@@ -178,10 +178,10 @@ namespace Tycoon
             {
                 if(counter.FrontOrder?.Receipt!=receipt)break;
                 if(counter.Inventory.Available(line.id)>0)
-                {yield return FinalStash();yield return Travel(FinalZone(counter,InteractionKind.Serve).Center);yield return new WaitForSeconds(1);if(order.Finished)break;}
+                {yield return FinalStash();yield return Travel(FinalPoint(counter,InteractionKind.Serve));yield return new WaitForSeconds(1);if(order.Finished)break;}
                 if(order.Finished)break;
                 yield return FinalGetItem(line.id,line.Remaining);
-                yield return Travel(FinalZone(counter,InteractionKind.Serve).Center);
+                yield return Travel(FinalPoint(counter,InteractionKind.Serve));
                 yield return FinalWait(()=>order.Finished||game.Player.Carry.Total==0||!order.Lines.Any(l=>l.Remaining>0&&game.Player.Carry.Available(l.id)>0),5,"giao "+receipt,false);
             }
             yield return FinalStash();
@@ -224,9 +224,9 @@ namespace Tycoon
             var table=game.Tables.FirstOrDefault(t=>t.NeedsMeal);
             yield return FinalWait(()=>game.Tables.Any(t=>t.NeedsMeal),30,"khách ngồi bàn");table=game.Tables.First(t=>t.NeedsMeal);
             long diner=table.Occupant.Receipt;
-            yield return Travel(FinalZone(table,InteractionKind.Serve).Center);yield return FinalWait(()=>!table.NeedsMeal,5,"serve đúng bàn");
+            yield return Travel(FinalPoint(table,InteractionKind.Serve));yield return FinalWait(()=>!table.NeedsMeal,5,"serve đúng bàn");
             yield return FinalWait(()=>table.Cleaning>0,12,"ăn và payment");
-            yield return Travel(FinalZone(table,InteractionKind.Operate).Center);yield return FinalWait(()=>table.Cleaning==0,5,"player clean");
+            yield return Travel(FinalPoint(table,InteractionKind.Operate));yield return FinalWait(()=>table.Cleaning==0,5,"player clean");
             yield return FinalCollect();game.Transactions.Checkpoint();
             Check(game.Progression.PlayerJobs(GameSession.CrewFor(Definitions.Upgrade("cook")))>0,"player cook trước hire Restaurant");
             var snapshot=game.Transactions.Snapshot();Check(snapshot.payments.Any(p=>p.order==RuntimeTransactions.OrderId(diner)&&p.collected),"Restaurant payment thực thu");

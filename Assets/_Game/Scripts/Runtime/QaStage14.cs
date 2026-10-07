@@ -17,6 +17,13 @@ namespace Tycoon
         }
         [Serializable] sealed class LayoutReport{public List<string> checkedPoints=new(),failures=new();}
         StationZone FinalZone(Station station,InteractionKind kind)=>game.Stations.OfType<StationZone>().First(x=>x.Target==station&&x.Kind==kind);
+        Vector3 FinalPoint(Station station,InteractionKind kind)
+        {
+            var zone=game.Stations.OfType<StationZone>().FirstOrDefault(x=>x.Target==station&&x.Kind==kind);
+            if(zone)return zone.Center;
+            // QA theo đúng bề mặt tương tác của town hiện tại, kể cả quầy thu tiền.
+            return kind==InteractionKind.Collect&&station is CheckoutStation counter?counter.CollectionPoint:Near(station);
+        }
         IEnumerator FinalLayout()
         {
             yield return new WaitForSeconds(1);Check(game.NavigationReady,"final layout NavMesh ready");

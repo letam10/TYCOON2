@@ -65,9 +65,11 @@ namespace Tycoon
                 Check(game.Economy.CashCollected==game.Economy.Money,"zero-cash recovery loop earns collected cash");
                 if(game.Player.Carry.Total>0)yield return TownDrop(game.Storage);
                 int wallet=game.Economy.Money,revenue=game.Economy.Revenue,collected=game.Economy.CashCollected,orders=game.Economy.Transactions;
-                var support=game.Hud.GetComponentsInChildren<Button>().First(b=>b.name=="Hỗ trợ +999.999 / mở khu");support.onClick.Invoke();
-                Check(game.Economy.Money==wallet+999999&&game.Economy.Revenue==revenue&&game.Economy.CashCollected==collected&&game.Economy.Transactions==orders,"support click grants exactly 999999 without revenue or progression");
-                Check(game.Machines.All(m=>m.IsUnlocked)&&game.Producers.All(p=>p.IsUnlocked),"support opens every basic production route including feed mixer");
+                var unlocked=game.Economy.Unlocked.ToArray();float speed=Time.timeScale;Time.timeScale=0;game.Player.CanControl=false;
+                yield return ClickPresentationButton("Mod game");
+                Check(game.Economy.Money==wallet+999999&&game.Economy.Revenue==revenue&&game.Economy.CashCollected==collected&&game.Economy.Transactions==orders,"mod click grants exactly 999999 without revenue or progression");
+                Check(game.Economy.Unlocked.SequenceEqual(unlocked),"mod click preserves every current unlock");
+                Time.timeScale=speed;game.Player.CanControl=true;
             }
             var f=JsonUtility.FromJson<TownFixture>(File.ReadAllText(GameSession.Argument("--qa-fixture","")));SeedTown(f);Time.timeScale=f.timeScale;
             yield return TownLayoutChecks();

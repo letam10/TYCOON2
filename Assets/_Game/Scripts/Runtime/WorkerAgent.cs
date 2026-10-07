@@ -46,7 +46,7 @@ namespace Tycoon
         }
         void Update()
         {
-            var g=GameSession.Instance;if(!g.NavigationReady||!g.CanSimulate)return;
+            var g=GameSession.Instance;if(!g.NavigationReady||!g.CanSimulate||Time.deltaTime<=0)return;
             if(Role=="Driver")
             {
                 if(g.Logistics?.Vehicle){if(Agent.enabled)Agent.enabled=false;transform.SetParent(g.Logistics.Vehicle,false);transform.localPosition=new(0,.45f,1.5f);transform.localRotation=Quaternion.identity;Reason=g.Logistics.Reason;
