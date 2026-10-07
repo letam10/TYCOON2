@@ -1,5 +1,9 @@
 # TYCOON2 — thiết kế lại đã được duyệt
 
+Ghi chú 07/10/2026: tài liệu này giữ quyết định lịch sử ngày 03/10.
+Thiết kế thị trấn, trạng thái triển khai, Git và kiểm chứng mới nhất ở ../Docs/CODEX_HANDOFF.md.
+Các câu về chưa có repository/remote và máy cần operator bên dưới không còn là trạng thái hiện hành.
+
 Ngày 2026-10-03. Người dùng đã yêu cầu triển khai; không còn chờ câu hỏi A/B. Chuẩn mới: phục vụ tại quầy, 0 tiền, ba ô cà rốt, mang một SKU, thao tác khi đứng đúng vùng; năm khu trong 180–240 phút. Gói thịt 500 và sữa/trứng 1000 gồm tuyến cơ bản sử dụng được. Cà rốt 10 xu. Mọi thay đổi giá sau này phải có số liệu cân bằng.
 
 ## Quyết định bắt buộc

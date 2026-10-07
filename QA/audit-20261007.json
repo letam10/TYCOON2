@@ -1,0 +1,113 @@
+{
+  "date": "2026-10-07",
+  "timezone": "Asia/Bangkok",
+  "baseCommit": "736dd292f1d2d0902f87adb2dab366b34258434f",
+  "scope": "Source audit, EditMode regression and headless Windows build; no new Player run or benchmark",
+  "editMode": {
+    "result": "Passed",
+    "total": 173,
+    "passed": 173,
+    "failed": 0,
+    "skipped": 0,
+    "source": "QA/editmode-results.xml",
+    "sha256": "35A5ACC3F18B17746B73FC155F39BDEC187D45A5ABD4570D237D78C2EF4AA314"
+  },
+  "existingPlayerEvidence": [
+    {
+      "run": "player-progression-20261007T060857549Z",
+      "passed": true,
+      "checks": 80,
+      "runtimeErrors": 0,
+      "startedUtc": "2026-10-07T06:09:01.8059256Z",
+      "finishedUtc": "2026-10-07T06:10:38.095498Z",
+      "sha256": "0EA4514E391A2DFC6F0D0EE2FB41CE06685FE6754A5004026D7BD769391B3EC3"
+    },
+    {
+      "run": "player-crews-20261007T015850351Z",
+      "passed": true,
+      "checks": 80,
+      "runtimeErrors": 0,
+      "startedUtc": "2026-10-07T01:59:01.1361209Z",
+      "finishedUtc": "2026-10-07T01:59:56.9757553Z",
+      "sha256": "EE531BF7B76AC69466C4684A110E05F56F66DE071384B3D1CCD0EFED27522A5D"
+    },
+    {
+      "run": "player-roles-20261007T020439296Z",
+      "passed": true,
+      "checks": 44,
+      "runtimeErrors": 0,
+      "startedUtc": "2026-10-07T02:04:48.1656654Z",
+      "finishedUtc": "2026-10-07T02:06:12.8142004Z",
+      "sha256": "7E9E0BCAEC38743DA518811CBB1C0988FBE3568A472AFEFBF8B60FCC1327839A"
+    },
+    {
+      "run": "player-cargo-20261007T061623718Z",
+      "passed": true,
+      "checks": 163,
+      "runtimeErrors": 0,
+      "startedUtc": "2026-10-07T06:16:28.009027Z",
+      "finishedUtc": "2026-10-07T06:16:54.455994Z",
+      "sha256": "4F5761A3F8B28EC180CBBDFD83DDD3537355EDC7A275618340F442A15D224FA4"
+    },
+    {
+      "run": "player-events-20261007T020917501Z",
+      "passed": true,
+      "checks": 114,
+      "runtimeErrors": 0,
+      "startedUtc": "2026-10-07T02:09:25.3553193Z",
+      "finishedUtc": "2026-10-07T02:10:15.8443625Z",
+      "sha256": "687B1AE0935857925445E86E2548153362B15747282A329669D2AAB7746135D9"
+    },
+    {
+      "run": "player-save-20261007T060718982Z",
+      "passed": true,
+      "checks": 151,
+      "runtimeErrors": 0,
+      "startedUtc": "2026-10-07T06:07:23.8326173Z",
+      "finishedUtc": "2026-10-07T06:07:25.5758336Z",
+      "sha256": "A4E4E30B79C1830A678818FEA5F5A82ACB35C4976D2DC5E7111E64ABB0D44189"
+    },
+    {
+      "run": "player-load-20261007T061607695Z",
+      "passed": true,
+      "checks": 47,
+      "runtimeErrors": 0,
+      "startedUtc": "2026-10-07T06:16:12.6060294Z",
+      "finishedUtc": "2026-10-07T06:16:13.2077534Z",
+      "sha256": "B804FB507210E46ADA6F72EE270F0F5E2A78D0DC7E21FDF58253858DAA8BB6D6"
+    },
+    {
+      "run": "player-load-20261007T061907934Z",
+      "passed": true,
+      "checks": 52,
+      "runtimeErrors": 0,
+      "startedUtc": "2026-10-07T06:19:12.8092485Z",
+      "finishedUtc": "2026-10-07T06:19:25.7544526Z",
+      "sha256": "6B92241EC01CFFE01B83BB50DBA3411B5DBBF700781C00683B01DAC899709789"
+    }
+  ],
+  "build": {
+    "result": "Succeeded",
+    "builtUtc": "2026-10-07T07:15:33.7896415Z",
+    "bytes": 117982843,
+    "seconds": 18.1367463,
+    "errors": 0,
+    "warnings": 2
+  },
+  "implementationCommit": "06e7723e60955771d2d6858a19f65001ae3b440e",
+  "playerSaveSha256": "0AC2E1CAB6B362271220732BD84EF17E089F2C17777C38F173CF43913AFA6369",
+  "processHistoryConcurrency": {
+    "passed": true,
+    "writers": 2,
+    "records": 50,
+    "unique": 50,
+    "root": "D:\\GAME\\TYCOON2\\work\\audit-20261007\\logger-7bf6e1db2f7648ae9b918cc0212ab33f"
+  },
+  "saveLeaseRegression": {
+    "beforeResult": "172 passed, 1 failed",
+    "beforeSource": "work/audit-20261007/save-lease-before.xml",
+    "beforeSha256": "25778215EBEC97CEF0C88C74B2205B9AFB0DC67F5B16E5B3ED55A487EFCAE3C5",
+    "afterResult": "173 passed, 0 failed",
+    "commit": "06e7723e60955771d2d6858a19f65001ae3b440e"
+  }
+}
