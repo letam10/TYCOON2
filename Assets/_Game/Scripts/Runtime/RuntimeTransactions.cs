@@ -23,10 +23,11 @@ namespace Tycoon
         public string LastReason { get; private set; } = "";
         internal TransactionState View => view;
         public TransactionState Snapshot() => core.Snapshot();
-        public RuntimeTransactions(GameSession game, TransactionState state, bool persist = true)
+        public RuntimeTransactions(GameSession game, TransactionState state, bool persist = true,
+            FileStream existingLease = null)
         {
             this.game = game; origin = Time.timeAsDouble; restoredTime = state.simulationTime;frozen=game.IsRestoring;
-            store = persist ? new GameplayTransactionStore(game) : null;
+            store = persist ? new GameplayTransactionStore(game, existingLease) : null;
             try{core = new TransactionCore(state, store, () => Now, true); view = core.RuntimeSnapshot();}
             catch{store?.Dispose();throw;}
             actors.Add(game.Player.GetEntityId(), "player");

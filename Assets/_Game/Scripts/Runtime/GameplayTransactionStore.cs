@@ -15,12 +15,18 @@ namespace Tycoon
         long durableRevision=-1;
         string Journal=>game.SavePath+".journal";
         public Action<CommitBoundary> Fault {get;set;}
-        public GameplayTransactionStore(GameSession game)
+        internal static FileStream AcquireLease(string path)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path)));
+            return new FileStream(path + ".lock", FileMode.OpenOrCreate, FileAccess.ReadWrite,
+                FileShare.None, 1, FileOptions.DeleteOnClose);
+        }
+        public GameplayTransactionStore(GameSession game, FileStream existingLease = null)
         {
             this.game=game;
-            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(game.SavePath)));
-            lease=new FileStream(game.SavePath+".lock",FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None,1,FileOptions.DeleteOnClose);
-            TrimPartialTail(Journal);
+            lease = existingLease ?? AcquireLease(game.SavePath);
+            try { TrimPartialTail(Journal); }
+            catch { lease.Dispose(); throw; }
         }
         public TransactionState Read()
         {

@@ -185,6 +185,11 @@ namespace Tycoon.Tests
                 var state = game.Transactions.Snapshot();
                 Assert.That(state.owners.Any(o => RetiredIds.Contains(o.id)), Is.False);
                 Assert.That(state.stations.Any(s => RetiredIds.Contains(s.id)), Is.False);
+                Assert.Throws<IOException>(() =>
+                {
+                    using var competingLease = new FileStream(game.SavePath + ".lock", FileMode.OpenOrCreate,
+                        FileAccess.ReadWrite, FileShare.None);
+                });
             }
         }
 
@@ -225,6 +230,22 @@ namespace Tycoon.Tests
                     item = "carrot", quantity = 1, expiresAt = 100, status = ReservationStatus.Released
                 });
             AssertRejectedUnchanged(data);
+        }
+
+        [Test]
+        public void SaveOwnedByAnotherProcessCannotBeMigratedBeforeLeaseFailure()
+        {
+            SaveStore.Write(game.SavePath, TransactionSave());
+            byte[] original = File.ReadAllBytes(game.SavePath);
+            AddStorage("new_storage");
+            using var externalLease = new FileStream(game.SavePath + ".lock", FileMode.OpenOrCreate,
+                FileAccess.ReadWrite, FileShare.None);
+            LogAssert.Expect(LogType.Exception, new Regex(".+"));
+
+            game.LoadGame();
+
+            Assert.That(game.SaveBlocked, Is.True);
+            Assert.That(File.ReadAllBytes(game.SavePath), Is.EqualTo(original));
         }
 
         void AssertRejectedUnchanged(SaveData data)

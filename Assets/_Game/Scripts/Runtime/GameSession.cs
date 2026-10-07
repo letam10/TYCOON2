@@ -241,13 +241,13 @@ namespace Tycoon
             data.workers.AddRange(PendingWorkers);data.customers.AddRange(PendingCustomers);data.diners.AddRange(PendingDiners);
             return data;
         }
-        public void InitializeTransactions(TransactionState state=null,bool persist=true)
+        public void InitializeTransactions(TransactionState state=null,bool persist=true,FileStream existingLease=null)
         {
             foreach(var machine in Machines)machine.ConfigureInputLimits();
             foreach(var station in Stations)if(station is StorageStation storage&&storage.Inventory!=null)storage.ConfigureItemBins(storage.Inventory.Capacity);
             var initial=state??RuntimeTransactions.Migrate(this,CaptureSaveData());initial.layoutRevision=TownLayout.Revision;
             RuntimeTransactions.UpgradeCounterOwners(initial,this);
-            Transactions = new RuntimeTransactions(this,initial,persist);
+            Transactions = new RuntimeTransactions(this,initial,persist,existingLease);
             Transactions.CompletePurchases();
             foreach(var order in Transactions.Snapshot().orders)if(long.TryParse(order.id.Substring(6),out long receipt))Transactions.Settle(receipt);
         }
@@ -256,8 +256,14 @@ namespace Tycoon
         public bool SaveBlocked { get; private set; }
         public void LoadGame()
         {
+            FileStream recoveryLease = null;
             try
             {
+                if (!File.Exists(SavePath)) return;
+                Transactions?.Detach();
+                Transactions = null;
+                // Giữ khóa trước khi đọc/migrate; chuyển nguyên handle sang store để tránh khoảng hở.
+                recoveryLease = GameplayTransactionStore.AcquireLease(SavePath);
                 var data = SaveStore.Read(SavePath);
                 if (data == null) return;
                 IsRestoring=Application.isPlaying;Player.CanControl=false;
@@ -272,7 +278,6 @@ namespace Tycoon
                 ValidateSaveOwners(data);
                 if (worldChanged && data.transactionState != null) SaveStore.Write(SavePath, data);
                 Player.StopInteraction();
-                Transactions?.Detach();Transactions=null;
                 foreach(var worker in Workers){worker.gameObject.SetActive(false);Destroy(worker.gameObject);}
                 Workers.Clear();Commerce?.ResetForLoad();Restaurant?.ResetForLoad();
                 foreach(var counter in Checkouts){counter.Queue.Clear();counter.Cash=0;}
@@ -302,13 +307,18 @@ namespace Tycoon
                 if(Player.Controller)Player.Controller.enabled = true;
                 ApplyProgression();
                 SaveBlocked=false;Player.CanControl=false;
-                if(data.transactionState!=null)InitializeTransactions(data.transactionState);
+                if (data.transactionState != null)
+                {
+                    InitializeTransactions(data.transactionState, existingLease: recoveryLease);
+                    recoveryLease = null;
+                }
                 CameraRig?.Snap();
                 SaveBlocked=false;
                 Player.CanControl=!IsRestoring;
                 Say("Đã tải trò chơi");
             }
             catch (Exception error) { BlockRecovery(error); }
+            finally { recoveryLease?.Dispose(); }
         }
         bool EnsureWorldProjection(SaveData data)
         {
