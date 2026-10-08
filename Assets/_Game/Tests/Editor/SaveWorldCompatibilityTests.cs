@@ -97,6 +97,10 @@ namespace Tycoon.Tests
         SaveData LegacySave()
         {
             var data = game.CaptureSaveData();
+            data.version = 2;
+            data.money = game.Economy.Money;
+            data.cashInHand = 0;
+            data.cashInSafe = 0;
             foreach (string id in RetiredIds)
                 data.stationStates.Add(new StationProgressSave { id = id });
             return data;
@@ -104,15 +108,15 @@ namespace Tycoon.Tests
 
         SaveData TransactionSave()
         {
-            var data = game.CaptureSaveData();
+            var data = LegacySave();
             var state = RuntimeTransactions.Migrate(game, data);
             foreach (string id in RetiredIds)
             {
                 AddRetiredState(state, id);
-                data.stationStates.Add(new StationProgressSave { id = id });
             }
-            data.transactionState = state;
-            data.transactionVersion = SaveStore.CurrentTransactionVersion;
+            typeof(RuntimeTransactions).GetMethod("Project",
+                System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)
+                .Invoke(null, new object[] { state, data });
             return data;
         }
 
@@ -132,7 +136,8 @@ namespace Tycoon.Tests
         void AssertPreserved()
         {
             Assert.That(game.SaveBlocked, Is.False);
-            Assert.That(game.Economy.Money, Is.EqualTo(512));
+            Assert.That(game.Economy.CashInHand, Is.Zero);
+            Assert.That(game.Economy.CashInSafe, Is.EqualTo(512));
             Assert.That(game.Economy.Revenue, Is.EqualTo(22));
             Assert.That(game.Economy.CashCollected, Is.EqualTo(12));
             Assert.That(game.Economy.PendingCash, Is.EqualTo(10));

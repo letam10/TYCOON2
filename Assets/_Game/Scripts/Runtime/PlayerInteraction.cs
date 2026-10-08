@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Tycoon
 {
-    public enum InteractionKind { Pickup, Drop, Operate, Serve, Collect, Purchase, Restock, Repair }
+    public enum InteractionKind { Pickup, Drop, Operate, Serve, Collect, Purchase, Restock, Repair, DepositCash, WithdrawCash }
     public readonly struct InteractionResult
     {
         public readonly bool Worked;
@@ -49,16 +49,20 @@ namespace Tycoon
         {
             if(delta<=0||float.IsNaN(delta)||float.IsInfinity(delta)){Stop();return InteractionResult.Waiting;}
             IPlayerInteractionArea nearest=null;float distance=float.PositiveInfinity;
+            int priority = int.MaxValue;
             foreach(var area in areas)
                 if(area!=null&&area.Contains(position)&&area.Available)
                 {
                     var offset=position-area.Center;offset.y=0;
                     float square=area is ProximityTarget target?Mathf.Pow(target.Distance(position),2):offset.sqrMagnitude;
-                    if(square<distance){distance=square;nearest=area;}
+                    int rank = area is SafeInteractionArea or CargoPlayerArea or PurchasePad ? 0 : 1;
+                    if(rank < priority || rank == priority && square < distance)
+                    {priority=rank;distance=square;nearest=area;}
                 }
-            if(Current is ProximityTarget && Current.Available && Current.Contains(position)) nearest=Current;
+            if(nearest is ProximityTarget && Current is ProximityTarget &&
+                Current.Available && Current.Contains(position)) nearest=Current;
             if(!ReferenceEquals(Current,nearest)||actor!=context.Actor){Stop();Current=nearest;actor=context.Actor;}
-            if(Current is ProximityTarget){dwell+=delta;if(dwell<.25f)return InteractionResult.Waiting;}
+            if(Current is ProximityTarget or SafeInteractionArea or CargoPlayerArea){dwell+=delta;if(dwell<.25f)return InteractionResult.Waiting;}
             return Current==null?InteractionResult.Waiting:Current.Perform(context,delta);
         }
         public void Stop(){var previous=Current;Current=null;dwell=0;previous?.Exit(actor);}
@@ -68,8 +72,8 @@ namespace Tycoon
         static string Name(string id)=>Definitions.Item(id)?.label??id;
         public static InteractionResult CannotCarry(Inventory carry,string id)
         {
-            if(carry.Total>carry.Count(id))return InteractionResult.Reject("Giỏ đang mang loại khác; hãy đặt hết hàng trước khi lấy "+Name(id)+".");
-            return InteractionResult.Reject("Giỏ đầy ("+carry.Total+"/"+carry.Capacity+").");
+            if(carry.Total>carry.Count(id))return InteractionResult.Reject("Cất hàng để đổi loại.");
+            return InteractionResult.Reject("Tay đầy");
         }
         public static bool Supports(Station target,InteractionKind kind)=>target switch
         {
@@ -96,6 +100,7 @@ namespace Tycoon
             }
             if(kind==InteractionKind.Collect&&target is CheckoutStation cash)
             {
+                if(context.Carry.Total>0||GameSession.Instance.Transactions!=null&&PhysicalCashRules.HasGoods(GameSession.Instance.Transactions.View))return InteractionResult.Reject("Cất hàng để lấy tiền.");
                 if(cash.Cash<=0)return InteractionResult.Reject("Quầy chưa có tiền cần thu.");
                 return context.Player?new InteractionResult(cash.CollectCash(context.Player)>0):InteractionResult.Reject("Người chơi phải đứng tại vùng thu tiền.");
             }

@@ -129,9 +129,9 @@ namespace Tycoon
                 if(game.Storage.Inventory.Count("carrot")>0){At(game,Zone(game,game.Storage,InteractionKind.Pickup).Center);game.Player.InteractAtCurrentPosition(.13f);}else Harvest(game,crop);
                 customer=Customer(game,counter,1);yield return Arrive(counter,customer);
                 At(game,Zone(game,counter,InteractionKind.Serve).Center);Check(game.Player.InteractAtCurrentPosition(.13f)&&customer.Order.Paid,"Full order creates payment through Serve zone");
-                int cash=counter.Cash;game.Transactions.Settle(customer.Receipt);Check(counter.Cash==cash,"Payment settlement is idempotent");
+                long cash=counter.Cash;game.Transactions.Settle(customer.Receipt);Check(counter.Cash==cash,"Payment settlement is idempotent");
                 At(game,Zone(game,counter,InteractionKind.Collect).Center);Check(game.Player.InteractAtCurrentPosition(.13f)&&counter.Cash==0,"Separate Collect zone moves deferred cash to wallet");
-                int money=game.Economy.Money;game.Player.InteractAtCurrentPosition(.13f);Check(game.Economy.Money==money,"Collection cannot execute twice");
+                long money=game.Economy.Money;game.Player.InteractAtCurrentPosition(.13f);Check(game.Economy.Money==money,"Collection cannot execute twice");
             }
             Check(game.Economy.Money==100&&game.Economy.Transactions==10,"Revenue earned from ten real deliveries");
             var pad=game.Stations.OfType<PurchasePad>().Single(x=>x.Upgrade.id=="carry10");At(game,pad.Center);

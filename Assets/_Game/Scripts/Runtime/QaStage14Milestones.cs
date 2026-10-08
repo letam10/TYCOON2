@@ -12,7 +12,7 @@ namespace Tycoon
         [Serializable] sealed class MilestoneFixture{public float timeScale=6;public MilestoneCase[] cases;}
         [Serializable] sealed class MilestoneCase{public string id;public int wallet,orders,batches,bakeryOrders;public string[] owned;}
         [Serializable] sealed class MilestoneEvidence{public bool seededFixture=true;public List<MilestoneRow> results=new();}
-        [Serializable] sealed class MilestoneRow{public string id;public int seedWallet,collected,beforePurchase,afterPurchase;public bool purchased;}
+        [Serializable] sealed class MilestoneRow{public string id;public long seedWallet,collected,beforePurchase,afterPurchase;public bool purchased;}
         void SeedMilestone(MilestoneCase f)
         {
             if(!game.IsQa||!Path.GetFullPath(game.SavePath).StartsWith(Path.GetFullPath(game.QaDirectory)+Path.DirectorySeparatorChar,StringComparison.OrdinalIgnoreCase))
@@ -67,7 +67,7 @@ namespace Tycoon
             customer.Restore(new CustomerSave{receipt=game.NextReceipt++,shop=shop,lane=counter.Id,phase=(int)CustomerAgent.State.Queue,remaining=90,
                 order=new(){new(item,quantity,game.ItemPrice(item))},x=counter.QueuePoint(0).x,z=counter.QueuePoint(0).z});
             customer.transform.position=counter.QueuePoint(customer);
-            int money=game.Economy.Money,cash=counter.Cash;
+            long money=game.Economy.Money,cash=counter.Cash;
             yield return Travel(FinalZone(counter,InteractionKind.Serve).Center);yield return FinalWait(()=>customer.Order.Paid,8,"giao đơn "+item);
             Check(game.Economy.Money==money&&counter.Cash>cash,"payment at counter before collection "+shop);
             yield return Travel(counter.CashZone.Center);yield return FinalWait(()=>counter.Cash==0,4,"thu payment "+shop);
@@ -81,7 +81,7 @@ namespace Tycoon
             var evidence=new MilestoneEvidence();
             foreach(var f in fixture.cases)
             {
-                SeedMilestone(f);yield return new WaitForSeconds(.2f);int collectedBefore=game.Economy.CashCollected;
+                SeedMilestone(f);yield return new WaitForSeconds(.2f);long collectedBefore=game.Economy.CashCollected;
                 if(f.id=="supermarket")
                 {
                     foreach(var m in game.Machines.Where(m=>m.AreaId=="processing"))
@@ -96,7 +96,7 @@ namespace Tycoon
                     Check(game.Progression.SuccessfulOrdersAt("bakery")==60,"59→60 successful Bakery orders");
                 }
                 else yield return MilestoneSale("farm","carrot",2);
-                int before=game.Economy.Money;Check(before>=Definitions.Upgrade(f.id).cost,"earned boundary cash "+f.id);
+                long before=game.Economy.Money;Check(before>=Definitions.Upgrade(f.id).cost,"earned boundary cash "+f.id);
                 yield return FinalBuy(f.id);Check(game.Economy.Has(f.id),"purchased "+f.id);
                 evidence.results.Add(new(){id=f.id,seedWallet=f.wallet,collected=game.Economy.CashCollected-collectedBefore,beforePurchase=before,afterPurchase=game.Economy.Money,purchased=true});
                 game.Transactions.Checkpoint();var restored=SaveStore.Read(game.SavePath);
@@ -120,7 +120,7 @@ namespace Tycoon
             yield return Travel(FinalZone(servedTable,InteractionKind.Operate).Center);yield return FinalWait(()=>servedTable.Cleaning==0,6,"player cleans table");
             yield return FinalCollect();game.Transactions.Checkpoint();
             Check(game.Transactions.Snapshot().payments.Any(p=>p.order==RuntimeTransactions.OrderId(receipt)&&p.collected),"Restaurant payment collected by player");
-            int wallet=game.Economy.Money,total=game.Transactions.Snapshot().stacks.Sum(s=>s.quantity),collected=game.Economy.CashCollected;
+            long wallet=game.Economy.Money,total=game.Transactions.Snapshot().stacks.Sum(s=>s.quantity),collected=game.Economy.CashCollected;
             for(int i=0;i<3;i++)
             {
                 game.LoadGame();Check(!game.SaveBlocked&&game.Economy.Money==wallet&&game.Economy.CashCollected==collected,"repeat load preserves wallet and collected cash "+i);
@@ -146,7 +146,7 @@ namespace Tycoon
             partial.Restore(new CustomerSave{receipt=game.NextReceipt++,shop="farm",lane=counter.Id,phase=(int)CustomerAgent.State.Queue,remaining=90,order=new(){new("carrot",3,10)}});
             partial.transform.position=counter.QueuePoint(partial);yield return Travel(FinalZone(counter,InteractionKind.Serve).Center);
             yield return FinalWait(()=>partial.Basket.Total==2,5,"partial order receives exactly two carrots");
-            int lossBefore=game.Economy.LostItems,cashBefore=counter.Cash;yield return WalkTo(counter.WorkPoint+Vector3.forward*3);
+            long lossBefore=game.Economy.LostItems,cashBefore=counter.Cash;yield return WalkTo(counter.WorkPoint+Vector3.forward*3);
             yield return FinalWait(()=>partial.Order.RemainingPatience(Time.time)==0,100,"partial order patience expires");
             partial.Order.Expire(partial.Basket,game.Economy,Time.time);
             Check(partial.Order.TimedOut&&partial.Basket.Total==2&&game.Economy.LostItems==lossBefore+2&&counter.Cash==cashBefore,"timeout keeps received goods and records only actual loss");

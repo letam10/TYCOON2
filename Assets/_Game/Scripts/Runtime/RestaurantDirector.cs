@@ -35,7 +35,7 @@ namespace Tycoon
             DinerAgent diner;
             Vector3 point=saved==null?TownLayout.Spawn(index++):new Vector3(saved.x,.02f,saved.z);
             if(!NavMesh.SamplePosition(point,out var hit,3,NavMesh.AllAreas))return false;
-            if(pool.Count>0){diner=pool.Dequeue();diner.transform.position=hit.position;diner.gameObject.SetActive(true);diner.Agent.Warp(hit.position);}
+            if(pool.Count>0){diner=pool.Dequeue();diner.transform.position=hit.position;diner.gameObject.SetActive(true);Navigation.Warp(diner.Agent,hit.position);}
             else
             {
                 var root=new GameObject("Diner");root.transform.SetParent(transform);root.transform.position=hit.position;
@@ -75,7 +75,7 @@ namespace Tycoon
         public override void RestoreProgress(StationProgressSave state){base.RestoreProgress(state);Cleaning=state.remaining;playerServeCount=state.playerServeCount;playerCleanCount=state.playerCleanCount;Occupant=null;}
         protected override void LateUpdate(){if(StatusLabel)StatusLabel.text=Label+"\n"+(Cleaning>0?"Dọn bàn":Occupant?(Occupant.Phase==1?"Gọi món":Occupant.Phase==2?"Đang ăn":"Đã đặt bàn"):"Trống");}
     }
-    public sealed class DinerAgent : MonoBehaviour
+    public sealed partial class DinerAgent : MonoBehaviour
     {
         public NavMeshAgent Agent;
         public ActorView View;
@@ -101,6 +101,8 @@ namespace Tycoon
         public void Initialize(){Agent=Navigation.Agent(gameObject,true);View=GetComponentInChildren<ActorView>();View.Initialize();}
         public void Begin(TableStation table,DinerSave saved,bool approach=false)
         {
+            ResetTerminalFeedback();
+            OrderBubbleLayer.Release(ref orderBubble);
             Table=table;if(Basket.Authority!=null)Basket.Unbind();Basket.Restore(saved?.basket);Receipt=saved?.receipt??GameSession.Instance.NextReceipt++;
             if(approach||saved?.phase==4)
             {phase=4;remaining=90;wantedItem="meal";approachStep=saved?.approachStep??0;Table.Occupant=this;Navigation.Go(Agent,ApproachPoint());return;}
@@ -126,6 +128,7 @@ namespace Tycoon
             if(Runtime==null)Phase=3;
             if(Table&&Table.Occupant==this){Table.Occupant=null;if(dirty&&Runtime==null)Table.Cleaning=3;}
             if(Agent)Navigation.Go(Agent,TownLayout.Spawn((int)(Receipt%3)));
+            ShowTerminalFeedback();
         }
         void FailOrder(){if(Runtime!=null)GameSession.Instance.Transactions.Fail(Receipt);else GameSession.Instance.Economy.RecordLoss(Receipt,Basket);LeaveTable(Basket.Total>0);}
         public void Tick(float delta)
@@ -168,7 +171,8 @@ namespace Tycoon
         void Update()
         {
             var game=GameSession.Instance;if(!game.CanSimulate||Time.deltaTime<=0)return;
-            View.SetMotion(Agent.velocity.magnitude,Basket.Total>0);
+            if (HasTerminalFeedback) return;
+            View.SetMotion(Navigation.ActualSpeed(Agent),Basket.Total>0);
             if(Phase==4)
             {
                 if(Navigation.Arrived(Agent))
@@ -179,6 +183,7 @@ namespace Tycoon
                 return;
             }
             Tick(Time.deltaTime);
+            if (HasTerminalFeedback) return;
             if(Phase==0&&Navigation.Arrived(Agent))
             {
                 if(Runtime!=null){var command=game.Transactions.Command(TransactionKind.AdvanceDiner,"simulation",RuntimeTransactions.OrderId(Receipt));command.secondary="seat";game.Transactions.TryExecute(command,out _);}else Phase=1;

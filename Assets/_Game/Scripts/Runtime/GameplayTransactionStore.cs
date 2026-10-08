@@ -12,7 +12,11 @@ namespace Tycoon
         [Serializable] sealed class Envelope {public string payload,sha256;}
         readonly GameSession game;
         readonly FileStream lease;
+        readonly CheckpointWriter checkpoint;
+        FileStream journalWriter;
+        bool disposed;
         long durableRevision=-1;
+        double checkpointTime;
         string Journal=>game.SavePath+".journal";
         public Action<CommitBoundary> Fault {get;set;}
         internal static FileStream AcquireLease(string path)
@@ -24,42 +28,93 @@ namespace Tycoon
         public GameplayTransactionStore(GameSession game, FileStream existingLease = null)
         {
             this.game=game;
+            checkpoint = new CheckpointWriter(game.SavePath);
             lease = existingLease ?? AcquireLease(game.SavePath);
             try { TrimPartialTail(Journal); }
             catch { lease.Dispose(); throw; }
+            Application.quitting += DrainOnQuit;
         }
         public TransactionState Read()
         {
-            var state=SaveStore.Read(game.SavePath)?.transactionState;durableRevision=state?.revision??-1;return state;
+            checkpoint.Observe(true);
+            var state = SaveStore.Read(game.SavePath)?.transactionState;
+            durableRevision = state?.revision ?? -1;
+            checkpointTime = state?.simulationTime ?? 0;
+            return state;
         }
         public void Write(TransactionState state)
         {
+            checkpoint.Observe(true);
             if(durableRevision!=-1&&durableRevision!=state.revision-1)throw new IOException("Save revision đã thay đổi.");
             SaveStore.Write(game.SavePath,RuntimeTransactions.Project(state,game.CaptureSaveData()),Fault);
             durableRevision=state.revision;
         }
         void ICommandTransactionStore.Write(TransactionState state,TransactionCommand command)
         {
+            checkpoint.Observe(false);
             if(state.revision!=durableRevision+1)throw new IOException("Journal revision đã thay đổi; cần recovery.");
-            string payload=JsonUtility.ToJson(new Entry{revision=state.revision,time=state.simulationTime,command=command});
+            // Lệnh chỉ đổi ví không tick clock; thời gian journal vẫn phải sau snapshot đã chụp.
+            double time = Math.Max(checkpointTime, state.simulationTime);
+            string payload = JsonUtility.ToJson(new Entry { revision = state.revision, time = time, command = command });
             byte[] bytes=Encoding.UTF8.GetBytes(JsonUtility.ToJson(new Envelope{payload=payload,sha256=FileTransactionStore.Hash(payload)})+"\n");
             Fault?.Invoke(CommitBoundary.TemporaryFlushed);
-            using(var stream=new FileStream(Journal,FileMode.Append,FileAccess.Write,FileShare.Read))
-            {stream.Write(bytes,0,bytes.Length);stream.Flush(true);}
+            var stream = JournalWriter();
+            stream.Write(bytes, 0, bytes.Length);
+            stream.Flush(true);
             durableRevision=state.revision;Fault?.Invoke(CommitBoundary.Replaced);
         }
         public void Checkpoint(TransactionState state)
         {
+            if (!CanCheckpoint) return;
+            CheckpointOwned(CheckpointSnapshot.Copy(state));
+        }
+        internal bool CanCheckpoint => Fault != null || checkpoint.Ready;
+        internal void DrainCheckpoint() => checkpoint.Observe(true);
+        internal void CheckpointOwned(TransactionState state)
+        {
+            if (disposed) throw new ObjectDisposedException(nameof(GameplayTransactionStore));
             if(state.revision!=durableRevision)throw new IOException("Checkpoint revision không khớp journal.");
-            SaveStore.Write(game.SavePath,RuntimeTransactions.Project(state,game.CaptureSaveData()),Fault);
+            var world = CheckpointSnapshot.Copy(game.CaptureSaveData());
+            var data = RuntimeTransactions.ProjectOwned(state, world);
+            checkpointTime = Math.Max(checkpointTime, state.simulationTime);
+            if (Fault == null)
+            {
+                checkpoint.Start(data);
+                return;
+            }
+            checkpoint.Observe(true);
+            SaveStore.WriteCheckpoint(game.SavePath, data, Fault);
+            ClearJournal();
+        }
+        void ClearJournal()
+        {
             // Crash sau replace vẫn an toàn: recovery bỏ qua command đã nằm trong checkpoint.
-            using var stream=new FileStream(Journal,FileMode.Create,FileAccess.Write,FileShare.Read);stream.Flush(true);
+            var stream = JournalWriter();
+            stream.SetLength(0);
+            stream.Position = 0;
+            stream.Flush(true);
+        }
+        void DrainOnQuit()
+        {
+            try { checkpoint.Observe(true); }
+            catch (Exception error) { game.BlockRecovery(error); }
+        }
+        FileStream JournalWriter()
+        {
+            if (journalWriter != null) return journalWriter;
+            // Giữ handle trong phiên để tránh mở/đóng file ở mỗi giao dịch; vẫn flush trước publish.
+            journalWriter = new FileStream(Journal, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
+            journalWriter.Position = journalWriter.Length;
+            return journalWriter;
         }
         internal static SaveData Recover(string path,SaveData data)
         {
             string journal=path+".journal";
             if(data.transactionState==null||!File.Exists(journal))return data;
-            string text=File.ReadAllText(journal);int complete=text.LastIndexOf('\n');
+            using var reader = new StreamReader(new FileStream(journal, FileMode.Open,
+                FileAccess.Read, FileShare.ReadWrite));
+            string text = reader.ReadToEnd();
+            int complete = text.LastIndexOf('\n');
             if(complete<0)return data;
             TransactionCore core=null;double now=data.transactionState.simulationTime;
             long initialRevision=data.transactionState.revision;
@@ -88,6 +143,27 @@ namespace Tycoon
             while(position>=0){stream.Position=position;if(stream.ReadByte()=='\n')break;position--;}
             stream.SetLength(position+1);stream.Flush(true);
         }
-        public void Dispose()=>lease.Dispose();
+        public void Dispose()
+        {
+            if (disposed) return;
+            disposed = true;
+            Application.quitting -= DrainOnQuit;
+            try
+            {
+                checkpoint.Observe(true);
+                if (checkpoint.HasWritten)
+                {
+                    // Sau drain mới replay phần đuôi rồi compact; command mới không bị xóa giữa chừng.
+                    var data = SaveStore.Read(game.SavePath);
+                    SaveStore.WriteCheckpoint(game.SavePath, data);
+                    ClearJournal();
+                }
+            }
+            finally
+            {
+                try { journalWriter?.Dispose(); }
+                finally { lease.Dispose(); }
+            }
+        }
     }
 }

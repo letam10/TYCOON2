@@ -29,9 +29,10 @@ namespace Tycoon
         public int transactionVersion;
         public int contentVersion;
         public int version = 2;
-        public int money;
-        public int revenue;
-        public int cashCollected;
+        public long money;
+        public long cashInHand, cashInSafe;
+        public long revenue;
+        public long cashCollected;
         public int transactions;
         public long nextReceipt = 1;
         public string savedAt;
@@ -44,7 +45,7 @@ namespace Tycoon
         public int businessStage;
         public int restaurantMeals;
         public int bakerySales;
-        public int pendingCash;
+        public long pendingCash;
         public List<CashSave> cash = new();
         public List<DinerSave> diners = new();
         public List<CustomerSave> customers = new();
@@ -56,13 +57,21 @@ namespace Tycoon
         public List<LossRecord> losses = new();
         public EventState events = new();
     }
-    [Serializable] public sealed class CashSave { public string id; public int amount; }
+    [Serializable] public sealed class CashSave { public string id; public long amount; }
     [Serializable] public sealed class DinerSave { public string table,item; public long receipt; public int phase,approachStep; public float remaining,x,z; public int price; public List<ItemAmount> basket = new(); }
 
     public static class SaveStore
     {
-        public const int CurrentTransactionVersion = 2;
+        public const int CurrentTransactionVersion = 3;
         public static void Write(string path, SaveData data, Action<CommitBoundary> fault = null)
+        {
+            WriteCore(path, data, fault, true);
+        }
+        internal static void WriteCheckpoint(string path, SaveData data, Action<CommitBoundary> fault = null)
+        {
+            WriteCore(path, data, fault, false);
+        }
+        static void WriteCore(string path, SaveData data, Action<CommitBoundary> fault, bool pretty)
         {
             Validate(data);
             string directory = Path.GetDirectoryName(path);
@@ -70,7 +79,7 @@ namespace Tycoon
             string temporary = path + ".tmp";
             try
             {
-                byte[] bytes = System.Text.Encoding.UTF8.GetBytes(JsonUtility.ToJson(data, true));
+                byte[] bytes = System.Text.Encoding.UTF8.GetBytes(JsonUtility.ToJson(data, pretty));
                 using (var stream = new FileStream(temporary, FileMode.Create, FileAccess.Write, FileShare.None))
                 { stream.Write(bytes, 0, bytes.Length); stream.Flush(true); }
                 fault?.Invoke(CommitBoundary.TemporaryFlushed);
@@ -90,9 +99,9 @@ namespace Tycoon
             if(data?.transactionVersion==1&&data.transactionState!=null)
             {
                 data.transactionState=TransactionCore.NormalizeState(data.transactionState);
-                data.transactionVersion=CurrentTransactionVersion;
+                data.transactionVersion=data.transactionState.schemaVersion;
             }
-            if (data == null || data.version != 2 || data.money < 0 || data.inventories == null || data.unlocked == null)
+            if (data == null || data.version is not (2 or 3) || data.money < 0 || data.inventories == null || data.unlocked == null)
                 throw new InvalidDataException("Save không hợp lệ hoặc phiên bản chưa hỗ trợ.");
             data=GameplayTransactionStore.Recover(path,data);
             Validate(data);
@@ -100,7 +109,7 @@ namespace Tycoon
         }
         static void Validate(SaveData data)
         {
-            if(data==null||data.version!=2||data.money<0||data.pendingCash<0||data.revenue<0||data.cashCollected<0||data.transactions<0||
+            if(data==null||data.version is not (2 or 3)||data.money<0||data.pendingCash<0||data.revenue<0||data.cashCollected<0||data.transactions<0||
                 data.inventories==null||data.receipts==null||data.losses==null||data.cash==null||
                 data.customers==null||data.diners==null||data.workers==null||data.stationStates==null||
                 data.purchases==null||data.crews==null||data.unlocked==null||data.transit==null)
@@ -130,8 +139,9 @@ namespace Tycoon
             }
             if(cash!=data.pendingCash)throw new InvalidDataException("Tiền tại quầy không khớp sổ tiền chờ thu.");
             if(data.transactionVersion is <0 or >CurrentTransactionVersion)throw new InvalidDataException("Transaction save version chưa hỗ trợ.");
-            if(data.transactionVersion==CurrentTransactionVersion&&data.transactionState==null)throw new InvalidDataException("Save v2 thiếu transaction state.");
-            if (data.transactionVersion==CurrentTransactionVersion) TransactionCore.Validate(data.transactionState);
+            if(data.transactionVersion>0&&data.transactionState==null)throw new InvalidDataException("Save v2 thiếu transaction state.");
+            if (data.transactionVersion>0) TransactionCore.Validate(data.transactionState);
+            if(data.cashInHand<0||data.cashInSafe<0)throw new InvalidDataException("Tiền không hợp lệ.");
         }
     }
 }

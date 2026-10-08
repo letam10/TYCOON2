@@ -90,8 +90,8 @@ namespace Tycoon
             var counter = cashier.Checkout;
             var buyer = TownCustomer(counter, "carrot", 1);
             long receipt = buyer.Receipt;
-            int money = game.Economy.Money;
-            int collected = game.Economy.CashCollected;
+            long money = game.Economy.Money;
+            long collected = game.Economy.CashCollected;
             int total = CompletionItemTotal("carrot");
             yield return CompletionWait(() => buyer.Order.Paid, 80, "cashier fetches shelf goods and completes order");
             Check(buyer.Basket.Count("carrot") == 1, "customer owns the cashier-delivered carrot");

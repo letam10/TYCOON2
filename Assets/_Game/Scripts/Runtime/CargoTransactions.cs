@@ -60,7 +60,7 @@ namespace Tycoon
         static int ClaimCrate(TransactionState s,TransactionCommand c)
         {
             var truck=s.truck;Require(truck!=null,"truck","Chưa mua xe.");CargoActor(s,c.actor,WarehouseArea(s,truck.current));
-            var carrier=s.owners.Find(x=>x.kind==OwnerKind.Worker&&x.actor==c.actor);Require(carrier!=null,"authority","Claim dành cho nhân viên bốc hàng.");
+            var carrier=s.owners.Find(x=>x.actor==c.actor&&(x.kind==OwnerKind.Worker||s.schemaVersion>=3&&x.kind==OwnerKind.Player));Require(carrier!=null,"authority","Người mang không hợp lệ.");
             var box=Crate(s,c.target);bool loading=box.holder=="dock:"+truck.current&&truck.current==truck.source&&truck.phase!="Travelling";
             bool unloading=box.holder==truck.id&&truck.phase=="WaitingUnload";
             Require(loading||unloading,"cargo","Thùng đang có người giữ hoặc xe đang đi.");
@@ -73,7 +73,7 @@ namespace Tycoon
         {
             var truck=s.truck;Require(truck!=null&&truck.phase is "Idle" or "Loading","truck","Xe chưa ở vị trí chất hàng.");
             CargoActor(s,c.actor,WarehouseArea(s,truck.current));var box=Crate(s,c.target);
-            Require(truck.current==truck.source&&(box.holder=="dock:"+truck.current&&c.actor=="player"||box.holder==c.actor&&box.task=="load"),"cargo","Bạn không giữ thùng này.");
+            Require(truck.current==truck.source&&(s.schemaVersion<3&&box.holder=="dock:"+truck.current&&c.actor=="player"||box.holder==c.actor&&box.task=="load"),"cargo","Bạn không giữ thùng này.");
             Require(s.crates.Count(x=>x.holder==truck.id)<6,"capacity","Xe đã đủ 6 thùng.");
             box.task=null;LocateCrate(s,box,truck.id);truck.phase="Loading";
             if(c.actor=="player")RecordCargoJob(s,c,box,"load");return CrateCount(s,box);
@@ -108,11 +108,13 @@ namespace Tycoon
         }
         static double PathLength(System.Collections.Generic.List<RoutePoint> points)
         {double length=0;for(int i=1;i<points.Count;i++){double x=points[i].x-points[i-1].x,z=points[i].z-points[i-1].z;length+=Math.Sqrt(x*x+z*z);}return length;}
-        static int TickTruck(TransactionState s,TransactionCommand c)
+        int TickTruck(TransactionState s,TransactionCommand c)
         {
             var truck=s.truck;Require(c.actor=="simulation"&&truck!=null&&truck.phase=="Travelling"&&c.secondary==truck.trip&&double.IsFinite(c.duration)&&c.duration>0,"truck","Chuyến xe không hợp lệ.");
             int level=s.crews.Find(x=>x.id=="truck_bundle")?.speedLevel??1;
-            truck.travelled=Math.Min(truck.distance,truck.travelled+c.duration*4*(1+.2*(level-1)));
+            truck.travelled = Math.Min(truck.distance,
+                truck.travelled + c.duration * 4 * (1 + .2 * (level - 1)) *
+                (legacyWorkforceReplay ? 1 : WorkforceRules.Capability));
             if(truck.travelled>=truck.distance){truck.current=truck.tripTarget;truck.phase=truck.current==truck.source?"Loading":"WaitingUnload";}
             return 1;
         }
@@ -120,7 +122,7 @@ namespace Tycoon
         {
             var truck=s.truck;Require(truck!=null&&truck.phase=="WaitingUnload","truck","Xe chưa tới kho đích.");
             CargoActor(s,c.actor,WarehouseArea(s,truck.current));var box=Crate(s,c.target);
-            Require(box.holder==truck.id&&c.actor=="player"||box.holder==c.actor&&box.task=="unload","cargo","Thùng đang do người khác dỡ.");
+            Require(s.schemaVersion<3&&box.holder==truck.id&&c.actor=="player"||box.holder==c.actor&&box.task=="unload","cargo","Thùng đang do người khác dỡ.");
             var reservation=Reservation(s,box.reservation);Require(reservation.status==ReservationStatus.Active&&reservation.destination==truck.current,"reservation","Thiếu giữ chỗ kho đích.");
             reservation.holder=c.actor;var move=Copy(c);move.source=box.id;move.destination=truck.current;move.item=box.item;move.quantity=CrateCount(s,box);move.reservation=reservation.id;
             int n=Move(s,move,cargo:true);if(c.actor=="player")RecordCargoJob(s,c,box,"unload",n);
@@ -150,7 +152,7 @@ namespace Tycoon
             foreach(var box in s.crates)
             {
                 var owner=Owner(s,box.id);Require(owner.kind==OwnerKind.Crate&&owner.singleItem&&CrateCount(s,box) is >0 and <=6&&owner.location==box.holder+"/"+box.id,"cargo","Thùng/owner không hợp lệ.");
-                Require(box.holder==s.truck.id||s.owners.Any(x=>x.kind==OwnerKind.Storage&&box.holder=="dock:"+x.id)||s.owners.Any(x=>x.kind==OwnerKind.Worker&&x.actor==box.holder),"cargo","Thùng không có vị trí hợp lệ.");
+                Require(box.holder==s.truck.id||s.owners.Any(x=>x.kind==OwnerKind.Storage&&box.holder=="dock:"+x.id)||s.owners.Any(x=>(x.kind==OwnerKind.Worker||s.schemaVersion>=3&&x.kind==OwnerKind.Player)&&x.actor==box.holder),"cargo","Thùng không có vị trí hợp lệ.");
             }
         }
     }

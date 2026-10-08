@@ -86,15 +86,15 @@ namespace Tycoon.Tests
         [Test]public void PickupAndDropNeverSwitchSkuOrDeleteGoodsWhenRejected()
         {
             var storage=Add<StorageStation>("Storage");storage.Inventory=new Inventory(20);storage.Inventory.TryAdd("carrot",5);storage.Inventory.TryAdd("milk",5);
-            game.Player.Carry.TryAdd("carrot",5);
+            game.Player.Carry.TryAdd("carrot",11);
             var wrong=storage.Perform(InteractionKind.Pickup,new InteractionContext(game.Player,"milk"),.1f);
-            Assert.That(wrong.Worked,Is.False);Assert.That(wrong.Reason,Does.Contain("loại khác"));Assert.That(game.Player.Carry.Count("carrot"),Is.EqualTo(5));
+            Assert.That(wrong.Worked,Is.False);Assert.That(wrong.Reason,Does.Contain("đổi loại"));Assert.That(game.Player.Carry.Count("carrot"),Is.EqualTo(11));
             Assert.That(storage.Perform(InteractionKind.Pickup,new InteractionContext(game.Player,"carrot"),.1f).Worked,Is.True);
             var full=storage.Perform(InteractionKind.Pickup,new InteractionContext(game.Player,"carrot"),.1f);
-            Assert.That(full.Worked,Is.False);Assert.That(full.Reason,Does.Contain("đầy"));Assert.That(game.Player.Carry.Total,Is.EqualTo(6));
+            Assert.That(full.Worked,Is.False);Assert.That(full.Reason,Does.Contain("đầy"));Assert.That(game.Player.Carry.Total,Is.EqualTo(12));
             var shelf=Add<ShelfStation>("Shelf");shelf.Inventory=new Inventory(20);shelf.AllowedItems=new[]{"milk"};
             Assert.That(shelf.Perform(InteractionKind.Drop,new InteractionContext(game.Player,"milk"),.1f).Reason,Does.Contain("không nhận"));
-            Assert.That(game.Player.Carry.Count("carrot"),Is.EqualTo(6));Assert.That(shelf.Inventory.Total,Is.Zero);
+            Assert.That(game.Player.Carry.Count("carrot"),Is.EqualTo(12));Assert.That(shelf.Inventory.Total,Is.Zero);
         }
         [Test]public void InputSystemKeepsKeyboardAndGamepadBindingsAndDisposesActions()
         {

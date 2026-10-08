@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Tycoon
@@ -7,6 +8,7 @@ namespace Tycoon
         AudioSource source;
         AudioClip pickup, drop, sale, work, blocked;
         float nextWork, nextBlocked, nextTransfer;
+        readonly List<PurchaseBurst> bursts = new();
         void Awake()
         {
             source = gameObject.AddComponent<AudioSource>(); source.playOnAwake = false; source.volume = .17f; source.spatialBlend = 0;
@@ -33,52 +35,64 @@ namespace Tycoon
             if (Time.unscaledTime < nextTransfer) return;
             nextTransfer = Time.unscaledTime + .12f;
             if (source) source.PlayOneShot(taking ? pickup : drop);
+            var game = GameSession.Instance;
+            var player = game ? game.Player : null;
+            var view = player ? player.GetComponent<CarryPresentation>() : null;
+            if (player && view)
+            {
+                string itemId = player.Carry.Total > 0 ? player.Carry.Snapshot()[0].id : view.LastItemId;
+                Vector3 hand = view.HandPoint;
+                Vector3 station = player.ActiveInteraction?.Center ?? point;
+                station += Vector3.up * .65f;
+                CarryTransferVisual.Play(itemId, taking ? station : hand, taking ? hand : station, transform);
+            }
             SparkBurst(point, 5, .065f, taking ? "#9CECB8" : "#A5DEFA", "#FFEDBC");
         }
-        public void Collect(Vector3 point) { PlaySale(); SparkBurst(point, 8, .085f, "#FFD875", "#FFF4D6"); }
+        public void Collect(Vector3 point)
+        {
+            PlaySale();
+            var player = GameSession.Instance ? GameSession.Instance.Player : null;
+            var carry = player ? player.GetComponent<CarryPresentation>() : null;
+            if (carry)
+                CarryTransferVisual.Play("cash", (player.ActiveInteraction?.Center ?? point) + Vector3.up * .65f,
+                    carry.HandPoint, transform);
+            SparkBurst(point, 8, .085f, "#FFD875", "#FFF4D6");
+        }
+        public void CashTransfer(Vector3 from, Vector3 to)
+        {
+            CarryTransferVisual.Play("cash", from, to, transform);
+        }
         public void Burst(Vector3 point)
         {
             SparkBurst(point, 12, .11f, "#FFD875", "#A8E6AF"); PlaySale();
         }
         void SparkBurst(Vector3 point, int count, float size, string first, string second)
         {
-            var root = new GameObject("FeedbackBurst"); root.transform.SetParent(transform, false); root.transform.position = point;
-            for (int i = 0; i < count; i++)
+            PurchaseBurst available = null;
+            foreach (var burst in bursts)
             {
-                float angle = i * Mathf.PI * 2 / count;
-                var spark = Art.Box("Spark", new Vector3(Mathf.Cos(angle), .15f, Mathf.Sin(angle)) * .2f, Vector3.one * size, i % 2 == 0 ? first : second, root.transform);
-                var renderer = spark.GetComponent<Renderer>(); renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; renderer.receiveShadows = false;
+                if (burst.gameObject.activeSelf) continue;
+                available = burst;
+                break;
             }
-            root.AddComponent<PurchaseBurst>();
+            if (!available && bursts.Count < 12)
+            {
+                var root = new GameObject("FeedbackBurst");
+                root.transform.SetParent(transform, false);
+                available = root.AddComponent<PurchaseBurst>();
+                bursts.Add(available);
+            }
+            if (!available) available = bursts[0];
+            available.Begin(point, count, size, first, second);
         }
-        void OnDestroy() { Destroy(pickup); Destroy(drop); Destroy(sale); Destroy(work); Destroy(blocked); }
-    }
-    public sealed class PurchaseBurst : MonoBehaviour
-    {
-        float elapsed;
-        Transform[] sparks;
-        Vector3[] velocities;
-        void Awake()
+        void OnDestroy()
         {
-            sparks = new Transform[transform.childCount]; velocities = new Vector3[sparks.Length];
-            for (int i = 0; i < sparks.Length; i++)
+            foreach (var clip in new[] { pickup, drop, sale, work, blocked })
             {
-                sparks[i] = transform.GetChild(i);
-                Vector3 outward = sparks[i].localPosition; outward.y = 0;
-                velocities[i] = outward.normalized * (1 + i % 3 * .25f) + Vector3.up * (1.6f + i % 2 * .4f);
+                if (!clip) continue;
+                if (Application.isPlaying) Destroy(clip);
+                else DestroyImmediate(clip);
             }
-        }
-        void Update()
-        {
-            elapsed += Time.deltaTime;
-            for (int i = 0; i < sparks.Length; i++)
-            {
-                velocities[i] += Vector3.down * (4 * Time.deltaTime);
-                sparks[i].localPosition += velocities[i] * Time.deltaTime;
-                sparks[i].Rotate(new Vector3(120, 80, 150) * Time.deltaTime);
-            }
-            transform.localScale = Vector3.one * Mathf.Clamp01((.75f - elapsed) / .3f);
-            if (elapsed >= .75f) Destroy(gameObject);
         }
     }
 }

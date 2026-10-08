@@ -83,7 +83,7 @@ namespace Tycoon
             yield return CompletionWait(() => table.Cleaning == 0, 20, "Waiter cleans before table reuse");
             var bank = game.Checkouts.First(c => c.ShopId == "restaurant");
             Check(bank.Cash > 0, "Restaurant crew leaves payment at the collection point");
-            int money = game.Economy.Money;
+            long money = game.Economy.Money;
             game.Player.CanControl = true;
             yield return Travel(bank.CollectionPoint);
             yield return CompletionWait(() => game.Economy.Money > money, 5,

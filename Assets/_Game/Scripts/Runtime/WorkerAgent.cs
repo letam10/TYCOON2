@@ -11,10 +11,11 @@ namespace Tycoon
         public string id, upgrade, source, destination, item, working, reservation;
         public float x,z;
         public int phase,count,deliveries;
+        public bool retiring, retired;
         public long tableReceipt;
         public List<ItemAmount> carry=new();
     }
-    public sealed class WorkerAgent : MonoBehaviour
+    public sealed partial class WorkerAgent : MonoBehaviour
     {
         public string WorkerId,UpgradeId,Role,Reason="Chờ việc";
         public NavMeshAgent Agent; public ActorView View;
@@ -23,6 +24,8 @@ namespace Tycoon
         public bool IsCashier=>Role=="Cashier";
         public int Deliveries;
         CrewState crew;
+        StorageStation areaStorage;
+        float movementSpeed;
         Station source,destination,working;
         Inventory from,to;
         string item;
@@ -34,32 +37,36 @@ namespace Tycoon
         string reservationId;
         float workDelta;
         long tableReceipt;
-        TextMesh label;
         public string Diagnostic()=>WorkerId+" "+Reason+" phase="+phase+" item="+item+" carry="+Carry.Total+" source="+source?.Id+" destination="+destination?.Id;
         public void Initialize(UpgradeDefinition upgrade)
         {
-            UpgradeId=upgrade.id;crew=GameSession.Instance.CrewStates.Find(x=>x.id==upgrade.id)??GameSession.CrewFor(upgrade);Role=crew.role;
+            UpgradeId = upgrade.id;
+            crew = GameSession.Instance.ReadCrew(upgrade.id) ?? GameSession.CrewFor(upgrade);
+            Role = crew.role;
             Agent=Navigation.Agent(gameObject);View=GetComponentInChildren<ActorView>();View.Initialize();
-            var stackRoot=new GameObject("WorkerCarry");stackRoot.transform.SetParent(transform,false);stackRoot.transform.localPosition=new Vector3(0,.8f,-.4f);
-            var stack=stackRoot.AddComponent<InventoryStack>();stack.Inventory=Carry;stack.Pool=GameSession.Instance.Pool;stack.Columns=stack.Rows=1;stack.Maximum=16;stack.Scale=.7f;
-            label=Art.Label("",new Vector3(0,2.1f,0),transform,.2f,"#183D26").GetComponent<TextMesh>();
+            CarryPresentation.AttachWorker(this);
         }
         void Update()
         {
+            using var frameProbe = QaFrameProbe.Measure("WorkerAgent.Update");
             var g=GameSession.Instance;if(!g.NavigationReady||!g.CanSimulate||Time.deltaTime<=0)return;
+            if (Retiring && Role == "Driver") { TickRetirement(); return; }
             if(Role=="Driver")
             {
-                if(g.Logistics?.Vehicle){if(Agent.enabled)Agent.enabled=false;transform.SetParent(g.Logistics.Vehicle,false);transform.localPosition=new(0,.45f,1.5f);transform.localRotation=Quaternion.identity;Reason=g.Logistics.Reason;
+                if(g.Logistics?.Vehicle){if(Agent.enabled)Navigation.Suspend(Agent);transform.SetParent(g.Logistics.Vehicle,false);transform.localPosition=new(0,.45f,1.5f);transform.localRotation=Quaternion.identity;Reason=g.Logistics.Reason;
                     if(View.Animator.HasState(0,Animator.StringToHash("Sit"))&&!View.Animator.GetCurrentAnimatorStateInfo(0).IsName("Sit"))View.Animator.CrossFadeInFixedTime("Sit",.2f);}
                 return;
             }
             if(!Agent.isOnNavMesh)return;
             if(Time.time<routeRetryAt){Reason="Đang chờ thông lối";return;}
-            crew=g.CrewStates.Find(x=>x.id==UpgradeId)??crew;
-            if(!g.StorageFor(crew.area)){Reason="Khu chưa có kho riêng";return;}
-            Agent.speed=4.2f*(1+.2f*(crew.speedLevel-1));Carry.Capacity=crew.role=="Loader"?6*crew.carryLevel:crew.carryLevel==1?6:crew.carryLevel==2?10:crew.carryLevel==3?16:24;
-            View.SetMotion(Agent.velocity.magnitude,Role=="Loader"?g.Logistics.HasCargo(this):Carry.Total>0);
-            if(label){label.text=Reason;label.gameObject.SetActive((g.Player.transform.position-transform.position).sqrMagnitude<60);label.transform.rotation=Camera.main.transform.rotation;}
+            crew=g.ReadCrew(UpgradeId)??crew;
+            if (!areaStorage) areaStorage = g.StorageFor(crew.area);
+            if (!areaStorage) { Reason = "Khu chưa có kho riêng"; return; }
+            float nextSpeed = WorkforceRules.MovementSpeed(crew.speedLevel);
+            if (movementSpeed != nextSpeed) { movementSpeed = nextSpeed; Agent.speed = nextSpeed; }
+            int capacity = CarryLimits.Worker(crew);
+            if (Carry.Capacity != capacity) Carry.Capacity = capacity;
+            View.SetMotion(Navigation.ActualSpeed(Agent),Role=="Loader"?g.Logistics.HasCargo(this):Carry.Total>0);
             float moved=(transform.position-previous).sqrMagnitude;
             if(Agent.hasPath&&Agent.remainingDistance>.6f&&moved<.0001f)stuckTime+=Time.deltaTime;
             else{stuckTime=0;if(moved>.0001f)stuckRepaths=0;}
@@ -69,6 +76,7 @@ namespace Tycoon
                 if(stuckRepaths<3){Navigation.Go(Agent,Agent.destination,true);stuckRepaths++;stuckTime=0;return;}
                 Agent.ResetPath();Reason="Lối bị chặn • đang chờ";routeRetryAt=Time.time+5;stuckRepaths=0;stuckTime=0;return;
             }
+            if (Retiring) { TickRetirement(); return; }
             if(Role=="Loader"){g.Logistics.Loader(this,crew);return;}
             if(phase==1||phase==2){Transport();return;}
             if(working)
@@ -80,8 +88,13 @@ namespace Tycoon
                     if(g.Player.ActiveInteraction is ProximityTarget p && p.Target==brokenMachine && p.Kind==InteractionKind.Repair)
                     {Reason="Người chơi đang sửa • nhường chỗ";brokenMachine.ReleaseOperator(GetEntityId());Navigation.Go(Agent,brokenMachine.WaitingPoint);return;}
                     if((transform.position-brokenMachine.WorkPoint).sqrMagnitude>1.3f){Navigation.Go(Agent,brokenMachine.WorkPoint);Reason="Đến sửa "+brokenMachine.Label;return;}
-                    Agent.ResetPath();
-                    bool repaired=brokenMachine.Repair(g.Economy,Time.deltaTime,GetEntityId());
+                    if (Agent.hasPath) Agent.ResetPath();
+                    if (!brokenMachine.RepairPaid && g.Economy.CashInHand < brokenMachine.RepairFee)
+                    {
+                        Reason = "Rút tiền tại két";
+                        return;
+                    }
+                    bool repaired=brokenMachine.Repair(g.Economy,Time.deltaTime*WorkforceRules.Capability,GetEntityId());
                     Reason=repaired?"Đang sửa • "+RepairTiming.Employee(crew.speedLevel)+"s":g.Transactions.LastReason;
                     if(repaired)View.Work(ActorView.WorkState(brokenMachine,InteractionKind.Repair));return;
                 }
@@ -114,7 +127,7 @@ namespace Tycoon
                 }
                 Vector3 point=working.WorkPoint;
                 if((transform.position-point).sqrMagnitude>1.3f){Navigation.Go(Agent,point);Reason="Đến "+working.Label;return;}
-                Agent.ResetPath();
+                if (Agent.hasPath) Agent.ResetPath();
                 if(working is MachineStation machine)
                 {
                     Reason=machine.Phase==MachinePhase.Operating?"Đang vận hành":"Đang khởi động máy";
@@ -124,7 +137,7 @@ namespace Tycoon
                 if(working is TableStation table)
                 {
                     Reason=table.Cleaning>0?"Đang dọn bàn":table.NeedsMeal?"Đang phục vụ":"Chờ bàn";
-                    table.Work(Carry,Time.deltaTime*(1+.2f*(crew.speedLevel-1)),GetEntityId());
+                    table.Work(Carry,Time.deltaTime*WorkforceRules.Productivity(crew.speedLevel),GetEntityId());
                     View.Work(table.Cleaning>0?"Cleaning":"Serving");
                     if(!table.NeedsMeal&&table.Cleaning<=0)StopWorking();
                     return;
@@ -150,12 +163,12 @@ namespace Tycoon
                 {var result=restock.RestockPlayer(GetEntityId());Reason=result.Worked?"Đang tái đàn":"Chờ tái đàn: "+result.Reason;return;}
                 Reason=working is ProductionStation livestock&&livestock.Animal?"Đang chăm vật nuôi":"Đang làm việc";
                 workDelta+=Time.deltaTime;if(workDelta<.1f)return;
-                working.Work(Carry,workDelta*(1+.2f*(crew.speedLevel-1)),GetEntityId());workDelta=0;
+                working.Work(Carry,workDelta*WorkforceRules.Productivity(crew.speedLevel),GetEntityId());workDelta=0;
                 View.Work(ActorView.WorkState(working,InteractionKind.Operate));
                 if(Carry.Total>0){StopWorking();BeginDrop(g.StorageFor(crew.area));}
                 return;
             }
-            if(Time.time<nextDecision)return;nextDecision=Time.time+.2f;
+            if(Time.time<nextDecision)return;nextDecision=Time.time+.2f/WorkforceRules.Capability;
             if(IsCashier)
             {
                 string shop=crew.area=="supermarket"?"market":crew.area;
@@ -173,7 +186,7 @@ namespace Tycoon
                     }
                     if(!needed){BeginDrop(g.StorageFor(crew.area));return;}
                     if((transform.position-Checkout.WorkPoint).sqrMagnitude>1.3f){Navigation.Go(Agent,Checkout.WorkPoint);return;}
-                    Agent.ResetPath();
+                    if (Agent.hasPath) Agent.ResetPath();
                     if(Checkout.Serve(Carry)){Deliveries++;Reason="Đang phục vụ";View.Work("Cashier");}
                     else Reason="Chờ khách tại quầy";
                     return;
@@ -183,7 +196,10 @@ namespace Tycoon
                 if(order.Lines.Any(x=>x.Remaining>0&&Checkout.Inventory.Available(x.id)>0))
                 {
                     if((transform.position-Checkout.WorkPoint).sqrMagnitude>1.3f){Navigation.Go(Agent,Checkout.WorkPoint);Reason="Đến phục vụ hàng tại quầy";return;}
-                    Agent.ResetPath();Reason=Checkout.Serve(Checkout.Inventory,GetEntityId())?"Đang phục vụ":"Chờ khách tại quầy";View.Work("Cashier");return;
+                    if (Agent.hasPath) Agent.ResetPath();
+                    Reason=Checkout.Serve(Checkout.Inventory,GetEntityId())?"Đang phục vụ":"Chờ khách tại quầy";
+                    View.Work("Cashier");
+                    return;
                 }
                 foreach(var row in order.Lines)
                 {
@@ -239,174 +255,11 @@ namespace Tycoon
             FindRoute();
         }
         int Slot { get { if(WorkerId!=null&&int.TryParse(WorkerId.Substring(WorkerId.LastIndexOf(':')+1),out var n))return n;return 0; } }
-        static bool FarmStockEnough(ProductionStation crop,StorageStation storage)=>storage&&
-            storage.Inventory.Count(crop.ItemId)+storage.Inventory.ReservedSpace(crop.ItemId)>=Mathf.Max(crop.HarvestQuantity*2,storage.SharedReserveThreshold(crop.ItemId)+6);
-        void FindRoute()
+        void OnDisable()
         {
-            var g=GameSession.Instance;var local=g.StorageFor(crew.area);
-            if(Role=="Restocker")
-            {
-                var shelves=g.Shelves.FindAll(x=>x.AreaId==crew.area&&x.IsUnlocked);
-                foreach(var shelf in shelves)foreach(var def in Definitions.Items)if(shelf.Accepts(def.id)&&SaleAvailable(local,def.id)>0&&shelf.Inventory.FreeFor(def.id)>0){BeginMove(local,shelf,def.id,Mathf.Min(Carry.Capacity,SaleAvailable(local,def.id)),false);return;}
-                Reason="Chờ hàng trong kho khu";Navigation.Go(Agent,local.WaitingPoint);return;
-            }
-            foreach(var machine in g.Machines)
-            {
-                if(!machine.IsUnlocked||machine.AreaId!=crew.area)continue;
-                foreach(var output in machine.Inventory.Snapshot())if(local.Inventory.FreeFor(output.id)>0){BeginMove(machine,local,output.id,Carry.Capacity,false);return;}
-                foreach(var input in machine.Recipe.inputs)
-                {
-                    if(machine.Input.FreeFor(input.id)<=0)continue;
-                    Station supply=null;
-                    supply=SupplyFor(input.id);
-                    if(supply){BeginMove(supply,machine,input.id,Carry.Capacity,true);return;}
-                }
-            }
-            // Bán thành phẩm từ kho khu; đây là tuyến cố định của đội vận chuyển.
-            foreach(var shelf in g.Shelves)if(shelf.AreaId==crew.area&&shelf.IsUnlocked)foreach(var def in Definitions.Items)
-                if(shelf.Accepts(def.id))foreach(var s in g.Stations)if(s is StorageStation&&s.AreaId==SupplyArea(def.id)&&SaleAvailable(s,def.id)>0&&shelf.Inventory.FreeFor(def.id)>0){BeginMove(s,shelf,def.id,Mathf.Min(Carry.Capacity,SaleAvailable(s,def.id)),false);return;}
-            Reason="Chờ nguyên liệu";Navigation.Go(Agent,local.WaitingPoint);
-        }
-        void BeginMove(Station pickup,Station drop,string sku,int requested,bool input)
-        {
-            if(!pickup||!drop)return;
-            tableReceipt=drop is TableStation table?table.Occupant?.Receipt??0:drop is CheckoutStation counter?counter.FrontOrder?.Receipt??0:0;
-            source=pickup;destination=drop;from=pickup.Inventory;to=input?((MachineStation)drop).Input:drop.Inventory;item=sku;
-            count=Mathf.Min(requested,Carry.FreeFor(sku),from.Available(sku),drop is CheckoutStation?requested:to.FreeFor(sku));
-            if(count<=0){Reason=from.Available(sku)==0?"Thiếu nguyên liệu":"Đích đã đầy";return;}
-            if(GameSession.Instance.Transactions!=null)
-            {
-                if(drop is CheckoutStation servingCounter)to=servingCounter.Queue[0].Basket;
-                if(drop is TableStation servingTable)to=servingTable.Occupant.Basket;
-                reservationId=GameSession.Instance.Transactions.Reserve(from,to,sku,count,GetEntityId(),Carry);
-                if(reservationId==null)return;heldSpace=true;phase=1;Navigation.Go(Agent,pickup.WorkPoint);Reason="Đang lấy hàng";return;
-            }
-            if(to!=null&&!to.TryReserveSpace(sku,count))return;
-            if(!from.TryReserve(sku,count)){to?.ReleaseSpace(sku,count);return;}
-            heldSpace=to!=null;phase=1;Navigation.Go(Agent,pickup.WorkPoint);Reason="Đang lấy hàng";
-        }
-        void BeginDrop(Station drop)
-        {
-            if(!drop){Reason="Khu chưa có kho riêng";return;}
-            var items=Carry.Snapshot();if(items.Count==0)return;item=items[0].id;source=null;destination=drop;from=Carry;to=drop.Inventory;
-            count=Mathf.Min(Carry.Count(item),to.FreeFor(item));
-            if(count<=0){Reason="Đích đã đầy";Navigation.Go(Agent,drop.WaitingPoint);return;}
-            if(GameSession.Instance.Transactions!=null)
-            {
-                reservationId=GameSession.Instance.Transactions.Reserve(Carry,to,item,count,GetEntityId());
-                if(reservationId==null)return;heldSpace=true;phase=2;Navigation.Go(Agent,drop.InteractionPoint);return;
-            }
-            heldSpace=to.TryReserveSpace(item,count);if(!heldSpace)return;phase=2;Navigation.Go(Agent,drop.InteractionPoint);
-        }
-        void Transport()
-        {
-            if(GameSession.Instance.Transactions!=null)
-            {
-                var r=GameSession.Instance.Transactions.Reservation(reservationId);
-                if(r==null||r.status!=ReservationStatus.Active||r.expiresAt<=GameSession.Instance.Transactions.Now){CancelTransport();Reason="Chỗ giữ đã hết hạn";return;}
-            }
-            var target=phase==1?source:destination;
-            if(!target||!target.IsUnlocked){CancelTransport();Reason="Đích không còn khả dụng";return;}
-            if(destination is TableStation requestedTable&&(!requestedTable.NeedsMeal||requestedTable.Occupant.Receipt!=tableReceipt))
-            {CancelTransport();Reason="Đơn bàn đã kết thúc";return;}
-            if(destination is CheckoutStation requestedCounter&&requestedCounter.FrontOrder?.Receipt!=tableReceipt)
-            {CancelTransport();Reason="Đơn quầy đã kết thúc";return;}
-            if((transform.position-target.WorkPoint).sqrMagnitude>1.3f){Navigation.Go(Agent,target.WorkPoint);return;}
-            Agent.ResetPath();
-            if(phase==1)
-            {
-                int n=GameSession.Instance.Transactions!=null?GameSession.Instance.Transactions.Transfer(from,Carry,item,count,reservation:reservationId):Inventory.TransferReserved(from,Carry,item,count);
-                if(n<count&&GameSession.Instance.Transactions==null){to?.ReleaseSpace(item,count-n);from.Release(item,count-n);}count=n;
-                if(n==0){phase=0;heldSpace=false;Reason="Thiếu nguyên liệu";return;}
-                View.Interact(true);
-                phase=2;Navigation.Go(Agent,destination.WorkPoint);Reason="Đang vận chuyển";
-            }
-            else
-            {
-                int n;
-                if(GameSession.Instance.Transactions!=null)
-                {
-                    if(destination is CheckoutStation counter)
-                    {
-                        var customer=counter.Queue.Count>0?counter.Queue[0]:null;
-                        if(!customer||Vector3.Distance(customer.transform.position,counter.QueuePoint(customer))>.9f){Reason="Chờ khách tại quầy";return;}
-                        n=GameSession.Instance.Transactions.Deliver(tableReceipt,Carry,reservationId);
-                        if(customer.Order.Finished)customer.Leave();
-                    }
-                    else if(destination is TableStation table)n=GameSession.Instance.Transactions.Deliver(tableReceipt,Carry,reservationId);
-                    else n=GameSession.Instance.Transactions.Transfer(Carry,to,item,count,reservation:reservationId);
-                    if(n==0){Reason="Chờ đích nhận hàng";return;}
-                    if(destination is CheckoutStation)View.Work("Cashier");else if(destination is TableStation)View.Work("Serving");else View.Interact(false);
-                    heldSpace=false;phase=0;reservationId=null;Deliveries++;
-                    if(destination is MachineStation)StopWorking();
-                    if(destination is ProductionStation livestock&&livestock.Animal)working=livestock;return;
-                }
-                if(destination is CheckoutStation servingCounter)
-                {
-                    // Giao từ giỏ nhân viên sau khi đã đi tới đúng quầy và đúng đơn.
-                    n=servingCounter.Serve(Carry)?count:0;
-                    if(n==0){CancelTransport();Reason="Đơn quầy không nhận hàng";return;}
-                }
-                else if(destination is TableStation servingTable)
-                {n=servingTable.DeliverMeal(Carry,tableReceipt)?1:0;if(n>0)to.ReleaseSpace(item,n);}
-                else n=Inventory.TransferIntoReservedSpace(Carry,to,item,count);
-                if(n==0){Reason="Đích đã đầy";return;}
-                count-=n;if(count>0)return;
-                heldSpace=false;phase=0;Deliveries++;destination.WorkCount++;
-                if(destination is ProductionStation animal&&animal.Animal)working=animal;
-            }
-        }
-        static string SupplyArea(string sku)=>sku is "flour" or "cheese" or "sauce" or "soy_sauce" or "bottled_milk" or "yarn" or "cloth"?"processing":sku is "bread" or "cake" or "bread_dough" or "cake_batter"?"bakery":sku is "meal" or "beef_soy" or "corn_soup" or "pasta" or "egg_sandwich" or "soy_vegetables"?"restaurant":"farm";
-        Station SupplyFor(string item)
-        {
-            var g=GameSession.Instance;var local=g.StorageFor(crew.area);if(local&&local.Inventory.Available(item)>0)return local;
-            var origin=g.StorageFor(SupplyArea(item));if(origin&&origin.Inventory.Available(item)>0)return origin;
-            return g.Machines.FirstOrDefault(x=>x.IsUnlocked&&x.AreaId==crew.area&&x.Inventory.Available(item)>0);
-        }
-        static int SaleAvailable(Station source,string sku)
-        {
-            return source is StorageStation storage?storage.AvailableAboveReserve(sku):source.Inventory.Available(sku);
-        }
-        void StopWorking(){if(working)working.ReleaseOperator(GetEntityId());working=null;workDelta=0;}
-        void CancelTransport()
-        {
-            if(GameSession.Instance&&GameSession.Instance.Transactions!=null)
-            {
-                GameSession.Instance.Transactions.Release(reservationId,GetEntityId());reservationId=null;
-                heldSpace=false;phase=0;count=0;source=destination=null;from=to=null;return;
-            }
-            if(phase==1&&from!=null)from.Release(item,count);
-            if(heldSpace&&to!=null)to.ReleaseSpace(item,count);
-            heldSpace=false;phase=0;count=0;source=destination=null;from=to=null;
-        }
-        void OnDisable(){StopWorking();CancelTransport();}
-        string InventoryId(Station s,Inventory inv)=>s==null?"":s.Id+(s is MachineStation m&&ReferenceEquals(m.Input,inv)?"_input":"");
-        public WorkerSave Snapshot()=>new(){id=WorkerId,upgrade=UpgradeId,source=InventoryId(source,from),destination=InventoryId(destination,to),item=item,working=working?.Id,reservation=reservationId,tableReceipt=tableReceipt,x=transform.position.x,z=transform.position.z,phase=phase,count=count,deliveries=Deliveries,carry=Carry.Snapshot()};
-        public void Restore(WorkerSave saved)
-        {
-            StopWorking();CancelTransport();
-            if(Carry.Authority==null)Carry.Restore(saved.carry);Deliveries=saved.deliveries;item=saved.item;count=saved.count;phase=saved.phase;tableReceipt=saved.tableReceipt;reservationId=saved.reservation;
-            var g=GameSession.Instance;
-            source=g.Stations.Find(s=>s.Id==saved.source);destination=g.Stations.Find(s=>s.Id==saved.destination||s.Id+"_input"==saved.destination);
-            from=source?.Inventory;to=destination is MachineStation m&&saved.destination.EndsWith("_input")?m.Input:destination?.Inventory;
-            working=g.Stations.Find(s=>s.Id==saved.working);
-            if(g.Transactions!=null)
-            {
-                if(phase is 1 or 2)
-                {
-                    if(destination is CheckoutStation)to=null;
-                    if(destination is TableStation)to=null;
-                    var reservation=g.Transactions.Reservation(reservationId);
-                    heldSpace=reservation!=null&&reservation.status==ReservationStatus.Active;
-                    if(!heldSpace){phase=0;count=0;reservationId=null;}
-                }
-                return;
-            }
-            if(phase is 1 or 2)
-            {
-                heldSpace=to!=null&&to.TryReserveSpace(item,count);
-                if((!heldSpace&&!(destination is CheckoutStation))||(phase==1&&(from==null||!from.TryReserve(item,count)))){if(heldSpace)to.ReleaseSpace(item,count);phase=0;heldSpace=false;throw new System.IO.InvalidDataException("Không khôi phục được chỗ giữ cho tuyến vận chuyển "+WorkerId);}
-            }
+            if (Retired) return;
+            StopWorking();
+            CancelTransport();
         }
     }
 }

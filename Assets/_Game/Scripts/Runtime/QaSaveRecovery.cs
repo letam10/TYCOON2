@@ -40,7 +40,7 @@ namespace Tycoon
             yield return Travel(Near(plot));
             yield return TownWait(() => game.Player.Carry.Count("carrot") >= 6, 35, "recovered starter harvest");
             var counter = game.Checkouts.First(station => station.ShopId == "farm");
-            int startingMoney = game.Economy.Money;
+            long startingMoney = game.Economy.Money;
             yield return Travel(Near(counter));
             yield return TownWait(() => counter.Cash > 0, 55, "recovered starter serves natural customer");
             Check(game.Economy.Money == startingMoney, "delivery pays counter before wallet");

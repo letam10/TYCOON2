@@ -117,7 +117,7 @@ namespace Tycoon
             machine.BreakDown(40);
             Check(machine.Broken, "One machine breaks while running");
             float remaining = machine.Remaining;
-            int wallet = game.Economy.Money;
+            long wallet = game.Economy.Money;
             yield return CompletionWait(() => machine.RepairPaid, 35, "Specialist reaches machine and pays repair once");
             Check(Math.Abs(machine.Remaining - remaining) < .01f, "Broken batch preserves production progress");
             float began = Time.time;

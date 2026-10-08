@@ -24,7 +24,7 @@ namespace Tycoon
             // Player tiếp quản work slot; tỷ lệ sửa và payment của sự cố được giữ nguyên.
             if(player&&m.operatorId!="player"){m.operatorId=null;m.operatorUntil=0;}
             Lease(m,c.actor,clock());
-            if(!p.repairPaid){Require(s.money>=p.repairFee,"funds","Chờ đủ tiền trả phí sửa máy.");s.money-=p.repairFee;p.repairPaid=true;}
+            if(!p.repairPaid){Require(PhysicalCashRules.Hand(s)>=p.repairFee,"funds","Chờ đủ tiền trả phí sửa máy.");PhysicalCashRules.Spend(s,p.repairFee);p.repairPaid=true;}
             if(!player)p.playerOnlyRepair=false;
             p.repairProgress=Math.Min(1,p.repairProgress+(float)c.duration/seconds);
             p.repairRemaining=(1-p.repairProgress)*RepairTiming.Player;

@@ -64,7 +64,7 @@ namespace Tycoon
                 yield return Travel(counter.CollectionPoint);yield return TownWait(()=>game.Economy.Money>0,4,"player collects real payment");
                 Check(game.Economy.CashCollected==game.Economy.Money,"zero-cash recovery loop earns collected cash");
                 if(game.Player.Carry.Total>0)yield return TownDrop(game.Storage);
-                int wallet=game.Economy.Money,revenue=game.Economy.Revenue,collected=game.Economy.CashCollected,orders=game.Economy.Transactions;
+                long wallet=game.Economy.Money,revenue=game.Economy.Revenue,collected=game.Economy.CashCollected,orders=game.Economy.Transactions;
                 var unlocked=game.Economy.Unlocked.ToArray();float speed=Time.timeScale;Time.timeScale=0;game.Player.CanControl=false;
                 yield return ClickPresentationButton("Mod game");
                 Check(game.Economy.Money==wallet+999999&&game.Economy.Revenue==revenue&&game.Economy.CashCollected==collected&&game.Economy.Transactions==orders,"mod click grants exactly 999999 without revenue or progression");
@@ -104,7 +104,7 @@ namespace Tycoon
             yield return TownWait(()=>feed.Batches>0,12,"three-ingredient feed auto production");Check(feed.Inventory.Count("animal_feed")>=3,"feed output has real machine owner");
             var breakCommand=game.Transactions.Command(TransactionKind.BreakMachine,"simulation",feed.Id);breakCommand.quantity=10;Check(game.Transactions.TryExecute(breakCommand,out _),"breakdown keeps machine state");
             yield return Travel(Near(feed));float began=Time.time;yield return TownWait(()=>feed.RepairPaid,2,"repair fee charged once");
-            yield return new WaitForSeconds(1);float progress=game.Transactions.Station(feed.Id).progress.repairProgress;int money=game.Economy.Money;
+            yield return new WaitForSeconds(1);float progress=game.Transactions.Station(feed.Id).progress.repairProgress;long money=game.Economy.Money;
             yield return Travel(Near(feed)+Vector3.back*2);game.SaveGame();game.LoadGame();yield return Travel(Near(feed));yield return TownWait(()=>!feed.Broken,8,"repair resumes after leaving and load");
             Check(progress>0&&game.Economy.Money==money&&game.Transactions.Station(feed.Id).progress.playerRepairCount==30,"repair normalized progress fee and 29 to 30 solo jobs");
             Check(Time.time-began>=5,"player repair consumes five simulation seconds including preserved pause");
@@ -122,7 +122,7 @@ namespace Tycoon
                 Check(game.Transactions.SelectRecipe(kitchen,recipe),"select distinct restaurant recipe "+recipe);
                 foreach(var input in kitchen.Recipe.inputs){yield return TownGet(input.id,input.count,storage);yield return TownDrop(kitchen);}
                 yield return TownWait(()=>kitchen.Inventory.Count(kitchen.Recipe.output)>0,20,"automatic cook "+recipe);
-                string item=kitchen.Recipe.output;int before=game.Economy.Money;
+                string item=kitchen.Recipe.output;long before=game.Economy.Money;
                 yield return Travel(Near(kitchen));yield return TownWait(()=>game.Player.Carry.Count(item)>0,5,"carry correct dish");
                 yield return Travel(Near(kitchen)+Vector3.back*2);
                 var table=game.Tables.First(t=>t.Occupant==null&&t.Cleaning<=0);
@@ -140,7 +140,10 @@ namespace Tycoon
         }
         IEnumerator TownLayoutChecks()
         {
-            yield return null;CheckDrawnPurchasePads();var layout=new LayoutReport();
+            yield return null;
+            CheckDrawnPurchasePads();
+            CheckVisualRedesign();
+            var layout=new LayoutReport();
             void Point(string id,Vector3 point)
             {var path=new NavMeshPath();if(!NavMesh.SamplePosition(point,out var hit,.65f,NavMesh.AllAreas)||!NavMesh.CalculatePath(game.Player.transform.position,hit.position,NavMesh.AllAreas,path)||path.status!=NavMeshPathStatus.PathComplete)layout.failures.Add(id+" "+point);else layout.checkedPoints.Add(id);}
             foreach(var s in game.Stations.Where(x=>x is not ConveyorStation)){Point(s.Id,Near(s));if(s is not PurchasePad){Point(s.Id+":work",s.WorkPoint);Point(s.Id+":wait",s.WaitingPoint);}if(s is CheckoutStation c){Point(c.Id+":cash",c.CollectionPoint);for(int i=0;i<15;i++)Point(c.Id+":queue:"+i,c.QueuePoint(i));}if(s is TableStation t)Point(s.Id+":seat",t.Seat);}
@@ -180,6 +183,7 @@ namespace Tycoon
                 game.CameraRig.FocusOffset=pad.transform.position-game.Player.transform.position;
                 game.CameraRig.Distance=6;game.CameraRig.Snap();yield return Capture("drawn-icons-"+family+".png");
             }
+            yield return VisualRedesignScreens();
             game.CameraRig.Distance=18;
             game.CameraRig.FocusOffset=new(2,.8f,3);game.CameraRig.Target=game.Player.transform;game.CameraRig.Snap();
             canvas.enabled=true;

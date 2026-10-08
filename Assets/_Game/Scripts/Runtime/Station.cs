@@ -250,7 +250,13 @@ namespace Tycoon
                     reserve+=Mathf.Max(0,input.count*2-machine.Input.Available(itemId));
             return reserve;
         }
-        public int AvailableAboveReserve(string itemId)=>Mathf.Max(0,Inventory.Available(itemId)-SharedReserveThreshold(itemId));
+        public int AvailableAboveReserve(string itemId)
+        {
+            int available = Inventory.Available(itemId);
+            // Kho trống không cần quét nhu cầu nguyên liệu của cả thị trấn.
+            if (available <= 0) return 0;
+            return Mathf.Max(0, available - SharedReserveThreshold(itemId));
+        }
         static string SourceArea(string sku)=>sku is "flour" or "cheese" or "sauce" or "soy_sauce" or "bottled_milk" or "yarn" or "cloth"?"processing":sku is "bread" or "cake" or "bread_dough" or "cake_batter"?"bakery":sku=="meal"||Array.Exists(Definitions.KitchenRecipes,r=>Definitions.Recipe(r).output==sku)?"restaurant":"farm";
         public override string Prompt=>Label+"\n"+Inventory.Total+"/"+Inventory.Capacity+" • chờ đến "+Inventory.IncomingTotal;
         public override bool Interact(PlayerController player,bool withdraw)
@@ -273,77 +279,4 @@ namespace Tycoon
             return false;
         }
     }
-    public sealed class PurchasePad:Station,IPlayerInteractionArea
-    {
-        UpgradeDefinition upgrade;
-        // Các trục nâng cấp mới dùng lại pad cho cấp tiếp theo, tránh rải thêm ô quanh máy.
-        public UpgradeDefinition Upgrade
-        {
-            get{if(upgrade?.axisLevel==2&&upgrade.axis is UpgradeAxis.QualityValue or UpgradeAxis.Speed or UpgradeAxis.Capacity&&upgrade.family is not ("farm" or "player")&&GameSession.Instance?.Economy.Has(upgrade.id)==true)return Definitions.Upgrade(upgrade.id[..^1]+"3")??upgrade;return upgrade;}
-            set=>upgrade=value;
-        }
-        float held,settled;PurchaseState previousState;bool hasVisualState;string shownUpgrade;
-        PurchaseIconView icon;
-        public void InitializeIcon()
-        {
-            if(!icon)
-            {
-                var root=new GameObject("PurchaseIcon2D");root.transform.SetParent(transform,false);
-                root.transform.localPosition=new(0,.72f,.1f);root.transform.localScale=Vector3.one*.95f;
-                icon=root.AddComponent<PurchaseIconView>();
-            }
-            icon.SetUpgrade(Upgrade);
-            if(!priceLabel)foreach(var text in GetComponentsInChildren<TextMesh>())if(text!=StatusLabel){priceLabel=text;priceMesh=text.GetComponent<MeshRenderer>();break;}
-        }
-        TextMesh priceLabel;
-        MeshRenderer priceMesh;
-        void FitPriceLabel()
-        {
-            if(!priceLabel||!priceMesh)return;
-            // Giá nằm trong dải dưới icon, không trải dài ra lối đi.
-            var size=priceMesh.localBounds.size;
-            if(size.x>0&&size.y>0)priceLabel.transform.localScale=Vector3.one*Mathf.Min(1,Mathf.Min(1.15f/size.x,.3f/size.y));
-        }
-        public InteractionKind Kind=>InteractionKind.Purchase;
-        public Vector3 Center=>InteractionPoint;
-        public PurchaseEvaluation Evaluation=>GameSession.Instance.Progression.Evaluate(Upgrade);
-        public bool Available=>this&&isActiveAndEnabled&&GameSession.Instance!=null&&Evaluation.CanContribute;
-        public bool Contains(Vector3 point)=>ContainsInteractionPoint(point);
-        public InteractionResult Perform(InteractionContext context,float delta)=>context.Player&&!Contains(context.Player.transform.position)?InteractionResult.Reject("Hãy đứng trong vùng mua."):Perform(Kind,context,delta);
-        public void Exit(EntityId actor)=>EndInteraction(actor);
-        public bool HoldToBuy(float delta)
-        {
-            var game=GameSession.Instance;
-            if(delta<=0||float.IsNaN(delta)||float.IsInfinity(delta)||!game.CanPurchase(Upgrade,out _)||game.Economy.Money<=0){held=0;return false;}
-            // Đi ngang pad không tiêu tiền; đứng lại một giây mới bắt đầu góp tự động.
-            float delay=Mathf.Max(0,1-settled);settled+=delta;delta=Mathf.Max(0,delta-delay);if(delta==0)return false;
-            // Giá khu lớn vẫn góp từng phần, nhưng không bắt player đứng chờ hàng chục phút.
-            held+=delta*Mathf.Max(35,Upgrade.cost/12f);int amount=Mathf.FloorToInt(held);
-            if(amount==0)return false;
-            held-=amount;return game.Contribute(Upgrade,amount)>0;
-        }
-        public void StopContributing(){held=settled=0;}
-        public override string Prompt=>Upgrade.label+"\n"+StatusText(Evaluation);
-        public override bool Interact(PlayerController player,bool withdraw)=>!withdraw&&player&&ContainsInteractionPoint(player.transform.position)&&HoldToBuy(Time.deltaTime);
-        protected override void LateUpdate()
-        {
-            var g=GameSession.Instance;var evaluation=Evaluation;bool visible=evaluation.State!=PurchaseState.Locked;
-            if(shownUpgrade!=Upgrade.id){shownUpgrade=Upgrade.id;StopContributing();InitializeIcon();foreach(var label in GetComponentsInChildren<TextMesh>())if(label!=StatusLabel)label.text=Upgrade.cost.ToString("N0");}
-            FitPriceLabel();
-            if(!hasVisualState||previousState!=evaluation.State)
-            {foreach(var renderer in GetComponentsInChildren<Renderer>())renderer.enabled=visible;previousState=evaluation.State;hasVisualState=true;}
-            if((g.Player.transform.position-InteractionPoint).sqrMagnitude>3)held=0;
-            // Tên, điều kiện và tiến độ mua đã có trong HUD khi chọn ô; giữ icon luôn rõ.
-            if(StatusLabel)StatusLabel.gameObject.SetActive(false);
-        }
-        static string StatusText(PurchaseEvaluation e)=>e.State switch
-        {
-            PurchaseState.Locked=>"CHƯA ĐỦ ĐIỀU KIỆN • "+string.Join(" ",e.Requirements),
-            PurchaseState.Available=>"CÓ THỂ MUA • "+e.Contributed+"/"+e.Cost+" xu",
-            PurchaseState.Contributing=>"ĐANG GÓP • "+e.Contributed+"/"+e.Cost+" xu",
-            _=>"ĐÃ MUA"
-        };
-    }
 }
-
-

@@ -49,8 +49,8 @@ namespace Tycoon
                 var counter = game.Checkouts.First(c => c.ShopId ==
                     (row.id == "restaurant" ? "bakery" : "farm"));
                 var customer = TownCustomer(counter, item, quantity);
-                int beforeSale = game.Economy.Money;
-                int beforeCollected = game.Economy.CashCollected;
+                long beforeSale = game.Economy.Money;
+                long beforeCollected = game.Economy.CashCollected;
                 yield return Travel(Near(counter));
                 yield return CompletionWait(() => customer.Order.Paid, 12,
                     "Real player completes boundary order for " + row.id);
@@ -59,7 +59,7 @@ namespace Tycoon
                 yield return Travel(counter.CollectionPoint);
                 yield return CompletionWait(() => game.Economy.Money > beforeSale, 5,
                     "Player collects the last boundary cash for " + row.id);
-                int beforePurchase = game.Economy.Money;
+                long beforePurchase = game.Economy.Money;
                 yield return FinalStash();
                 var pad = game.Stations.OfType<PurchasePad>().First(p => p.Upgrade.id == row.id);
                 Check(game.CanPurchase(pad.Upgrade, out _), "All progression gates passed for " + row.id);

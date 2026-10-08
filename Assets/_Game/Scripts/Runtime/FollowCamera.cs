@@ -5,12 +5,13 @@ using UnityEngine.InputSystem;
 namespace Tycoon
 {
     [RequireComponent(typeof(Camera))]
+    [DefaultExecutionOrder(50)]
     public sealed class FollowCamera : MonoBehaviour
     {
         public Transform Target;
         public float Pitch = 55;
         public float Yaw = 40;
-        public float Distance = 18;
+        public float Distance = 16;
         public Vector3 FocusOffset=new(.5f,.8f,1.3f);
         public bool Overview;
         public float Damping = .18f;

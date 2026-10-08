@@ -3,7 +3,7 @@ using System.Linq;
 using UnityEngine;
 namespace Tycoon
 {
-    public sealed class TruckLogistics:MonoBehaviour
+    public sealed partial class TruckLogistics:MonoBehaviour
     {
         GameSession game=>GameSession.Instance;
         TruckRuntimeState State=>game.Transactions?.View.truck;
@@ -34,6 +34,7 @@ namespace Tycoon
             if(State==null)return InteractionResult.Reject("Cần mua xe + tài xế tại Processing.");
             if(State.current!=dock.WarehouseId||State.phase=="Travelling")return InteractionResult.Reject("Xe chưa ở bến này.");
             var crates=game.Transactions.View.crates;
+            if(game.Transactions.View.schemaVersion>=3)return PhysicalInteract(dock,context);
             if(State.phase=="WaitingUnload")
             {var box=crates.FirstOrDefault(x=>x.holder==State.id);return box==null?InteractionResult.Reject("Nhân viên đang dỡ hàng."):new(Act(TransactionKind.UnloadCrate,"player",box.id));}
             if(context.Carry.Total>0)
@@ -43,6 +44,7 @@ namespace Tycoon
         }
         public void Loader(WorkerAgent worker,CrewState crew)
         {
+            using var timing = QaFrameProbe.Measure("TruckLogistics.Loader");
             if(State==null||State.phase=="Travelling"||game.StorageFor(crew.area)?.Id!=State.current){worker.Reason="Chờ xe tại bến của khu";return;}
             string actor=game.Transactions.Actor(worker.GetEntityId());var crates=game.Transactions.View.crates;
             var held=crates.FirstOrDefault(x=>x.holder==actor);Vector3 dock=TruckRoutes.Dock(State.current);
@@ -54,7 +56,10 @@ namespace Tycoon
             }
             Vector3 goal=held==null?dock+Vector3.left*1.8f:dock+Vector3.back*2;
             if((worker.transform.position-goal).sqrMagnitude>1.2f){Navigation.Go(worker.Agent,goal);worker.Reason=held==null?"Đến lấy thùng":"Mang thùng đến xe/kho";return;}
-            worker.Agent.ResetPath();float elapsed=handling.TryGetValue(actor,out float time)?time:0;elapsed+=Time.deltaTime*(1+.2f*(crew.speedLevel-1));handling[actor]=elapsed;
+            worker.Agent.ResetPath();
+            float elapsed = handling.TryGetValue(actor, out float time) ? time : 0;
+            elapsed += Time.deltaTime * WorkforceRules.Productivity(crew.speedLevel);
+            handling[actor] = elapsed;
             if(elapsed<.7f){worker.Reason="Đang bốc hàng";return;}handling[actor]=0;
             if(held!=null){Act(held.task=="load"?TransactionKind.LoadCrate:TransactionKind.UnloadCrate,actor,held.id);worker.View.Interact(false);return;}
             var ready=crates.FirstOrDefault(x=>State.phase=="WaitingUnload"?x.holder==State.id:x.holder=="dock:"+State.current);
@@ -93,9 +98,11 @@ namespace Tycoon
         void LateUpdate()
         {
             if(State==null||Vehicle==null)return;
+            UpdateCargoPresentation();
             var position=TruckRoutes.Position(State);var direction=position-Vehicle.position;
             if(direction.sqrMagnitude>.005f)Vehicle.rotation=Quaternion.RotateTowards(Vehicle.rotation,Quaternion.LookRotation(direction),150*Time.deltaTime);
-            Vehicle.position=Vector3.MoveTowards(Vehicle.position,position,6*Time.deltaTime);
+            Vehicle.position = Vector3.MoveTowards(Vehicle.position, position,
+                6 * WorkforceRules.Capability * Time.deltaTime);
             var crates=game.Transactions.View.crates;
             foreach(var removed in visuals.Keys.Where(id=>!crates.Any(x=>x.id==id)).ToArray()){Destroy(visuals[removed]);visuals.Remove(removed);}
             int cargo=0;var ground=new Dictionary<string,int>();var hands=new Dictionary<string,int>();
@@ -103,16 +110,34 @@ namespace Tycoon
             {
                 if(!visuals.TryGetValue(box.id,out var model))
                 {
-                    model=new GameObject(box.id);model.transform.SetParent(transform);Art.Model("supply_crate",Vector3.zero,model.transform,.7f);
-                    var icon=Art.Model(Definitions.Item(box.item).model,new(0,.35f,-.35f),model.transform,.35f);icon.transform.localScale=new(.35f,.35f,.05f);
+                    model=new GameObject(box.id);model.transform.SetParent(transform);HandItemModels.Build("crate",model.transform);
+                    var icon=new GameObject("CrateItemIcon").AddComponent<SpriteRenderer>();icon.transform.SetParent(model.transform,false);icon.transform.localPosition=new(0,.25f,.44f);icon.transform.localScale=Vector3.one*.45f;icon.sprite=ItemIconAtlas.Get(box.item);
                     int quantity=game.Transactions.View.stacks.Where(x=>x.owner==box.id).Sum(x=>x.quantity);Art.Label("×"+quantity,new(0,.75f,0),model.transform,.14f);visuals.Add(box.id,model);
                 }
                 if(box.holder==State.id){model.transform.SetParent(Vehicle,false);model.transform.localPosition=new((cargo%2-.5f)*.85f,.7f,-.5f-(cargo/2)*.8f);cargo++;}
                 else if(box.holder.StartsWith("dock:")){int n=ground.TryGetValue(box.holder,out int value)?value:0;ground[box.holder]=n+1;model.transform.SetParent(transform);model.transform.position=TruckRoutes.Dock(box.holder.Substring(5))+new Vector3(-1.7f,.1f+n*.7f,0);}
+                else if(box.holder=="player")
+                {
+                    int n = hands.TryGetValue("player", out int count) ? count : 0;
+                    hands["player"] = n + 1;
+                    model.transform.SetParent(game.Player.transform, false);
+                    model.transform.localPosition = HeldCratePosition(n, .9f);
+                }
                 else
-                {var worker=game.Workers.Find(w=>game.Transactions.Actor(w.GetEntityId())==box.holder);if(worker){int n=hands.TryGetValue(box.holder,out int value)?value:0;hands[box.holder]=n+1;model.transform.SetParent(worker.transform,false);model.transform.localPosition=new(0,.8f+n*.65f,.4f);}}
+                {
+                    var worker = game.Workers.Find(w => game.Transactions.Actor(w.GetEntityId()) == box.holder);
+                    if (worker)
+                    {
+                        int n = hands.TryGetValue(box.holder, out int value) ? value : 0;
+                        hands[box.holder] = n + 1;
+                        model.transform.SetParent(worker.transform, false);
+                        model.transform.localPosition = HeldCratePosition(n, .8f);
+                    }
+                }
             }
         }
+        static Vector3 HeldCratePosition(int index, float height) =>
+            new((index % 3 - 1) * .54f, height + index / 6 * .52f, .65f + (index / 3 % 2 - .5f) * .48f);
         IEnumerable<Vector3> People()
         {
             yield return game.Player.transform.position;

@@ -33,5 +33,12 @@ namespace Tycoon.Tests
             Assert.That(DrawnPurchaseIcons.Draw(Definitions.Upgrade("mill_speed2")).SequenceEqual(DrawnPurchaseIcons.Draw(Definitions.Upgrade("mill_speed3"))),Is.False);
             Assert.That(DrawnPurchaseIcons.Draw(Definitions.Upgrade("restocker")).SequenceEqual(DrawnPurchaseIcons.Draw(Definitions.Upgrade("loader_farm"))),Is.False);
         }
+        [Test]
+        public void IllustratedEdgesHavePartialCoverageInsteadOfHardPixelSteps()
+        {
+            var pixels = DrawnPurchaseIcons.Draw(Definitions.Upgrade("milk_line"));
+            Assert.That(pixels.Count(p => p.a > 0 && p.a < 255), Is.GreaterThan(100));
+            Assert.That(pixels.Distinct().Count(), Is.GreaterThan(100));
+        }
     }
 }

@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.Universal;
 
 namespace Tycoon
 {
@@ -14,25 +13,15 @@ namespace Tycoon
             return Vector3.one*.4f;
         }
         public static GameCatalog Catalog;
-        static readonly Dictionary<string, Material> materials = new();
         public static Color Hex(string hex) { ColorUtility.TryParseHtmlString(hex, out var color); return color; }
-        public static Material Material(string hex)
-        {
-            if (materials.TryGetValue(hex, out var existing)) return existing;
-            var material = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = "Paint_" + hex };
-            material.SetColor("_BaseColor", Hex(hex).linear);
-            material.SetFloat("_Smoothness", .22f);
-            material.enableInstancing = true;
-            materials[hex] = material;
-            return material;
-        }
+        public static Material Material(string hex) => TownSurfaceMaterials.Paint(hex);
         public static GameObject Box(string name, Vector3 position, Vector3 size, string color, Transform parent = null, bool collider = false)
         {
             var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
             go.name = name; go.transform.SetParent(parent, false);
             go.transform.localPosition = position; go.transform.localScale = size;
             go.GetComponent<Renderer>().sharedMaterial = Material(color);
-            if (!collider) Object.Destroy(go.GetComponent<Collider>());
+            if (!collider) RemoveCollider(go);
             return go;
         }
         public static GameObject Cylinder(string name, Vector3 position, Vector3 size, string color, Transform parent = null)
@@ -41,8 +30,15 @@ namespace Tycoon
             go.name = name; go.transform.SetParent(parent, false);
             go.transform.localPosition = position; go.transform.localScale = size;
             go.GetComponent<Renderer>().sharedMaterial = Material(color);
-            Object.Destroy(go.GetComponent<Collider>());
+            RemoveCollider(go);
             return go;
+        }
+        static void RemoveCollider(GameObject go)
+        {
+            var collider = go.GetComponent<Collider>();
+            collider.enabled = false;
+            if (Application.isPlaying) Object.Destroy(collider);
+            else Object.DestroyImmediate(collider);
         }
         public static GameObject Model(string key, Vector3 position, Transform parent = null, float scale = 1, float yaw = 0)
         {
@@ -53,6 +49,7 @@ namespace Tycoon
             go.name = key; go.transform.localPosition = position;
             go.transform.localRotation = Quaternion.Euler(0, yaw, 0);
             go.transform.localScale = Vector3.one * scale;
+            TownPropSurfaces.Apply(go, key);
             return go;
         }
         public static TextMesh Label(string text, Vector3 position, Transform parent, float size = .18f, string color = "#173F40", bool billboard = true)
@@ -60,60 +57,20 @@ namespace Tycoon
             var go = new GameObject("Label");
             go.transform.SetParent(parent, false); go.transform.localPosition = position;
             var mesh = go.AddComponent<TextMesh>();
-            mesh.text = text; mesh.font = Catalog.font; mesh.fontSize = 128;
-            mesh.characterSize = size * 30f / 128f; mesh.anchor = TextAnchor.MiddleCenter;
-            mesh.alignment = TextAlignment.Center; mesh.color = Hex(color).linear;
+            mesh.text = text;
+            mesh.font = Catalog.font;
+            mesh.fontSize = 128;
+            mesh.characterSize = size * 30f / 128f;
+            mesh.anchor = TextAnchor.MiddleCenter;
+            mesh.alignment = TextAlignment.Center;
+            mesh.color = Hex(color);
             var renderer = go.GetComponent<MeshRenderer>();
-            renderer.sharedMaterial = Catalog.font.material;
-            renderer.shadowCastingMode = ShadowCastingMode.Off; renderer.receiveShadows = false;
-            if (billboard) go.AddComponent<BillboardLabel>();
+            renderer.sharedMaterial = WorldTypography.Material(Catalog.font);
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            if (billboard) go.AddComponent<BillboardLabel>().RefreshNow();
             return mesh;
         }
-    }
-
-    [DefaultExecutionOrder(100)]
-    public sealed class BillboardLabel : MonoBehaviour
-    {
-        TextMesh label;
-        MeshRenderer mesh;
-        Station station;
-        float originalSize;
-        void Awake()
-        {
-            label = GetComponent<TextMesh>(); mesh = GetComponent<MeshRenderer>();
-            station = GetComponentInParent<Station>(); originalSize = label ? label.characterSize : 0;
-        }
-        void LateUpdate()
-        {
-            var camera = Camera.main;
-            if (!camera) return;
-            transform.rotation = camera.transform.rotation;
-            if (!label || !mesh) return;
-            if (station && station.StatusLabel == label)
-            {
-                var player = GameSession.Instance ? GameSession.Instance.Player : null;
-                mesh.enabled = player && (player.transform.position - station.InteractionPoint).sqrMagnitude < 12.25f;
-                // Chỉ nhãn gọn ở thế giới; HUD vẫn đọc Prompt đầy đủ của trạm.
-                string title = station is StationZone zone && zone.Target ? zone.Target.Label : station.Label;
-                string detail = station.Prompt;
-                if (detail.StartsWith(title)) detail = detail.Substring(title.Length).Trim(' ', '•', '\n');
-                int separator = detail.IndexOf(" • ", System.StringComparison.Ordinal);
-                if (separator >= 0) detail = detail.Substring(0, separator);
-                if (detail == title) detail = "";
-                label.text = ShortLine(title, 27) + (detail.Length > 0 ? "\n" + ShortLine(detail, 30) : "");
-            }
-            // Giới hạn theo pixel để nhãn không phủ ngang cảnh khi zoom hoặc đổi độ phân giải.
-            label.characterSize = originalSize;
-            float maxPixels = Mathf.Min(210f, Screen.width * .15f);
-            float distance = Vector3.Dot(transform.position - camera.transform.position, camera.transform.forward);
-            if (distance <= camera.nearClipPlane) return;
-            float worldPerPixel = camera.orthographic ? camera.orthographicSize * 2 / Screen.height :
-                2 * distance * Mathf.Tan(camera.fieldOfView * .5f * Mathf.Deg2Rad) / Screen.height;
-            float width = mesh.bounds.size.magnitude;
-            if (width > maxPixels * worldPerPixel)
-                label.characterSize = originalSize * maxPixels * worldPerPixel / width;
-        }
-        static string ShortLine(string text, int limit) => text.Length <= limit ? text : text.Substring(0, limit - 1) + "…";
     }
 
     public sealed class ItemPool
@@ -138,7 +95,7 @@ namespace Tycoon
         GameObject Create(string id)
         {
             Created++;
-            var go = Art.Model(Definitions.Item(id).model, Vector3.zero, root);
+            var go = HandItemModels.Build(id, root);
             go.name = id;
             return go;
         }
@@ -153,101 +110,4 @@ namespace Tycoon
         }
     }
 
-    public sealed class InventoryStack : MonoBehaviour
-    {
-        [System.NonSerialized] public Inventory Inventory;
-        [System.NonSerialized] public ItemPool Pool;
-        public int Columns = 3;
-        public int Rows = 2;
-        public int Maximum = 18;
-        public float Spacing = .21f;
-        public float Scale = .65f;
-        public float LayerHeight = .24f;
-        public int VisibleCount => items.Count;
-        public string VisibleItemId(int index) => items[index].name;
-        readonly List<GameObject> items = new();
-        int revision = -1;
-        Inventory displayedInventory;
-        void LateUpdate() => Refresh();
-        public void Refresh()
-        {
-            if (Inventory == null || Pool == null || ReferenceEquals(displayedInventory, Inventory) && revision == Inventory.Revision) return;
-            displayedInventory = Inventory;
-            revision = Inventory.Revision;
-            foreach (var go in items) Pool.Return(go);
-            items.Clear();
-            float spacing=Spacing,height=0,layerHeight=0;
-            foreach(var amount in Inventory.Snapshot())
-            {var size=Art.ModelSize(Definitions.Item(amount.id).model);spacing=Mathf.Max(spacing,Mathf.Sqrt(size.x*size.x+size.z*size.z)*Scale+.025f);}
-            foreach (var value in Inventory.Snapshot())
-            {
-                // Giỏ một loại phải hiển thị đủ hàng thật, kể cả sau nâng cấp hoặc load save.
-                for (int count = 0; count < value.count && items.Count < (Inventory.SingleItem ? Inventory.Total : Maximum); count++)
-                {
-                    var go = Pool.Take(value.id, transform);
-                    int index = items.Count;
-                    int col = index % Columns, row = index / Columns % Rows, layer = index / (Columns * Rows);
-                    if(index>0 && index%(Columns*Rows)==0){height+=layerHeight+.025f;layerHeight=0;}
-                    layerHeight=Mathf.Max(layerHeight,Art.ModelSize(Definitions.Item(go.name).model).y*Scale);
-                    go.transform.localPosition = new Vector3((col - (Columns - 1) * .5f) * spacing,height,(row - (Rows - 1) * .5f) * spacing);
-                    go.transform.localRotation = Quaternion.Euler(0, index * 37 % 90, 0);
-                    go.transform.localScale = Vector3.one * Scale;
-                    items.Add(go);
-                }
-            }
-        }
-        void OnDisable()
-        {
-            // Parent đang bị tắt: giữ parent đến lần Take tiếp theo, tránh lỗi native hierarchy.
-            if (Pool != null) foreach (var go in items) Pool.Return(go, false);
-            items.Clear(); revision = -1;
-        }
-    }
-
-    public sealed class ActorView : MonoBehaviour
-    {
-        public Animator Animator;
-        public string State { get; private set; }
-        float interactionEnd;
-        public void Initialize()
-        {
-            Animator = GetComponentInChildren<Animator>();
-            if (Animator != null) { Animator.applyRootMotion = false; Animator.cullingMode = AnimatorCullingMode.AlwaysAnimate; }
-        }
-        public void SetMotion(float speed, bool carry)
-        {
-            if (Time.time < interactionEnd) return;
-            bool moving=speed>(State is "Walk" or "Run" or "CarryWalk"?.12f:.3f);
-            Play(carry ? (moving ? "CarryWalk" : "Carry") : speed > 5.5f ? "Run" : moving ? "Walk" : "Idle");
-            if (Animator)
-            {float rate=moving?Mathf.Clamp(speed/(State=="Run"?6f:3.3f),.75f,1.6f):1;Animator.speed=Mathf.Lerp(Animator.speed,rate,1-Mathf.Exp(-8*Time.deltaTime));}
-        }
-        public void Interact(bool pickup)
-        {
-            interactionEnd = Time.time + .42f;
-            if(Animator)Animator.speed=1;
-            Play(pickup ? "Pickup" : "Drop");
-        }
-        public void Work(string state)
-        {
-            interactionEnd=Time.time+.22f;
-            if(Animator)Animator.speed=1;
-            Play(state);
-        }
-        public static string WorkState(Station target,InteractionKind kind)=>kind switch
-        {
-            InteractionKind.Serve=>target is TableStation?"Serving":"Cashier",
-            InteractionKind.Repair=>"Operate",
-            _=>target switch{ProductionStation p=>p.Animal?"AnimalCare":"Farming",TableStation=>"Cleaning",
-                MachineStation m=>m.AreaId is "bakery" or "restaurant"?"Cooking":"Operate",_=>"Operate"}
-        };
-        public void Play(string state)
-        {
-            if (state == State || !Animator) return;
-            int hash = Animator.StringToHash(state);
-            if (!Animator.HasState(0, hash)) return;
-            Animator.CrossFadeInFixedTime(hash, .14f);
-            State = state;
-        }
-    }
 }

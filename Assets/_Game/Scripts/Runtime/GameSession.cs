@@ -35,6 +35,7 @@ namespace Tycoon
         public int SelectedItem;
         public long NextReceipt = 1;
         public bool IsQa;
+        public bool IsOrdinaryPlayCheck;
         public string QaDirectory;
         public string SavePath;
         public int Milestone;
@@ -52,6 +53,7 @@ namespace Tycoon
             Application.logMessageReceived += OnLog;
             string[] args = Environment.GetCommandLineArgs();
             IsQa = Array.Exists(args, x => x.StartsWith("--qa"));
+            IsOrdinaryPlayCheck = Array.Exists(args, x => x == "--qa-city-play");
             if (IsQa) UnityEngine.InputSystem.InputSystem.settings.backgroundBehavior =
                 UnityEngine.InputSystem.InputSettings.BackgroundBehavior.IgnoreFocus;
             Milestone = Array.Exists(args, x => x is "--qa-m0" or "--qa-art") ? 0 : 1;
@@ -91,19 +93,14 @@ namespace Tycoon
             Pool = new ItemPool(transform);
             WorldFactory.Build(this);
             var playerRoot = new GameObject("Player");
-            playerRoot.transform.position = new Vector3(-15.5f, .05f, -3.5f);
+            playerRoot.transform.position = CityDistricts.PlayerSpawn;
             var actor = Art.Model("player", Vector3.zero, playerRoot.transform);
             actor.AddComponent<ActorView>();
             Player = playerRoot.AddComponent<PlayerController>();
             Player.Initialize();
             // Không nhận input khi save đang được khôi phục và core chưa sẵn sàng.
             Player.CanControl = false;
-            var basket = new GameObject("CarryStack");
-            basket.transform.SetParent(playerRoot.transform, false);
-            basket.transform.localPosition = new Vector3(0, .8f, .5f);
-            var stack = basket.AddComponent<InventoryStack>();
-            stack.Inventory = Player.Carry; stack.Pool = Pool; stack.Maximum = 24;
-            stack.Columns = 2; stack.Rows = 3; stack.Scale = .45f; stack.Spacing = .3f; stack.LayerHeight = .28f;
+            CarryPresentation.Attach(Player);
             var ring = playerRoot.AddComponent<LineRenderer>(); ring.sharedMaterial = Art.Material("#78FF2D"); ring.useWorldSpace = false; ring.loop = true; ring.widthMultiplier = .04f; ring.positionCount = 32;
             for (int i = 0; i < 32; i++) ring.SetPosition(i, new Vector3(Mathf.Cos(i * Mathf.PI / 16) * .65f, .045f, Mathf.Sin(i * Mathf.PI / 16) * .65f));
             var cameraObject = new GameObject("MainCamera");
@@ -125,47 +122,30 @@ namespace Tycoon
             Commerce = gameObject.AddComponent<CommerceDirector>();
             Restaurant = gameObject.AddComponent<RestaurantDirector>();
             Logistics=gameObject.AddComponent<TruckLogistics>();
+            UpgradeModelView.Initialize(this);
             new GameObject("InteractionFocus").AddComponent<InteractionFocusView>().transform.SetParent(transform);
-            if (IsQa) gameObject.AddComponent<QaPresentationAudit>();
-            if(IsQa&&Array.Exists(Environment.GetCommandLineArgs(),x=>x=="--qa-stage23"))gameObject.AddComponent<QaStages>();
+            if (IsQa && !IsOrdinaryPlayCheck) gameObject.AddComponent<QaPresentationAudit>();
+            if (IsOrdinaryPlayCheck) gameObject.AddComponent<CityPlaySession>();
+            else if(IsQa&&Array.Exists(Environment.GetCommandLineArgs(),x=>x=="--qa-stage23"))gameObject.AddComponent<QaStages>();
             else if(IsQa&&baseline)gameObject.AddComponent<QaBaseline>();
             else if (IsQa && !Array.Exists(Environment.GetCommandLineArgs(),x=>x=="--qa-preview")) gameObject.AddComponent<QaDriver>();
             Say("Đứng gần để thu / xếp hàng • đến quầy nhận tiền • WASD di chuyển");
+            nextAutosave = Time.time + 60;
         }
         void Update()
         {
+            using var frameProbe = QaFrameProbe.Measure("GameSession.Update");
             if (!Player || !NavigationReady || SaveBlocked) return;
             SyncWorkers();
             if(IsRestoring)
             {
-                if(PendingCustomers.Count+PendingDiners.Count+PendingWorkers.Count>0)return;
+                if(PendingCustomers.Count+PendingDiners.Count+PendingWorkers.Count>0 || !WorkersReady)return;
                 Transactions?.ResumeClock();IsRestoring=false;Player.CanControl=!Hud || Hud.AllowsPlayerControl;
                 foreach(var agent in GetComponentsInChildren<UnityEngine.AI.NavMeshAgent>())if(agent.enabled&&agent.isOnNavMesh)agent.isStopped=false;
             }
             TickEvents(Time.deltaTime);
-            if (!IsQa && Time.time > nextAutosave) { nextAutosave = Time.time + 60; SaveGame(); }
-        }
-        public void SyncWorkers()
-        {
-            foreach (var crew in CrewStates)
-            {
-                for (int slot=0; slot<crew.count; slot++)
-                {
-                    string key=crew.id+":"+slot;
-                    if (Workers.Exists(x=>x.WorkerId==key)) continue;
-                    var saved=PendingWorkers.Find(x=>x.id==key);
-                    var storage=StorageFor(crew.area);
-                    if(!storage)continue;
-                    var root=new GameObject("Worker_"+key); root.transform.SetParent(transform);
-                    Vector3 position=saved!=null?new Vector3(saved.x,.05f,saved.z):storage.InteractionPoint+Vector3.left*(2+slot);
-                    if (UnityEngine.AI.NavMesh.SamplePosition(position,out var hit,3,UnityEngine.AI.NavMesh.AllAreas)) position=hit.position;
-                    root.transform.position=position;
-                    var model=Art.Model("player",Vector3.zero,root.transform);model.AddComponent<ActorView>();
-                    var worker=root.AddComponent<WorkerAgent>();worker.Initialize(Definitions.Upgrade(crew.id));worker.WorkerId=key;Workers.Add(worker);
-                    Transactions?.BindWorker(worker,saved);
-                    if(saved!=null){worker.Restore(saved);PendingWorkers.Remove(saved);}
-                }
-            }
+            if ((!IsQa || IsOrdinaryPlayCheck) && Time.time > nextAutosave)
+            { nextAutosave = Time.time + 60; SaveGame(); }
         }
         public static string Argument(string key, string defaultValue)
         {
@@ -175,9 +155,11 @@ namespace Tycoon
         }
         public IEnumerable<IPlayerInteractionArea> PlayerInteractionAreas()
         {
+            if(Logistics)foreach(var cargoArea in Logistics.PlayerAreas())yield return cargoArea;
             foreach (var station in Stations)
             {
                 if(!station || station is StationZone or ConveyorStation)continue;
+                if(station is SafeStation safe){yield return safe.Deposit;yield return safe.Withdraw;continue;}
                 if(station is IPlayerInteractionArea area){yield return area;continue;}
                 if(!proximity.TryGetValue(station,out var target)){target=new ProximityTarget(station);proximity.Add(station,target);}
                 yield return target;
@@ -195,7 +177,7 @@ namespace Tycoon
             foreach (var station in Stations)
             {
                 if (!station || station.PlayerUsesZones || station is StationZone zone&&!zone.Available || !station.ContainsInteractionPoint(position) || (!station.IsUnlocked && !(station is PurchasePad))) continue;
-                if (station is PurchasePad pad && !CanPurchase(pad.Upgrade, out _)) continue;
+                if (station is PurchasePad pad && !pad.Available) continue;
                 float square = (station.InteractionPoint - position).sqrMagnitude;
                 if (square < distance) { distance = square; nearest = station; }
             }
@@ -206,19 +188,26 @@ namespace Tycoon
         {
             if (Transactions == null && upgrade.kind == "worker" && !CrewStates.Exists(x => x.id == upgrade.id)) CrewStates.Add(CrewFor(upgrade));
             ApplyProgression();
-            Say(upgrade.label + " hoàn tất");
+            UpgradeModelView.RefreshAll(this,true);
+            Say("Đã nâng cấp");
         }
         public void SaveGame()
         {
+            using var operation = CityOperationTiming.Measure(this, "SaveGame.Checkpoint");
             if(SaveBlocked){Say("Save đang bị chặn vì file tải không hợp lệ");return;}
-            try { if(Transactions!=null)Transactions.Checkpoint();else SaveStore.Write(SavePath,CaptureSaveData());Say("Đã lưu trò chơi"); }
+            try
+            {
+                if (Transactions != null) Transactions.Checkpoint();
+                else SaveStore.Write(SavePath, CaptureSaveData());
+                ShowCheckpointNotice();
+            }
             catch(Exception error){Say("Không lưu được: "+error.Message);Debug.LogException(error);}
         }
         public SaveData CaptureSaveData()
         {
             var data = new SaveData {
-                contentVersion=2,
-                money = Economy.Money, revenue = Economy.Revenue, cashCollected=Economy.CashCollected,transactions = Economy.Transactions,
+                contentVersion=2, version=3, cashInHand=Economy.CashInHand, cashInSafe=Economy.CashInSafe,
+                money = 0, revenue = Economy.Revenue, cashCollected=Economy.CashCollected,transactions = Economy.Transactions,
                 nextReceipt = NextReceipt, savedAt = DateTime.UtcNow.ToString("o"),
                 pendingCash = Economy.PendingCash, businessStage = BusinessStage, bakerySales = BakerySales, restaurantMeals = RestaurantMeals,
                 playerX = Player.transform.position.x, playerZ = Player.transform.position.z
@@ -245,7 +234,7 @@ namespace Tycoon
         {
             foreach(var machine in Machines)machine.ConfigureInputLimits();
             foreach(var station in Stations)if(station is StorageStation storage&&storage.Inventory!=null)storage.ConfigureItemBins(storage.Inventory.Capacity);
-            var initial=state??RuntimeTransactions.Migrate(this,CaptureSaveData());initial.layoutRevision=TownLayout.Revision;
+            var initial=state??RuntimeTransactions.Migrate(this,CaptureSaveData());PhysicalCashMigration.Upgrade(initial);initial.layoutRevision=TownLayout.Revision;
             RuntimeTransactions.UpgradeCounterOwners(initial,this);
             Transactions = new RuntimeTransactions(this,initial,persist,existingLease);
             Transactions.CompletePurchases();
@@ -254,146 +243,6 @@ namespace Tycoon
         public void BlockRecovery(Exception error)
         { SaveBlocked=true;if(Player)Player.CanControl=false;Say("Gameplay dừng: "+error.Message);Debug.LogException(error); }
         public bool SaveBlocked { get; private set; }
-        public void LoadGame()
-        {
-            FileStream recoveryLease = null;
-            try
-            {
-                if (!File.Exists(SavePath)) return;
-                Transactions?.Detach();
-                Transactions = null;
-                // Giữ khóa trước khi đọc/migrate; chuyển nguyên handle sang store để tránh khoảng hở.
-                recoveryLease = GameplayTransactionStore.AcquireLease(SavePath);
-                var data = SaveStore.Read(SavePath);
-                if (data == null) return;
-                IsRestoring=Application.isPlaying;Player.CanControl=false;
-                bool worldChanged = TownLayout.Migrate(data);
-                worldChanged |= RemoveRetiredPurchasePads(data);
-                worldChanged |= EnsureWorldProjection(data);
-                if(data.transactionState!=null)
-                {
-                    worldChanged|=RuntimeTransactions.ReconcileWorld(data.transactionState,this);
-                    if (worldChanged) RuntimeTransactions.Project(data.transactionState, data);
-                }
-                ValidateSaveOwners(data);
-                if (worldChanged && data.transactionState != null) SaveStore.Write(SavePath, data);
-                Player.StopInteraction();
-                foreach(var worker in Workers){worker.gameObject.SetActive(false);Destroy(worker.gameObject);}
-                Workers.Clear();Commerce?.ResetForLoad();Restaurant?.ResetForLoad();
-                foreach(var counter in Checkouts){counter.Queue.Clear();counter.Cash=0;}
-                foreach(var table in Tables)table.Occupant=null;
-                Economy.Restore(data.money, data.revenue, data.transactions, data.unlocked, data.pendingCash, data.receipts, data.losses,data.cashCollected);
-                Purchases=data.purchases; CrewStates=data.crews; Events=data.events ?? new EventState();
-                PendingCustomers=data.customers; PendingWorkers=data.workers;
-                BakerySales = data.bakerySales; RestaurantMeals = data.restaurantMeals;
-                PendingDiners = data.diners;
-                NextReceipt = Math.Max(1, data.nextReceipt);
-                foreach(long receipt in data.receipts)NextReceipt=Math.Max(NextReceipt,receipt+1);
-                foreach(var loss in data.losses)NextReceipt=Math.Max(NextReceipt,loss.receipt+1);
-                foreach(var customer in data.customers)NextReceipt=Math.Max(NextReceipt,customer.receipt+1);
-                foreach(var diner in data.diners)NextReceipt=Math.Max(NextReceipt,diner.receipt+1);
-                foreach (var inventory in data.inventories)
-                {
-                    if (inventory.id == "player") { Player.Carry.Restore(inventory.items); continue; }
-                    var station = Stations.Find(x => x.Id == inventory.id);
-                    station?.Inventory?.Restore(inventory.items);
-                    if (inventory.id.EndsWith("_input") && Stations.Find(x => x.Id + "_input" == inventory.id) is MachineStation machine) machine.Input.Restore(inventory.items);
-                }
-                // Save v2 giữ hàng trên đúng chủ sở hữu; không hoàn hàng khách vào kho.
-                foreach(var progress in data.stationStates) Stations.Find(x=>x.Id==progress.id)?.RestoreProgress(progress);
-                foreach (var cash in data.cash) if (Stations.Find(x => x.Id == cash.id) is CheckoutStation checkout) checkout.Cash = cash.amount;
-                if(Player.Controller)Player.Controller.enabled = false;
-                Player.transform.position = new Vector3(data.playerX, .05f, data.playerZ);
-                if(Player.Controller)Player.Controller.enabled = true;
-                ApplyProgression();
-                SaveBlocked=false;Player.CanControl=false;
-                if (data.transactionState != null)
-                {
-                    InitializeTransactions(data.transactionState, existingLease: recoveryLease);
-                    recoveryLease = null;
-                }
-                CameraRig?.Snap();
-                SaveBlocked=false;
-                Player.CanControl=!IsRestoring;
-                Say("Đã tải trò chơi");
-            }
-            catch (Exception error) { BlockRecovery(error); }
-            finally { recoveryLease?.Dispose(); }
-        }
-        bool EnsureWorldProjection(SaveData data)
-        {
-            bool changed=false;
-            foreach(var station in Stations.Where(x=>x is not StationZone))
-            {
-                if(station.Inventory!=null&&!data.inventories.Exists(x=>x.id==station.Id))
-                {data.inventories.Add(new InventorySave(station.Id,new Inventory(station.Inventory.Capacity,station.Inventory.SingleItem)));changed=true;}
-                if(station is MachineStation machine&&!data.inventories.Exists(x=>x.id==station.Id+"_input"))
-                {data.inventories.Add(new InventorySave(station.Id+"_input",new Inventory(machine.Input.Capacity,machine.Input.SingleItem)));changed=true;}
-                if(!data.stationStates.Exists(x=>x.id==station.Id)){data.stationStates.Add(station.CaptureProgress());changed=true;}
-                if(station is CheckoutStation checkout&&!data.cash.Exists(x=>x.id==checkout.Id))
-                {data.cash.Add(new CashSave{id=checkout.Id,amount=0});changed=true;}
-            }
-            return changed;
-        }
-        void ValidateSaveOwners(SaveData data)
-        {
-            if(data.transactionState!=null)
-            {
-                TransactionCore.Validate(data.transactionState);
-                foreach(var state in data.transactionState.stations)
-                    if(!Stations.Exists(x=>x is not StationZone&&x.Id==state.id))throw new InvalidDataException("Station reference không còn tồn tại: "+state.id);
-                if(data.transactionState.money!=data.money)throw new InvalidDataException("Core money không khớp save projection.");
-            }
-            if(data.transit.Count>0)throw new InvalidDataException("Transit prototype không có owner; không tự trả hàng về kho.");
-            var owners=new Dictionary<string,Inventory>{{"player",Player.Carry}};
-            var stations=new Dictionary<string,Station>();
-            foreach(var station in Stations)
-            {
-                if(station is StationZone)continue;
-                if(string.IsNullOrEmpty(station.Id)||!stations.TryAdd(station.Id,station))throw new InvalidDataException("Stable ID trạm bị thiếu hoặc lặp.");
-                if(station.Inventory!=null&&!owners.TryAdd(station.Id,station.Inventory))throw new InvalidDataException("Owner inventory bị lặp.");
-                if(station is MachineStation machine&&!owners.TryAdd(station.Id+"_input",machine.Input))throw new InvalidDataException("Owner đầu vào máy bị lặp.");
-            }
-            if(data.inventories.Count!=owners.Count)throw new InvalidDataException("Save thiếu owner inventory.");
-            foreach(var inventory in data.inventories)
-            {
-                if(!owners.TryGetValue(inventory.id,out var target))throw new InvalidDataException("Owner không còn tồn tại: "+inventory.id);
-                new Inventory(int.MaxValue,target.SingleItem).Restore(inventory.items);
-            }
-            var ids=new HashSet<string>();
-            if(data.stationStates.Count!=stations.Count)throw new InvalidDataException("Save thiếu trạng thái trạm.");
-            foreach(var state in data.stationStates)
-                if(state==null||!stations.ContainsKey(state.id)||!ids.Add(state.id)||float.IsNaN(state.remaining)||float.IsInfinity(state.remaining))
-                    throw new InvalidDataException("Trạng thái trạm không hợp lệ.");
-            foreach(var cash in data.cash)if(!Checkouts.Exists(c=>c.Id==cash.id))throw new InvalidDataException("Quầy tiền không còn tồn tại.");
-            var receipts=new HashSet<long>();
-            foreach(var customer in data.customers)
-            {
-                if(customer==null||customer.receipt<=0||customer.receipt==long.MaxValue||!receipts.Add(customer.receipt)||
-                    !Checkouts.Exists(c=>c.Id==customer.lane&&c.ShopId==customer.shop))
-                    throw new InvalidDataException("Owner khách không hợp lệ.");
-                new Inventory(int.MaxValue).Restore(customer.basket);
-            }
-            foreach(var diner in data.diners)
-            {
-                if(diner==null||diner.receipt<=0||diner.receipt==long.MaxValue||!receipts.Add(diner.receipt)||!Tables.Exists(t=>t.Id==diner.table))
-                    throw new InvalidDataException("Owner khách bàn không hợp lệ.");
-                new Inventory(int.MaxValue).Restore(diner.basket);
-            }
-            ids.Clear();
-            foreach(var worker in data.workers)
-            {
-                if(worker==null||string.IsNullOrEmpty(worker.id)||!ids.Add(worker.id)||!data.crews.Exists(c=>c.id==worker.upgrade)||
-                    worker.phase<0||worker.phase>2||worker.count<0||
-                    (worker.phase>0&&(!stations.ContainsKey(worker.destination?.Replace("_input","")??"")||
-                    (worker.phase==1&&!stations.ContainsKey(worker.source??"")))))
-                    throw new InvalidDataException("Owner nhân viên hoặc tuyến vận chuyển không hợp lệ.");
-                new Inventory(int.MaxValue,true).Restore(worker.carry);
-            }
-            if(data.nextReceipt==long.MaxValue||float.IsNaN(data.playerX)||float.IsNaN(data.playerZ)||
-                float.IsInfinity(data.playerX)||float.IsInfinity(data.playerZ))
-                throw new InvalidDataException("Vị trí hoặc số biên nhận không hợp lệ.");
-        }
         void OnApplicationQuit() { if (Player != null && !IsQa) SaveGame(); }
         void OnLog(string condition, string trace, LogType type)
         {

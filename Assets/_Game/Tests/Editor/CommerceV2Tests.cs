@@ -88,7 +88,7 @@ namespace Tycoon.Tests
         {
             var customer = Customer(10, 0, 90, new OrderLine("carrot", 1, 10), new OrderLine("tomato", 1, 20));
             var playerSource = new Inventory(5); playerSource.TryAdd("carrot", 1); playerSource.TryAdd("milk", 1);
-            int openingMoney = game.Economy.Money;
+            long openingMoney = game.Economy.Money;
             Assert.That(lane.Serve(playerSource), Is.True);
             Assert.That(customer.Basket.Count("carrot"), Is.EqualTo(1));
             Assert.That(playerSource.Count("milk"), Is.EqualTo(1));
@@ -137,7 +137,7 @@ namespace Tycoon.Tests
             customer.Basket.TryAdd("carrot", 1);
             var storage = Component<StorageStation>("Warehouse"); storage.Inventory = new Inventory(10); game.Storage = storage;
             var source = new Inventory(5); source.TryAdd("tomato", 1);
-            int openingMoney = game.Economy.Money;
+            long openingMoney = game.Economy.Money;
             Assert.That(lane.Serve(source), Is.False);
             Assert.That(customer.Order.TimedOut, Is.True); Assert.That(lane.Queue, Is.Empty);
             Assert.That(customer.Basket.Count("carrot"), Is.EqualTo(1)); Assert.That(source.Count("tomato"), Is.EqualTo(1));

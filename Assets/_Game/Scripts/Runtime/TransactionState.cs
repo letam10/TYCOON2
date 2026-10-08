@@ -13,7 +13,7 @@ namespace Tycoon
         RegisterOwner, OperateProducer, TickProducer, HarvestProducer, FeedProducer,
         ReleaseOperator, BreakMachine, RepairMachine, UpgradeCrew, CleanTable, AdvanceDiner, Checkpoint, RestockProducer,
         GrantAssistance, SelectRecipe, PackCrate, ClaimCrate, LoadCrate, UnloadCrate, SelectTruckRoute, DispatchTruck, TickTruck,
-        GrantModCash
+        GrantModCash, DepositCash, WithdrawCash, GrantMaximum
     }
     public enum OrderStatus { Open, Complete, Failed }
     public enum ReservationStatus { Active, Used, Released, Expired }
@@ -99,6 +99,7 @@ namespace Tycoon
         public string id, key, fingerprint, effectId, effectFingerprint, eventId;
         public long revision;
         public int amount;
+        public long cashAmount;
     }
     [Serializable] public sealed class TransactionEvent
     {
@@ -112,12 +113,15 @@ namespace Tycoon
         internal TransactionState ShallowCopy()=>(TransactionState)MemberwiseClone();
         public int schemaVersion = 2, catalogVersion = Definitions.Version;
         public long revision;
-        public int money, revenue, cashCollected, assistedCash;
+        public long money, revenue, cashCollected, assistedCash;
+        public long cashInHand, cashInSafe;
+        public bool maximumBuilt;
         public bool assisted;
         public int contentVersion;
         public int layoutRevision;
         public double simulationTime;
-        public int legacyRevenue, legacyTransactions;
+        public long legacyRevenue;
+        public int legacyTransactions;
         public List<long> legacyPaid = new();
         public List<LossRecord> legacyLosses = new();
         public List<CashSave> legacyCash = new();
@@ -154,6 +158,7 @@ namespace Tycoon
         public List<OrderLine> lines = new();
         public OwnerState owner;
         public List<RoutePoint> path=new();
+        public int workforceRevision;
     }
     [Serializable] public sealed class ConsumerState { public string id; public int appliedEvents; }
     public sealed class TransactionRejectedException : InvalidOperationException

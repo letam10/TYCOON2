@@ -1,7 +1,9 @@
 # TYCOON2 — đồ họa, model, tương tác và UI
 
 Cập nhật: 07/10/2026, Asia/Bangkok. Dự án D:\GAME\TYCOON2, GitHub letam10/TYCOON2, branch main.
-Trạng thái audit mới nhất: xem CODEX_HANDOFF.md và QA/audit-20261007.json.
+Hướng dẫn hiện hành 08/10: xem CITY_EXPANSION_20261008.md và README ở root.
+Trạng thái chốt thành phố mới: QA/city-acceptance-20261008.json.
+Các thông tin ví/sức mang/mod và số liệu phía dưới thuộc bản lịch sử 07/10 trở về trước.
 Các mục qua đêm và sửa Play bên dưới là ghi chép của những lượt trước.
 
 ## Bản chạy và cách kiểm tra

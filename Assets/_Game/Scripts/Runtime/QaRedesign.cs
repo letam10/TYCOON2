@@ -35,7 +35,7 @@ namespace Tycoon
             yield return Travel(collect?collect.InteractionPoint:counter.InteractionPoint);
             limit=Time.realtimeSinceStartup+10;
             while(game.Economy.Money==0){Check(Time.realtimeSinceStartup<limit,"Player collects cash");yield return null;}
-            int balance=game.Economy.Money;
+            long balance=game.Economy.Money;
             var pad=game.Stations.Find(x=>x is PurchasePad p&&p.Upgrade.id=="barn");
             yield return Travel(pad.InteractionPoint);
             limit=Time.realtimeSinceStartup+15;
@@ -66,7 +66,7 @@ namespace Tycoon
             Check(counter&&counter.AcceptsItem("beef"),"farm counter has the basic livestock sale route");
             Check(Definitions.Upgrade("barn").cost==500&&Definitions.Upgrade("milk_line").cost==1000&&Definitions.Upgrade("egg_line").cost==1000,"meat and milk/egg packages cost 500 and 1000");
             yield return EarnCarrotRevenue(counter,500);
-            int beforePurchase=game.Economy.Money;
+            long beforePurchase=game.Economy.Money;
             var pad=game.Stations.Find(x=>x is PurchasePad p&&p.Upgrade.id=="barn") as PurchasePad;
             Check(pad&&beforePurchase>=500,"earned carrot sales cover one complete meat route");
             yield return Travel(pad.InteractionPoint+Vector3.right);
@@ -98,7 +98,7 @@ namespace Tycoon
             var order=counter.Queue[0].Order;
             Check(order.Lines.Count==1&&order.Lines[0].id=="beef"&&order.Lines[0].requested==1,"livestock order requests one beef without a hidden purchase");
             Check(order.Lines[0].unitPrice==game.ItemPrice("beef"),"livestock order snapshots its unit price");
-            int walletBeforeSale=game.Economy.Money;int cashBeforeSale=counter.Cash;
+            long walletBeforeSale=game.Economy.Money;long cashBeforeSale=counter.Cash;
             var serve=FindZone(counter,InteractionKind.Serve);yield return Travel(serve.Center);
             float paymentDeadline=Time.realtimeSinceStartup+20;
             while(!order.Paid&&Time.realtimeSinceStartup<paymentDeadline)yield return null;
@@ -135,7 +135,7 @@ namespace Tycoon
                 if(counter.Queue.Count==0)CreateFarmQaCustomer(counter,game.NextReceipt);
                 var order=counter.Queue[0].Order;
                 Check(order.Lines.Count==1&&order.Lines[0].id=="carrot"&&order.Lines[0].unitPrice==10,"zero-money farm customers buy one-to-three base-price carrots");
-                int walletBeforeOrder=game.Economy.Money,cashBeforeOrder=counter.Cash,lostBeforeOrder=game.Economy.LostItems;
+                long walletBeforeOrder=game.Economy.Money,cashBeforeOrder=counter.Cash,lostBeforeOrder=game.Economy.LostItems;
                 float orderDeadline=Time.realtimeSinceStartup+Mathf.Max(3,order.RemainingPatience(Time.time)/Time.timeScale+5);
                 while(!order.Paid&&!order.TimedOut&&Time.realtimeSinceStartup<orderDeadline)
                 {
@@ -154,7 +154,7 @@ namespace Tycoon
                     continue;
                 }
                 Check(order.Paid,"carrot order completes before its patience expires");
-                int balance=game.Economy.Money;
+                long balance=game.Economy.Money;
                 yield return Travel(collect.Center);
                 float cashDeadline=Time.realtimeSinceStartup+6;
                 while(game.Economy.Money==balance&&Time.realtimeSinceStartup<cashDeadline)yield return null;

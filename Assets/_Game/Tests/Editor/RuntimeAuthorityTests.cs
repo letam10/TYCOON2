@@ -9,7 +9,7 @@ using Object = UnityEngine.Object;
 
 namespace Tycoon.Tests
 {
-    public sealed class RuntimeAuthorityTests
+    public sealed partial class RuntimeAuthorityTests
     {
         GameSession game, previous;
         StorageStation storage, shopStorage;
@@ -27,6 +27,10 @@ namespace Tycoon.Tests
             var root = new GameObject("RuntimeAuthorityTest"); root.SetActive(false);
             game = root.AddComponent<GameSession>(); GameSession.Instance = game;
             game.Player = Add<PlayerController>("Player"); game.Economy = new Economy(1000);
+            game.Economy.RestoreCash(0, 1000);
+            var safe = Add<SafeStation>("Safe");
+            safe.Id = PhysicalCashRules.SafeId;
+            game.Stations.Add(safe);
             storage = Add<StorageStation>("Storage"); storage.Id = "storage"; storage.Inventory = new Inventory(20); game.Stations.Add(storage);
             storage.Inventory.TryAdd("carrot", 6);storage.Inventory.TryAdd("animal_feed",6);
             shopStorage=Add<StorageStation>("FarmShopStorage");shopStorage.Id="storage_farm_shop";shopStorage.AreaId="farm_shop";shopStorage.Inventory=new Inventory(20);game.Stations.Add(shopStorage);
@@ -44,6 +48,12 @@ namespace Tycoon.Tests
         }
         [TearDown] public void TearDown()
         { game.Transactions?.Detach(); Object.DestroyImmediate(game.gameObject); GameSession.Instance = previous; if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+        void MoveCash(bool withdraw)
+        {
+            var kind = withdraw ? TransactionKind.WithdrawCash : TransactionKind.DepositCash;
+            var command = game.Transactions.Command(kind, "player", PhysicalCashRules.SafeId);
+            Assert.That(game.Transactions.Execute(command).cashAmount, Is.GreaterThan(0));
+        }
         [Test] public void ReservedSecondSkuCanBeDeliveredWithoutTouchingFirstLine()
         {
             var customer=Add<CustomerAgent>("MultiCustomer");customer.Restore(new CustomerSave{receipt=99,shop="farm",lane=counter.Id,
@@ -58,12 +68,15 @@ namespace Tycoon.Tests
         [Test] public void JournalReplayTrimsOnlyUncommittedTailAndCheckpointKeepsDedup()
         {
             Inventory.Transfer(storage.Inventory,game.Player.Carry,"carrot",2);
+            game.Transactions.Detach();
             File.AppendAllText(game.SavePath+".journal","{interrupted-tail");
             var saved=SaveStore.Read(game.SavePath);Assert.That(saved.transactionState.stacks.Where(s=>s.owner=="player").Sum(s=>s.quantity),Is.EqualTo(2));
-            game.Transactions.Detach();game.InitializeTransactions(saved.transactionState);
+            game.InitializeTransactions(saved.transactionState);
             Assert.That(File.ReadAllText(game.SavePath+".journal"),Does.Not.Contain("interrupted-tail"));
             Inventory.Transfer(game.Player.Carry,storage.Inventory,"carrot",1);game.Transactions.Checkpoint();
-            Assert.That(new FileInfo(game.SavePath+".journal").Length,Is.Zero);saved=SaveStore.Read(game.SavePath);
+            game.Transactions.DrainCheckpoint();
+            Assert.That(new FileInfo(game.SavePath+".journal").Length,Is.GreaterThan(0));
+            saved=SaveStore.Read(game.SavePath);
             Assert.That(saved.transactionState.revision,Is.EqualTo(2));Assert.That(saved.transactionState.receipts.Count,Is.EqualTo(2));
             Assert.That(saved.inventories.Single(i=>i.id=="player").items.Sum(i=>i.count),Is.EqualTo(1));
         }
@@ -99,7 +112,9 @@ namespace Tycoon.Tests
             customer.Leave(); var paid = Customer(8, 1); Inventory.Transfer(storage.Inventory, game.Player.Carry, "carrot", 1);
             Assert.That(counter.Serve(game.Player.Carry), Is.True); Assert.That(paid.Order.Paid, Is.True); Assert.That(counter.Cash, Is.EqualTo(10));
             Assert.That(game.Transactions.Collect(counter.Id), Is.EqualTo(10)); Assert.That(game.Transactions.Collect(counter.Id), Is.Zero);
-            Assert.That(game.Economy.Money, Is.EqualTo(1010)); Assert.That(game.Economy.Transactions, Is.EqualTo(1));
+            Assert.That(game.Economy.CashInHand, Is.EqualTo(10));
+            Assert.That(game.Economy.CashInSafe, Is.EqualTo(1000));
+            Assert.That(game.Economy.Transactions, Is.EqualTo(1));
             TransactionCore.Validate(game.Transactions.Snapshot());
         }
         [Test] public void UnservedExpiredOrderRecordsZeroLoss()
@@ -107,7 +122,8 @@ namespace Tycoon.Tests
             Customer(9,3);
             Assert.That(game.Transactions.Fail(9),Is.True);
             Assert.That(game.Economy.IsLost(9),Is.True);Assert.That(game.Economy.LostItems,Is.Zero);Assert.That(game.Economy.LossCount,Is.Zero);
-            Assert.That(game.Economy.IsPaid(9),Is.False);Assert.That(counter.Cash,Is.Zero);Assert.That(game.Economy.Money,Is.EqualTo(1000));
+            Assert.That(game.Economy.IsPaid(9),Is.False);Assert.That(counter.Cash,Is.Zero);
+            Assert.That(game.Economy.CashInHand,Is.Zero);Assert.That(game.Economy.CashInSafe,Is.EqualTo(1000));
             Assert.That(game.Transactions.Fail(9),Is.False);
         }
         [Test] public void FarmCounterStockAndDirectServeKeepSeparateOwnersAndSettleOnce()
@@ -121,9 +137,11 @@ namespace Tycoon.Tests
             Assert.That(customer.Basket.Count("carrot"),Is.EqualTo(1));Assert.That(customer.Order.Paid,Is.False);Assert.That(counter.Cash,Is.Zero);
             Assert.That(counter.Serve(game.Player.Carry,game.Player.GetEntityId()),Is.True);
             Assert.That(customer.Basket.Count("carrot"),Is.EqualTo(2));Assert.That(customer.Order.Paid,Is.True);
-            Assert.That(game.Player.Carry.Total,Is.Zero);Assert.That(counter.Cash,Is.EqualTo(20));Assert.That(game.Economy.Money,Is.EqualTo(1000));
+            Assert.That(game.Player.Carry.Total,Is.Zero);Assert.That(counter.Cash,Is.EqualTo(20));
+            Assert.That(game.Economy.CashInHand,Is.Zero);Assert.That(game.Economy.CashInSafe,Is.EqualTo(1000));
             Assert.That(game.Transactions.Collect(counter.Id),Is.EqualTo(20));Assert.That(game.Transactions.Collect(counter.Id),Is.Zero);
-            Assert.That(game.Economy.Money,Is.EqualTo(1020));TransactionCore.Validate(game.Transactions.Snapshot());
+            Assert.That(game.Economy.CashInHand,Is.EqualTo(20));
+            Assert.That(game.Economy.CashInSafe,Is.EqualTo(1000));TransactionCore.Validate(game.Transactions.Snapshot());
         }
         [Test] public void AutonomousMachineKeepsRunningAndRecoversJobReservationAndOutputOnce()
         {
@@ -142,15 +160,19 @@ namespace Tycoon.Tests
         }
         [Test] public void PassingPurchasePadDoesNotSpendAndStandingStillContinuesPartialContribution()
         {
-            Assert.That(farmSpeedPad.HoldToBuy(.4f),Is.False);Assert.That(game.Economy.Money,Is.EqualTo(1000));farmSpeedPad.StopContributing();
-            Assert.That(farmSpeedPad.HoldToBuy(.6f),Is.False);Assert.That(farmSpeedPad.HoldToBuy(.4f),Is.False);
-            Assert.That(farmSpeedPad.HoldToBuy(.2f),Is.True);Assert.That(game.Contribution("farm_speed2"),Is.EqualTo(7));
-            farmSpeedPad.StopContributing();Assert.That(game.Contribution("farm_speed2"),Is.EqualTo(7));
+            MoveCash(true);
+            Assert.That(farmSpeedPad.HoldToBuy(.2f),Is.False);Assert.That(game.Economy.Money,Is.EqualTo(1000));
+            farmSpeedPad.StopContributing();
+            Assert.That(farmSpeedPad.HoldToBuy(.25f),Is.False);
+            Assert.That(farmSpeedPad.HoldToBuy(.2f),Is.True);Assert.That(game.Contribution("farm_speed2"),Is.EqualTo(8));
+            farmSpeedPad.StopContributing();Assert.That(game.Contribution("farm_speed2"),Is.EqualTo(8));
         }
         [Test] public void MeatBundleOpensFullRouteAndRestockStartsAtZeroPopulation()
         {
             var ready=game.Transactions.Snapshot();ready.unlocked.Add("farm_level2");game.Transactions.Detach();game.InitializeTransactions(ready,false);
+            MoveCash(true);
             var bundle=Definitions.Upgrade("barn");Assert.That(game.Contribute(bundle,500),Is.EqualTo(500));
+            MoveCash(false);
             Assert.That(beef.IsUnlocked,Is.True);Assert.That(livestockShelf.IsUnlocked,Is.True);Assert.That(counter.AcceptsItem("beef"),Is.True);
             var customer=Add<CustomerAgent>("BeefCustomer");customer.Restore(new CustomerSave{receipt=game.NextReceipt++,shop="farm",lane=counter.Id,
                 phase=(int)CustomerAgent.State.Queue,remaining=90,order=new(){new("beef",1,game.ItemPrice("beef"))}});customer.transform.position=counter.QueuePoint(customer);
@@ -169,8 +191,9 @@ namespace Tycoon.Tests
                 if(i+1<requested)Assert.That(customer.Order.Paid,Is.False);
             }
             Assert.That(customer.Order.Paid,Is.True);Assert.That(counter.Cash,Is.EqualTo(requested*game.ItemPrice("beef")));
-            int expectedCash=counter.Cash;Assert.That(game.Transactions.Collect(counter.Id),Is.EqualTo(expectedCash));
-            Assert.That(game.Economy.Money,Is.EqualTo(1000-500+expectedCash));
+            long expectedCash=counter.Cash;Assert.That(game.Transactions.Collect(counter.Id),Is.EqualTo(expectedCash));
+            Assert.That(game.Economy.CashInHand,Is.EqualTo(expectedCash));
+            Assert.That(game.Economy.CashInSafe,Is.EqualTo(500));MoveCash(false);
             while(beef.Herd>0)
             {
                 Assert.That(Inventory.Transfer(storage.Inventory,game.Player.Carry,"animal_feed",1),Is.EqualTo(1));
@@ -221,27 +244,33 @@ namespace Tycoon.Tests
         }
         [Test] public void PurchaseRecoveryAndCarryUpgradeAreSingleWriterAndPersisted()
         {
+            MoveCash(true);
             var upgrade = Definitions.Upgrade("carry10"); Assert.That(game.Contribute(upgrade, 40), Is.EqualTo(40));
             game.SaveGame(); game.LoadGame(); Assert.That(game.SaveBlocked, Is.False); Assert.That(game.Contribution(upgrade.id), Is.EqualTo(40));
-            Assert.That(game.Contribute(upgrade, 100), Is.EqualTo(60)); Assert.That(game.Player.Carry.Capacity, Is.EqualTo(10));
+            Assert.That(game.Contribute(upgrade, 100), Is.EqualTo(60)); Assert.That(game.Player.Carry.Capacity, Is.EqualTo(20));
             Assert.That(game.Contribute(upgrade, 100), Is.Zero); Assert.That(game.Economy.Money, Is.EqualTo(900));
-            game.LoadGame(); Assert.That(game.Player.Carry.Capacity, Is.EqualTo(10)); Assert.That(game.Purchases.Single().complete, Is.True);
+            game.LoadGame(); Assert.That(game.Player.Carry.Capacity, Is.EqualTo(20)); Assert.That(game.Purchases.Single().complete, Is.True);
         }
         [Test] public void FarmQualitySpeedAndCapacityPurchasesChangeOnlyTheirOwnAxis()
         {
+            MoveCash(true);
             Assert.That(game.ItemPrice("carrot"),Is.EqualTo(10));Assert.That(crop.Level,Is.EqualTo(1));
             var speed=Definitions.Upgrade("farm_speed2");Assert.That(game.Contribute(speed,20),Is.EqualTo(20));
-            Assert.That(game.Progression.Evaluate(speed).State,Is.EqualTo(PurchaseState.Contributing));Assert.That(farmSpeedPad.Prompt,Does.Contain("ĐANG GÓP"));
+            Assert.That(game.Progression.Evaluate(speed).State,Is.EqualTo(PurchaseState.Contributing));
+            Assert.That(farmSpeedPad.Prompt,Does.Contain("ĐÃ GÓP"));
             game.SaveGame();game.LoadGame();Assert.That(game.Contribution(speed.id),Is.EqualTo(20));
-            Assert.That(game.Contribute(speed,40),Is.EqualTo(40));Assert.That(game.Progression.AxisLevel("farm",UpgradeAxis.Speed),Is.EqualTo(2));Assert.That(farmSpeedPad.Prompt,Does.Contain("ĐÃ MUA"));Assert.That(farmSpeedPad.Prompt,Does.Contain(speed.label));
+            Assert.That(game.Contribute(speed,40),Is.EqualTo(40));
+            Assert.That(game.Progression.AxisLevel("farm",UpgradeAxis.Speed),Is.EqualTo(2));
+            Assert.That(farmSpeedPad.Upgrade.id,Is.EqualTo("farm_speed3"));
+            Assert.That(farmSpeedPad.Prompt,Does.Contain(farmSpeedPad.Upgrade.label));
             Assert.That(game.Progression.FarmGrowSeconds,Is.LessThan(2));Assert.That(game.ItemPrice("carrot"),Is.EqualTo(10));
-            Assert.That(game.Player.Carry.Capacity,Is.EqualTo(6));Assert.That(crop.Level,Is.EqualTo(1));Assert.That(crop.Inventory.Capacity,Is.EqualTo(24));
+            Assert.That(game.Player.Carry.Capacity,Is.EqualTo(12));Assert.That(crop.Level,Is.EqualTo(1));Assert.That(crop.Inventory.Capacity,Is.EqualTo(24));
             Assert.That(game.Contribute(Definitions.Upgrade("farm_value2"),250),Is.EqualTo(250));
             Assert.That(game.ItemPrice("carrot"),Is.EqualTo(13));Assert.That(game.Progression.AxisLevel("farm",UpgradeAxis.Speed),Is.EqualTo(2));
             Assert.That(crop.Inventory.Capacity,Is.EqualTo(24));Assert.That(crop.Level,Is.EqualTo(1));
             Assert.That(game.Contribute(Definitions.Upgrade("farm_capacity2"),150),Is.EqualTo(150));
             Assert.That(crop.Inventory.Capacity,Is.EqualTo(36));Assert.That(game.ItemPrice("carrot"),Is.EqualTo(13));
-            Assert.That(crop.Level,Is.EqualTo(1));Assert.That(game.Player.Carry.Capacity,Is.EqualTo(6));
+            Assert.That(crop.Level,Is.EqualTo(1));Assert.That(game.Player.Carry.Capacity,Is.EqualTo(12));
             Assert.That(game.Contribute(Definitions.Upgrade("farm_level2"),100),Is.EqualTo(100));
             Assert.That(crop.Level,Is.EqualTo(2));Assert.That(game.Progression.StationLevel("farm"),Is.EqualTo(2));
             Assert.That(game.ItemPrice("carrot"),Is.EqualTo(13));Assert.That(crop.Inventory.Capacity,Is.EqualTo(36));

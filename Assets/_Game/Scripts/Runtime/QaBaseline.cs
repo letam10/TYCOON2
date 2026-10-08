@@ -98,7 +98,7 @@ namespace Tycoon
             while(Vector3.Distance(customer.transform.position,counter.QueuePoint(customer))>.75f&&Time.realtimeSinceStartup<until)yield return null;
             Check(Vector3.Distance(customer.transform.position,counter.QueuePoint(customer))<=.75f&&customer.Agent.isOnNavMesh,"Customer navigates to queue");
             Check(!counter.Serve(game.Player.Carry)&&shelf.Inventory.Count("carrot")==3,"Empty carrier cannot consume shelf stock");
-            int wallet=game.Economy.Money;int transactions=game.Economy.Transactions;
+            long wallet=game.Economy.Money;int transactions=game.Economy.Transactions;
             game.CrewStates.Add(new CrewState{id="processor",role="Processor",area="processing"});
             game.SyncWorkers();
             Check(game.Workers.Count==0,"Worker without a dedicated warehouse stays unspawned");

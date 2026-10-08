@@ -21,7 +21,7 @@ namespace Tycoon.Tests
         TransactionCore Core(TransactionState seed = null, FileTransactionStore store = null) => new(seed ?? Seed(), store, () => now);
         internal static TransactionState Seed()
         {
-            var seed = new TransactionState { money = 600 }; seed.unlocked.Add("farm_level2");
+            var seed = new TransactionState { schemaVersion = 2, money = 600 }; seed.unlocked.Add("farm_level2");
             foreach (var row in new[] {
                 ("player", OwnerKind.Player, "player", 6), ("worker", OwnerKind.Worker, "worker", 4),
                 ("storage", OwnerKind.Storage, "simulation", 50), ("counter", OwnerKind.Counter, "simulation", 12),

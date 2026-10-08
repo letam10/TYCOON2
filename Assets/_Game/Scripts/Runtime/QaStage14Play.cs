@@ -236,7 +236,7 @@ namespace Tycoon
             Check(minutes>=settings.targetMinimumMinutes&&minutes<=settings.targetMaximumMinutes,"cash collected progression within 180–240 minutes: "+minutes);
             Time.timeScale=1;
         }
-        [Serializable] sealed class BalanceResult{public double minutes;public int cashCollected,orders;public bool zeroStart,noStateGrants;public string sourceRun;}
+        [Serializable] sealed class BalanceResult{public double minutes;public long cashCollected;public int orders;public bool zeroStart,noStateGrants;public string sourceRun;}
         bool FinalPurchaseAllowed(string id)
         {
             if(!game.Economy.Has("farm_shop"))return id is "farm_speed2" or "carry10" or "farm_level2" or "farm_level3" or "farmer" or "farm_capacity2" or "farm_speed3" or "farm_value2" or "farm_shop";

@@ -46,7 +46,7 @@ namespace Tycoon
             var canvases = game.Hud.GetComponentsInChildren<Canvas>().ToArray();
             game.Player.StopInteraction(); game.Player.CanControl = false;
             Time.timeScale = 0; game.CameraRig.enabled = false;
-            int wallet = game.Economy.Money, items = game.Transactions.View.stacks.Sum(s => s.quantity);
+            long wallet = game.Economy.Money, items = game.Transactions.View.stacks.Sum(s => s.quantity);
             foreach (var canvas in canvases) canvas.gameObject.SetActive(false);
             string[] food = game.Catalog.libraryKeys.Where(k => Definitions.Item(k) != null).ToArray();
             string[] landscape = game.Catalog.libraryKeys.Where(k => k.StartsWith("tree_") || k.StartsWith("garden_") || k.StartsWith("crop_") || k is "wheat_crop" or "farm_fence" or "farm_shelter").ToArray();

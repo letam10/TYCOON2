@@ -1,5 +1,10 @@
 param(
-    [ValidateSet('Probe','Foundation','Vertical','Progression','Load','Diagnostic','Visual','Assets','Stage23','Stage45','Stage67','Stage14','Stage14Layout','Stage14Visual','Stage14Milestones','Town','TownLayout','TownLoad')] [string]$Task = 'Foundation',
+    [ValidateSet(
+        'Probe','Foundation','Vertical','Progression','Load','Diagnostic','Visual','Assets',
+        'Stage23','Stage45','Stage67','Stage14','Stage14Layout','Stage14Visual','Stage14Milestones',
+        'Town','TownLayout','TownLoad','Physical','PhysicalLoad','PhysicalVisual','PhysicalMigration',
+        'PhysicalPerformance'
+    )] [string]$Task = 'Foundation',
     [string]$LoadFrom = 'Vertical',
     [string]$BuildPath = '',
     [string]$LoadPath = '',
@@ -21,7 +26,23 @@ if($Task.StartsWith('Stage14')){
 }
 if($Task -eq 'Assets'){$outputRoot=Join-Path $taskRoot ('work\art-refresh\player-assets-'+[DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'))}
 if($Task.StartsWith('Town')){$outputRoot=Join-Path $taskRoot ('work\town-redesign\player-'+$Task.ToLower()+'-'+[DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'));$mode=@{Town='--qa-town';TownLayout='--qa-town-layout';TownLoad='--qa-town-load'}[$Task]}
+if($Task -eq 'Physical'){$outputRoot=Join-Path $taskRoot ('work\physical-carry-20261007\player-'+[DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'));$mode='--qa-physical-carry'}
+if($Task -eq 'PhysicalMigration'){
+    $outputRoot=Join-Path $taskRoot ('work\physical-carry-20261007\migration-'+
+        [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'))
+    $mode='--qa-physical-migration'
+}
 New-Item -ItemType Directory -Path $outputRoot -Force | Out-Null
+if($Task -in @('PhysicalLoad','PhysicalVisual','PhysicalPerformance')){
+    if(!$LoadPath){throw 'Physical checkpoint path is required.'}
+    $outputRoot=Join-Path $taskRoot ('work\physical-carry-20261007\player-'+$Task.ToLower()+'-'+[DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'))
+    $mode=@{
+        PhysicalLoad='--qa-physical-load'
+        PhysicalVisual='--qa-physical-visuals'
+        PhysicalPerformance='--qa-physical-performance'
+    }[$Task]
+    New-Item -ItemType Directory -Path $outputRoot -Force | Out-Null
+}
 if ($Task -notin @('Probe','Load')) {
     $qaSavePath = [System.IO.Path]::GetFullPath((Join-Path $outputRoot 'qa-save.json'))
     $verifiedQaRoot = [System.IO.Path]::GetFullPath($outputRoot) + [System.IO.Path]::DirectorySeparatorChar
@@ -47,7 +68,19 @@ if($Task -eq 'Stage14Milestones'){$arguments+=@('--qa-fixture',('"'+(Join-Path $
 if($Task -eq 'Assets'){$arguments+=@('--qa-fixture',('"'+(Join-Path $taskRoot 'mod\test\asset-preview.json')+'"'))}
 if($Task -in @('Town','TownLayout')){$arguments+=@('--qa-fixture',('"'+(Join-Path $taskRoot 'mod\test\town-redesign-near-thresholds.json')+'"'))}
 if($Task -eq 'Town' -and $FixtureOnly){$arguments+='--qa-town-fixture-only'}
-if($LoadPath){if($Task -eq 'TownLoad'){$arguments+=@('--qa-town-load-from',('"'+$LoadPath+'"'))}elseif($Task -eq 'Assets'){$arguments+=@('--qa-preview-fixture',('"'+$LoadPath+'"'))}else{$arguments+=@('--qa-load','--qa-load-from',('"'+$LoadPath+'"'));if($Task -eq 'Stage14'){$arguments+='--qa-stage14-resume'}}}
+if($LoadPath){
+    $quotedLoadPath='"'+$LoadPath+'"'
+    if($Task -in @('PhysicalLoad','PhysicalVisual','PhysicalPerformance')){
+        $arguments+=@('--qa-physical-from',$quotedLoadPath)
+    }elseif($Task -eq 'TownLoad'){
+        $arguments+=@('--qa-town-load-from',$quotedLoadPath)
+    }elseif($Task -eq 'Assets'){
+        $arguments+=@('--qa-preview-fixture',$quotedLoadPath)
+    }else{
+        $arguments+=@('--qa-load','--qa-load-from',$quotedLoadPath)
+        if($Task -eq 'Stage14'){$arguments+='--qa-stage14-resume'}
+    }
+}
 if ($Task -eq 'Load') { $arguments += @('--qa-load-from', ('"' + (Join-Path $taskRoot ('QA\Evidence\' + $LoadFrom.ToLower() + '\qa-save.json')) + '"'), '--qa-mode', 'load') }
 if ($Task -eq 'Diagnostic') { $arguments += @('--qa-resume-from', ('"' + (Join-Path $taskRoot ('QA\Evidence\' + $LoadFrom.ToLower() + '\qa-save.json')) + '"')) }
 $windowStyle=if($Visible){'Normal'}else{'Hidden'}

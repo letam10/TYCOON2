@@ -1,0 +1,457 @@
+{
+  "passed": true,
+  "generatedUtc": "2026-10-08T08:08:15.748586+00:00",
+  "evidenceKind": "supplied reports; provenance must be reviewed separately",
+  "targetFps": 165,
+  "minimumAcceptedFps": 148.5,
+  "checks": {
+    "fresh.passed": true,
+    "fresh.runtimeErrors": true,
+    "fresh.failures": true,
+    "fresh.failure": true,
+    "fresh.errors": true,
+    "fresh.duration": true,
+    "fresh.resolution": true,
+    "fresh.gpu": true,
+    "fresh.averageFps": true,
+    "resume.passed": true,
+    "resume.runtimeErrors": true,
+    "resume.failures": true,
+    "resume.failure": true,
+    "resume.errors": true,
+    "resume.duration": true,
+    "resume.resolution": true,
+    "resume.gpu": true,
+    "resume.averageFps": true,
+    "resume.workers": true,
+    "resume.fullCitySeconds": true,
+    "resume.fullCityAverageFps": true,
+    "restore.runtimeAssertions": true,
+    "fresh.mobility.passed": true,
+    "fresh.mobility.workers": true,
+    "fresh.mobility.retirement": true,
+    "fresh.mobility.professions": true,
+    "fresh.mobility.capability": true,
+    "fresh.mobility.collision": true,
+    "fresh.mobility.rides": true,
+    "resume.mobility.passed": true,
+    "resume.mobility.workers": true,
+    "resume.mobility.retirement": true,
+    "resume.mobility.professions": true,
+    "resume.mobility.capability": true,
+    "resume.mobility.collision": true,
+    "resume.mobility.rides": true,
+    "restore.layout": true,
+    "restore.Items": true,
+    "restore.CashInHand": true,
+    "restore.CashInSafe": true,
+    "restore.receipts": true,
+    "visual.passed": true,
+    "visual.runtimeErrors": true,
+    "visual.failures": true,
+    "visual.failure": true,
+    "visual.errors": true,
+    "migration.passed": true,
+    "migration.runtimeErrors": true,
+    "migration.failures": true,
+    "migration.failure": true,
+    "migration.errors": true,
+    "resolutions.allSampleFailuresEmpty": true,
+    "resolution.1280x720.presentOnce": true,
+    "resolution.1280x720.failures": true,
+    "resolution.1280x720.renderScale": true,
+    "resolution.1280x720.rendered": true,
+    "resolution.1280x720.reportedPng": true,
+    "resolution.1280x720.actualPngDimensions": true,
+    "resolution.1920x1080.presentOnce": true,
+    "resolution.1920x1080.failures": true,
+    "resolution.1920x1080.renderScale": true,
+    "resolution.1920x1080.rendered": true,
+    "resolution.1920x1080.reportedPng": true,
+    "resolution.1920x1080.actualPngDimensions": true,
+    "resolution.2560x1440.presentOnce": true,
+    "resolution.2560x1440.failures": true,
+    "resolution.2560x1440.renderScale": true,
+    "resolution.2560x1440.rendered": true,
+    "resolution.2560x1440.reportedPng": true,
+    "resolution.2560x1440.actualPngDimensions": true,
+    "resolution.3840x2160.presentOnce": true,
+    "resolution.3840x2160.failures": true,
+    "resolution.3840x2160.renderScale": true,
+    "resolution.3840x2160.rendered": true,
+    "resolution.3840x2160.reportedPng": true,
+    "resolution.3840x2160.actualPngDimensions": true,
+    "tests.passed": true,
+    "tests.executed": true,
+    "tests.noFailedCases": true,
+    "build.succeeded": true
+  },
+  "software": {
+    "checkoutUnityVersion": "m_EditorVersion: 6000.6.3f1",
+    "freshGraphicsApi": "Direct3D11",
+    "resumeGraphicsApi": "Direct3D11"
+  },
+  "hardware": {
+    "freshGpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "resumeGpu": "NVIDIA GeForce RTX 4060 Laptop GPU"
+  },
+  "metrics": {
+    "fresh": {
+      "passed": true,
+      "mode": "ordinary gameplay with virtual gamepad, live simulation and persistence",
+      "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "api": "Direct3D11",
+      "width": 1920,
+      "height": 1080,
+      "frames": 43329,
+      "workers": 39,
+      "customers": 12,
+      "durationSeconds": 266.8716671895236,
+      "walkedMetres": 702.9681396484375,
+      "averageFps": 162.35893624941892,
+      "p95FrameMs": 6.240199565887451,
+      "worstFrameMs": 748.9409790039062,
+      "averageCpuMs": 3.8224897233201562,
+      "averageGpuMs": 1.7779675573122533,
+      "fullCitySeconds": 167.801184264943,
+      "fullCityAverageFps": 161.8999300809805,
+      "fullCityFrames": 27167,
+      "timingSamples": 253,
+      "successfulInteractions": 1047,
+      "near165Fps": true
+    },
+    "resume": {
+      "passed": true,
+      "mode": "ordinary gameplay with virtual gamepad, live simulation and persistence",
+      "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "api": "Direct3D11",
+      "width": 1920,
+      "height": 1080,
+      "frames": 55270,
+      "workers": 39,
+      "customers": 18,
+      "durationSeconds": 344.4179355050437,
+      "walkedMetres": 1118.7099609375,
+      "averageFps": 160.47364060455735,
+      "p95FrameMs": 7.135600566864014,
+      "worstFrameMs": 53.708099365234375,
+      "averageCpuMs": 5.019632013201319,
+      "averageGpuMs": 1.8062582706270618,
+      "fullCitySeconds": 344.4179355050437,
+      "fullCityAverageFps": 160.47364060455735,
+      "fullCityFrames": 55270,
+      "timingSamples": 303,
+      "successfulInteractions": 817,
+      "near165Fps": true
+    },
+    "fresh.mobility": {
+      "passed": true,
+      "activeWorkers": 39,
+      "retiringWorkers": 0,
+      "pendingRetirements": 0,
+      "professions": 26,
+      "capability": 1.5,
+      "vehicles": [
+        {
+          "name": "CityBus",
+          "boarded": 4,
+          "alighted": 4,
+          "aboard": 0,
+          "position": {
+            "x": -21.92961883544922,
+            "y": 0.0,
+            "z": 27.44999885559082
+          }
+        },
+        {
+          "name": "PassengerCoach",
+          "boarded": 2,
+          "alighted": 1,
+          "aboard": 1,
+          "position": {
+            "x": 68.63304901123047,
+            "y": 0.0,
+            "z": -43.44996643066406
+          }
+        },
+        {
+          "name": "CityTaxi",
+          "boarded": 5,
+          "alighted": 4,
+          "aboard": 1,
+          "position": {
+            "x": -63.04890441894531,
+            "y": 0.0,
+            "z": -43.41339874267578
+          }
+        }
+      ]
+    },
+    "resume.mobility": {
+      "passed": true,
+      "activeWorkers": 39,
+      "retiringWorkers": 0,
+      "pendingRetirements": 0,
+      "professions": 26,
+      "capability": 1.5,
+      "vehicles": [
+        {
+          "name": "CityBus",
+          "boarded": 5,
+          "alighted": 5,
+          "aboard": 0,
+          "position": {
+            "x": -51.20650863647461,
+            "y": 0.0,
+            "z": 27.44999885559082
+          }
+        },
+        {
+          "name": "PassengerCoach",
+          "boarded": 3,
+          "alighted": 2,
+          "aboard": 1,
+          "position": {
+            "x": 69.92523956298828,
+            "y": 0.0,
+            "z": -43.44999694824219
+          }
+        },
+        {
+          "name": "CityTaxi",
+          "boarded": 4,
+          "alighted": 3,
+          "aboard": 1,
+          "position": {
+            "x": -22.85896110534668,
+            "y": 0.0,
+            "z": -43.44905471801758
+          }
+        }
+      ]
+    },
+    "restore": {
+      "sourceLayout": 1,
+      "restoredLayout": 2,
+      "sourceItems": 6,
+      "restoredItems": 6,
+      "preservedReceipts": 495,
+      "sourceCashInHand": 999319,
+      "restoredCashInHand": 999319,
+      "sourceCashInSafe": 0,
+      "restoredCashInSafe": 0
+    },
+    "visual": {
+      "passed": true,
+      "startedUtc": "2026-10-08T07:51:40.9490484Z",
+      "finishedUtc": "2026-10-08T07:53:22.0990718Z",
+      "graphicsDevice": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "distanceWalked": 231.5411834716797,
+      "interactions": 4,
+      "materialSlotsChecked": 0,
+      "checkCount": 198
+    },
+    "migration": {
+      "passed": true,
+      "startedUtc": "2026-10-08T07:44:41.9226083Z",
+      "finishedUtc": "2026-10-08T07:44:43.7735150Z",
+      "graphicsDevice": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "distanceWalked": 0.0,
+      "interactions": 0,
+      "materialSlotsChecked": 0,
+      "checkCount": 117
+    },
+    "resolutions": {
+      "captureMethod": "URP SingleCameraRequest into a real RenderTexture; no image resizing",
+      "samples": [
+        {
+          "screenshot": "physical-ui-1280.png",
+          "mode": "native-size-offscreen-capture",
+          "requestedWidth": 1280,
+          "requestedHeight": 720,
+          "attemptedWindowWidth": 1280,
+          "attemptedWindowHeight": 720,
+          "windowWidth": 1280,
+          "windowHeight": 720,
+          "renderedWidth": 1280,
+          "renderedHeight": 720,
+          "pngWidth": 1280,
+          "pngHeight": 720,
+          "offscreen": false,
+          "nativeWindowValidated": true,
+          "renderScale": 1.0
+        },
+        {
+          "screenshot": "physical-ui-1920.png",
+          "mode": "native-size-offscreen-capture",
+          "requestedWidth": 1920,
+          "requestedHeight": 1080,
+          "attemptedWindowWidth": 1920,
+          "attemptedWindowHeight": 1080,
+          "windowWidth": 1920,
+          "windowHeight": 1080,
+          "renderedWidth": 1920,
+          "renderedHeight": 1080,
+          "pngWidth": 1920,
+          "pngHeight": 1080,
+          "offscreen": false,
+          "nativeWindowValidated": true,
+          "renderScale": 1.0
+        },
+        {
+          "screenshot": "physical-ui-2560.png",
+          "mode": "native-size-offscreen-capture",
+          "requestedWidth": 2560,
+          "requestedHeight": 1440,
+          "attemptedWindowWidth": 2560,
+          "attemptedWindowHeight": 1440,
+          "windowWidth": 2560,
+          "windowHeight": 1440,
+          "renderedWidth": 2560,
+          "renderedHeight": 1440,
+          "pngWidth": 2560,
+          "pngHeight": 1440,
+          "offscreen": false,
+          "nativeWindowValidated": true,
+          "renderScale": 1.0
+        },
+        {
+          "screenshot": "physical-ui-3840.png",
+          "mode": "offscreen-resolution",
+          "requestedWidth": 3840,
+          "requestedHeight": 2160,
+          "attemptedWindowWidth": 2560,
+          "attemptedWindowHeight": 1600,
+          "windowWidth": 1280,
+          "windowHeight": 720,
+          "renderedWidth": 3840,
+          "renderedHeight": 2160,
+          "pngWidth": 3840,
+          "pngHeight": 2160,
+          "offscreen": true,
+          "nativeWindowValidated": false,
+          "renderScale": 1.0
+        }
+      ]
+    },
+    "tests": {
+      "result": "Passed",
+      "total": "459",
+      "passed": "459",
+      "failed": "0",
+      "inconclusive": "0",
+      "skipped": "0",
+      "duration": "8.3768092",
+      "start-time": "2026-10-08 07:16:58Z",
+      "end-time": "2026-10-08 07:17:06Z"
+    },
+    "build": {
+      "result": "Succeeded",
+      "builtUtc": "2026-10-08T07:18:21.1431011Z",
+      "bytes": 118371199,
+      "seconds": 34.833876,
+      "errors": 0,
+      "warnings": 26
+    }
+  },
+  "sources": {
+    "fresh": {
+      "path": "D:\\GAME\\TYCOON2\\work\\city-expansion-20261008\\ordinary-play-20261008T071925547Z\\ordinary-play-report.json",
+      "sha256": "9d945cb3a256c8eff3e54a97a3eeb41168acd4cd3800e86f466ff8a57f56bf34",
+      "bytes": 2938
+    },
+    "resume": {
+      "path": "D:\\GAME\\TYCOON2\\work\\city-expansion-20261008\\ordinary-play-20261008T072739868Z\\ordinary-play-report.json",
+      "sha256": "48001d94674fb717c633db7119c096ff6b46b4d5e9a66d03b2f782f021c3ad22",
+      "bytes": 2622
+    },
+    "fresh.mobility": {
+      "path": "D:\\GAME\\TYCOON2\\work\\city-expansion-20261008\\ordinary-play-20261008T071925547Z\\city-mobility-evidence.json",
+      "sha256": "069a98b8a73d85e70bbfbbcd2c04939987d28600ff16963f3ae4cec97f120c6d",
+      "bytes": 15090
+    },
+    "resume.mobility": {
+      "path": "D:\\GAME\\TYCOON2\\work\\city-expansion-20261008\\ordinary-play-20261008T072739868Z\\city-mobility-evidence.json",
+      "sha256": "f1a743f3c1f5d417a3125dc760c68db951f63fddd823162e5331e34668d4f0f0",
+      "bytes": 15075
+    },
+    "restore": {
+      "path": "D:\\GAME\\TYCOON2\\work\\city-expansion-20261008\\ordinary-play-20261008T072739868Z\\city-restore.json",
+      "sha256": "2a1a362c33fa11a77469dd7cd9ea151a8cecf7ddcab7f013ffe7a86cdab29397",
+      "bytes": 248
+    },
+    "legacySource": {
+      "path": "D:\\GAME\\TYCOON2\\work\\physical-carry-20261007\\player-20261007T184304484Z\\qa-save-v2.json",
+      "sha256": "8a0f8d725cbe98b5ab99a5f2517954f255b9b0df1d28ba79f2ac85bb8c5c804b",
+      "bytes": 2123359
+    },
+    "visual": {
+      "path": "D:\\GAME\\TYCOON2\\work\\physical-carry-20261007\\player-physicalvisual-20261008T075128348Z\\physical-visuals-report.json",
+      "sha256": "edd349a56011f334fccf24ceceaebcb10162894727371eb7ea7e3a7259f589af",
+      "bytes": 12634
+    },
+    "migration": {
+      "path": "D:\\GAME\\TYCOON2\\work\\physical-carry-20261007\\migration-20261008T074434092Z\\physical-migration-report.json",
+      "sha256": "d0ecc8cae29d0f60d515693ffdadd8f0426f28017212afec5371a706f32fef6f",
+      "bytes": 9104
+    },
+    "resolutions": {
+      "path": "D:\\GAME\\TYCOON2\\work\\physical-carry-20261007\\player-physicalvisual-20261008T075128348Z\\physical-resolutions.json",
+      "sha256": "2641bc8e9651190d8556d3cb916f851f500f532a75fd1c1079abb270141e88ed",
+      "bytes": 5972
+    },
+    "resolution.1280x720.png": {
+      "path": "D:\\GAME\\TYCOON2\\work\\physical-carry-20261007\\player-physicalvisual-20261008T075128348Z\\physical-ui-1280.png",
+      "sha256": "eb37aab68adfb2188b9f160df7ec1d15470a2ce56922b0a42bdec397347dadd8",
+      "bytes": 1351797
+    },
+    "resolution.1920x1080.png": {
+      "path": "D:\\GAME\\TYCOON2\\work\\physical-carry-20261007\\player-physicalvisual-20261008T075128348Z\\physical-ui-1920.png",
+      "sha256": "7e88844950498d7d386d131fe4da58953003de0ea37064c662c1dab342c87cce",
+      "bytes": 2945072
+    },
+    "resolution.2560x1440.png": {
+      "path": "D:\\GAME\\TYCOON2\\work\\physical-carry-20261007\\player-physicalvisual-20261008T075128348Z\\physical-ui-2560.png",
+      "sha256": "aede107f2f4c737c21f14fcf8dcb93647a32852a6e7d17af5daf0e729ad6427d",
+      "bytes": 4983995
+    },
+    "resolution.3840x2160.png": {
+      "path": "D:\\GAME\\TYCOON2\\work\\physical-carry-20261007\\player-physicalvisual-20261008T075128348Z\\physical-ui-3840.png",
+      "sha256": "760f975bc5f96c392273b11582ff6bfbb0b77252c3cff4be258ecfd37c212048",
+      "bytes": 10138113
+    },
+    "tests": {
+      "path": "D:\\GAME\\TYCOON2\\QA\\editmode-results.xml",
+      "sha256": "6a80ee45cb0d1388158795f62990752aa99a4e50ad5280684d219146351c6aff",
+      "bytes": 371543
+    },
+    "build": {
+      "path": "D:\\GAME\\TYCOON2\\work\\city-expansion-20261008\\Release\\build-report.json",
+      "sha256": "4fff7974f1f8cefa4e0156257c6b301a701d4fa5fb71eba8af2b547221c0fe2d",
+      "bytes": 164
+    },
+    "build.TYCOON2.exe": {
+      "path": "D:\\GAME\\TYCOON2\\work\\city-expansion-20261008\\Release\\TYCOON2.exe",
+      "sha256": "96b492cb271111251fe42b8646e65370a1b7b566773a1e35b34c3f2d1ae70873",
+      "bytes": 667136
+    },
+    "build.UnityCrashHandler64.exe": {
+      "path": "D:\\GAME\\TYCOON2\\work\\city-expansion-20261008\\Release\\UnityCrashHandler64.exe",
+      "sha256": "4c2d5f9cbbab38382c39c69f2ccada2beac336b466813df8e2db4e75112aa673",
+      "bytes": 1773488
+    },
+    "projectVersion": {
+      "path": "D:\\GAME\\TYCOON2\\ProjectSettings\\ProjectVersion.txt",
+      "sha256": "a06af1660c5d19d9bccc2876b4c0ecbd4a403e08cad483f3601b18d1bdd20c9c",
+      "bytes": 85
+    }
+  },
+  "limitations": [
+    "This tool validates supplied reports; it does not run Unity or independently measure gameplay.",
+    "165 FPS is the target; the acceptance floor is 148.5 FPS, including the resume full-city interval.",
+    "Per-SKU totals and receipt identities rely on explicit successful runtime restore assertions.",
+    "The legacy-source hash identifies the supplied file; the restore report contains no source hash.",
+    "Source checkout metadata does not prove which revision produced a supplied Player build.",
+    "3840x2160: nativeWindowValidated=False, offscreen=True; no full native-window acceptance claim."
+  ]
+}

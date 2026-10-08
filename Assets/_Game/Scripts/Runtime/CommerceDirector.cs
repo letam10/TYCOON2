@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -64,7 +63,7 @@ namespace Tycoon
             CustomerAgent customer;
             if (pool.Count > 0)
             {
-                customer = pool.Dequeue(); customer.transform.position = hit.position; customer.gameObject.SetActive(true); customer.Agent.Warp(hit.position);
+                customer = pool.Dequeue(); customer.transform.position = hit.position; customer.gameObject.SetActive(true); Navigation.Warp(customer.Agent,hit.position);
             }
             else
             {
@@ -89,178 +88,6 @@ namespace Tycoon
         }
     }
 
-    public sealed class CustomerAgent : MonoBehaviour
-    {
-        public enum State { Waiting, Shopping, Queue, Leaving, Approaching }
-        public State Current;
-        public string Shop;
-        public NavMeshAgent Agent;
-        public ActorView View;
-        [System.NonSerialized] public Inventory Basket = new(3);
-        public long Receipt;
-        public CheckoutStation Lane;
-        public OrderState Order { get; private set; }
-        float decideAt;
-        int approachStep;
-        Vector3 exitPoint;
-        TextMesh bubble;
-        GameObject icon;
-        string iconItem;
-        Transform orderBubble;
-        readonly StringBuilder orderText = new();
-
-        public string Diagnostic() => Shop + " state=" + Current + " basket=" + Basket.Total + " receipt=" + Receipt + " remaining=" + (Order?.RemainingPatience(Time.time) ?? 0) + " position=" + transform.position;
-
-        public void Initialize()
-        {
-            Agent = Navigation.Agent(gameObject,true); View = GetComponentInChildren<ActorView>(); View.Initialize();
-            orderBubble = new GameObject("OrderBubble").transform; orderBubble.SetParent(transform, false); orderBubble.localPosition = new Vector3(0, 2.4f, 0);
-            orderBubble.gameObject.AddComponent<BillboardLabel>();
-            var disk = Art.Cylinder("BubbleBackground", new Vector3(0, 0, .03f), new Vector3(2.5f, .04f, 2.3f), "#FFFFFF", orderBubble);
-            disk.transform.localRotation = Quaternion.Euler(90, 0, 0);
-            bubble = Art.Label("", new Vector3(0, -.15f, -.08f), orderBubble, .11f, "#34483D", false);
-            orderBubble.gameObject.SetActive(false);
-            var stackRoot = new GameObject("CustomerBasket"); stackRoot.transform.SetParent(transform, false); stackRoot.transform.localPosition = new Vector3(0, .7f, .35f);
-            var stack = stackRoot.AddComponent<InventoryStack>(); stack.Inventory = Basket; stack.Pool = GameSession.Instance.Pool;
-            stack.Columns = 1; stack.Rows = 1; stack.Scale = .45f; stack.LayerHeight = .2f; stack.Maximum = 3;
-        }
-
-        public void Begin(string shop, int index,bool approach=false)
-        {
-            var game = GameSession.Instance;
-            Lane?.Queue.Remove(this); Shop = shop;
-            if(Basket.Authority!=null)Basket.Unbind();Basket.Restore(null); Receipt = game.NextReceipt++;
-            Lane = CommerceDirector.FindLane(shop); exitPoint = transform.position; decideAt = 0;
-            if(approach){Current=State.Approaching;approachStep=0;Order=null;Go(ApproachPoint());return;}
-            JoinQueue();
-        }
-        Vector3 FrontStreet=>Shop=="market"?new(60,0,19):Shop=="bakery"?new(21,0,21):new(Lane.transform.position.x,0,-12);
-        Vector3 FrontEntry=>Shop=="market"?new(Lane.transform.position.x,0,19):Lane.transform.position+Vector3.back*6;
-        Vector3 ApproachPoint()=>approachStep==0?TownLayout.Gate:approachStep==1?FrontStreet:FrontEntry;
-        Vector3 ExitStep()=>approachStep==0?FrontEntry:approachStep==1?FrontStreet:approachStep==2?TownLayout.Gate:exitPoint;
-        void JoinQueue()
-        {
-            var game=GameSession.Instance;string shop=Shop;
-            var available = new List<string>();
-            foreach (var shelf in game.Shelves)
-            {
-                if (shelf.ShopId != shop || !shelf.IsUnlocked || shelf.AllowedItems == null) continue;
-                foreach (string id in shelf.AllowedItems)
-                {
-                    if (Definitions.Item(id) == null || available.Contains(id)) continue;
-                    if(game.Progression.CanProduce(id))available.Add(id);
-                }
-            }
-            var lines = new List<OrderLine>();
-            if (shop == "farm")
-            {
-                // Khi chưa mở vật nuôi, Farm tiếp tục chỉ bán cà rốt.
-                var livestock=available.FindAll(Definitions.IsAnimal);
-                string item=livestock.Count==0||Random.value<.65f?"carrot":livestock[Random.Range(0,livestock.Count)];
-                int quantity=item=="carrot"?Random.Range(1,4):1;
-                lines.Add(new OrderLine(item, quantity, game.ItemPrice(item)));
-            }
-            else
-            {
-                int maximumTypes=MaximumOrderItemTypes(shop);
-                int count = Mathf.Min(available.Count, Random.Range(1, maximumTypes+1));
-                for (int i = 0; i < count; i++)
-                {
-                    int chosen = Random.Range(0, available.Count); string id = available[chosen]; available.RemoveAt(chosen);
-                    lines.Add(new OrderLine(id, 1, game.ItemPrice(id)));
-                }
-            }
-            Order = new OrderState(Receipt, lines, Time.time);
-            if (!Lane || lines.Count == 0) { Leave(); return; }
-            Current = State.Queue; Lane.Queue.Add(this); Go(Lane.QueuePoint(this)); RefreshBubble();
-            game.Transactions?.BindCustomer(this,Snapshot(),true);
-        }
-
-        public static int MaximumOrderItemTypes(string shop)=>shop is "farm" or "farm_shop"?1:2;
-
-        public void Restore(CustomerSave saved)
-        {
-            Lane?.Queue.Remove(this); Shop = saved.shop; Receipt = saved.receipt;
-            Lane = GameSession.Instance.Checkouts.Find(x => x.Id == saved.lane);
-            if(saved.phase==(int)State.Approaching)
-            {
-                if(Basket.Authority!=null)Basket.Unbind();Basket.Restore(saved.basket);Order=null;Current=State.Approaching;approachStep=saved.approachStep;
-                exitPoint=TownLayout.Spawn((int)(Receipt%3));Go(ApproachPoint());RefreshBubble();return;
-            }
-            if(Basket.Authority!=null)Basket.Unbind();Basket.Restore(saved.basket); Order = OrderState.Restore(saved, Time.time);
-            exitPoint = new Vector3(saved.exitX, saved.exitY, saved.exitZ); decideAt = 0;
-            Current = saved.phase == (int)State.Leaving || Order.Finished ? State.Leaving : State.Queue;
-            if (Current == State.Queue && Lane)
-            {
-                int index = Mathf.Clamp(saved.queueIndex, 0, Lane.Queue.Count); Lane.Queue.Insert(index, this); Go(Lane.QueuePoint(this));
-            }
-            else {approachStep=transform.position.x>58?3:saved.approachStep;Go(ExitStep());}
-            RefreshBubble();
-            if(GameSession.Instance.Transactions!=null)GameSession.Instance.Transactions.BindCustomer(this,saved,GameSession.Instance.Transactions.Order(saved.receipt)==null);
-        }
-
-        void Update()
-        {
-            if(!GameSession.Instance.CanSimulate || Time.deltaTime <= 0)return;
-            if (View && Agent) View.SetMotion(Agent.velocity.magnitude, Basket.Total > 0);
-            if(Current==State.Approaching)
-            {
-                if(Agent&&Navigation.Arrived(Agent)){if(approachStep<2){approachStep++;Go(ApproachPoint());}else JoinQueue();}
-                return;
-            }
-            if (Current == State.Queue)
-            {
-                Order.Expire(Basket, GameSession.Instance.Economy, Time.time);
-                if (Order.Finished) { Leave(); return; }
-                if (Time.time >= decideAt) { decideAt = Time.time + .4f; Go(Lane.QueuePoint(this)); }
-                RefreshBubble();
-            }
-            else if (Current == State.Leaving && Agent && Navigation.Arrived(Agent))
-            {if(approachStep<3){approachStep++;Go(ExitStep());}else GameSession.Instance.Commerce.Recycle(this);}
-        }
-
-        void Go(Vector3 point) { if (Agent) Navigation.Go(Agent, point); }
-
-        void RefreshBubble()
-        {
-            if (!orderBubble) return;
-            bool visible = Current == State.Queue && Order != null && (Lane.Queue.IndexOf(this)==0||(transform.position-GameSession.Instance.Player.transform.position).sqrMagnitude<3);
-            orderBubble.gameObject.SetActive(visible);
-            if (!visible) return;
-            orderText.Clear(); string first = null;
-            foreach (var line in Order.Lines)
-            {
-                orderText.Append(Definitions.Item(line.id).label).Append(' ').Append(line.delivered).Append('/').Append(line.requested).Append('\n');
-                if (first == null && line.Remaining > 0) first = line.id;
-            }
-            orderText.Append(Mathf.CeilToInt(Order.RemainingPatience(Time.time))).Append("s");
-            bool detail=Lane.Queue.IndexOf(this)<1||(transform.position-GameSession.Instance.Player.transform.position).sqrMagnitude<16;
-            bubble.text=detail?orderText.ToString():Mathf.CeilToInt(Order.RemainingPatience(Time.time))+"s";
-            if (first == iconItem) return;
-            if (icon) GameSession.Instance.Pool.Return(icon);
-            iconItem = first; icon = null;
-            if (first == null) return;
-            icon = GameSession.Instance.Pool.Take(first, orderBubble); icon.transform.localPosition = new Vector3(0, .8f, -.08f); icon.transform.localScale = Vector3.one * .6f;
-            icon.transform.localRotation = Quaternion.Euler(first is "beef" or "meal" ||Definitions.KitchenRecipes.Any(r=>Definitions.Recipe(r).output==first)?70:15, 0, 0);
-        }
-
-        public void Leave()
-        {
-            if (icon) { GameSession.Instance.Pool.Return(icon); icon = null; } iconItem = null;
-            if (orderBubble) orderBubble.gameObject.SetActive(false);
-            // Hàng đã giao thuộc khách, kể cả khi hết giờ; không chuyển lại vào kho.
-            Lane?.Queue.Remove(this); Current = State.Leaving;approachStep=0; Go(ExitStep());
-        }
-
-        public CustomerSave Snapshot() => new()
-        {
-            receipt = Receipt, shop = Shop, lane = Lane ? Lane.Id : "", phase = (int)Current,approachStep=approachStep,
-            queueIndex = Lane ? Lane.Queue.IndexOf(this) : -1, remaining = Order?.RemainingPatience(Time.time) ?? 0,
-            paid = Order?.Paid ?? false, timedOut = Order?.TimedOut ?? false, order = Order?.SnapshotLines() ?? new List<OrderLine>(), basket = Basket.Snapshot(),
-            x = transform.position.x, y = transform.position.y, z = transform.position.z, exitX = exitPoint.x, exitY = exitPoint.y, exitZ = exitPoint.z
-        };
-    }
-
     public sealed class CheckoutStation : Station
     {
         public override Vector3 WorkPoint=>transform.position+Vector3.forward*1.65f;
@@ -273,12 +100,13 @@ namespace Tycoon
         public bool AcceptsItem(string id)
         { foreach(var shelf in GameSession.Instance.Shelves)if(shelf.ShopId==ShopId&&System.Array.IndexOf(shelf.AllowedItems??System.Array.Empty<string>(),id)>=0)return true;return false; }
         public readonly List<CustomerAgent> Queue = new();
-        int cash,sales;
-        public int Cash {get {if(Authority==null)return cash;int total=Authority.View.legacyCash.Find(x=>x.id==Id)?.amount??0;foreach(var p in Authority.View.payments)if(p.counter==Id&&!p.collected)total+=p.amount;return total;} set{if(Authority!=null&&value!=Cash)throw new System.InvalidOperationException("Cash chỉ được cập nhật qua transaction.");cash=value;}}
+        long cash;
+        int sales;
+        public long Cash {get {if(Authority==null)return cash;long total=Authority.View.legacyCash.Find(x=>x.id==Id)?.amount??0;foreach(var p in Authority.View.payments)if(p.counter==Id&&!p.collected)total+=p.amount;return total;} set{if(Authority!=null&&value!=Cash)throw new System.InvalidOperationException("Cash chỉ được cập nhật qua transaction.");cash=value;}}
         public int Sales {get {if(Authority==null)return sales;int total=0;foreach(var p in Authority.View.payments)if(p.counter==Id)total++;return total;} set{if(Authority!=null&&value!=Sales)throw new System.InvalidOperationException("Sales chỉ được cập nhật qua transaction.");sales=value;}}
         public OrderState FrontOrder => Queue.Count > 0 ? Queue[0].Order : null;
         readonly List<GameObject> bills = new();
-        int shownCash = -1;
+        long shownCash = -1;
         public override string Prompt => "Khách " + Queue.Count + " • hàng quầy " + (Inventory?.Total??0) + " • chưa thu " + Cash + " xu";
         public Vector3 QueuePoint(CustomerAgent customer)
         {
@@ -298,7 +126,7 @@ namespace Tycoon
         void Update()
         {
             if (!IsUnlocked || shownCash == Cash) return;
-            int count = Mathf.Min(20, (Cash + 19) / 20);
+            int count = (int)System.Math.Min(20, Cash / 20 + (Cash % 20 > 0 ? 1 : 0));
             while (bills.Count < count) bills.Add(Art.Box("CashBill", Vector3.zero, new Vector3(.55f, .075f, .28f), "#66E932", transform));
             for (int i = 0; i < bills.Count; i++)
             {
@@ -331,12 +159,12 @@ namespace Tycoon
 
         public override bool Work(Inventory carrier, float delta, EntityId actorId) => Serve(carrier, actorId);
 
-        public int CollectCash(PlayerController player)
+        public long CollectCash(PlayerController player)
         {
             var game = GameSession.Instance;
             if (!IsUnlocked || !player || player != game.Player || (CashZone ? !CashZone.ContainsInteractionPoint(player.transform.position) : Vector3.Distance(player.transform.position,CollectionPoint)>1.2f)) return 0;
-            int collected = Authority!=null?Authority.Collect(Id):game.Economy.CollectCash(Cash); if(Authority==null)Cash -= collected;
-            if (collected > 0) { game.Say("+" + collected + " xu"); game.Feedback?.PlaySale(); }
+            long collected = Authority!=null?Authority.Collect(Id):game.Economy.CollectCash(Cash); if(Authority==null)Cash -= collected;
+            if (collected > 0) { game.Say("+" + collected + " xu"); game.Feedback?.PlaySale(); game.Feedback?.CashTransfer(CollectionPoint + Vector3.up, player.transform.position + Vector3.up); }
             return collected;
         }
 

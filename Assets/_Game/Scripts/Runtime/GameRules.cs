@@ -25,6 +25,28 @@ namespace Tycoon
         public ProgressionTracker Progression => progression ??= new ProgressionTracker(this);
         public List<PurchaseProgress> Purchases { get => Transactions == null ? purchases : Transactions.View.purchases.ConvertAll(x => new PurchaseProgress { id=x.id, paid=x.contributed, total=Definitions.Upgrade(x.id).cost, complete=x.complete }); set { if(Transactions!=null)throw new InvalidOperationException("Purchase chỉ được cập nhật qua transaction."); purchases=value; } }
         public List<CrewState> CrewStates { get => Transactions == null ? crewStates : Transactions.View.crews.ConvertAll(TransactionCore.Copy); set { if(Transactions!=null)throw new InvalidOperationException("Crew chỉ được cập nhật qua transaction."); crewStates=value; } }
+        public CrewState FindCrew(string id)
+        {
+            var crew = ReadCrew(id);
+            if (crew == null) return null;
+            return new CrewState
+            {
+                id = crew.id,
+                role = crew.role,
+                area = crew.area,
+                count = crew.count,
+                speedLevel = crew.speedLevel,
+                carryLevel = crew.carryLevel
+            };
+        }
+        internal CrewState ReadCrew(string id)
+        {
+            // Nội bộ chỉ đọc reference; API công khai FindCrew vẫn trả bản sao độc lập.
+            var source = Transactions == null ? crewStates : Transactions.View.crews;
+            foreach (var crew in source)
+                if (crew.id == id) return crew;
+            return null;
+        }
         public List<CustomerSave> PendingCustomers = new();
         public List<WorkerSave> PendingWorkers = new();
         public EventState Events = new();
@@ -33,7 +55,9 @@ namespace Tycoon
         public StorageStation StorageFor(string area)
         {
             if (area == "market") area = "supermarket";
-            return Stations.Find(x => x is StorageStation && x.AreaId == area) as StorageStation;
+            foreach (var station in Stations)
+                if (station is StorageStation storage && storage.AreaId == area) return storage;
+            return null;
         }
         public int ItemPrice(string id)
         {
@@ -47,7 +71,19 @@ namespace Tycoon
             return price;
         }
         public int Tier(string family) => Progression.StationLevel(family);
-        public int Contribution(string id) => Purchases.Find(x => x.id == id)?.paid ?? 0;
+        public int Contribution(string id)
+        {
+            // Tra cứu một ô không cần tạo bản sao tiến độ của mọi ô trong thành phố.
+            if (Transactions != null)
+            {
+                foreach (var purchase in Transactions.View.purchases)
+                    if (purchase.id == id) return purchase.contributed;
+                return 0;
+            }
+            foreach (var purchase in purchases)
+                if (purchase.id == id) return purchase.paid;
+            return 0;
+        }
         public bool CanPurchase(UpgradeDefinition u, out string reason)
         {
             var evaluation = Progression.Evaluate(u);
@@ -60,7 +96,7 @@ namespace Tycoon
             if (Transactions != null) return Transactions.Contribute(u, amount);
             var progress = Purchases.Find(x => x.id == u.id);
             if (progress == null) { progress = new PurchaseProgress { id = u.id }; Purchases.Add(progress); }
-            int moved = Mathf.Min(amount, Economy.Money, u.cost - progress.paid);
+            int moved = (int)System.Math.Min(amount, System.Math.Min(Economy.CashInHand, u.cost - progress.paid));
             if (moved <= 0 || !Economy.TrySpend(moved)) return 0;
             progress.paid += moved;
             if (progress.paid == u.cost) { Economy.Unlock(u.id); OnPurchased(u); }
@@ -88,17 +124,20 @@ namespace Tycoon
             if(Transactions!=null)
             {
                 var command=Transactions.Command(TransactionKind.UpgradeCrew,"player",id);command.secondary=kind;
-                return Transactions.TryExecute(command,out _);
+                bool upgraded=Transactions.TryExecute(command,out _);
+                if(upgraded)UpgradeModelView.RefreshAll(this,true);
+                return upgraded;
             }
             int level = kind == "speed" ? c.speedLevel : kind == "carry" ? c.carryLevel : c.count;
-            if (level >= 3 || !Economy.TrySpend(CrewUpgradeCost(id, kind))) return false;
+            int maximum = kind == "count" ? WorkforceRules.Limit(c.id) : 3;
+            if (level >= maximum || !Economy.TrySpend(CrewUpgradeCost(id, kind))) return false;
             if (kind == "speed") c.speedLevel++; else if (kind == "carry") c.carryLevel++; else c.count++;
             Say("Đã nâng đội " + Definitions.Upgrade(id).label); return true;
         }
         void ApplyProgression()
         {
             if(Transactions!=null)return;
-            Player.Carry.Capacity = Progression.AxisCapacity("player", 6);
+            Player.Carry.Capacity = Progression.AxisCapacity("player", 12);
             foreach (var s in Stations)
             {
                 string family = s is ProductionStation p ? (p.Animal ? "animal" : "farm") : s.AreaId switch
@@ -110,7 +149,7 @@ namespace Tycoon
         public void TickEvents(float delta)
         {
             if(delta<=0||float.IsNaN(delta)||float.IsInfinity(delta))return;
-            if(CrewStates.Count>0)
+            if ((Transactions == null ? crewStates.Count : Transactions.View.crews.Count) > 0)
             {
                 if (Events.rushRemaining > 0) Events.rushRemaining = Mathf.Max(0, Events.rushRemaining - delta);
                 else if (Events.warning > 0) { Events.warning = Mathf.Max(0,Events.warning-delta); if (Events.warning == 0) { Events.rushRemaining = 90; Say("Giờ cao điểm • 90 giây"); } }

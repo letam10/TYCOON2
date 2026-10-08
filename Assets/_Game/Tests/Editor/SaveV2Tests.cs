@@ -45,14 +45,14 @@ namespace Tycoon.Tests
         {
             var fixture=JsonUtility.FromJson<SaveFixture>(File.ReadAllText(FixturePath("stage08-save-v2-seed.json")));
             var state=new TransactionCore(TransactionCoreTests.Seed()).Snapshot();
-            var save=new SaveData{transactionVersion=SaveStore.CurrentTransactionVersion,transactionState=state,money=fixture.money};
+            var save=new SaveData{version=2,transactionVersion=2,transactionState=state,money=fixture.money};
             save.cash.Add(new CashSave{id="counter",amount=0});
             string path=TemporarySavePath();
             try
             {
                 SaveStore.Write(path,save);
                 var first=SaveStore.Read(path);var second=SaveStore.Read(path);
-                Assert.That(first.transactionVersion,Is.EqualTo(SaveStore.CurrentTransactionVersion));
+                Assert.That(first.transactionVersion,Is.EqualTo(2));
                 Assert.That(first.transactionState.stacks.Find(x=>x.owner=="storage"&&x.item=="carrot").quantity,Is.EqualTo(fixture.storageCarrots));
                 Assert.That(second.transactionState.stacks.Find(x=>x.owner=="storage"&&x.item=="carrot").quantity,Is.EqualTo(fixture.storageCarrots));
                 Assert.That(second.money,Is.EqualTo(fixture.money));Assert.That(second.transactionState.revision,Is.Zero);
@@ -62,12 +62,15 @@ namespace Tycoon.Tests
         [Test] public void TransactionVersionOneIsNormalizedAndUpgradedToVersionTwo()
         {
             var state=TransactionCoreTests.Seed();state.schemaVersion=1;
-            var save=new SaveData{transactionVersion=1,transactionState=state,money=state.money};save.cash.Add(new CashSave{id="counter"});
+            var save=new SaveData{version=2,transactionVersion=1,transactionState=state,money=state.money};save.cash.Add(new CashSave{id="counter"});
             string path=TemporarySavePath();
             try
             {
-                SaveStore.Write(path,save);var read=SaveStore.Read(path);
-                Assert.That(read.transactionVersion,Is.EqualTo(SaveStore.CurrentTransactionVersion));
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                // Mô phỏng file lịch sử; writer hiện tại chỉ nhận schema đã chuẩn hóa.
+                File.WriteAllText(path,JsonUtility.ToJson(save));
+                var read=SaveStore.Read(path);
+                Assert.That(read.transactionVersion,Is.EqualTo(2));
                 Assert.That(read.transactionState.schemaVersion,Is.EqualTo(2));
             }
             finally{DeleteTemporarySave(path);}

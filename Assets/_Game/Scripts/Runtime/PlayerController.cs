@@ -5,7 +5,9 @@ namespace Tycoon
 {
     public sealed class PlayerController : MonoBehaviour
     {
-        [System.NonSerialized] public Inventory Carry = new(6, true);
+        [System.NonSerialized] public Inventory Carry = new(12, true);
+        public bool HasCarry => Carry.Total>0 || GameSession.Instance?.Economy.CashInHand>0 ||
+            GameSession.Instance?.Transactions?.View.crates.Exists(x=>x.holder=="player")==true;
         public CharacterController Controller;
         public ActorView View;
         public float DistanceWalked { get; private set; }
@@ -33,8 +35,7 @@ namespace Tycoon
             if (Move != null) return;
             Controller = GetComponent<CharacterController>();
             if (!Controller) Controller = gameObject.AddComponent<CharacterController>();
-            Controller.height = 1.8f; Controller.radius = .26f; Controller.center = new Vector3(0, .91f, 0);
-            Controller.stepOffset = .28f; Controller.skinWidth = .035f; Controller.slopeLimit = 45;
+            ActorPhysicalMotion.Configure(Controller);
             Move = new InputAction("Move", InputActionType.Value);
             Move.AddCompositeBinding("2DVector").With("Up", "<Keyboard>/w").With("Down", "<Keyboard>/s").With("Left", "<Keyboard>/a").With("Right", "<Keyboard>/d");
             Move.AddCompositeBinding("2DVector").With("Up", "<Keyboard>/upArrow").With("Down", "<Keyboard>/downArrow").With("Left", "<Keyboard>/leftArrow").With("Right", "<Keyboard>/rightArrow");
@@ -56,20 +57,23 @@ namespace Tycoon
             if (Save.WasPressedThisFrame()) game.SaveGame();
             Vector2 input = Move.ReadValue<Vector2>();
             var direction = CameraRelativeDirection(input, Camera.main ? Camera.main.transform : null);
-            float speed = Sprint.IsPressed() && Carry.Total == 0 ? 6.2f : Carry.Total > 0 ? 3.8f : 4.8f;
+            float speed = Sprint.IsPressed() && !HasCarry ? 6.2f : HasCarry ? 3.8f : 4.8f;
             // Tăng tốc ngắn, dừng nhanh để vẫn thao tác chính xác khi đứng sát trạm.
             bool braking = direction.sqrMagnitude < .0025f || Vector3.Dot(movement, direction) < 0;
             movement = Vector3.MoveTowards(movement, direction * speed, (braking ? 46 : 32) * Time.deltaTime);
             Vector3 before = transform.position;
-            var goal=before+movement*Time.deltaTime;goal.x=Mathf.Clamp(goal.x,-48,58);goal.z=Mathf.Clamp(goal.z,-18,58);
+            var goal = before + movement * Time.deltaTime;
+            var cityBounds = CityDistricts.WorldBounds;
+            goal.x = Mathf.Clamp(goal.x, cityBounds.min.x + 1, cityBounds.max.x - 1);
+            goal.z = Mathf.Clamp(goal.z, cityBounds.min.z + 1, cityBounds.max.z - 1);
             Controller.Move(goal-before+Vector3.down*3*Time.deltaTime);
             Vector3 travelled = transform.position - before; travelled.y = 0;
             DistanceWalked += travelled.magnitude;
             CurrentSpeed = travelled.magnitude / Mathf.Max(Time.deltaTime, .001f);
-            IsSprinting = Carry.Total == 0 && Sprint.IsPressed() && CurrentSpeed > 5.5f;
+            IsSprinting = !HasCarry && Sprint.IsPressed() && CurrentSpeed > 5.5f;
             if (direction.sqrMagnitude > .01f)
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(direction), 540 * Time.deltaTime);
-            View?.SetMotion(CurrentSpeed, Carry.Total > 0);
+            View?.SetMotion(CurrentSpeed, HasCarry);
             InteractAtCurrentPosition(Time.deltaTime);
         }
         public static Vector3 CameraRelativeDirection(Vector2 input, Transform camera)
@@ -121,7 +125,7 @@ namespace Tycoon
         {
             interaction.Stop(); InteractionReason = "";
         }
-        void ResetMotion() { movement = Vector3.zero; CurrentSpeed = 0; IsSprinting = false; View?.SetMotion(0, Carry.Total > 0); }
+        void ResetMotion() { movement = Vector3.zero; CurrentSpeed = 0; IsSprinting = false; View?.SetMotion(0, HasCarry); }
         void OnEnable() { Move?.Enable(); Use?.Enable(); Sprint?.Enable(); Withdraw?.Enable(); Cycle?.Enable(); Save?.Enable(); }
         void OnDisable() { ResetMotion(); StopInteraction(); Move?.Disable(); Use?.Disable(); Sprint?.Disable(); Withdraw?.Disable(); Cycle?.Disable(); Save?.Disable(); }
         void OnDestroy()

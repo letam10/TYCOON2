@@ -1,9 +1,44 @@
 # CODEX_HANDOFF
 
-Cập nhật 07/10/2026, Asia/Bangkok. Tiếp tục trực tiếp tại D:\GAME\TYCOON2.
+Cập nhật 08/10/2026, Asia/Bangkok. Tiếp tục trực tiếp tại D:\GAME\TYCOON2.
 Đây là trạng thái hiện hành; các bản bàn giao cũ đã chuyển nguyên nội dung sang Docs/History.
 
-## Phạm vi hiện tại
+## Thành phố hiện hành 08/10/2026
+
+- Hướng dẫn hiện hành: [CITY_EXPANSION_20261008.md](CITY_EXPANSION_20261008.md), README tại root.
+- Nền tăng gấp đôi diện tích; sáu khu độc lập, đường nối, cảnh quan, cư dân và xe đường phố.
+- Xe buýt, xe khách, taxi có hành khách lên/xuống; NPC theo mạng hành lang đường/vỉa hè chính.
+- Hàng cầm lớn và chi tiết hơn, atlas PBR dùng chung, chồng đủ sức mang và lọc chuyển động.
+- Giữ model/rig/asset nhân vật; số liệu chốt tại QA/city-acceptance-20261008.json.
+- Build hiện hành: work/city-expansion-20261008/Release/TYCOON2.exe.
+- Các lượt đo mới là chơi bình thường qua gamepad ảo, simulation 1x, save riêng; không benchmark.
+- Tiền cầm tay/két, hai mod và save schema 3 là cơ chế hiện hành.
+- Đội ngũ 39 người thay cho 78, đủ 26 nghề; năng lực ×1,5, tải thường 18/30/48, bốc xếp 18/36/54.
+- Giảm nhân viên giữ hàng/đặt chỗ trước khi nghỉ; journal cũ replay theo quy tắc cũ rồi mới migration.
+- Cỏ, mảng đất trống và sỏi nhỏ là shader mặt đất; cây ba kiểu, bỏ khối đá độc lập và lưới nền dày.
+- Hiệu ứng nhặt/giao và thu tiền dùng pool; dựng nhân viên hai người/frame, journal giữ handle ghi.
+- EditMode 459/459, không fail/skip, 08/10 07:16:58–07:17:06 UTC; Player đã nghiệm thu lại.
+- Player: 219 kiểm tra chức năng, 117 migration, 10 load và 198 hình ảnh; không lỗi runtime.
+- Chơi bình thường 266,87/344,42 giây: 162,36/160,47 FPS trên RTX 4060, 1080p, simulation 1x.
+- Có một frame 748,94 ms khi mod tối đa; chưa xác định toàn bộ nguyên nhân. Ảnh 4K render offscreen.
+- Báo cáo chốt: `QA/city-acceptance-20261008.json`; hướng dẫn: `Docs/CITY_EXPANSION_20261008.md`.
+- Capsule player/NPC chặn vật thể, NavMesh climb 0,15 m; đi bộ dựa tốc độ thực và giữ pha clip.
+- Hàng 3 cột × 2 hàng mỗi tầng; thịt lớn, cà rốt/lúa nằm ngang, kho/bàn đỡ đúng đáy mesh.
+- Nhãn tiếng Việt có viền/cỡ pixel đồng nhất; cache vật liệu/mesh phục hồi khi tài nguyên đã bị hủy.
+- Các mục audit và báo cáo phía dưới giữ lịch sử của các bản trước.
+
+## Nâng cấp bố trí và hình ảnh 07/10/2026
+
+- Yêu cầu mới: bố trí khu và nâng hình ảnh theo hướng bán thực tế; ô nâng cấp dùng icon vẽ 2D.
+- Đã bổ sung kiến trúc, nội thất, cảnh quan, vật liệu, ánh sáng và shader; gom ô theo khu.
+- Bản chạy mới: `work/visual-redesign-20261007/Release/TYCOON2.exe`.
+- Thiết kế, nguồn và lệnh QA: [VISUAL_REDESIGN_20261007.md](VISUAL_REDESIGN_20261007.md).
+- Kết quả cuối: `work/visual-redesign-20261007/acceptance.json`.
+- EditMode 195/195; build Windows thành công, 0 lỗi và 2 cảnh báo.
+- Player cuối trên RTX 4060/D3D11: 340 kiểm tra, 360 điểm đi được, 81 icon 256 px, 0 lỗi runtime.
+- Vòng chơi đầy đủ: 402 kiểm tra, 1.032 thao tác, save/load đạt; báo cáo ghi rõ phạm vi bản dựng.
+
+## Audit trước lần nâng cấp hình ảnh
 
 - Yêu cầu: audit toàn bộ game, hoàn thiện lỗi/phần dở, kiểm tra test case, cập nhật bàn giao và commit/push.
 - Lượt chốt này chạy EditMode và build Windows headless; không mở Player, không benchmark hoặc soak.
@@ -19,13 +54,13 @@ Cập nhật 07/10/2026, Asia/Bangkok. Tiếp tục trực tiếp tại D:\GAME\
 - WASD/mũi tên/gamepad; camera 55 độ; dừng 0,25 giây trong tầm 1,2 m để thao tác.
 - Thiết kế thị trấn mới dùng proximity, máy tự động, xe/thùng hàng và đội theo nghề + khu.
   Quy định máy cần operator trong PLAN/REPLAN là thiết kế lịch sử đã được thay thế.
-- Khởi đầu ví 0, ba luống cà rốt, cà rốt 10 xu; tuyến miễn phí giúp phục hồi khi hết tiền.
-- Mang một SKU; sức mang 6 → 10 → 16 → 24. Kho từng khu có owner riêng.
+- Khởi đầu tiền tay/két đều 0, ba luống cà rốt, cà rốt 10 xu; tuyến miễn phí giúp phục hồi.
+- Mang một SKU hoặc tiền; sức mang 12 → 20 → 32 → 48. Kho từng khu có owner riêng.
 - Đơn FIFO, kiên nhẫn 90 giây; quá hạn giữ phần đã nhận và trả 0; ghi thất thoát đúng một lần.
-- Giao đủ mới tạo tiền chờ thu. Chỉ player thu tiền vào ví; cashier không tự cộng ví.
-- Mod game chỉ cộng 999.999 vào ví; không mở khu, cấp hàng hoặc tăng doanh thu/cashCollected.
+- Giao đủ tạo tiền chờ thu; player thu lên tay, có thể gửi/rút toàn bộ tại két.
+- Mod game có hai dòng: thêm 999.999 vào két hoặc mở/nâng tối đa theo định nghĩa hiện có.
 - Các mốc mở khu và điều kiện vận hành giữ trong Definitions/ProgressionTracker.
-- Save v2 + journal giữ receipt, dedup, reservation và state; không tiến triển offline.
+- Save schema 3/layout 2 + journal giữ receipt, dedup, reservation và state; không tiến triển offline.
 
 ## Lỗi đã xử lý trong đợt hoàn thiện
 

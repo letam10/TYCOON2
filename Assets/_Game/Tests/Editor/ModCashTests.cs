@@ -32,8 +32,8 @@ namespace Tycoon.Tests
         }
         [Test] public void ModCashRejectsOverflowWithoutChangingState()
         {
-            var core=Core(new TransactionState{money=int.MaxValue-999999+1,owners=Seed().owners});
-            Rejected(core,Command(core,TransactionKind.GrantModCash,"limit"),"money-limit");
+            var core=Core(new TransactionState{money=long.MaxValue-999999+1,owners=Seed().owners});
+            Rejected(core,Command(core,TransactionKind.GrantModCash,"limit"),"cash-overflow");
         }
         [Test] public void ModCashRequiresPlayerAuthority()
         {

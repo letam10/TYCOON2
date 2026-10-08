@@ -176,7 +176,7 @@ namespace Tycoon.Tests
         {
             game.Economy.Unlock("mill");
             var processor=Definitions.Upgrade("processor");
-            int money=game.Economy.Money;
+            long money=game.Economy.Money;
             Assert.That(game.CanPurchase(processor,out var reason),Is.False);
             Assert.That(reason,Does.Contain("chưa có kho riêng"));
             Assert.That(game.Contribute(processor,processor.cost),Is.Zero);

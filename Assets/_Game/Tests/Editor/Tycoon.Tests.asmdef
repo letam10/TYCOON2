@@ -1,6 +1,6 @@
 {
   "name": "Tycoon.Tests",
-  "references": ["Tycoon.Runtime", "Unity.InputSystem"],
+  "references": ["Tycoon.Runtime", "Unity.InputSystem", "Unity.AI.Navigation"],
   "includePlatforms": ["Editor"],
   "optionalUnityReferences": ["TestAssemblies"],
   "autoReferenced": false

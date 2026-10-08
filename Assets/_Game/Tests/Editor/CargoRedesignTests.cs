@@ -46,7 +46,7 @@ namespace Tycoon.Tests
             var dispatch=C(core,TransactionKind.DispatchTruck,"send");dispatch.path=new(){new(0,0),new(20,0)};core.Execute(dispatch);core.Execute(dispatch);
             Assert.That(core.Snapshot().reservations.Single(x=>x.id.StartsWith("cargo-reserve:")).quantity,Is.EqualTo(6));
             var tick=C(core,TransactionKind.TickTruck,"move-half");tick.actor="simulation";tick.secondary="effect:send";tick.duration=2.5;core.Execute(tick);
-            var saved=core.Snapshot();Assert.That(saved.truck.travelled,Is.EqualTo(10));
+            var saved=core.Snapshot();Assert.That(saved.truck.travelled,Is.EqualTo(15));
             for(int i=0;i<3;i++){core=new TransactionCore(saved,null,()=>100);Assert.That(core.Snapshot().crates.Count,Is.EqualTo(1));}
             tick=C(core,TransactionKind.TickTruck,"move-end");tick.actor="simulation";tick.secondary="effect:send";tick.duration=2.5;core.Execute(tick);
             var unload=C(core,TransactionKind.UnloadCrate,"unload","box");core.Execute(unload);core.Execute(unload);

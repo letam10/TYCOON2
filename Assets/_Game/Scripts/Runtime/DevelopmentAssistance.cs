@@ -17,6 +17,16 @@ namespace Tycoon
             if (!Enabled || game?.Transactions == null) return false;
             return game.Transactions.TryExecute(game.Transactions.Command(TransactionKind.GrantAssistance,"player"),out _);
         }
+        public static bool ApplyMaximum(GameSession game)
+        {
+            if(!Enabled||game?.Transactions==null)return false;
+            bool applied;
+            using (CityOperationTiming.Measure(game, "ModMaximum.Transaction"))
+                applied = game.Transactions.TryExecute(
+                    game.Transactions.Command(TransactionKind.GrantMaximum, "player"), out _);
+            if(applied)UpgradeModelView.RefreshAll(game,false);
+            return applied;
+        }
         public static bool ApplyCashOnly(GameSession game)
         {
             if (!Enabled || game?.Transactions == null) return false;
@@ -28,15 +38,16 @@ namespace Tycoon
         int GrantModCash(TransactionState s, TransactionCommand c)
         {
             Player(s,c.actor); Require(DevelopmentAssistance.Enabled || !runtime,"assist","Nút mod đã được gỡ khỏi bản này.");
-            Require(s.money<=int.MaxValue-DevelopmentAssistance.Grant,"money-limit","Ví đã chạm giới hạn tiền.");
-            s.money+=DevelopmentAssistance.Grant;
+            if(s.schemaVersion>=3)s.cashInSafe=PhysicalCashRules.Add(s.cashInSafe,DevelopmentAssistance.Grant);
+            else s.money=PhysicalCashRules.Add(s.money,DevelopmentAssistance.Grant);
             return DevelopmentAssistance.Grant;
         }
         int GrantAssistance(TransactionState s, TransactionCommand c)
         {
             Player(s,c.actor); Require(DevelopmentAssistance.Enabled || !runtime,"assist","Nút hỗ trợ đã được gỡ khỏi bản này.");
-            s.money=checked(s.money+DevelopmentAssistance.Grant);
-            s.assistedCash=checked(s.assistedCash+DevelopmentAssistance.Grant);s.assisted=true;
+            if(s.schemaVersion>=3)s.cashInSafe=PhysicalCashRules.Add(s.cashInSafe,DevelopmentAssistance.Grant);
+            else s.money=PhysicalCashRules.Add(s.money,DevelopmentAssistance.Grant);
+            s.assistedCash=PhysicalCashRules.Add(s.assistedCash,DevelopmentAssistance.Grant);s.assisted=true;
             foreach(var d in Definitions.Upgrades.Where(x=>x.kind=="unlock"))
                 if(!s.unlocked.Contains(d.id))s.unlocked.Add(d.id);
             UnlockCrops(s);return DevelopmentAssistance.Grant;
