@@ -35,6 +35,31 @@ namespace Tycoon.Tests
         }
 
         [Test]
+        public void ExpansionModelRootsStayGroundedAndInsideTheirFootprints()
+        {
+            foreach (WorldExpansionPoi poi in WorldExpansionCatalog.BuildDefault())
+            {
+                GameObject root = new GameObject("ExpansionAlignmentTest_" + poi.Id);
+                root.transform.localPosition = poi.Center;
+                try
+                {
+                    WorldExpansionModels.Build(root.transform, poi);
+                    Transform models = root.transform.Find("ExpansionModels");
+                    ModelAlignmentRecord record = WorldModelAlignmentAudit.CheckModel(
+                        models.gameObject, .1f);
+
+                    Assert.That(record.Passed, Is.True, poi.Id + ": " + record.Error);
+                    Assert.That(record.Grounded, Is.True, poi.Id);
+                    Assert.That(record.PivotInsideFootprint, Is.True, poi.Id);
+                }
+                finally
+                {
+                    Object.DestroyImmediate(root);
+                }
+            }
+        }
+
+        [Test]
         public void BuildIsIdempotentForExistingModelRoot()
         {
             WorldExpansionPoi poi = WorldExpansionCatalog.BuildDefault()[2];
