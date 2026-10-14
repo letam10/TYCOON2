@@ -1,0 +1,17 @@
+{
+  "name": "Tycoon.EditModeTests",
+  "rootNamespace": "Tycoon.Tests",
+  "references": [
+    "Tycoon.Runtime",
+    "Unity.InputSystem",
+    "Unity.AI.Navigation",
+    "Unity.RenderPipelines.Universal.Runtime"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "autoReferenced": false
+}
