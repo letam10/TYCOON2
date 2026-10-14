@@ -20,6 +20,7 @@ namespace Tycoon
             public int iconResolution;
             public List<string> invalidMaterials = new();
             public List<string> roadOverlaps = new();
+            public List<string> misalignedLabels = new();
         }
 
         void CheckVisualRedesign()
@@ -39,6 +40,27 @@ namespace Tycoon
                 if (renderer.name == "TreeCrown") report.treeMeshes++;
                 if (renderer.name is "WindowGlass" or "RearRoof" or "FacadeColumn") report.architectureParts++;
             }
+            foreach (WorldLabelAnchor anchor in world.GetComponentsInChildren<WorldLabelAnchor>(true))
+            {
+                if (!anchor || !anchor.ModelRoot)
+                {
+                    report.misalignedLabels.Add(anchor ? anchor.name : "<null-label>");
+                    continue;
+                }
+                Renderer[] labelRenderers = anchor.ModelRoot.GetComponentsInChildren<Renderer>(true);
+                if (labelRenderers.Length == 0)
+                {
+                    report.misalignedLabels.Add(anchor.name + " no model bounds");
+                    continue;
+                }
+                Bounds footprint = labelRenderers[0].bounds;
+                for (int index = 1; index < labelRenderers.Length; index++)
+                    if (labelRenderers[index]) footprint.Encapsulate(labelRenderers[index].bounds);
+                LabelAlignmentRecord alignment = WorldModelAlignmentAudit.CheckLabel(
+                    anchor.transform, footprint, .75f);
+                if (!alignment.Passed)
+                    report.misalignedLabels.Add(anchor.name + ": " + alignment.Error);
+            }
             foreach (var pad in game.Stations.OfType<PurchasePad>())
             {
                 report.illustratedPads++;
@@ -54,6 +76,7 @@ namespace Tycoon
                 "detailed physical surfaces and cutaway architecture instantiated");
             Check(report.treeMeshes > 40, "branched landscape trees instantiated");
             Check(report.roadOverlaps.Count == 0, "upgrade banks keep truck roads clear");
+            Check(report.misalignedLabels.Count == 0, "world labels stay inside their model footprints");
             Check(world.GetComponentsInChildren<MeshFilter>(true)
                 .Any(m => m.sharedMesh && m.sharedMesh.name == "RollingCountryside"),
                 "sculpted countryside replaces sphere hills");
