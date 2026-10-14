@@ -51,8 +51,8 @@ namespace Tycoon.Tests
 
         [TestCase(263, -260, "TYCOON/Town Water")]
         [TestCase(263, 260, "TYCOON/Town Water")]
-        [TestCase(200, -260, "TYCOON/Town Surface")]
-        [TestCase(200, 260, "TYCOON/Town Surface")]
+        [TestCase(200, -500, "TYCOON/Town Surface")]
+        [TestCase(200, 500, "TYCOON/Town Surface")]
         public void LateralCoastViewsHaveDecorativeContext(float x, float offsetZ, string shader)
         {
             var root = new GameObject("OceanLateralContext");

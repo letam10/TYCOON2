@@ -11,13 +11,14 @@ namespace Tycoon
             root.SetParent(world, false);
             var g = new CityStaticGeometry(root);
             var bounds = CityDistricts.WorldBounds;
-            float end = bounds.max.x + 3;
-            Boundary(267, end, bounds.min.z - 3, bounds.max.z + 3);
+            float outerWaterStart = bounds.max.x + 3;
+            Boundary(bounds.max.x, outerWaterStart,
+                bounds.min.z - 3, bounds.max.z + 3);
             // Lấp dải đất sau cảng và marina; không chồng mặt nước bãi biển ở x247..267.
             Strip(261, 267, bounds.min.z - 3, 11);
             Strip(261, 267, 143, bounds.max.z + 3);
             g.Finish();
-            CityOceanHorizon.Build(root, bounds, 267);
+            CityOceanHorizon.Build(root, bounds, outerWaterStart);
 
             void Strip(float left, float right, float bottom, float top)
             {
