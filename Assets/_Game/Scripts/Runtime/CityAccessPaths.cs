@@ -56,6 +56,7 @@ namespace Tycoon
                 string surface = "paving";
                 string tint = "#C0B8A0";
                 float width = corridor.Width;
+                bool drawCorridor = corridor.Kind != RouteKind.Rail;
                 if (corridor.Kind == RouteKind.FarmPath)
                 {
                     surface = "soil";
@@ -66,17 +67,16 @@ namespace Tycoon
                     surface = "stone";
                     tint = "#596365";
                 }
-                else if (corridor.Kind == RouteKind.Rail)
-                {
-                    continue;
-                }
                 else if (corridor.Kind == RouteKind.Dock)
                 {
                     surface = "wood";
                     tint = "#A18B68";
                 }
-                for (int node = 1; node < corridor.Nodes.Count; node++)
-                    Segment(g, corridor.Nodes[node - 1], corridor.Nodes[node], width, surface, tint);
+                if (drawCorridor)
+                {
+                    for (int node = 1; node < corridor.Nodes.Count; node++)
+                        Segment(g, corridor.Nodes[node - 1], corridor.Nodes[node], width, surface, tint);
+                }
                 Sign(signs, corridor.Nodes[0], SignText(corridor.Id));
             }
         }
@@ -119,10 +119,17 @@ namespace Tycoon
             return id switch
             {
                 "farm-dirt-path" => "ĐƯỜNG ĐẤT NÔNG TRẠI",
+                "farm-service-loop" => "VÒNG DỊCH VỤ NÔNG TRẠI",
                 "sidewalk-crossings" => "VỈA HÈ VÀ QUA ĐƯỜNG",
                 "highway-ring" => "ĐƯỜNG CAO TỐC VÀNH ĐAI",
+                "rail-mainline" => "TUYẾN ĐƯỜNG SẮT CHÍNH",
                 "dock-harbor-approach" => "LỐI VÀO BẾN CẢNG",
                 "forest-access" => "LỐI MÒN RỪNG NGUYÊN SINH",
+                "expansion-forest-access" => "ĐƯỜNG VÀO RỪNG MỞ RỘNG",
+                "expansion-industrial-approach" => "ĐƯỜNG VÀO KHU CÔNG NGHIỆP",
+                "expansion-village-road" => "ĐƯỜNG LÀNG PHÍA BẮC",
+                "expansion-marina-dock" => "CẦU CẢNG BẾN THUYỀN",
+                "expansion-south-highway" => "ĐƯỜNG CAO TỐC PHÍA NAM",
                 _ => id
             };
         }
