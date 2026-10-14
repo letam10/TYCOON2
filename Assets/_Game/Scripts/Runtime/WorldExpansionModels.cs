@@ -251,6 +251,7 @@ namespace Tycoon
         {
             g.Box(new Vector3(30, .02f, 0), new Vector3(84f, .04f, 70f),
                 "water", "#346D73");
+            WorldExpansionBoat.Build(root, new Vector3(20, 0, -27));
             AddPier(g, root, poi, -32f);
             AddPier(g, root, poi, 27f);
             AddMooring(g, root, poi, new Vector3(-58, 0, 27));

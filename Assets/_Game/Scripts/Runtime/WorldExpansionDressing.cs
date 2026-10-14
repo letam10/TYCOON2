@@ -81,9 +81,13 @@ namespace Tycoon
             WorldInteractionAction action = poi.Id == "EastMarina"
                 ? WorldInteractionAction.BoardVessel
                 : WorldInteractionAction.Visit;
-            WorldInteractionArea.Add(root, "expansion_" + poi.Id, poi.Label,
+            WorldExpansionBoat boat = root.GetComponentInChildren<WorldExpansionBoat>(true);
+            Vector3 approach = boat ? root.InverseTransformPoint(boat.DoorOutside) : Vector3.zero;
+            WorldInteractionArea area = WorldInteractionArea.Add(root, "expansion_" + poi.Id, poi.Label,
                 "Đã tới " + poi.Label + ". Hãy đi theo tuyến được đánh dấu.", action,
-                Vector3.zero, 6f);
+                approach, 6f);
+            if (boat)
+                area.CarrierSource = boat;
         }
 
         static void Segment(Transform parent, Vector3 start, Vector3 end, string color)

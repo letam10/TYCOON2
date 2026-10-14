@@ -105,5 +105,28 @@ namespace Tycoon.Tests
                 }
             }
         }
+
+        [Test]
+        public void MarinaCreatesBoardablePassengerBoat()
+        {
+            WorldExpansionPoi poi = WorldExpansionCatalog.BuildDefault()[3];
+            GameObject root = new GameObject("ExpansionBoatTest");
+            root.transform.localPosition = poi.Center;
+            try
+            {
+                WorldExpansionModels.Build(root.transform, poi);
+                WorldExpansionBoat boat = root.GetComponentInChildren<WorldExpansionBoat>(true);
+                Assert.That(boat, Is.Not.Null);
+                Assert.That(boat.Hull, Is.EqualTo(boat.transform));
+                Assert.That(boat.DoorsOpen, Is.True);
+                Assert.That(boat.DoorOutside, Is.EqualTo(boat.transform.TransformPoint(
+                    new Vector3(0, .2f, -5.2f))));
+                Assert.That(float.IsNaN(boat.DoorOutside.x), Is.False);
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
     }
 }
