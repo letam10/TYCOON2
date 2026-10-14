@@ -38,9 +38,12 @@ namespace Tycoon.Tests
                 {
                     if (Vector3.Distance(from, to) <= CityPedestrianNetwork.LocalTrip) continue;
                     var route = CityPedestrianNetwork.Plan(from, to);
+                    Assert.That(route, Is.Not.Empty,
+                        from + " -> " + to + " returned no pedestrian route.");
                     Assert.That(route[0], Is.EqualTo(from));
                     Assert.That(route[^1], Is.EqualTo(to));
-                    Assert.That(route.Count, Is.GreaterThanOrEqualTo(3));
+                    Assert.That(route.Count, Is.GreaterThanOrEqualTo(3),
+                        from + " -> " + to + " returned " + route.Count + " route points.");
                 }
             yield break;
         }

@@ -29,6 +29,7 @@ namespace Tycoon
             {0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}, {0, 6},
             {6, 7}, {7, 8}, {8, 9}, {9, 10}, {10, 11},
             {7, 12}, {12, 13}, {8, 14}, {9, 15}, {15, 16},
+            {13, 21},
             {4, 17}, {17, 11}, {17, 18}, {10, 19}, {19, 20},
             {19, 21}, {21, 22}, {11, 22}, {21, 23}, {23, 24},
             {0, 25}, {6, 26}, {5, 30}, {11, 29}, {25, 26}, {26, 27},
@@ -97,6 +98,12 @@ namespace Tycoon
             {
                 failure = "pedestrian graph returned an empty route";
                 return false;
+            }
+            if (!avoidFarm && route.Count == 2 &&
+                Vector3.Distance(from, destination) > LocalTrip)
+            {
+                // Giữ một waypoint giữa đoạn dài để agent không bỏ qua hành lang đã chọn.
+                route.Insert(1, Vector3.Lerp(from, destination, .5f));
             }
             route[0] = from;
             route[^1] = destination;
@@ -256,16 +263,43 @@ namespace Tycoon
             return IsFarmPoint(first) || IsFarmPoint(second) || SegmentIntersectsFarm(first, second);
         }
 
-        static bool SegmentIntersectsFarm(Vector3 first, Vector3 second)
+        public static bool SegmentIntersectsFarm(Vector3 first, Vector3 second)
         {
             Bounds farm = CityDistricts.Footprint("farm");
-            for (int step = 1; step < 5; step++)
+            float minimumX = farm.min.x + .5f;
+            float maximumX = farm.max.x - .5f;
+            float minimumZ = farm.min.z + .5f;
+            float maximumZ = farm.max.z - .5f;
+            float lower = 0;
+            float upper = 1;
+            if (!ClipAxis(first.x, second.x - first.x, minimumX, maximumX, ref lower, ref upper))
+                return false;
+            if (!ClipAxis(first.z, second.z - first.z, minimumZ, maximumZ, ref lower, ref upper))
+                return false;
+            return lower <= upper;
+        }
+
+        static bool ClipAxis(
+            float start,
+            float delta,
+            float minimum,
+            float maximum,
+            ref float lower,
+            ref float upper)
+        {
+            if (Mathf.Abs(delta) <= .000001f)
+                return start > minimum && start < maximum;
+            float first = (minimum - start) / delta;
+            float second = (maximum - start) / delta;
+            if (first > second)
             {
-                float amount = step / 5f;
-                Vector3 point = Vector3.Lerp(first, second, amount);
-                if (IsFarmPoint(point)) return true;
+                float swap = first;
+                first = second;
+                second = swap;
             }
-            return false;
+            lower = Mathf.Max(lower, first);
+            upper = Mathf.Min(upper, second);
+            return lower <= upper;
         }
 
         static bool IsFarmPoint(Vector3 point)
