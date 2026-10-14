@@ -65,7 +65,9 @@ namespace Tycoon
             if (!context.Player || delta <= 0 || Time.time < nextUse)
                 return InteractionResult.Waiting;
             nextUse = Time.time + Mathf.Max(.1f, Cooldown);
-            if (Action is WorldInteractionAction.BoardTrain or WorldInteractionAction.BoardVessel)
+            if (Action is WorldInteractionAction.BoardTrain
+                or WorldInteractionAction.BoardVessel
+                or WorldInteractionAction.CallTaxi)
                 return Board(context.Player);
             GameSession.Instance?.Say(Message);
             return InteractionResult.Success;
@@ -76,9 +78,12 @@ namespace Tycoon
             var carrier = CarrierSource as ICityPassengerCarrier;
             if (carrier != null && !carrier.DoorsOpen)
                 return InteractionResult.Reject("Hãy đợi cửa phương tiện mở.");
-            string reason = Action == WorldInteractionAction.BoardTrain
-                ? "Đã lên tàu; phương tiện sẽ đưa bạn tới ga kế tiếp."
-                : "Đã lên thuyền; chuyến tham quan bến nước đang bắt đầu.";
+            string reason = Action switch
+            {
+                WorldInteractionAction.BoardTrain => "Đã lên tàu; phương tiện sẽ đưa bạn tới ga kế tiếp.",
+                WorldInteractionAction.CallTaxi => "Đã lên xe; phương tiện sẽ đưa bạn tới điểm tiếp theo.",
+                _ => "Đã lên thuyền; chuyến tham quan bến nước đang bắt đầu."
+            };
             if (!WorldPlayerRide.TryBoard(player, carrier, transform, RideSeconds, reason, out string failure))
                 return InteractionResult.Reject(failure);
             return InteractionResult.Success;
@@ -312,9 +317,7 @@ namespace Tycoon
                 prefix + "_" + carrier.name,
                 label,
                 message,
-                action == WorldInteractionAction.CallTaxi
-                    ? WorldInteractionAction.BoardVessel
-                    : action,
+                action,
                 carrierInterface.DoorOutside == carrier.transform.position
                     ? Vector3.zero
                     : carrier.transform.InverseTransformPoint(carrierInterface.DoorOutside),
