@@ -48,6 +48,12 @@ namespace Tycoon
             Quad(mesh, new Bounds(new(530, 0, 22), new(526, 4, CityDistricts.GroundDepth)),
                 new Color32(57, 165, 181, 255));
             foreach (var road in roads) Quad(mesh, road, new Color32(185, 185, 159, 255));
+            foreach (var corridor in WorldRouteCatalog.BuildDefault())
+            {
+                for (int index = 1; index < corridor.Nodes.Count; index++)
+                    RouteSegment(mesh, corridor.Nodes[index - 1], corridor.Nodes[index],
+                        corridor.Width, RouteColor(corridor.Kind));
+            }
             foreach (var district in districts) Quad(mesh, district, new Color32(211, 178, 116, 255));
             foreach (var landmark in landmarks) Quad(mesh, landmark, new Color32(126, 156, 165, 255));
             foreach (var point in CityMapLocations.Points)
@@ -81,6 +87,44 @@ namespace Tycoon
             var rect = rectTransform.rect;
             Vector2 center = rect.min + Vector2.Scale(point, rect.size);
             AddQuad(mesh, center - Vector2.one * radius, center + Vector2.one * radius, tint);
+        }
+
+        void RouteSegment(VertexHelper mesh, Vector3 start, Vector3 end, float width, Color tint)
+        {
+            Vector3 delta = end - start;
+            delta.y = 0;
+            if (delta.sqrMagnitude < .001f) return;
+            Vector3 side = Vector3.Cross(Vector3.up, delta).normalized * (width * .5f);
+            AddPolygon(mesh, new[]
+            {
+                Position(start + side), Position(start - side),
+                Position(end - side), Position(end + side)
+            }, tint);
+        }
+
+        static Color RouteColor(RouteKind kind)
+        {
+            return kind switch
+            {
+                RouteKind.FarmPath => new Color32(151, 113, 73, 220),
+                RouteKind.Highway => new Color32(73, 82, 85, 230),
+                RouteKind.Rail => new Color32(83, 76, 70, 230),
+                RouteKind.Dock => new Color32(161, 139, 104, 230),
+                _ => new Color32(225, 222, 187, 220)
+            };
+        }
+
+        void AddPolygon(VertexHelper mesh, Vector2[] points, Color tint)
+        {
+            int first = mesh.currentVertCount;
+            for (int index = 0; index < points.Length; index++)
+            {
+                Rect rect = rectTransform.rect;
+                Vector2 local = rect.min + Vector2.Scale(points[index], rect.size);
+                mesh.AddVert(local, tint, Vector2.zero);
+            }
+            for (int index = 1; index < points.Length - 1; index++)
+                mesh.AddTriangle(first, first + index, first + index + 1);
         }
 
         static void AddQuad(VertexHelper mesh, Vector2 min, Vector2 max, Color tint)
