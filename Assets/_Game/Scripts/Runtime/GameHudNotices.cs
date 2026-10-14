@@ -17,7 +17,7 @@ namespace Tycoon
                 if (Time.time < observedUntil) notices.Push(observedNotice, now);
             }
             SetText(toast, notices.Current);
-            toastRoot.SetActive(notices.Current.Length > 0);
+            toastRoot.SetActive(mode == ScreenMode.Play && notices.Current.Length > 0);
         }
     }
 }

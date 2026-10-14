@@ -1,5 +1,5 @@
-param(
-    [ValidateSet('All', 'Progression', 'Crews', 'Roles', 'Cargo', 'Events', 'Save', 'Load')]
+﻿param(
+    [ValidateSet('All', 'Progression', 'Crews', 'Roles', 'Transport', 'Cargo', 'Events', 'Save', 'Load')]
     [string]$Case = 'All',
     [string]$BuildPath = 'work/completion-audit/Build/TYCOON2.exe',
     [string]$LoadPath = ''
@@ -45,5 +45,5 @@ Write-TaskProcessRecord -Root $taskRoot -Name ('completion-' + $Case.ToLower()) 
 Write-Output ('Completion ' + $Case + ' PID ' + $process.Id + ' output ' + $outputPath)
 $process.WaitForExit()
 Write-Output ('Player exit code ' + $process.ExitCode)
-Get-Content -LiteralPath $logPath -Tail 12
+Get-Content -LiteralPath $logPath -Encoding UTF8 -Tail 12
 exit $process.ExitCode

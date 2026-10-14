@@ -43,10 +43,8 @@ namespace Tycoon
             foreach (var vehicle in vehicles)
             {
                 if (!vehicle) continue;
-                Vector3 offset = vehicle.transform.position - point;
-                float along = Vector3.Dot(offset, forward);
-                if (along > 0 && along < 9 + step &&
-                    (offset - forward * along).sqrMagnitude < 2.7f * 2.7f) return true;
+                if (CityTrafficSafety.VehicleAhead(point, forward, step,
+                    vehicle.transform.position, vehicle.transform.forward)) return true;
             }
             return false;
         }

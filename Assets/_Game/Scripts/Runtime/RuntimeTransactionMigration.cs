@@ -38,9 +38,9 @@ namespace Tycoon
                 var progress = station.CaptureProgress();
                 var m = new StationRuntimeState { id = station.Id, area = station.AreaId, requirement = station.Requirement, level = progress.level, workCount = progress.workCount, playerWorkCount=progress.playerWorkCount,
                     input = station is MachineStation ? station.Id + "_input" : station.Id, output = station.Id, progress = progress,
-                    kind = station is MachineStation ? "machine" : station is ProductionStation ? "producer" : station is StorageStation ? "storage" : station is CargoDock?"dock":station is ShelfStation ? "shelf" : station is CheckoutStation ? "counter" : station is TableStation ? "table" : station is ConveyorStation ? "conveyor" : "purchase",
+                    kind = station is SafeStation ? "safe" : station is MachineStation ? "machine" : station is ProductionStation ? "producer" : station is StorageStation ? "storage" : station is CargoDock?"dock":station is ShelfStation ? "shelf" : station is CheckoutStation ? "counter" : station is TableStation ? "table" : station is ConveyorStation ? "conveyor" : "purchase",
                     definitionId = station is MachineStation machine2 ? machine2.Recipe.id : station is PurchasePad pad ? pad.Upgrade.id : station.Id,
-                    item = (station as ProductionStation)?.ItemId,batchYield=(station as ProductionStation)?.Yield??1,cycleSeconds=(station as ProductionStation)?.Interval??0, running = progress.running, remaining = station is MachineStation ? progress.remaining : 0, batches = progress.batches,playerBatches=progress.playerBatches };
+                    item = (station as ProductionStation)?.ItemId,batchYield=(station as ProductionStation)?.Yield??1,cycleSeconds=(station as ProductionStation)?.Interval??0, running = progress.running, machinePhase = progress.running ? MachinePhase.Operating : MachinePhase.WaitingInput, remaining = station is MachineStation ? progress.remaining : 0, batches = progress.batches,playerBatches=progress.playerBatches };
                 s.stations.Add(m);
                 if(station is MachineStation auto){m.autonomous=true;m.recipeOptions=new(auto.Options);m.definitionVersion=auto.Recipe.version;}
                 if (m.running)

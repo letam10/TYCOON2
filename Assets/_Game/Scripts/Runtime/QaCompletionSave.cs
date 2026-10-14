@@ -21,14 +21,20 @@ namespace Tycoon
                 "Manual job picks real source stock");
             Check(game.Transactions.Transfer(player, processing.Inventory, "carrot", 1) == 1,
                 "Manual job delivers to a different owner");
+            CompletionSafeCash(false);
             Check(game.Contribute(Definitions.Upgrade("truck_bundle"), 5000) == 5000,
                 "Thirty hand jobs unlock the truck package");
+            CompletionSafeCash(true);
             Check(game.Transactions.Transfer(farm.Inventory, player, "carrot", 3) == 3, "Pick three cargo items");
             var pack = game.Transactions.Command(TransactionKind.PackCrate, "player", "crate:completion");
             pack.source = "player";
             pack.item = "carrot";
             pack.quantity = 3;
             game.Transactions.Execute(pack);
+            game.Transactions.Execute(game.Transactions.Command(TransactionKind.ClaimCrate,
+                "player", "crate:completion"));
+            Check(game.Transactions.View.crates.Single(c => c.id == "crate:completion").holder == "player",
+                "Save fixture claims crate before loading it");
             game.Transactions.Execute(game.Transactions.Command(TransactionKind.LoadCrate,
                 "player", "crate:completion"));
             Check(game.Logistics.Select(processing.Id, game.StorageFor("farm_shop").Id, false),
@@ -37,9 +43,11 @@ namespace Tycoon
                 "Load saved production batch");
             yield return CompletionWait(() => machine.Running, 5, "Saved machine has input escrow");
             machine.BreakDown(40);
+            CompletionSafeCash(false);
             var repair = game.Transactions.Command(TransactionKind.RepairMachine, "player", machine.Id);
             repair.duration = 2;
             game.Transactions.Execute(repair);
+            CompletionSafeCash(true);
             machine.enabled = false;
             var counter = game.Checkouts.First(c => c.ShopId == "farm");
             var partial = TownCustomer(counter, "carrot", 3);
@@ -54,7 +62,10 @@ namespace Tycoon
             yield return new WaitForSeconds(.5f);
             Check(game.Transactions.Order(failed.Receipt).status == OrderStatus.Failed,
                 "Partial abandonment fails before save");
-            game.Contribute(Definitions.Upgrade("carry10"), 35);
+            CompletionSafeCash(false);
+            Check(game.Contribute(Definitions.Upgrade("carry10"), 35) == 35,
+                "Save fixture keeps a real partially funded carry upgrade");
+            CompletionSafeCash(true);
             CompletionDiner("corn_soup");
             var processor = game.Workers.First(w => w.UpgradeId == "processor");
             processor.enabled = true;
@@ -72,6 +83,8 @@ namespace Tycoon
             Check(JsonUtility.ToJson(game.Transactions.Snapshot()) == pausedState,
                 "Pause freezes jobs, orders, reservations and machine state");
             game.SaveGame();
+            yield return CompletionWait(() => !game.Transactions.CheckpointPending, 5,
+                "Manual checkpoint finishes before disk snapshot comparison");
             var expected = SaveStore.Read(game.SavePath);
             string snapshot = Path.Combine(game.QaDirectory, "completion-midflight.json");
             SaveStore.Write(snapshot, expected);
@@ -135,6 +148,7 @@ namespace Tycoon
             int quantity = game.Transactions.View.stacks.Where(s => s.owner == box.id).Sum(s => s.quantity);
             var destination = game.Stations.OfType<StorageStation>().Single(s => s.Id == truck.current);
             int before = destination.Inventory.Count(box.item);
+            game.Transactions.Execute(game.Transactions.Command(TransactionKind.ClaimCrate, "player", box.id));
             var unload = game.Transactions.Command(TransactionKind.UnloadCrate, "player", box.id);
             game.Transactions.Execute(unload);
             game.Transactions.Execute(unload);
@@ -148,7 +162,8 @@ namespace Tycoon
         {
             var actual = game.Transactions.Snapshot();
             var saved = expected.transactionState;
-            Check(actual.money == saved.money && actual.revenue == saved.revenue &&
+            Check(actual.money == saved.money && actual.cashInHand == saved.cashInHand &&
+                actual.cashInSafe == saved.cashInSafe && actual.revenue == saved.revenue &&
                 actual.cashCollected == saved.cashCollected && actual.assistedCash == saved.assistedCash,
                 label + " preserves wallet, counter revenue and collected cash");
             Check(CompletionItems(actual) == CompletionItems(saved),

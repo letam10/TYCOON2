@@ -11,6 +11,8 @@ namespace Tycoon
         public float Speed { get; private set; }
         public float DistanceMoved { get; private set; }
         Vector3 previous;
+        Vector3 restingPosition;
+        float supportCheckRemaining;
 
         public static ActorPhysicalMotion Attach(NavMeshAgent agent)
         {
@@ -29,6 +31,7 @@ namespace Tycoon
             Agent.updatePosition = false;
             Agent.updateRotation = false;
             previous = transform.position;
+            supportCheckRemaining = 0;
         }
 
         public static void Configure(CharacterController body)
@@ -46,10 +49,13 @@ namespace Tycoon
         {
             previous = transform.position;
             Speed = 0;
+            supportCheckRemaining = 0;
         }
 
         void Update()
         {
+            using var updateProbe = QaFrameProbe.Measure("ActorPhysicalMotion.1.Update");
+
             if (!Agent || !Body) return;
             if (!Agent.enabled)
             {
@@ -72,20 +78,37 @@ namespace Tycoon
             Vector3 requested = Agent.nextPosition - transform.position;
             requested.y = -2 * Time.deltaTime;
             ApplyStep(requested, Time.deltaTime);
-            Agent.nextPosition = transform.position;
-            Vector3 direction = transform.position - previous;
-            direction.y = 0;
-            if (direction.sqrMagnitude > .000001f)
-                transform.rotation = Quaternion.RotateTowards(transform.rotation,
-                    Quaternion.LookRotation(direction), Agent.angularSpeed * Time.deltaTime);
-            previous = transform.position;
+            using (QaFrameProbe.Measure("ActorPhysicalMotion.2.NavigationSyncAndFacing"))
+            {
+                Agent.nextPosition = transform.position;
+                Vector3 direction = transform.position - previous;
+                direction.y = 0;
+                if (direction.sqrMagnitude > .000001f)
+                    transform.rotation = Quaternion.RotateTowards(transform.rotation,
+                        Quaternion.LookRotation(direction), Agent.angularSpeed * Time.deltaTime);
+                previous = transform.position;
+            }
         }
 
         public void ApplyStep(Vector3 requested, float delta)
         {
+            using var stepProbe = QaFrameProbe.Measure("ActorPhysicalMotion.2.ApplyStep");
             if (!Body || !Body.enabled || delta <= 0) return;
             Vector3 before = transform.position;
-            Body.Move(requested);
+            bool idleGravity = requested.x == 0 && requested.z == 0
+                && requested.y <= 0 && requested.y >= -2 * delta;
+            supportCheckRemaining -= delta;
+            // Capsule vẫn bật; bước ngang luôn xử lý ngay, đứng yên kiểm lại sàn mỗi 80 ms.
+            if (idleGravity && Body.isGrounded && before == restingPosition && supportCheckRemaining > 0)
+            {
+                using var skipProbe = QaFrameProbe.Measure("ActorPhysicalMotion.3.IdleSupportSkip");
+                Speed = 0;
+                return;
+            }
+            using (QaFrameProbe.Measure("ActorPhysicalMotion.3.CapsuleMove"))
+                Body.Move(requested);
+            restingPosition = transform.position;
+            supportCheckRemaining = idleGravity && Body.isGrounded ? .08f : 0;
             Vector3 travelled = transform.position - before;
             travelled.y = 0;
             DistanceMoved += travelled.magnitude;
@@ -94,6 +117,7 @@ namespace Tycoon
 
         public bool Warp(Vector3 point)
         {
+            supportCheckRemaining = 0;
             bool active = Body && Body.enabled;
             if (active) Body.enabled = false;
             bool moved = Agent && Agent.enabled && Agent.Warp(point);
@@ -109,6 +133,7 @@ namespace Tycoon
 
         public void Suspend()
         {
+            supportCheckRemaining = 0;
             if (Body) Body.enabled = false;
             if (Agent) Agent.enabled = false;
             Speed = 0;

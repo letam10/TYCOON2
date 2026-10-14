@@ -35,7 +35,14 @@ namespace Tycoon
         public virtual StationProgressSave CaptureProgress()=>new(){id=Id,level=Level,workCount=WorkCount,playerWorkCount=PlayerWorkCount};
         public virtual void RestoreProgress(StationProgressSave s){Level=s.level;WorkCount=s.workCount;PlayerWorkCount=s.playerWorkCount;operatorUntil=0;}
         public bool IsOperatedByOther(EntityId actorId)=>Authority!=null?Authority.OperatedByOther(this,actorId):operatorId!=actorId&&Time.time<operatorUntil;
-        protected virtual void LateUpdate(){if(StatusLabel){StatusLabel.text=Prompt;StatusLabel.gameObject.SetActive(!PlayerUsesZones&&IsUnlocked&&GameSession.Instance.Player&&(GameSession.Instance.Player.transform.position-InteractionPoint).sqrMagnitude<36);}}
+        protected virtual void LateUpdate()
+        {
+            using var probe = QaFrameProbe.Measure("Station.1.LateUpdate");
+            if (!StatusLabel) return;
+            var game = GameSession.Instance;
+            StationLabelPresentation.Refresh(this, !PlayerUsesZones && IsUnlocked && game.Player
+                && (game.Player.transform.position - InteractionPoint).sqrMagnitude < 36);
+        }
     }
     public sealed class StationZone:Station,IPlayerInteractionArea
     {
@@ -61,7 +68,12 @@ namespace Tycoon
         public void Exit(EntityId actor){nextTransfer=operationDelta=0;if(Target)Target.EndInteraction(actor);}
         public override string Prompt=>!Target?"":(Mode=="deposit"?Target is ProductionStation livestock&&livestock.Animal?"Cho ăn "+Definitions.Item(livestock.FeedItem)?.label+" • "+Target.Label:"Đặt hàng • "+Target.Label:Mode=="withdraw"?"Lấy hàng • "+Target.Label:Mode=="restock"?"Tái đàn • "+Target.Label:Mode=="serve"?"Giao hàng • "+Target.Label:Mode=="cash"?"Thu "+(Target as CheckoutStation)?.Cash+" xu":Mode=="repair"?"Sửa máy • "+(Target as MachineStation)?.RepairFee+" xu":Target.Prompt)+(Target is StorageStation storage?storage.ReservationSummary:"");
         protected override void LateUpdate()
-        {if(StatusLabel){StatusLabel.text=Prompt;StatusLabel.gameObject.SetActive(Available&&GameSession.Instance.Player&&Contains(GameSession.Instance.Player.transform.position));}}
+        {
+            using var probe = QaFrameProbe.Measure("Station.2.LateUpdate");
+            if (!StatusLabel) return;
+            var game = GameSession.Instance;
+            StationLabelPresentation.Refresh(this, Available && game.Player && Contains(game.Player.transform.position));
+        }
         public override bool Interact(PlayerController player,bool withdraw)
         {
             if(player==null||!ContainsInteractionPoint(player.transform.position))return false;
@@ -91,7 +103,9 @@ namespace Tycoon
         public bool Animal=>Definitions.IsAnimal(ItemId);
         public int HarvestQuantity=>Animal?1:Mathf.Max(1,Runtime?.progress.cycleYield > 0 ? Runtime.progress.cycleYield : Yield+Level-1);
         public override string Prompt=>!IsUnlocked?Label+" • chưa mở":Animal?Label+" • đàn "+Herd+"/"+MaximumHerd+" • thức ăn "+Feed+"/"+MaximumFeed+" • "+(Feed<MaximumFeed?"Cần "+Definitions.Item(FeedItem)?.label:Herd==0?"Đang tái đàn":Cycle.ToString("0")+"s"):Label+" • "+(Phase==0?"Đứng gieo hạt":Phase==1?"Đứng tưới":Phase==2?"Đang lớn "+Remaining.ToString("0.0")+"s":"Đứng thu hoạch")+" • cấp "+Level;
-        void Update(){Tick(Time.deltaTime);}
+        void Update(){
+            using var updateProbe = QaFrameProbe.Measure("Station.1.Update");
+Tick(Time.deltaTime);}
         public void Tick(float delta)
         {
             if(!IsUnlocked||!GameSession.Instance.CanSimulate||delta<=0||float.IsNaN(delta)||float.IsInfinity(delta))return;

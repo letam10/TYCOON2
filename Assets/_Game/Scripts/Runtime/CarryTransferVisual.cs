@@ -29,6 +29,8 @@ namespace Tycoon
 
         void Update()
         {
+            using var updateProbe = QaFrameProbe.Measure("CarryTransferVisual.1.Update");
+
             if (GameSession.Instance && !GameSession.Instance.CanSimulate) return;
             Advance(Time.deltaTime);
         }

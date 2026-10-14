@@ -6,11 +6,12 @@ namespace Tycoon
     {
         public static readonly Vector3 ParkCenter = new(-19, 0, 42);
         public const int Revision = 2;
-        public const float GroundWidth = 282.842712f;
-        public const float GroundDepth = 192.333044f;
+        public const float GroundWidth = 565.685424f;
+        public const float GroundDepth = 384.666088f;
         public static Vector3 WorldCenter => new(8, 0, 22);
         public static Bounds WorldBounds => new(WorldCenter, new(GroundWidth, 4, GroundDepth));
-        public static Vector3 PlayerSpawn => new(-48.5f, .05f, -23.5f);
+        // Trước quầy khu TYCOON khởi đầu: vị trí quầy (-13, 0, 0), lùi 5 m rồi dịch theo khu farm.
+        public static Vector3 PlayerSpawn => new Vector3(-13, .05f, -5) + Offset("farm");
         public static Vector3 Gate => new(105, 0, -45);
         public static Vector3 CustomerSpawn(int index) => new(143, 0, -45 + (index % 3 - 1) * .6f);
 

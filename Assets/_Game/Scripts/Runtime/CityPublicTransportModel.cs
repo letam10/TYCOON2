@@ -1,151 +1,120 @@
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.AI;
 
 namespace Tycoon
 {
     public static class CityPublicTransportModel
     {
-        static Material glass;
-
-        static Material WindowMaterial()
-        {
-            if (glass) return glass;
-            glass = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            glass.name = "SharedTransitGlass";
-            glass.SetColor("_BaseColor", new Color(.42f, .62f, .67f, .24f));
-            glass.SetFloat("_Surface", 1);
-            glass.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            glass.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-            glass.SetFloat("_ZWrite", 0);
-            glass.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-            glass.renderQueue = 3000;
-            glass.enableInstancing = true;
-            return glass;
-        }
-
         public static Transform Build(int kind, Transform root)
         {
-            bool taxi = kind == 2;
-            float length = taxi ? 4.2f : 8.6f;
-            float width = taxi ? 1.85f : 2.45f;
-            float roof = taxi ? 1.65f : kind == 1 ? 3.05f : 2.8f;
-            string color = taxi ? "#E7BE46" : kind == 1 ? "#DDDFD1" : "#478B91";
-            var parts = TownModelParts.Root("SharedVehicleParts", Vector3.zero, root);
-            Box("Floor", new(0, .42f, 0), new(width, .24f, length), "metal", "#374B52");
-            Box("Roof", new(0, roof, 0), new(width, .16f, length - .18f), "metal", color);
-            Box("Front", new(0, .96f, length * .5f), new(width, .75f, .14f), "metal", color);
-            Box("Rear", new(0, 1.05f, -length * .5f), new(width, .95f, .14f), "metal", color);
-            Box("FrontGlass", new(0, roof - .7f, length * .5f - .06f),
-                new(width - .2f, taxi ? .5f : 1.08f, .06f), "glass", "#758E95");
-            Box("RearGlass", new(0, roof - .7f, -length * .5f),
-                new(width - .2f, taxi ? .5f : 1.08f, .05f), "glass", "#758E95");
-            Box("FrontBumper", new(0, .42f, length * .5f + .1f),
-                new(width, .18f, .2f), "metal", "#B2BCBD");
-            Box("RearBumper", new(0, .42f, -length * .5f - .1f),
-                new(width, .18f, .2f), "metal", "#B2BCBD");
-            Box("FrontPlate", new(0, .68f, length * .5f + .09f),
-                new(.48f, .15f, .025f), "plaster", "#EFEBD4");
+            if (kind == 2)
+            {
+                var taxi = CityVehicleModel.BuildRoad(CityVehicleKind.Taxi, "#E7B92D", root);
+                return taxi.RightDoors[0];
+            }
+            var rig = root.gameObject.AddComponent<CityVehicleRig>();
+            rig.Kind = kind == 1 ? CityVehicleKind.Coach : CityVehicleKind.Bus;
+            bool coach = kind == 1;
+            float roof = coach ? 3.05f : 2.8f;
+            var paint = CityVehicleSurface.Paint(coach ? "#E0DFCF" : "#328F91");
+            var g = new CityVehicleGeometry();
+            g.Box(CityVehicleSurface.Dark, new(0, .45f, 0), new(2.32f, .18f, 8.5f));
+            g.Box(paint, new(0, roof, 0), new(2.37f, .17f, 8.35f), .06f);
+            g.Box(paint, new(0, .89f, 4.22f), new(2.33f, .7f, .16f), .06f);
+            g.Box(paint, new(0, 1.1f, -4.22f), new(2.33f, 1.1f, .16f), .06f);
+            g.Box(CityVehicleSurface.Dark, new(0, .44f, 4.2f), new(2.35f, .17f, .18f));
+            g.Box(CityVehicleSurface.Dark, new(0, .44f, -4.2f), new(2.35f, .17f, .18f));
+            CityVehicleParts.Windshield(g, 1.12f, 1.08f, 1.24f, roof - .3f, 4.23f, 3.94f);
+            CityVehicleParts.Windshield(g, -1.1f, -1.07f, 1.7f, roof - .24f, -4.23f, -4.12f);
+            CityVehicleParts.Front(g, 2.45f, 4.305f, .87f);
+            g.Box(CityVehicleSurface.Dark, new(0, roof - .17f, 4.07f), new(1.92f, .21f, .06f));
+            for (int letter = 0; letter < 8; letter++)
+                g.Box(CityVehicleSurface.Stripe, new(-.55f + letter * .16f, roof - .17f, 4.105f),
+                    new(.085f, .08f, .015f));
             for (int side = -1; side <= 1; side += 2)
             {
-                float x = side * width * .5f;
-                Box("SidePanel", new(x, .9f, -.55f),
-                    new(.1f, .8f, length - 1.3f), "metal", color);
-                Box("Stripe", new(x + side * .06f, 1.02f, -.55f),
-                    new(.025f, .13f, length - 1.4f), "metal", taxi ? "#343A3E" : "#E6BA65");
-                int windows = taxi ? 2 : 5;
-                for (int i = 0; i < windows; i++)
-                {
-                    float z = -length * .5f + .8f + i * (taxi ? 1.2f : 1.35f);
-                    Box("Window", new(x, roof - .7f, z),
-                        new(.045f, taxi ? .48f : 1.02f, 1.1f), "glass", "#758E95");
-                    Box("WindowPillar", new(x, roof - .68f, z + .58f),
-                        new(.09f, taxi ? .65f : 1.23f, .1f), "metal", color);
-                }
-                foreach (float z in new[] { -length * .32f, length * .32f })
-                {
-                    var tire = TownModelParts.Cylinder("Tire", new(x, .47f, z),
-                        new(.9f, .17f, .9f), "metal", "#303B3E", parts);
-                    tire.transform.localRotation = Quaternion.Euler(0, 0, 90);
-                    var rim = TownModelParts.Cylinder("Rim", new(x + side * .17f, .47f, z),
-                        new(.52f, .018f, .52f), "metal", "#BDC5C5", parts);
-                    rim.transform.localRotation = Quaternion.Euler(0, 0, 90);
-                }
-                Box("Mirror", new(x + side * .18f, roof - .66f, length * .38f),
-                    new(.2f, .27f, .3f), "metal", "#36494F");
-                Box("Headlight", new(side * width * .36f, .94f, length * .5f + .09f),
-                    new(.32f, .23f, .04f), "glass", "#FFF1C4");
-                Box("TailLight", new(side * width * .37f, .95f, -length * .5f - .09f),
-                    new(.22f, .3f, .04f), "glass", "#BD564C");
+                Side(g, paint, side, roof, coach);
+                CityVehicleParts.Mirror(g, side * 1.32f, roof - .62f, 3.75f);
+                g.Box(CityVehicleSurface.Red, new(side * .92f, .93f, -4.315f), new(.18f, .36f, .035f));
+                for (int row = 0; row < (coach ? 5 : 4); row++)
+                    CityVehicleParts.Seat(g, new(side * .61f, .54f, -2.7f + row * 1.04f), coach, .62f);
             }
-            if (taxi)
-                Box("TaxiRoofSign", new(0, roof + .17f, 0), new(.68f, .25f, .3f), "metal", "#FFF0B5");
+            CityVehicleParts.Seat(g, new(-.62f, .54f, 3.05f), true, .56f);
+            g.Box(CityVehicleSurface.Dark, new(-.48f, 1.07f, 3.8f), new(1.1f, .23f, .42f));
+            g.Cylinder(CityVehicleSurface.Dark, new(-.61f, 1.2f, 3.52f), .2f, .06f);
+            g.Box(CityVehicleSurface.Dark, new(1.09f, .2f, 2.6f), new(.34f, .15f, 1.04f));
+            g.Box(CityVehicleSurface.Chrome, new(.9f, .39f, 2.6f), new(.35f, .14f, 1.04f));
+            if (coach)
+            {
+                g.Box(paint, new(0, roof + .11f, -.7f), new(1.3f, .18f, 1.9f), .05f);
+                for (int side = -1; side <= 1; side += 2)
+                    g.Box(CityVehicleSurface.WarmSeat, new(side * .88f, roof - .39f, -.4f), new(.34f, .07f, 6.5f));
+            }
             else
             {
-                Box("RouteDisplay", new(0, roof - .14f, length * .5f + .035f),
-                    new(1.65f, .22f, .055f), "metal", "#263B3B");
-                for (int row = 0; row < 3; row++)
-                    for (int side = -1; side <= 1; side += 2)
-                    {
-                        float z = -2.7f + row * 1.1f;
-                        Box("Seat", new(side * .57f, .87f, z),
-                            new(.65f, .15f, .62f), "fabric", "#496B7D");
-                        Box("SeatBack", new(side * .57f, 1.15f, z - .28f),
-                            new(.65f, .62f, .12f), "fabric", "#496B7D");
-                    }
+                for (int row = 0; row < 4; row++)
+                    g.Beam(CityVehicleSurface.Stripe, new(.35f, .54f, -2.1f + row * 1.1f),
+                        new(.35f, roof - .15f, -2.1f + row * 1.1f), .035f);
+                g.Beam(CityVehicleSurface.Stripe, new(.35f, roof - .24f, -2.8f),
+                    new(.35f, roof - .24f, 2.9f), .035f);
             }
-            Bake(parts, root);
-            var door = TownModelParts.Root("PassengerDoor", new(width * .5f + .04f,
-                taxi ? 1.05f : 1.44f, taxi ? -.35f : 2.6f), root);
-            TownModelParts.Box("DoorFrame", Vector3.zero, new(.09f, taxi ? .8f : 2.1f, .85f),
-                "metal", color, door);
-            TownModelParts.Box("DoorGlass", new(.055f, .25f, 0),
-                new(.035f, taxi ? .35f : .8f, .7f), "glass", "#758E95", door);
-            TownModelParts.Box("DoorHandle", new(.09f, -.2f, -.24f),
-                new(.05f, .06f, .23f), "metal", "#CCD4D5", door);
-            door.Find("DoorGlass").GetComponent<MeshRenderer>().sharedMaterial = WindowMaterial();
-            var collider = root.gameObject.AddComponent<BoxCollider>();
-            collider.center = new(0, roof * .5f + .15f, 0);
-            collider.size = new(width, roof - .3f, length);
-            var obstacle = root.gameObject.AddComponent<NavMeshObstacle>();
-            obstacle.shape = NavMeshObstacleShape.Box;
-            obstacle.center = collider.center;
-            obstacle.size = collider.size;
-            obstacle.carving = false;
-            return door;
-
-            void Box(string name, Vector3 at, Vector3 size, string material, string tint)
+            g.Build(coach ? "CoachHullLuggageInterior" : "CityBusHullInterior", root, rig);
+            rig.Wheels = CityVehicleParts.Wheels(root, rig, 2.45f, .44f, -2.65f, 1.25f);
+            rig.DoorInsideLocal = new(1.12f, .54f, 2.6f);
+            rig.RightDoors = new[]
             {
-                var part = TownModelParts.Box(name, at, size, material, tint, parts);
-                if (material == "glass" && name.Contains("Glass") || name == "Window")
-                    part.GetComponent<MeshRenderer>().sharedMaterial = WindowMaterial();
-            }
+                CityVehicleParts.Door(root, rig, 1, 1.222f, 2.6f, .54f, roof - .65f, 1.05f, paint, true)
+            };
+            rig.SetDoorOpen(0);
+            CityVehicleParts.Collider(root, new(0, roof * .5f + .2f, 0), new(2.45f, roof - .3f, 8.6f));
+            return rig.RightDoors[0];
         }
 
-        static void Bake(Transform source, Transform target)
+        static void Side(CityVehicleGeometry g, Material paint, int side, float roof, bool coach)
         {
-            var groups = new Dictionary<Material, List<CombineInstance>>();
-            foreach (var filter in source.GetComponentsInChildren<MeshFilter>())
+            float x = side * 1.215f;
+            float sill = coach ? 1.39f : 1.22f;
+            for (int segment = 0; segment < 100; segment++)
             {
-                var material = filter.GetComponent<MeshRenderer>().sharedMaterial;
-                if (!groups.TryGetValue(material, out var list)) groups[material] = list = new();
-                list.Add(new CombineInstance
+                float za = -4.2f + segment * .084f;
+                float zb = za + .084f;
+                if (side > 0 && zb > 2.055f && za < 3.145f) continue;
+                float Bottom(float z)
                 {
-                    mesh = filter.sharedMesh,
-                    transform = target.worldToLocalMatrix * filter.transform.localToWorldMatrix
-                });
+                    float distance = Mathf.Min(Mathf.Abs(z + 2.65f), Mathf.Abs(z - 1.25f));
+                    return distance < .5f ? .44f + Mathf.Sqrt(.25f - distance * distance) : .52f;
+                }
+                g.Quad(paint, new(x, Bottom(za), za), new(x, Bottom(zb), zb),
+                    new(x, sill, zb), new(x, sill, za));
+                g.Quad(paint, new(x, sill, za), new(x, sill, zb), new(x, Bottom(zb), zb), new(x, Bottom(za), za));
             }
-            foreach (var group in groups)
+            foreach (float z in new[] { -2.65f, 1.25f })
+                g.Arch(CityVehicleSurface.Dark, x + side * .008f, z, .44f, .485f, .055f);
+            foreach (float z in new[] { -3.46f, -2.11f, -.76f, .59f, 1.71f, 3.65f })
             {
-                var mesh = new Mesh { name = "PublicTransitBatchedSurface" };
-                mesh.CombineMeshes(group.Value.ToArray(), true, true);
-                var part = TownModelParts.Root("BatchedSurface", Vector3.zero, target);
-                part.gameObject.AddComponent<MeshFilter>().sharedMesh = mesh;
-                part.gameObject.AddComponent<MeshRenderer>().sharedMaterial = group.Key;
+                if (side > 0 && z > 1.5f && z < 3.2f) continue;
+                float span = z > 1.5f ? .86f : 1.21f;
+                g.Box(CityVehicleSurface.Glass, new(x * .99f, (roof - .2f + sill) * .5f, z),
+                    new(.025f, roof - .2f - sill, span));
+                g.Box(paint, new(x, (roof + sill) * .5f, z - span * .5f - .04f),
+                    new(.08f, roof - sill, .09f));
             }
-            source.gameObject.SetActive(false);
-            if (Application.isPlaying) Object.Destroy(source.gameObject);
-            else Object.DestroyImmediate(source.gameObject);
+            if (side < 0)
+                g.Box(CityVehicleSurface.Glass, new(x * .99f, (roof + sill) * .5f - .1f, 2.68f),
+                    new(.025f, roof - sill - .2f, .95f));
+            g.Box(paint, new(x, roof - .12f, 0), new(.12f, .17f, 8.3f));
+            if (coach)
+            {
+                for (int bay = 0; bay < 3; bay++)
+                {
+                    float z = -1.62f + bay * 1.03f;
+                    g.Box(CityVehicleSurface.Dark, new(x + side * .008f, .94f, z), new(.013f, .64f, .018f));
+                    g.Box(CityVehicleSurface.Chrome, new(x + side * .016f, 1.2f, z + .4f),
+                        new(.035f, .04f, .16f));
+                }
+            }
+            for (int vent = 0; vent < 7; vent++)
+                g.Box(CityVehicleSurface.Dark, new(x + side * .008f, .69f + vent * .075f, -3.65f),
+                    new(.018f, .024f, .7f));
         }
     }
 }

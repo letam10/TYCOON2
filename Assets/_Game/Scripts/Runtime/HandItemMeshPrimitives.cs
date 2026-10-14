@@ -11,12 +11,31 @@ namespace Tycoon
         public static Mesh Get(PrimitiveType kind, string name, string color, string surface)
         {
             surface = HandItemSurfaceAtlas.Kind(name, surface);
-            string shape = name == "Tapered carrot" ? "carrot" : name == "Egg shell" ? "egg" : kind.ToString();
+            string shape = name switch
+            {
+                "Tapered carrot" => "carrot",
+                "Carrot leaf" => "carrotLeaf",
+                "Egg shell" => "egg",
+                _ => kind.ToString()
+            };
+            return GetShape(shape, color, surface);
+        }
+
+        public static Mesh GetShape(string shape, string color, string surface)
+        {
             string key = shape + color + surface;
             if (mapped.TryGetValue(key, out var result) && result) return result;
             if (!sources.TryGetValue(shape, out var source) || !source)
             {
-                source = kind == PrimitiveType.Cube ? Cube() : Lathe(shape);
+                source = shape switch
+                {
+                    "carrot" => HandItemCarrotGeometry.Root(),
+                    "carrotLeaf" => HandItemCarrotGeometry.Leaf(),
+                    "Cube" => Cube(),
+                    "Sphere" or "Cylinder" or "egg" => Lathe(shape),
+                    _ => HandItemSculptGeometry.Build(shape)
+                };
+                CompleteSourceGeometry(source);
                 sources[shape] = source;
             }
             result = Object.Instantiate(source);
@@ -40,11 +59,64 @@ namespace Tycoon
             return mesh;
         }
 
+        static void CompleteSourceGeometry(Mesh mesh)
+        {
+            var vertices = mesh.vertices;
+            var uv = mesh.uv;
+            var normals = mesh.normals;
+            var triangles = mesh.triangles;
+            var kept = new List<int>(triangles.Length);
+            var sums = new Vector3[vertices.Length];
+            var strongest = new Vector3[vertices.Length];
+            var used = new bool[vertices.Length];
+            // Cực của mặt xoay có tam giác diện tích 0 và đỉnh không thuộc mặt nào.
+            for (int i = 0; i < triangles.Length; i += 3)
+            {
+                int a = triangles[i];
+                int b = triangles[i + 1];
+                int c = triangles[i + 2];
+                Vector3 face = Vector3.Cross(vertices[b] - vertices[a], vertices[c] - vertices[a]);
+                if (face.sqrMagnitude <= 1e-16f) continue;
+                for (int corner = 0; corner < 3; corner++)
+                {
+                    int index = triangles[i + corner];
+                    used[index] = true;
+                    sums[index] += face;
+                    if (face.sqrMagnitude > strongest[index].sqrMagnitude) strongest[index] = face;
+                    kept.Add(index);
+                }
+            }
+            var positions = new List<Vector3>(vertices.Length);
+            var mappedUv = new List<Vector2>(vertices.Length);
+            var directions = new List<Vector3>(vertices.Length);
+            var remap = new int[vertices.Length];
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                if (!used[i]) continue;
+                remap[i] = positions.Count;
+                positions.Add(vertices[i]);
+                mappedUv.Add(uv[i]);
+                Vector3 direction = normals[i];
+                float squared = direction.sqrMagnitude;
+                if (float.IsNaN(squared) || float.IsInfinity(squared) || squared <= 1e-12f)
+                    direction = sums[i].sqrMagnitude > 1e-12f ? sums[i] : strongest[i];
+                directions.Add(direction / Mathf.Sqrt(direction.sqrMagnitude));
+            }
+            for (int i = 0; i < kept.Count; i++) kept[i] = remap[kept[i]];
+            mesh.Clear();
+            mesh.SetVertices(positions);
+            mesh.SetUVs(0, mappedUv);
+            mesh.SetNormals(directions);
+            mesh.SetTriangles(kept, 0);
+            mesh.RecalculateTangents();
+            mesh.RecalculateBounds();
+        }
+
         static Mesh Lathe(string shape)
         {
             bool cylinder = shape == "Cylinder";
-            const int sides = 16;
-            int rings = cylinder ? 6 : 11;
+            int sides = shape == "egg" ? 24 : 16;
+            int rings = cylinder ? 6 : shape == "egg" ? 15 : 11;
             var vertices = new Vector3[rings * (sides + 1)];
             var uv = new Vector2[vertices.Length];
             var triangles = new int[(rings - 1) * sides * 6];
@@ -57,11 +129,6 @@ namespace Tycoon
                 {
                     radius = ring == 0 || ring == rings - 1 ? 0 : .5f;
                     y = ring <= 2 ? -1 : 1;
-                }
-                else if (shape == "carrot")
-                {
-                    y = v - .5f;
-                    radius = v < .85f ? .04f + v * .51f : (.5f - .02f) * (1 - v) / .15f;
                 }
                 else if (shape == "egg") radius *= 1.05f - v * .24f;
                 for (int side = 0; side <= sides; side++)

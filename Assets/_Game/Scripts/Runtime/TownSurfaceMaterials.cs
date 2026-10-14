@@ -23,7 +23,7 @@ namespace Tycoon
         public static Material Get(string surface, string tint = "#FFFFFF")
         {
             string key = surface + ":" + tint;
-            bool water = surface == "water";
+            bool water = surface is "water" or "ocean";
             if (cache.TryGetValue(key, out var found) && found)
             {
                 if (!water && !found.GetTexture("_SurfaceMap"))
@@ -36,6 +36,7 @@ namespace Tycoon
             material.SetColor("_BaseColor", Art.Hex(tint));
             material.SetFloat("_Smoothness", Smoothness(surface));
             material.SetFloat("_Metallic", surface == "metal" ? .75f : 0);
+            if (surface == "ocean") material.SetVector("_Shoreline", new Vector4(1, 0, 247, 5));
             if (!water)
             {
                 material.SetTexture("_SurfaceMap", TownSurfaceTexture.Get(surface));
@@ -47,6 +48,7 @@ namespace Tycoon
                     "grass" => 1,
                     "asphalt" => 2,
                     "paving" => 3,
+                    "sand" => 4,
                     // CityStreetNetwork giữ ID stone cho mặt đường đã static batch.
                     "stone" when tint == "#666C6C" => 2,
                     _ => 0
@@ -63,6 +65,7 @@ namespace Tycoon
         {
             "grass" => .32f,
             "soil" => .085f,
+            "sand" => .28f,
             "asphalt" => .065f,
             "paving" or "ceramic" or "stone" => .1f,
             "wood" => .45f,
@@ -74,7 +77,7 @@ namespace Tycoon
         static float Smoothness(string surface) => surface switch
         {
             "metal" => .58f,
-            "water" => .88f,
+            "water" or "ocean" => .88f,
             "glass" => .8f,
             "ceramic" => .42f,
             "wood" => .26f,

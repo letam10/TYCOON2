@@ -46,7 +46,7 @@ namespace Tycoon
                 var progress=station.CaptureProgress();
                 var runtime=new StationRuntimeState{id=id,area=station.AreaId,requirement=station.Requirement,level=progress.level,
                     workCount=progress.workCount,playerWorkCount=progress.playerWorkCount,input=station is MachineStation?id+"_input":id,output=id,
-                    progress=progress,kind=station is MachineStation?"machine":station is ProductionStation?"producer":station is StorageStation?"storage":station is CargoDock?"dock":
+                    progress=progress,kind=station is SafeStation?"safe":station is MachineStation?"machine":station is ProductionStation?"producer":station is StorageStation?"storage":station is CargoDock?"dock":
                         station is ShelfStation?"shelf":station is CheckoutStation?"counter":station is TableStation?"table":station is ConveyorStation?"conveyor":station is PurchasePad?"purchase":"station",
                     definitionId=station is MachineStation m?m.Recipe.id:station is PurchasePad pad?pad.Upgrade.id:id,
                     item=(station as ProductionStation)?.ItemId,batchYield=(station as ProductionStation)?.Yield??1,cycleSeconds=(station as ProductionStation)?.Interval??0,running=progress.running,remaining=station is MachineStation?progress.remaining:0,batches=progress.batches,playerBatches=progress.playerBatches};

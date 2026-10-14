@@ -21,24 +21,35 @@ namespace Tycoon
             for (int row = 0; row < 3; row++)
             {
                 Vector3 table = p + new Vector3(0, 0, -6 + row * 6);
-                g.Cylinder(table + Vector3.up * .8f, 1.2f, .14f, "wood", "#817154");
-                g.Cylinder(table + Vector3.up * .4f, .17f, .8f, "metal", "#647D7B");
+                g.Cylinder(table + Vector3.up * .99f, 1.05f, .12f, "wood", "#A5825D");
+                g.Cylinder(table + Vector3.up * .925f, 1.01f, .05f, "metal", "#365B55");
+                g.Cylinder(table + Vector3.up * .49f, .12f, .86f, "metal", "#647D7B");
+                g.Cylinder(table + Vector3.up * .085f, .43f, .05f, "metal", "#647D7B");
                 g.Cylinder(table + Vector3.up * 1.7f, .07f, 3.4f, "wood", "#817154");
                 g.Cone(table + Vector3.up * 3.4f, 2.15f, .7f, "roof", "#D6C9AB");
-                g.Collider("TerraceTable", table + Vector3.up * .45f, new(2.2f, .9f, 2.2f));
+                g.Collider("TerraceTable", table + Vector3.up * .555f, new(2.1f, .99f, 2.1f));
                 for (int side = -1; side <= 1; side += 2)
                 {
-                    Vector3 chair = table + Vector3.right * side * 1.8f;
-                    g.Box(chair + Vector3.up * .45f, new(.8f, .12f, .85f), "wood", "#817154");
-                    g.Box(chair + new Vector3(side * .35f, .8f, 0), new(.12f, .7f, .85f),
-                        "wood", "#817154");
+                    Vector3 chair = table + Vector3.right * side * 1.56f;
+                    g.Box(chair + Vector3.up * .49f, new(.66f, .1f, .76f), "wood", "#A5825D");
+                    g.Box(chair + Vector3.up * .58f, new(.62f, .08f, .71f), "fabric", "#AEC4AE");
+                    g.Box(chair + new Vector3(side * .27f, .945f, 0), new(.105f, .29f, .76f),
+                        "wood", "#A5825D");
+                    g.Box(chair + new Vector3(side * .202f, .935f, 0), new(.035f, .22f, .63f),
+                        "fabric", "#AEC4AE");
                     for (int leg = -1; leg <= 1; leg += 2)
-                        g.Box(chair + new Vector3(leg * .28f, .23f, 0), new(.1f, .45f, .7f),
+                    {
+                        g.Box(chair + new Vector3(-side * .24f, .275f, leg * .285f),
+                            new(.075f, .43f, .075f), "metal", "#647D7B");
+                        g.Box(chair + new Vector3(side * .265f, .57f, leg * .285f),
+                            new(.075f, 1.02f, .075f), "metal", "#647D7B");
+                        g.Box(chair + new Vector3(0, .29f, leg * .285f), new(.51f, .055f, .05f),
                             "metal", "#647D7B");
-                    g.Collider("TerraceChair", chair + Vector3.up * .55f, new(.85f, 1.1f, .85f));
+                    }
+                    g.Collider("TerraceChair", chair + Vector3.up * .575f, new(.66f, 1.03f, .76f));
                 }
-                g.Cylinder(table + Vector3.up * .92f, .22f, .12f, "ceramic", "#D6C9AB");
-                g.Crown(table + Vector3.up * 1.08f, new(.38f, .3f, .38f), "#77904E");
+                g.Cylinder(table + Vector3.up * 1.11f, .22f, .12f, "ceramic", "#D6C9AB");
+                g.Crown(table + Vector3.up * 1.27f, new(.38f, .3f, .38f), "#77904E");
             }
             for (int side = -1; side <= 1; side += 2)
             {
@@ -180,44 +191,17 @@ namespace Tycoon
 
         public static void Planter(CityStaticGeometry g, Vector3 p, float width)
         {
-            g.Box(p + Vector3.up * .3f, new(width, .6f, 1), "brick", "#A46E59");
-            g.Box(p + Vector3.up * .58f, new(width + .12f, .13f, 1.12f), "stone", "#B5A28D");
-            g.Box(p + Vector3.up * .66f, new(width - .2f, .04f, .8f), "soil", "#685239");
-            g.Collider("Planter", p + Vector3.up * .33f, new(width + .12f, .66f, 1.12f));
-            for (float x = -.5f * width + .4f; x < width * .5f; x += .7f)
-            {
-                g.Crown(p + new Vector3(x, .85f, 0), new(.8f, .65f, .8f), "#54814F");
-                g.Crown(p + new Vector3(x + .1f, 1.1f, -.1f), new(.24f, .2f, .3f), "#C99A80");
-            }
+            CityStreetPropDetails.Planter(g, p, width);
         }
 
         public static void Bench(CityStaticGeometry g, Vector3 p)
         {
-            for (int slat = 0; slat < 3; slat++)
-                g.Box(p + new Vector3(0, .55f, -.24f + slat * .24f), new(2.5f, .12f, .18f),
-                    "wood", "#817154");
-            for (int slat = 0; slat < 2; slat++)
-                g.Box(p + new Vector3(0, .85f + slat * .25f, .35f), new(2.5f, .18f, .12f),
-                    "wood", "#817154");
-            for (int side = -1; side <= 1; side += 2)
-            {
-                g.Box(p + new Vector3(side * .85f, .3f, 0), new(.14f, .6f, .65f), "metal", "#647D7B");
-                g.Box(p + new Vector3(side * 1.05f, .8f, .02f), new(.1f, .09f, .72f), "metal", "#647D7B");
-                g.Box(p + new Vector3(side * 1.05f, .66f, -.27f), new(.08f, .3f, .08f), "metal", "#647D7B");
-            }
-            g.Collider("Bench", p + Vector3.up * .59f, new(2.5f, 1.18f, .8f));
+            CityStreetPropDetails.Bench(g, p);
         }
 
         public static void Lamp(CityStaticGeometry g, Vector3 p)
         {
-            g.Cylinder(p + Vector3.up * 2.3f, .075f, 4.6f, "metal", "#647D7B");
-            g.Cylinder(p + Vector3.up * .15f, .25f, .3f, "stone", "#AAA89A");
-            g.Beam(p + Vector3.up * 4.6f, p + new Vector3(.8f, 4.6f, 0), .1f, "metal", "#647D7B");
-            g.Box(p + new Vector3(.8f, 4.5f, 0), new(.7f, .16f, .45f), "metal", "#647D7B");
-            g.Box(p + new Vector3(.8f, 4.4f, 0), new(.55f, .025f, .3f), "glass", "#E1DFCC");
-            g.Cylinder(p + Vector3.up * .5f, .12f, .7f, "metal", "#58685E");
-            g.Collider("LampBase", p + Vector3.up * .15f, new(.5f, .3f, .5f));
-            g.Collider("LampPost", p + Vector3.up * 2.3f, new(.2f, 4.6f, .2f));
+            CityStreetPropDetails.Lamp(g, p);
         }
     }
 }

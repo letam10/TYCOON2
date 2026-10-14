@@ -58,6 +58,8 @@ namespace Tycoon
 
         void Update()
         {
+            using var updateProbe = QaFrameProbe.Measure("CityPedestrianRoute.1.Update");
+
             if (!active || !agent || !agent.enabled || !agent.isOnNavMesh ||
                 GameSession.Instance && !GameSession.Instance.CanSimulate) return;
             if (next < points.Count - 1 && Reached(agent, points[next]))

@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 namespace Tycoon
 {
@@ -23,10 +26,18 @@ namespace Tycoon
             public int fullCityFrames;
             public int timingSamples, successfulInteractions;
             public bool near165Fps;
+            public bool stable165FrameBudget, gpuOcclusionEnabled;
+            public bool displaySync;
+            public int runtimeVSyncCount, runtimeTargetFrameRate;
+            public double displayRefreshHz;
+            public int configuredFpsLimit;
+            public int shadowCascades;
+            public float renderScale;
             public string[] completed, failures, runtimeErrors, screenshots;
         }
 
-        readonly float[] frameTimes = new float[150000];
+        // Dự trữ trước; không bỏ phần cuối lượt đo khi Player chạy nhanh.
+        readonly List<float> frameTimes = new(300000);
         readonly FrameTiming[] frameTiming = new FrameTiming[1];
         readonly StringBuilder timeline = new("second,frameMs,cpuMs,gpuMs,x,z,workers,customers,goods,cash\n");
         readonly StringBuilder hitches = new("frame,second,frameMs,workers,x,z\n");
@@ -39,11 +50,12 @@ namespace Tycoon
 
         void Update()
         {
+            using var updateProbe = QaFrameProbe.Measure("CityPlayReport.1.Update");
+
             if (!recording || !game || !game.CanSimulate || Time.timeScale != 1) return;
             float delta = Time.unscaledDeltaTime;
-            if (delta <= 0 || frameCount >= frameTimes.Length) return;
-            frameTimes[frameCount++] = delta * 1000;
-            elapsed += delta;
+            if (!RecordFrameTime(delta)) return;
+            FrameTimingManager.CaptureFrameTimings();
             if (delta > 1f / 30)
             {
                 var point = game.Player.transform.position;
@@ -59,7 +71,6 @@ namespace Tycoon
             if (Time.realtimeSinceStartup < nextSample) return;
             nextSample = Time.realtimeSinceStartup + 1;
             actors.Sample(game);
-            FrameTimingManager.CaptureFrameTimings();
             uint count = FrameTimingManager.GetLatestTimings(1, frameTiming);
             double cpuMs = count > 0 ? frameTiming[0].cpuMainThreadFrameTime : -1;
             double gpuMs = count > 0 ? frameTiming[0].gpuFrameTime : -1;
@@ -77,6 +88,15 @@ namespace Tycoon
                 game.Player.Carry.Total, game.Economy.CashInHand);
         }
 
+        bool RecordFrameTime(float delta)
+        {
+            if (delta <= 0) return false;
+            frameTimes.Add(delta * 1000);
+            frameCount++;
+            elapsed += delta;
+            return true;
+        }
+
         int CustomerCount() => game.GetComponentsInChildren<CustomerAgent>().Count(x => x.gameObject.activeInHierarchy);
 
         void FinishReport()
@@ -89,8 +109,12 @@ namespace Tycoon
             var samples = frameTimes.Take(frameCount).ToArray();
             Array.Sort(samples);
             double fps = elapsed > 0 ? frameCount / elapsed : 0;
+            var pipeline = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
             var report = new PlayReport
             {
+                mode = GameSession.Argument("--qa-city-mod-only", "") == "true"
+                    ? "maximum mod diagnostic with live gameplay"
+                    : "ordinary gameplay with virtual gamepad, live simulation and persistence",
                 passed = failures.Count == 0 && game.RuntimeErrors.Count == 0,
                 gpu = SystemInfo.graphicsDeviceName,
                 api = SystemInfo.graphicsDeviceType.ToString(),
@@ -113,6 +137,16 @@ namespace Tycoon
                 fullCityAverageFps = fullCityElapsed > 0 ? fullCityFrameCount / fullCityElapsed : 0,
                 timingSamples = timingSamples,
                 near165Fps = fps >= 148.5,
+                stable165FrameBudget = samples.Length > 0
+                    && samples[(int)((samples.Length - 1) * .95)] <= 1000d / 165,
+                gpuOcclusionEnabled = pipeline && pipeline.gpuResidentDrawerEnableOcclusionCullingInCameras,
+                displaySync = GameSettingsStore.Current.syncDisplay,
+                runtimeVSyncCount = QualitySettings.vSyncCount,
+                runtimeTargetFrameRate = Application.targetFrameRate,
+                displayRefreshHz = GameSettingsStore.DisplayRefreshHz,
+                configuredFpsLimit = GameSettingsStore.Current.fpsLimit,
+                shadowCascades = pipeline ? pipeline.shadowCascadeCount : 0,
+                renderScale = pipeline ? pipeline.renderScale : 1,
                 workers = game.Workers.Count,
                 customers = CustomerCount(),
                 successfulInteractions = game.Player.SuccessfulInteractions,

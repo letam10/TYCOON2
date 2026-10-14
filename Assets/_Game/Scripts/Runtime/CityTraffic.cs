@@ -11,7 +11,9 @@ namespace Tycoon
             public Vector3[] Route;
             public int Next;
             public float Speed;
-            public int Lane;
+            public float Velocity;
+            public CityVehicleRig Rig;
+            public CityRoadVehiclePassengers Passengers;
         }
 
         readonly List<Car> cars = new();
@@ -25,41 +27,70 @@ namespace Tycoon
             game = GameSession.Instance;
             life = GetComponent<CityLife>();
             publicTransport = GetComponentInChildren<CityPublicTransport>();
-            string[] colors = { "#6E9C98", "#C59C75", "#7F94B6", "#A1828D" };
+            string[] colors = { "#6E9C98", "#C5B391", "#6A8BAD", "#A1ACAB", "#314A64", "#BD5148" };
+            CityVehicleKind[] kinds = { CityVehicleKind.Sedan, CityVehicleKind.SmallTruck,
+                CityVehicleKind.CargoTruck, CityVehicleKind.Tanker, CityVehicleKind.Luxury, CityVehicleKind.Sports };
             for (int i = 0; i < colors.Length; i++)
             {
-                float side = i % 2 == 0 ? 1.55f : -1.55f;
+                // Làn bên phải theo hướng xe chạy để cửa hành khách luôn hướng ra vỉa hè.
+                float side = i % 2 == 0 ? -1.55f : 1.55f;
                 Vector3[] route =
                 {
-                    new(-105 + side, 0, -45 + side), new(102 - side, 0, -45 + side),
-                    new(102 - side, 0, 29 - side), new(-105 + side, 0, 29 - side)
+                    new(-105 + side, 0, -45 + side), new(-22, 0, -45 + side), new(70, 0, -45 + side),
+                    new(102 - side, 0, -45 + side), new(102 - side, 0, 29 - side),
+                    new(70, 0, 29 - side), new(-22, 0, 29 - side), new(-105 + side, 0, 29 - side)
                 };
                 if (i % 2 == 1) System.Array.Reverse(route);
-                var root = CityVehicleModel.Build(colors[i], transform, i == 3);
-                root.position = route[i];
+                route = CityRoadRoute.Round(route);
+                var root = CityVehicleModel.Build(kinds[i], colors[i], transform);
+                root.position = CityRoadRoute.Spawn(route, (i / 2) / 3f, out int next);
+                root.rotation = Quaternion.LookRotation((route[next] - root.position).normalized);
+                var rig = root.GetComponent<CityVehicleRig>();
+                var passengerService = root.gameObject.AddComponent<CityRoadVehiclePassengers>();
+                passengerService.Initialize(game, life, rig);
                 cars.Add(new Car
                 {
-                    Root = root, Route = route, Next = (i + 1) % 4, Speed = 5.5f + i * .4f, Lane = i % 2
+                    Root = root, Route = route, Next = next, Speed = 5.4f + i * .3f,
+                    Rig = rig, Passengers = passengerService
                 });
             }
         }
 
         void Update()
         {
+            using var updateProbe = QaFrameProbe.Measure("CityTraffic.1.Update");
+
             if (!game || !game.CanSimulate || Time.deltaTime <= 0) return;
             foreach (var car in cars)
             {
+                if (car.Passengers.Tick(Time.deltaTime))
+                {
+                    car.Velocity = 0;
+                    if (car.Rig) car.Rig.SetTravel(0, Time.deltaTime);
+                    continue;
+                }
                 Vector3 delta = car.Route[car.Next] - car.Root.position;
                 if (delta.sqrMagnitude < .1f)
                 {
+                    if (Mathf.Abs(car.Route[car.Next].x + 22) < .1f ||
+                        Mathf.Abs(car.Route[car.Next].x - 70) < .1f) car.Passengers.BeginStop();
                     car.Next = (car.Next + 1) % car.Route.Length;
                     continue;
                 }
                 Vector3 forward = delta.normalized;
-                float step = car.Speed * Time.deltaTime;
-                if (PeopleAhead(car, forward, step) || CarAhead(car, step) ||
-                    publicTransport && publicTransport.BlocksTraffic(car.Root.position, forward, step)) continue;
+                float step = car.Velocity * Time.deltaTime;
+                bool blocked = PeopleAhead(car, forward, step) || CarAhead(car, step) ||
+                    publicTransport && publicTransport.BlocksTraffic(car.Root.position, forward, step);
+                car.Velocity = Mathf.MoveTowards(car.Velocity, blocked ? 0 : car.Speed, 3.8f * Time.deltaTime);
+                if (blocked)
+                {
+                    car.Velocity = 0;
+                    if (car.Rig) car.Rig.SetTravel(0, Time.deltaTime);
+                    continue;
+                }
+                step = car.Velocity * Time.deltaTime;
                 car.Root.position = Vector3.MoveTowards(car.Root.position, car.Route[car.Next], step);
+                if (car.Rig) car.Rig.SetTravel(car.Velocity, Time.deltaTime);
                 car.Root.rotation = Quaternion.RotateTowards(car.Root.rotation,
                     Quaternion.LookRotation(forward), 180 * Time.deltaTime);
             }
@@ -69,10 +100,8 @@ namespace Tycoon
         {
             foreach (var car in cars)
             {
-                Vector3 offset = car.Root.position - point;
-                float along = Vector3.Dot(offset, forward);
-                if (along > 0 && along < 9 + step &&
-                    (offset - forward * along).sqrMagnitude < 2.7f * 2.7f) return true;
+                if (CityTrafficSafety.VehicleAhead(point, forward, step,
+                    car.Root.position, car.Root.forward)) return true;
             }
             return false;
         }
@@ -98,8 +127,12 @@ namespace Tycoon
         bool CarAhead(Car car, float step)
         {
             foreach (var other in cars)
-                if (other != car && CityTrafficSafety.CarAhead(car.Root.position, car.Route, car.Next, car.Lane,
-                    other.Root.position, other.Next, other.Lane, step)) return true;
+            {
+                if (other == car) continue;
+                if (CityTrafficSafety.VehicleAhead(car.Root.position,
+                    (car.Route[car.Next] - car.Root.position).normalized, step,
+                    other.Root.position, other.Root.forward)) return true;
+            }
             return false;
         }
     }

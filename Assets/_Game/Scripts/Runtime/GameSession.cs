@@ -45,7 +45,7 @@ namespace Tycoon
         public RuntimeTransactions Transactions { get; private set; }
         public bool IsRestoring {get;private set;}
         public bool CanRestore=>!SaveBlocked;
-        public bool CanSimulate => !SaveBlocked&&!IsRestoring;
+        public bool CanSimulate => !SaveBlocked && !IsRestoring && (!Hud || !Hud.SettingsOpen);
 
         void Awake()
         {
@@ -58,7 +58,7 @@ namespace Tycoon
                 UnityEngine.InputSystem.InputSettings.BackgroundBehavior.IgnoreFocus;
             Milestone = Array.Exists(args, x => x is "--qa-m0" or "--qa-art") ? 0 : 1;
             QaDirectory = Argument("--qa-output", Path.Combine(Application.persistentDataPath, "QA"));
-            SavePath = IsQa ? Path.Combine(QaDirectory, "qa-save-v2.json") : Path.Combine(Application.persistentDataPath, "save-v2.json");
+            InitializeSaveSlots();
             if (Array.Exists(args, x => x == "--qa-load")) SavePath = Argument("--qa-load-from", SavePath);
             if (Array.Exists(args, x => x == "--qa-resume")) SavePath = Argument("--qa-resume-from", SavePath);
             Directory.CreateDirectory(QaDirectory);
@@ -80,8 +80,12 @@ namespace Tycoon
                 Application.Quit(device.name.Contains("4060") ? 0 : 3);
                 enabled = false; return;
             }
-            QualitySettings.vSyncCount = 0;
-            Application.targetFrameRate = Array.Exists(args, x => x == "--qa-benchmark") ? -1 : 165;
+            GameSettingsStore.Initialize(IsQa, QaDirectory);
+            if (Array.Exists(args, x => x == "--qa-benchmark"))
+            {
+                QualitySettings.vSyncCount = 0;
+                Application.targetFrameRate = -1;
+            }
         }
         void Start()
         {
@@ -113,6 +117,7 @@ namespace Tycoon
             cameraObject.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>().renderPostProcessing = true;
             CameraRig = cameraObject.AddComponent<FollowCamera>(); CameraRig.Target = playerRoot.transform; CameraRig.Snap();
             Hud = gameObject.AddComponent<GameHud>(); Hud.Initialize();
+            CaptureFreshTown();
             bool baseline=Array.Exists(Environment.GetCommandLineArgs(),x=>x=="--qa-baseline");
             if (File.Exists(SavePath)&&!baseline) LoadGame();
             ApplyProgression();
@@ -123,7 +128,7 @@ namespace Tycoon
             Restaurant = gameObject.AddComponent<RestaurantDirector>();
             Logistics=gameObject.AddComponent<TruckLogistics>();
             UpgradeModelView.Initialize(this);
-            new GameObject("InteractionFocus").AddComponent<InteractionFocusView>().transform.SetParent(transform);
+            // Không dựng viền vật phẩm khi player vào vùng tương tác; logic target/collider vẫn giữ nguyên.
             if (IsQa && !IsOrdinaryPlayCheck) gameObject.AddComponent<QaPresentationAudit>();
             if (IsOrdinaryPlayCheck) gameObject.AddComponent<CityPlaySession>();
             else if(IsQa&&Array.Exists(Environment.GetCommandLineArgs(),x=>x=="--qa-stage23"))gameObject.AddComponent<QaStages>();
@@ -251,6 +256,7 @@ namespace Tycoon
         }
         void OnDestroy()
         {
+            GameSettingsGraphics.Release();
             Transactions?.Detach();
             Application.logMessageReceived -= OnLog;
             if (Instance == this) Instance = null;

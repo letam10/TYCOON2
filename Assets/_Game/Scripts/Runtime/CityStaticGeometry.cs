@@ -37,6 +37,15 @@ namespace Tycoon
                 Quaternion.LookRotation(delta), surface, tint);
         }
 
+        public void Ramp(Vector3 bottom, Vector3 top, string surface, string tint)
+        {
+            CityRailRampCollider.Build(root, bottom, top);
+            Vector3 rise = top - bottom;
+            float slope = Mathf.Atan2(rise.y, rise.x) * Mathf.Rad2Deg;
+            RotatedBox((bottom + top) * .5f, new(rise.magnitude, .025f, 2.6f),
+                Quaternion.Euler(0, 0, slope), surface, tint);
+        }
+
         public void RotatedBox(Vector3 p, Vector3 size, Quaternion rotation, string surface, string tint)
         {
             Add(box, p, size, rotation, surface, tint);
@@ -57,6 +66,17 @@ namespace Tycoon
             Add(crown, p, size, Quaternion.identity, "grass", tint);
         }
 
+        public void Sculpt(Mesh mesh, Vector3 p, string surface, string tint)
+        {
+            Sculpt(mesh, p, Vector3.one, Quaternion.identity, surface, tint);
+        }
+
+        public void Sculpt(Mesh mesh, Vector3 p, Vector3 size, Quaternion rotation, string surface, string tint)
+        {
+            owned.Add(mesh);
+            Add(mesh, p, size, rotation, surface, tint);
+        }
+
         void Add(Mesh mesh, Vector3 p, Vector3 size, Quaternion rotation, string surface, string tint)
         {
             var material = TownSurfaceMaterials.Get(surface, tint);
@@ -65,13 +85,14 @@ namespace Tycoon
             list.Add(new CombineInstance { mesh = mesh, transform = Matrix4x4.TRS(p, rotation, size) });
         }
 
-        public void Collider(string name, Vector3 p, Vector3 size)
+        public void Collider(string name, Vector3 p, Vector3 size, bool trigger = false)
         {
             var go = new GameObject(name + "Collision");
             go.transform.SetParent(root, false);
             go.transform.localPosition = p;
             var collider = go.AddComponent<BoxCollider>();
             collider.size = size;
+            collider.isTrigger = trigger;
         }
 
         public void Finish()
@@ -81,7 +102,9 @@ namespace Tycoon
                 var mesh = new Mesh { name = "CityChunk", indexFormat = IndexFormat.UInt32 };
                 mesh.CombineMeshes(pair.Value.ToArray(), true, true, false);
                 mesh.RecalculateBounds();
-                mesh.UploadMeshData(true);
+                bool inspect = GameSession.Instance && GameSession.Instance.IsQa
+                    && !GameSession.Instance.IsOrdinaryPlayCheck;
+                mesh.UploadMeshData(!inspect);
                 var go = new GameObject($"Scenery_{pair.Key.Item2}_{pair.Key.Item3}_{pair.Key.Item1.name}");
                 go.transform.SetParent(root, false);
                 go.AddComponent<MeshFilter>().sharedMesh = mesh;

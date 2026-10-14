@@ -27,10 +27,17 @@ namespace Tycoon
 
         internal void Start(SaveData ownedSnapshot)
         {
+            StartCaptured(ownedSnapshot, null);
+        }
+
+        internal void StartCaptured(SaveData ownedSnapshot, CheckpointHistoryCapture history)
+        {
             if (!Ready) throw new InvalidOperationException("Checkpoint đang chạy.");
             var beforeWrite = BeforeWrite;
             pending = Task.Run(() =>
             {
+                // Dựng history DTO ở worker; không đọc world hoặc TransactionCore đang chạy.
+                history?.Materialize(ownedSnapshot.transactionState);
                 beforeWrite?.Invoke();
                 SaveStore.WriteCheckpoint(path, ownedSnapshot);
             });

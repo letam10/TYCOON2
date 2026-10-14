@@ -39,12 +39,20 @@ namespace Tycoon
                 mesh.enabled = false;
                 return;
             }
+            float distance = Vector3.Dot(transform.position - camera.transform.position, camera.transform.forward);
+            if (distance <= camera.nearClipPlane || distance > 80)
+            {
+                // Góc toàn cảnh không phóng nhãn chi tiết thành một đám chữ đè lên nhau.
+                mesh.enabled = false;
+                return;
+            }
             transform.rotation = camera.transform.rotation;
             mesh.enabled = true;
             if (station && station.StatusLabel == label)
             {
                 var player = GameSession.Instance ? GameSession.Instance.Player : null;
                 mesh.enabled = player && (player.transform.position - station.InteractionPoint).sqrMagnitude < 12.25f;
+                if (!mesh.enabled) return;
                 string title = station is StationZone zone && zone.Target ? zone.Target.Label : station.Label;
                 string detail = station.Prompt;
                 if (detail.StartsWith(title)) detail = detail.Substring(title.Length).Trim(' ', '•', '\n');
@@ -60,12 +68,6 @@ namespace Tycoon
                 if (label.text != stationText) label.text = stationText;
             }
             if (!mesh.enabled || string.IsNullOrEmpty(label.text)) return;
-            float distance = Vector3.Dot(transform.position - camera.transform.position, camera.transform.forward);
-            if (distance <= camera.nearClipPlane)
-            {
-                mesh.enabled = false;
-                return;
-            }
             MeasureText();
             float pixels = Mathf.Min(210, camera.pixelWidth * .15f);
             float worldPerPixel = camera.orthographic

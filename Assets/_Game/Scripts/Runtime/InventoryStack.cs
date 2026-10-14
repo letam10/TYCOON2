@@ -19,8 +19,10 @@ namespace Tycoon
         public int VisibleCount => items.Count;
         public string VisibleItemId(int index) => items[index].name;
         public float Top { get; private set; }
+        public float RearExtent { get; private set; }
         readonly List<GameObject> items = new();
         readonly List<string> desired = new();
+        readonly CarryContainerLayout containers = new();
         int revision = -1;
         Inventory displayedInventory;
         TextMesh badge;
@@ -66,6 +68,13 @@ namespace Tycoon
         void LayoutHeld()
         {
             Top = 0;
+            RearExtent = 0;
+            if (containers.TryLayout(transform, items, out float top, out float rear))
+            {
+                Top = top;
+                RearExtent = rear;
+                return;
+            }
             if (items.Count == 0) return;
             var profile = CarryItemLayout.For(items[0].name);
             var bounds = profile.Bounds(items[0].GetComponent<MeshFilter>().sharedMesh);
@@ -76,11 +85,14 @@ namespace Tycoon
                 item.localScale = Vector3.one * profile.Scale;
                 item.localPosition = profile.Position(i, items.Count, bounds);
                 Top = Mathf.Max(Top, item.localPosition.y + bounds.max.y);
+                RearExtent = Mathf.Max(RearExtent, -item.localPosition.z - bounds.min.z);
             }
         }
 
         void LayoutGrid()
         {
+            containers.Clear();
+            RearExtent = 0;
             Vector3 size = Vector3.zero;
             foreach (var item in items)
             {
@@ -132,6 +144,9 @@ namespace Tycoon
 
         void OnDisable()
         {
+            containers.Clear();
+            Top = 0;
+            RearExtent = 0;
             if (Pool != null) foreach (var go in items) Pool.Return(go, false);
             items.Clear();
             revision = -1;

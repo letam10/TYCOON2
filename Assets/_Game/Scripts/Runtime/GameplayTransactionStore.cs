@@ -72,14 +72,26 @@ namespace Tycoon
         internal void DrainCheckpoint() => checkpoint.Observe(true);
         internal void CheckpointOwned(TransactionState state)
         {
+            CheckpointCaptured(state, null);
+        }
+        internal void CheckpointCaptured(TransactionState state, CheckpointHistoryCapture history)
+        {
             if (disposed) throw new ObjectDisposedException(nameof(GameplayTransactionStore));
             if(state.revision!=durableRevision)throw new IOException("Checkpoint revision không khớp journal.");
-            var world = CheckpointSnapshot.Copy(game.CaptureSaveData());
-            var data = RuntimeTransactions.ProjectOwned(state, world);
+            SaveData captured;
+            using (CityOperationTiming.Measure(game, "Checkpoint.CaptureWorld"))
+                captured = game.CaptureSaveData();
+            SaveData world;
+            using (CityOperationTiming.Measure(game, "Checkpoint.CopyWorld"))
+                world = CheckpointSnapshot.Copy(captured);
+            if (Fault != null) history?.Materialize(state);
+            SaveData data;
+            using (CityOperationTiming.Measure(game, "Checkpoint.Projection"))
+                data = RuntimeTransactions.ProjectOwned(state, world);
             checkpointTime = Math.Max(checkpointTime, state.simulationTime);
             if (Fault == null)
             {
-                checkpoint.Start(data);
+                checkpoint.StartCaptured(data, history);
                 return;
             }
             checkpoint.Observe(true);

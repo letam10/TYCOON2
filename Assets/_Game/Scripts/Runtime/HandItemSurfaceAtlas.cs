@@ -51,13 +51,15 @@ namespace Tycoon
         public static string Kind(string name, string fallback)
         {
             string value = name.ToLowerInvariant();
+            if (value.Contains("egg shell")) return "shell";
+            if (value.Contains("ripe tomato")) return "skin";
             if (value.Contains("label") || value.Contains("banknote") || value.Contains("paper")) return "paper";
             if (value.Contains("wood") || value.Contains("board") || value.Contains("crate") ||
                 value.Contains("brace") || value.Contains("whisk")) return "wood";
             if (value.Contains("woven") || value.Contains("cloth") || value.Contains("thread") ||
                 value.Contains("wool") || value.Contains("twine") || value.Contains("seam")) return "fiber";
             if (value.Contains("crust") || value.Contains("loaf") || value.Contains("cake base")) return "baked";
-            if (value.Contains("beef") || value.Contains("steak")) return "meat";
+            if ((value.Contains("beef") || value.Contains("steak")) && fallback != "glass") return "meat";
             if (value.Contains("leaf") || value.Contains("husk") || value.Contains("calyx")) return "leaf";
             return fallback;
         }
@@ -77,7 +79,8 @@ namespace Tycoon
             var colors = new Color[Tile * Tile];
             var normals = new Color[Tile * Tile];
             var surfaces = new Color[Tile * Tile];
-            float smoothness = surface == "glass" ? .78f : surface == "metal" ? .48f :
+            float smoothness = surface == "glass" ? .78f : surface == "ceramic" ? .68f :
+                surface == "metal" ? .48f : surface == "skin" ? .46f :
                 surface == "food" || surface == "meat" ? .34f : .13f;
             for (int y = 0; y < Tile; y++)
                 for (int x = 0; x < Tile; x++)
@@ -90,7 +93,18 @@ namespace Tycoon
                     var n = new Vector3(-dx * 2, -dy * 2, 1).normalized;
                     float shade = .87f + height * .23f;
                     int index = y * Tile + x;
-                    colors[index] = new Color(tint.r * shade, tint.g * shade, tint.b * shade, 1);
+                    Color pixel = new(tint.r * shade, tint.g * shade, tint.b * shade, 1);
+                    if (surface == "meat")
+                        pixel = Color.Lerp(pixel, new Color(.86f, .70f, .59f), Mathf.Pow(height, 3) * .62f);
+                    if (surface == "baked")
+                        pixel = Color.Lerp(pixel, new Color(.36f, .18f, .07f), Mathf.Pow(1 - height, 3) * .6f);
+                    if (surface == "shell")
+                        pixel *= 1 - Mathf.SmoothStep(.63f, .82f, height) * .18f;
+                    if (surface == "berry")
+                        pixel = Color.Lerp(pixel, new Color(.91f, .72f, .38f),
+                            Mathf.Pow(Mathf.Max(0, Mathf.Sin(u * 48) * Mathf.Sin(v * 54)), 12));
+                    pixel.a = 1;
+                    colors[index] = pixel;
                     normals[index] = new Color(n.x * .5f + .5f, n.y * .5f + .5f, n.z * .5f + .5f, 1);
                     surfaces[index] = new Color(surface == "metal" ? .75f : 0, 0, 0,
                         Mathf.Clamp01(smoothness + (height - .5f) * .1f));
@@ -107,6 +121,8 @@ namespace Tycoon
         {
             float fine = Mathf.PerlinNoise(u * 39 + 17, v * 39 + 5);
             if (surface == "fiber") return .5f + .22f * Mathf.Sin(u * 95) * Mathf.Sin(v * 95);
+            if (surface == "shell") return Mathf.PerlinNoise(u * 81 + 12, v * 81 + 21);
+            if (surface == "skin") return .5f + (fine - .5f) * .3f;
             if (surface == "wood") return .5f + .25f * Mathf.Sin(u * 65 + Mathf.Sin(v * 11) * 3);
             if (surface == "meat")
                 return Mathf.Pow(.5f + .5f * Mathf.Sin(u * 24 + Mathf.Sin(v * 17) * 2), 9);

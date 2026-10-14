@@ -102,6 +102,9 @@ namespace Tycoon.Tests
             Assert.That(game.Player.Move.bindings,Has.Some.Matches<InputBinding>(x=>x.path=="<Keyboard>/w"));
             Assert.That(game.Player.Move.bindings,Has.Some.Matches<InputBinding>(x=>x.path=="<Keyboard>/upArrow"));
             Assert.That(game.Player.Move.bindings,Has.Some.Matches<InputBinding>(x=>x.path=="<Gamepad>/leftStick"));
+            Assert.That(game.Player.Sprint.bindings,Has.Some.Matches<InputBinding>(x=>x.path=="<Keyboard>/leftShift"));
+            Assert.That(game.Player.Sprint.bindings,Has.Some.Matches<InputBinding>(x=>x.path=="<Keyboard>/rightShift"));
+            Assert.That(game.Player.Sprint.bindings,Has.Some.Matches<InputBinding>(x=>x.path=="<Gamepad>/leftStickPress"));
             Assert.That(game.Player.Cycle.bindings,Has.Some.Matches<InputBinding>(x=>x.path=="<Gamepad>/rightShoulder"));
             game.Player.CanControl=false;Assert.That(game.Player.ActiveInteraction,Is.Null);
             Assert.That(game.Player.CurrentSpeed,Is.Zero);Assert.That(game.Player.IsSprinting,Is.False);

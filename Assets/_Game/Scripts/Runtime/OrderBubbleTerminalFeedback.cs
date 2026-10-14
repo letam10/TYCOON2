@@ -30,6 +30,8 @@ namespace Tycoon
 
         void Update()
         {
+            using var updateProbe = QaFrameProbe.Measure("OrderBubbleTerminalFeedback.1.Update");
+
             var game = GameSession.Instance;
             if (game && (!game.CanSimulate || game.Hud && !game.Hud.AllowsPlayerControl)) return;
             Advance(Time.deltaTime);

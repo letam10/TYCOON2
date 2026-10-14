@@ -18,9 +18,10 @@ namespace Tycoon
         string finalSourceRun;
         double FinalSeconds=>game.Transactions.Now-finalStarted;
         readonly HashSet<string> finalMilestones=new();
+        // Thứ tự chỉ gồm purchase đang hoạt động; dairy là gói legacy đã nghỉ.
         readonly string[] finalPurchaseOrder={"farm_speed2","carry10","farm_level2","farm_level3","farmer","farm_capacity2",
             "farm_speed3","farm_capacity3","farm_value2","farm_value3","farm_shop","barn","milk_line","egg_line","animal_level2","animal_level3",
-            "animal_worker","counter_level2","counter_level3","cashier","transport_farm_shop","mill","dairy","mill_level2","mill_level3","processor",
+            "animal_worker","counter_level2","counter_level3","cashier","transport_farm_shop","mill","mill_level2","mill_level3","processor",
             "carry16","supermarket","bakery","oven_level2","oven_level3","cook_bakery","transport_bakery","cashier_bakery","restaurant"};
         void FinalPulse()
         {
@@ -220,7 +221,9 @@ namespace Tycoon
                 yield return FinalServiceRound();
             }
             yield return FinalStash();
-            var kitchen=game.Machines.First(m=>m.Recipe.id=="kitchen");yield return FinalMakeBatch(kitchen);yield return FinalGetItem("meal",1);
+            var kitchen=game.Machines.First(m=>m.Id=="machine_kitchen");
+            Check(game.Transactions.SelectRecipe(kitchen,"kitchen"),"chọn recipe meal thật cho bếp Restaurant");
+            yield return FinalMakeBatch(kitchen);yield return FinalGetItem("meal",1);
             var table=game.Tables.FirstOrDefault(t=>t.NeedsMeal);
             yield return FinalWait(()=>game.Tables.Any(t=>t.NeedsMeal),30,"khách ngồi bàn");table=game.Tables.First(t=>t.NeedsMeal);
             long diner=table.Occupant.Receipt;
@@ -228,7 +231,7 @@ namespace Tycoon
             yield return FinalWait(()=>table.Cleaning>0,12,"ăn và payment");
             yield return Travel(FinalPoint(table,InteractionKind.Operate));yield return FinalWait(()=>table.Cleaning==0,5,"player clean");
             yield return FinalCollect();game.Transactions.Checkpoint();
-            Check(game.Progression.PlayerJobs(GameSession.CrewFor(Definitions.Upgrade("cook")))>0,"player cook trước hire Restaurant");
+            Check(kitchen.PlayerBatches>0,"player vận hành bếp trước hire Cook");
             var snapshot=game.Transactions.Snapshot();Check(snapshot.payments.Any(p=>p.order==RuntimeTransactions.OrderId(diner)&&p.collected),"Restaurant payment thực thu");
             TransactionCore.Validate(snapshot);
             double minutes=FinalSeconds/60;
@@ -240,7 +243,6 @@ namespace Tycoon
         bool FinalPurchaseAllowed(string id)
         {
             if(!game.Economy.Has("farm_shop"))return id is "farm_speed2" or "carry10" or "farm_level2" or "farm_level3" or "farmer" or "farm_capacity2" or "farm_speed3" or "farm_value2" or "farm_shop";
-            if(id=="barn")return game.Economy.Has("supermarket");
             return true;
         }
     }

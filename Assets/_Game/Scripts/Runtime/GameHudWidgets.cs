@@ -99,6 +99,7 @@ namespace Tycoon
             text.raycastTarget = false;
             text.horizontalOverflow = HorizontalWrapMode.Wrap;
             text.verticalOverflow = VerticalWrapMode.Truncate;
+            root.gameObject.AddComponent<LocalizedLabel>().SetSource(value);
             return text;
         }
         Button Button(Transform parent, string label, UnityEngine.Events.UnityAction click, bool accent = false)
@@ -131,6 +132,11 @@ namespace Tycoon
         }
         static void SetText(Text label, string value)
         {
+            if (label.TryGetComponent<LocalizedLabel>(out var localized))
+            {
+                localized.SetSource(value);
+                return;
+            }
             if (label.text != value) label.text = value;
         }
         static RectTransform NewRect(string name, Transform parent)

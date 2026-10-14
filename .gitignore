@@ -29,7 +29,7 @@ __pycache__/
 
 # Video tham chiếu và save chạy thử giữ tại máy, không đưa vào lịch sử mã nguồn.
 /FDown*.mp4
-/QA/Evidence/**/qa-save*.json
-/QA/Evidence/**/save*.json
+/QA/Evidence/**/qa-save*.json*
+/QA/Evidence/**/save*.json*
 /QA/editmode-results.xml
 /QA/Reference/video-metadata.json

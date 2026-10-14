@@ -8,6 +8,7 @@ namespace Tycoon
 
         void LateUpdate()
         {
+            using var lateUpdateProbe = QaFrameProbe.Measure("OrderBubbleDiner.1.LateUpdate");
             if (Phase is not (1 or 2) || !Table)
             {
                 OrderBubbleLayer.Release(ref orderBubble);

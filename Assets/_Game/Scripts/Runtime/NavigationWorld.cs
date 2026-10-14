@@ -116,6 +116,8 @@ namespace Tycoon
 
         void Update()
         {
+            using var updateProbe = QaFrameProbe.Measure("NavigationWorld.1.Update");
+
             if (!agent || !agent.enabled || !agent.isOnNavMesh ||
                 !GameSession.Instance || !GameSession.Instance.CanSimulate) return;
             if (resumeAt > 0)

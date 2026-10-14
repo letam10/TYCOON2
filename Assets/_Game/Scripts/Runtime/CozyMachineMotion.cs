@@ -56,6 +56,7 @@ namespace Tycoon
 
         void LateUpdate()
         {
+            using var lateUpdateProbe = QaFrameProbe.Measure("CozyMachineMotion.1.LateUpdate");
             if (!station || station.Recipe == null) return;
             bool visible = station.IsUnlocked;
             bool running = visible && GameSession.Instance.CanSimulate && !station.Broken && station.Phase == MachinePhase.Operating;

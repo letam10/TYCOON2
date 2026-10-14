@@ -40,6 +40,7 @@ namespace Tycoon
                 "cargo prerequisite takes an owned carrot");
             Check(game.Transactions.Transfer(game.Player.Carry, source.Inventory, "carrot", 1) == 1,
                 "cargo prerequisite completes the thirtieth hand delivery");
+            CompletionSafeCash(false);
             Check(game.Contribute(Definitions.Upgrade("truck_bundle"), 5000) == 5000,
                 "truck and driver purchased through actual contribution");
             Check(game.Transactions.Transfer(source.Inventory, farm.Inventory, "carrot", 1) == 1,
@@ -48,6 +49,7 @@ namespace Tycoon
                 "select explicit processing to farm shop cargo route");
             Check(game.UpgradeCrew("loader_processing", "count"),
                 "purchase second source loader through crew upgrade transaction");
+            CompletionSafeCash(true);
             yield return CompletionWait(() => game.Workers.Count(w => w.UpgradeId == "loader_processing") == 2 &&
                 game.Workers.Any(w => w.Role == "Driver"), 5, "source loader pair and purchased driver spawn");
             yield return CompletionWait(() => game.Logistics.Vehicle && game.Workers.Any(w =>

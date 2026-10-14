@@ -20,6 +20,13 @@ namespace Tycoon
         {
             SeedMilestone(new(){id="town",wallet=f.wallet,owned=f.owned,orders=600});
             var data=game.CaptureSaveData();var s=game.Transactions.Snapshot();
+            foreach(var machine in s.stations.Where(x=>x.kind=="machine"))
+            {
+                machine.running=false;machine.remaining=0;machine.jobId=machine.reservationId=machine.escrow=null;
+                machine.batch=null;machine.machinePhase=MachinePhase.WaitingInput;
+            }
+            s.reservations.Clear();s.jobIds.Clear();s.owners.RemoveAll(x=>x.kind==OwnerKind.Escrow);
+            s.stacks.RemoveAll(x=>x.owner.StartsWith("escrow:",StringComparison.Ordinal));
             s.transportJobs.Clear();s.crates.Clear();s.truck=null;
             for(int i=0;i<f.handJobs;i++)s.transportJobs.Add(new(){id="fixture:hand:"+i,source="storage_farm",destination="storage_processing",area="processing",kind="hand",item="carrot",quantity=6});
             var feed=s.stations.First(x=>x.id=="machine_feedmill");feed.progress.playerRepairCount=f.repairJobs;

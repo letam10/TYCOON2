@@ -48,7 +48,12 @@ namespace Tycoon
                 && game.CanSimulate ? Ink : "#FFE5A4");
             SetText(help, Gamepad.current != null ?
             "Cần trái: di chuyển    RB: chọn hàng    Start: lưu    Back: menu" :
-            "WASD: di chuyển    Dừng 0,25 giây: thao tác    Q: chọn hàng    F5: lưu    Esc: menu");
+            GameKeyBindings.Label("forward") + "/" + GameKeyBindings.Label("back") + "/"
+            + GameKeyBindings.Label("left") + "/" + GameKeyBindings.Label("right") + ": "
+            + GameLocalization.Translate("Di chuyển") + "    " + GameKeyBindings.Label("sprint") + ": "
+            + GameLocalization.Translate("Chạy nhanh") + "    " + GameKeyBindings.Label("cycle") + ": "
+            + GameLocalization.Translate("Chọn hàng") + "    " + GameKeyBindings.Label("save") + ": "
+            + GameLocalization.Translate("Lưu") + "    " + GameKeyBindings.Label("menu") + ": Menu");
         }
         void RefreshStatus()
         {

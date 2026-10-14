@@ -52,23 +52,33 @@ namespace Tycoon
         static void Disc(Transform t, string name, Vector3 p, Vector3 s, string color, string surface = "food") =>
             Part(t, name, PrimitiveType.Cylinder, p, s, color, surface);
 
+        static Transform Sculpt(Transform root, string name, string shape, Vector3 at, Vector3 size,
+            string color, string surface = "food", Vector3 angle = default)
+        {
+            var part = new GameObject(name).transform;
+            part.SetParent(root, false);
+            part.localPosition = at;
+            part.localScale = size;
+            part.localRotation = Quaternion.Euler(angle);
+            part.gameObject.AddComponent<MeshFilter>().sharedMesh =
+                HandItemMeshPrimitives.GetShape(shape, color, HandItemSurfaceAtlas.Kind(name, surface));
+            part.gameObject.AddComponent<MeshRenderer>().sharedMaterial = HandItemSurfaceAtlas.Material;
+            return part;
+        }
+
         static Mesh Bake(string id, Transform root)
         {
             var parts = new List<CombineInstance>();
-            var bounds = new Bounds();
-            bool first = true;
             foreach (var filter in root.GetComponentsInChildren<MeshFilter>())
             {
-                var renderer = filter.GetComponent<MeshRenderer>();
-                if (first) bounds = renderer.bounds;
-                else bounds.Encapsulate(renderer.bounds);
-                first = false;
                 parts.Add(new CombineInstance
                 {
                     mesh = filter.sharedMesh,
                     transform = root.worldToLocalMatrix * filter.transform.localToWorldMatrix
                 });
             }
+            // Đo đỉnh thật: AABB của chi tiết đã xoay có thể rộng hơn hình đang nhìn thấy.
+            var bounds = GeometryBounds(parts);
             float scale = CarryItemLayout.ModelSize(id) / Mathf.Max(bounds.size.x, bounds.size.y, bounds.size.z);
             Vector3 center = new(bounds.center.x, bounds.min.y, bounds.center.z);
             var normalize = Matrix4x4.Scale(Vector3.one * scale) * Matrix4x4.Translate(-center);
@@ -80,8 +90,36 @@ namespace Tycoon
             }
             var result = new Mesh { name = "HandMesh_" + id };
             result.CombineMeshes(parts.ToArray(), true, true);
+            // Scale không đều đổi độ dài normal; dùng inverse-transpose rồi chuẩn hóa.
+            var normals = new Vector3[result.vertexCount];
+            int cursor = 0;
+            foreach (var part in parts)
+            {
+                var normalMatrix = part.transform.inverse.transpose;
+                foreach (var normal in part.mesh.normals)
+                    normals[cursor++] = normalMatrix.MultiplyVector(normal).normalized;
+            }
+            result.normals = normals;
+            result.RecalculateTangents();
             result.RecalculateBounds();
             return result;
+        }
+
+        static Bounds GeometryBounds(List<CombineInstance> parts)
+        {
+            var bounds = new Bounds();
+            bool first = true;
+            foreach (var part in parts)
+            {
+                foreach (var vertex in part.mesh.vertices)
+                {
+                    var point = part.transform.MultiplyPoint3x4(vertex);
+                    if (first) bounds = new Bounds(point, Vector3.zero);
+                    else bounds.Encapsulate(point);
+                    first = false;
+                }
+            }
+            return bounds;
         }
 
         static void Dispose(Object obj)

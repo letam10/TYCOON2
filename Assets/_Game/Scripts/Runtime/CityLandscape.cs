@@ -19,20 +19,17 @@ namespace Tycoon
             g.Box(p + Vector3.up * .035f, new(22, .06f, 13), "grass", "#7C9163");
             g.Box(p + Vector3.up * .08f, new(22, .07f, 3), "paving", "#C0B8A0");
             g.Box(p + Vector3.up * .085f, new(3, .08f, 13), "paving", "#C0B8A0");
-            g.Cylinder(p + Vector3.up * .18f, 3.2f, .3f, "stone", "#AAA89A");
-            g.Cylinder(p + Vector3.up * .38f, 2.7f, .18f, "water", "#548E90");
-            g.Cylinder(p + Vector3.up * .7f, .5f, 1.1f, "stone", "#AAA89A");
-            g.Cylinder(p + Vector3.up * 1.3f, 1.4f, .24f, "stone", "#AAA89A");
-            g.Cylinder(p + Vector3.up * 1.44f, 1.25f, .04f, "water", "#548E90");
-            g.Cylinder(p + Vector3.up * 1.9f, .22f, 1, "stone", "#AAA89A");
-            g.Cone(p + Vector3.up * 2.45f, .42f, .35f, "metal", "#647D7B");
-            g.Collider("Fountain", p + Vector3.up * .45f, new(5.8f, .9f, 5.8f));
+            // Vòng sân nối bốn lối đi, giữ khoảng tránh quanh thành đài phun nước.
+            g.Cylinder(p + Vector3.up * .075f, 4.9f, .08f, "paving", "#C0B8A0");
+            CityStreetPropDetails.Fountain(g, p);
             for (int side = -1; side <= 1; side += 2)
             {
                 for (int row = -1; row <= 1; row += 2)
                 {
-                    Tree(g, p + new Vector3(side * 8, 0, row * 4.8f), 1);
+                    Tree(g, p + new Vector3(side * 8, 0, row * 4.4f), .85f);
                     CityProps.Bench(g, p + new Vector3(side * 5.2f, 0, row * 3.8f));
+                    g.Box(p + new Vector3(side * 6.4f, .12f, row * 6.3f), new(8.8f, .2f, .22f),
+                        "stone", "#AAA89A");
                 }
                 CityProps.Lamp(g, p + new Vector3(side * 10, 0, 1.8f));
             }

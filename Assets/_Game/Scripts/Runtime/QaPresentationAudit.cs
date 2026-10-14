@@ -25,6 +25,8 @@ namespace Tycoon
         void Start() => started = Time.realtimeSinceStartup;
         void Update()
         {
+            using var updateProbe = QaFrameProbe.Measure("QaPresentationAudit.1.Update");
+
             if (Time.realtimeSinceStartup - started < 3 || !GameSession.Instance.NavigationReady) return;
             var size = new Vector2Int(Screen.width, Screen.height);
             if (!frames.TryGetValue(size, out var values)) frames[size] = values = new List<float>(4096);

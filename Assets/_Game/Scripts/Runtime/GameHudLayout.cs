@@ -22,13 +22,14 @@ namespace Tycoon
             float width = lastSafeArea.width / scale, height = lastSafeArea.height / scale;
             bool compact = width < 1460;
             TopLeft(cashRect, 16, 16, Mathf.Min(340, width - 264), 66);
-            BottomLeft(carryRect, 16, compact ? 132 : 44, 284, 74);
+            BottomLeft(carryRect, 16, 248, 284, 74);
+            if (minimapRect) BottomLeft(minimapRect, 16, 44, 220, 192);
             BottomCenter(actionRect, 44, Mathf.Min(560, width - 32), 84);
-            Rect(help.rectTransform, Vector2.zero, new(1, 0), new(16, 6), new(-16, 30));
+            Rect((RectTransform)help.transform.parent, Vector2.zero, new(1, 0), new(16, 6), new(-16, 30));
             // Bảng lớn chỉ nằm trong modal; HUD chơi thường giữ diện tích che rất nhỏ.
             int[] buttonWidths =
             {
-                76, 96, 104, 76, 98
+                76, 96, 104, 104, 76, 98
             };
             bool wrapButtons = width < 850;
             float dockWidth = wrapButtons ? 224 : quickActions.Select((button, i) => buttonWidths[i]).Sum()

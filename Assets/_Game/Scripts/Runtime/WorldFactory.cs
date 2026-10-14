@@ -101,6 +101,7 @@ namespace Tycoon
             CityDressing.Build(game, world);
             world.gameObject.AddComponent<CityLife>();
             CityPublicTransport.Build(game, world);
+            CityRailService.Build(game, world);
             TownSurfaceMaterials.Apply(world);
             world.gameObject.AddComponent<NavigationWorld>();
         }
@@ -240,7 +241,7 @@ namespace Tycoon
         {
             // Điểm work của NPC được giữ; player tương tác với vật thể, không sinh ô hành động.
             if(target is CheckoutStation && mode=="cash")
-                Art.Box("CashStand",new Vector3(2.7f,.35f,.6f),new Vector3(1.1f,.7f,.7f),"#8B6B49",target.transform);
+                CheckoutCashModels.Stand(target.transform);
         }
         public static MachineStation Machine(GameSession game, Transform parent, string key, Vector3 point, string requirement)
         {

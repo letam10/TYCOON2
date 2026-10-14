@@ -13,7 +13,7 @@ namespace Tycoon
         const string Surface = "#173C35", Card = "#244D42", Accent = "#CBE78B", Ink = "#F6F6E9", Muted = "#B9CEC2";
         enum ScreenMode
         {
-            Play, Pause, Crew, Stock, Cargo, Information
+            Play, Pause, Crew, Stock, Cargo, Information, Settings, Map, Bindings, Saves
         }
         GameSession game;
         Canvas canvas;
@@ -70,6 +70,10 @@ namespace Tycoon
             BuildStock();
             BuildCargo();
             BuildModMenu();
+            BuildSettings();
+            BuildMap();
+            BuildBindings();
+            BuildSaveSlots();
             toastRoot.transform.SetParent(safeArea, false);
             toastRoot.transform.SetAsLastSibling();
             menu.SetActive(false);
@@ -85,16 +89,20 @@ namespace Tycoon
         }
         void Update()
         {
+            using var updateProbe = QaFrameProbe.Measure("GameHud.1.Update");
+
             if (!game || !game.Player || !canvas) return;
             if (Screen.width != screenWidth || Screen.height != screenHeight || Screen.safeArea != lastSafeArea ||
             !Mathf.Approximately(canvas.scaleFactor, lastCanvasScale)) LayoutHud();
-            if (Keyboard.current?.escapeKey.wasPressedThisFrame == true
-                || Gamepad.current?.selectButton.wasPressedThisFrame == true) TogglePause();
+            if (UpdateNavigationInput()) return;
             RefreshNotices();
+            RefreshFpsVisibility();
             if (Time.unscaledTime >= nextRefresh)
             {
                 nextRefresh = Time.unscaledTime + .15f;
                 RefreshPlayingHud();
+                minimap.SetVerticesDirty();
+                if (MapOpen) { worldMap.SetVerticesDirty(); mapPlayer.SetVerticesDirty(); }
                 if (mode == ScreenMode.Cargo) RefreshCargo();
             }
             if (Time.unscaledTime >= nextStatusRefresh)
@@ -105,6 +113,14 @@ namespace Tycoon
         }
         public void TogglePause()
         {
+            if (MapOpen) { CloseMap(); return; }
+            if (mode == ScreenMode.Bindings) { CloseBindings(); return; }
+            if (mode == ScreenMode.Saves) { CloseSaveSlots(); return; }
+            if (SettingsOpen)
+            {
+                CloseSettings();
+                return;
+            }
             if (modOpen)
             {
                 CloseModMenu();
@@ -126,8 +142,8 @@ namespace Tycoon
         void ShowScreen(ScreenMode next)
         {
             if (modOpen) CloseModMenu();
-            bool wasPaused = mode is ScreenMode.Pause or ScreenMode.Crew or ScreenMode.Information;
-            bool isPaused = next is ScreenMode.Pause or ScreenMode.Crew or ScreenMode.Information;
+            bool wasPaused = IsPausedScreen(mode);
+            bool isPaused = IsPausedScreen(next);
             // Đóng bảng không được mở lại điều khiển khi save/load đang bị chặn.
             if (!wasPaused && isPaused)
             {
@@ -135,23 +151,31 @@ namespace Tycoon
                 Time.timeScale = 0;
             }
             else if (wasPaused && !isPaused) Time.timeScale = resumeTimeScale;
-            mode = next;
             game.Player.StopInteraction();
+            mode = next;
             game.Player.CanControl = mode == ScreenMode.Play && game.CanSimulate;
             menu.SetActive(mode == ScreenMode.Pause);
             crewPanel.SetActive(mode == ScreenMode.Crew);
             stockPanel.SetActive(mode == ScreenMode.Stock);
             cargoPanel.SetActive(mode == ScreenMode.Cargo);
             informationPanel.SetActive(mode == ScreenMode.Information);
+            if (settingsPanel) settingsPanel.SetActive(mode == ScreenMode.Settings);
+            if (mapPanel) mapPanel.SetActive(mode == ScreenMode.Map);
+            if (bindingsPanel) bindingsPanel.SetActive(mode == ScreenMode.Bindings);
+            if (saveSlotsPanel) saveSlotsPanel.SetActive(mode == ScreenMode.Saves);
             hud.SetActive(mode == ScreenMode.Play);
             if (EventSystem.current) EventSystem.current.SetSelectedGameObject(null);
         }
         void OnDestroy()
         {
-            if (mode is ScreenMode.Pause or ScreenMode.Crew or ScreenMode.Information) Time.timeScale = resumeTimeScale;
+            mapKey?.Dispose(); menuKey?.Dispose();
+            if (IsPausedScreen(mode)) Time.timeScale = resumeTimeScale;
             if (ownedEvents) Destroy(ownedEvents);
             if (rounded) Destroy(rounded);
             if (roundedTexture) Destroy(roundedTexture);
         }
+        static bool IsPausedScreen(ScreenMode screen) =>
+            screen is ScreenMode.Pause or ScreenMode.Crew or ScreenMode.Information or ScreenMode.Settings
+                or ScreenMode.Map or ScreenMode.Bindings or ScreenMode.Saves;
     }
 }

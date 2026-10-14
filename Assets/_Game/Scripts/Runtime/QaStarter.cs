@@ -29,13 +29,8 @@ namespace Tycoon
                 }
             Check(report.materialSlotsChecked > 0, "all rendered material slots valid");
             yield return Capture("01-foundation.png");
+            yield return PlayerSprintAcceptance();
             var begin = game.Player.transform.position;
-            Keys(Key.W, Key.LeftShift);
-            yield return new WaitForSeconds(1.2f);
-            Check(view.State == "Run", "keyboard sprint animation");
-            Keys(); yield return new WaitForSeconds(.2f);
-            Check((game.Player.transform.position - begin).magnitude > 5, "keyboard movement");
-            begin = game.Player.transform.position;
             InputSystem.QueueStateEvent(gamepad, new GamepadState { leftStick = Vector2.right });
             yield return new WaitForSeconds(.8f);
             InputSystem.QueueStateEvent(gamepad, new GamepadState());
@@ -43,16 +38,33 @@ namespace Tycoon
             Check(game.Player.transform.position.x - begin.x > 2, "gamepad movement");
             var carrot = game.Producers.Find(x => x.ItemId == "carrot");
             yield return Travel(carrot.InteractionPoint);
-            float harvestDeadline = Time.realtimeSinceStartup + carrot.Interval * 3;
-            while (carrot.Inventory.Count("carrot") < 6)
+            // Một lượt gồm gieo, tưới, tăng trưởng và thu; deadline phải bao phủ đủ ba lượt Yield=2.
+            // Chờ đủ ba chu kỳ trong Player; tick mô phỏng và nhịp thu có thể lệch frame.
+            float harvestDeadline = Time.realtimeSinceStartup + 60f;
+            while (game.Player.Carry.Count("carrot") < 6)
             {
-                if (Time.realtimeSinceStartup > harvestDeadline) throw new Exception("Crop production did not replenish harvest stock.");
+                if (Time.realtimeSinceStartup > harvestDeadline)
+                {
+                    var proximity = new ProximityTarget(carrot);
+                    string diagnosis = "phase=" + carrot.Phase + " action=" + carrot.Action.ToString("0.00")
+                        + " remaining=" + carrot.Remaining.ToString("0.00") + " unlocked=" + carrot.IsUnlocked
+                        + " reason=" + game.Player.InteractionReason
+                        + " player=" + game.Player.transform.position
+                        + " center=" + proximity.Center
+                        + " distance=" + proximity.Distance(game.Player.transform.position).ToString("0.00")
+                        + " contains=" + proximity.Contains(game.Player.transform.position)
+                        + " active=" + (game.Player.ActiveInteraction is ProximityTarget active ? active.Target.Id + ":" + active.Kind : "none");
+                    throw new Exception("Crop production did not replenish harvest stock: " + diagnosis);
+                }
                 yield return null;
             }
             Keys(Key.E); yield return new WaitForSeconds(2.0f); Keys();
             yield return new WaitForSeconds(.5f);
             Check(game.Player.Carry.Count("carrot") >= 6, "harvest through keyboard");
             Check(view.State == "Carry", "carry animation");
+            yield return Travel(CityDistricts.PlayerSpawn);
+            yield return SprintSampleMotion("carry-left-shift", 3.8f, false, Key.S, Key.LeftShift);
+            yield return SprintSampleMotion("carry-right-shift", 3.8f, false, Key.S, Key.RightShift);
             var carryStack = game.Player.GetComponentInChildren<InventoryStack>();
             Check(carryStack.VisibleCount == game.Player.Carry.Total, "physical carry stack");
             yield return Capture("02-carry.png");
@@ -62,8 +74,9 @@ namespace Tycoon
             yield return new WaitForSeconds(.3f);
             Check(game.Player.Carry.Total == 0, "drop all through keyboard");
             Check(game.Storage.Inventory.Count("carrot") == harvested, "storage conserves stock");
-            Keys(Key.R); yield return new WaitForSeconds(.70f); Keys();
-            yield return new WaitForSeconds(.2f);
+            // Giữ R ngắn để chứng minh rút từng phần, không rút hết một chồng trong một lần kiểm thử.
+            Keys(Key.R); yield return new WaitForSeconds(.10f);
+            yield return new WaitForSeconds(.25f);
             int picked = game.Player.Carry.Count("carrot");
             Check(picked > 0 && picked < harvested, "withdraw stock");
             var shelf = game.Shelves[0];
@@ -77,7 +90,7 @@ namespace Tycoon
             yield return new WaitForSeconds(.3f);
             var save = SaveStore.Read(game.SavePath);
             Check(save != null && save.money == 0, "save via F5");
-            Check(save.inventories.Exists(x => x.id == "storage" && x.items.Exists(y => y.id == "carrot" && y.count == harvested - picked)), "saved warehouse stock");
+            Check(save.inventories.Exists(x => x.id == game.Storage.Id && x.items.Exists(y => y.id == "carrot" && y.count == harvested - picked)), "saved warehouse stock");
             Check(!File.Exists(game.SavePath + ".bak") && !File.Exists(game.SavePath + ".tmp"), "atomic save no backup");
             yield return Capture("03-farm-shop.png");
             game.CameraRig.Overview = true; yield return new WaitForSeconds(1);

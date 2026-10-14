@@ -54,7 +54,7 @@ namespace Tycoon.Tests
         }
 
         [TestCaseSource(nameof(Goods))]
-        public void FortyEightModelsHaveSeparateVisibleSlotsInTwoStaggeredRows(string id)
+        public void FortyEightModelsHaveSeparateVisibleSlotsInAlignedTwoByThreeLayers(string id)
         {
             var inventory = new Inventory(48, true);
             Assert.That(inventory.TryAdd(id, 48), Is.True);
@@ -69,7 +69,9 @@ namespace Tycoon.Tests
             stack.LayerHeight = .04f;
             stack.Spacing = .14f;
             stack.Refresh();
-            var models = root.GetComponentsInChildren<MeshRenderer>();
+            var allModels = root.GetComponentsInChildren<MeshRenderer>();
+            var models = allModels.Where(x => x.GetComponent<MeshFilter>().sharedMesh.name
+                == "HandMesh_" + id).ToArray();
             Assert.That(models.Length, Is.EqualTo(48));
             Assert.That(stack.VisibleCount, Is.EqualTo(48));
             var bounds = models[0].bounds;
@@ -85,9 +87,11 @@ namespace Tycoon.Tests
             Assert.That(bounds.size.z, Is.LessThan(1.1f));
             Assert.That(bounds.size.y, Is.LessThan(1.8f));
             var profile = CarryItemLayout.For(id);
-            Assert.That(profile.Rows, Is.EqualTo(2));
+            Assert.That(profile.Rows, Is.EqualTo(3));
+            Assert.That(profile.Columns, Is.EqualTo(2));
             Assert.That(models[0].transform.localPosition.x,
-                Is.Not.EqualTo(models[profile.Columns].transform.localPosition.x));
+                Is.EqualTo(models[profile.Columns].transform.localPosition.x));
+            foreach (var model in allModels) bounds.Encapsulate(model.bounds);
             Assert.That(stack.Top, Is.EqualTo(bounds.max.y).Within(.001f));
             Assert.That(inventory.Total, Is.EqualTo(48));
             Assert.That(inventory.Revision, Is.EqualTo(revision));

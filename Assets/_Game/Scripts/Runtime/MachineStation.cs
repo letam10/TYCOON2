@@ -46,6 +46,8 @@ namespace Tycoon
         float tick;
         void Update()
         {
+            using var updateProbe = QaFrameProbe.Measure("MachineStation.1.Update");
+
             if(!IsUnlocked || !GameSession.Instance.CanSimulate || Authority==null)return;
             tick+=Time.deltaTime;if(tick<.2f)return;float elapsed=tick;tick=0;
             if(Authority.TickMachine(this,elapsed)&&Rotor)Rotor.Rotate(Vector3.up,130*elapsed,Space.Self);
@@ -148,6 +150,8 @@ namespace Tycoon
         void Start(){Origin=transform.localPosition;view=GetComponent<ActorView>();}
         void Update()
         {
+            using var updateProbe = QaFrameProbe.Measure("MachineStation.2.Update");
+
             float angle=Time.time*.65f+Phase;
             Vector3 offset=new Vector3(Mathf.Sin(angle),0,Mathf.Cos(angle))*Radius;
             Vector3 direction=new Vector3(Mathf.Cos(angle),0,-Mathf.Sin(angle));
@@ -163,6 +167,7 @@ namespace Tycoon
         public void Bind(ProductionStation[] value)=>producers=value??System.Array.Empty<ProductionStation>();
         void LateUpdate()
         {
+            using var lateUpdateProbe = QaFrameProbe.Measure("MachineStation.1.LateUpdate");
             int population=0;foreach(var producer in producers)if(producer&&producer.IsUnlocked)population+=producer.Herd;
             population=Mathf.Min(population,Members.Length);
             for(int i=0;i<Members.Length;i++)if(Members[i]&&Members[i].activeSelf!=(i<population))Members[i].SetActive(i<population);

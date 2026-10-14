@@ -25,6 +25,7 @@ namespace Tycoon
         }
         void LateUpdate()
         {
+            using var lateUpdateProbe = QaFrameProbe.Measure("CozyCropMotion.1.LateUpdate");
             var game = GameSession.Instance; if (!game || !game.CanSimulate) return;
             float blend = 1 - Mathf.Exp(-8 * Time.deltaTime);
             foreach (var crop in crops)

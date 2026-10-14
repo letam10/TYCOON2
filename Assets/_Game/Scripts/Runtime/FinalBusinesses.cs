@@ -23,13 +23,14 @@ namespace Tycoon
             WorldFactory.Checkout(game,world,"checkout_bakery",new Vector3(7,0,27),"bakery","bakery");
             var restaurant = WorldFactory.Floor(world,"06  NHÀ HÀNG",new Vector3(-20,0,39),new Vector2(22,20));
             restaurant.gameObject.AddComponent<UnlockVisual>().Requirement="restaurant";
+            DiningFurnitureBuilder.Counter(restaurant);
             WorldFactory.Machine(game,world,"kitchen",new Vector3(-18,0,45),"restaurant");
             WorldFactory.Checkout(game,world,"checkout_restaurant",new Vector3(-12,0,29),"restaurant","restaurant");
             for(int i=0;i<6;i++)
             {
                 var root=new GameObject("table_"+i);root.transform.SetParent(world);root.transform.position=new Vector3(-27+i%3*5,0,34+i/3*6);
                 var table=root.AddComponent<TableStation>();table.Id=root.name;table.Label="Bàn "+(i+1);table.Requirement="restaurant";table.AreaId="restaurant";table.Inventory=new Inventory(1);
-                table.InteractionPoint=root.transform.position+Vector3.back*1.6f;table.Seat=root.transform.position+Vector3.right*1.4f;
+                table.InteractionPoint=root.transform.position+Vector3.back*1.6f;
                 WorldDressing.Table(table);
                 table.StatusLabel=Art.Label(table.Label,new Vector3(0,2,0),root.transform,.2f,"#FFFFFF");
                 WorldFactory.Zone(game,world,table,"operate",table.InteractionPoint+Vector3.right*1.5f);

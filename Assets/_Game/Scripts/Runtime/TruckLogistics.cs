@@ -48,13 +48,14 @@ namespace Tycoon
             if(State==null||State.phase=="Travelling"||game.StorageFor(crew.area)?.Id!=State.current){worker.Reason="Chờ xe tại bến của khu";return;}
             string actor=game.Transactions.Actor(worker.GetEntityId());var crates=game.Transactions.View.crates;
             var held=crates.FirstOrDefault(x=>x.holder==actor);Vector3 dock=TruckRoutes.Dock(State.current);
-            if(held!=null&&(worker.transform.position-(dock+Vector3.left*1.8f)).sqrMagnitude<1.2f)
+            Vector3 pickupPoint = HandlingPoint(worker, dock, true);
+            if(held!=null&&(worker.transform.position-pickupPoint).sqrMagnitude<1.2f)
             {
                 int carried=crates.Where(x=>x.holder==actor).Sum(x=>game.Transactions.View.stacks.Where(s=>s.owner==x.id).Sum(s=>s.quantity));
                 var extra=crates.FirstOrDefault(x=>x.item==held.item&&(held.task=="load"?x.holder=="dock:"+State.current:x.holder==State.id)&&carried+game.Transactions.View.stacks.Where(s=>s.owner==x.id).Sum(s=>s.quantity)<=worker.Carry.Capacity);
                 if(extra!=null){worker.Agent.ResetPath();if(Act(TransactionKind.ClaimCrate,actor,extra.id))return;}
             }
-            Vector3 goal=held==null?dock+Vector3.left*1.8f:dock+Vector3.back*2;
+            Vector3 goal=held==null?pickupPoint:HandlingPoint(worker, dock, false);
             if((worker.transform.position-goal).sqrMagnitude>1.2f){Navigation.Go(worker.Agent,goal);worker.Reason=held==null?"Đến lấy thùng":"Mang thùng đến xe/kho";return;}
             worker.Agent.ResetPath();
             float elapsed = handling.TryGetValue(actor, out float time) ? time : 0;
@@ -78,6 +79,8 @@ namespace Tycoon
         }
         void Update()
         {
+            using var updateProbe = QaFrameProbe.Measure("TruckLogistics.1.Update");
+
             if(State==null)return;
             if(Vehicle==null){Vehicle=BuildTruck();Vehicle.position=TruckRoutes.Position(State);}
             if(!game.CanSimulate)return;
@@ -97,24 +100,37 @@ namespace Tycoon
         }
         void LateUpdate()
         {
+            using var lateUpdateProbe = QaFrameProbe.Measure("TruckLogistics.1.LateUpdate");
             if(State==null||Vehicle==null)return;
             UpdateCargoPresentation();
             var position=TruckRoutes.Position(State);var direction=position-Vehicle.position;
             if(direction.sqrMagnitude>.005f)Vehicle.rotation=Quaternion.RotateTowards(Vehicle.rotation,Quaternion.LookRotation(direction),150*Time.deltaTime);
             Vehicle.position = Vector3.MoveTowards(Vehicle.position, position,
                 6 * WorkforceRules.Capability * Time.deltaTime);
+            AnimateTruckWheels();
             var crates=game.Transactions.View.crates;
             foreach(var removed in visuals.Keys.Where(id=>!crates.Any(x=>x.id==id)).ToArray()){Destroy(visuals[removed]);visuals.Remove(removed);}
             int cargo=0;var ground=new Dictionary<string,int>();var hands=new Dictionary<string,int>();
             foreach(var box in crates)
             {
-                if(!visuals.TryGetValue(box.id,out var model))
+                // Load có thể hủy nhân viên và model con; crate vẫn thuộc transaction.
+                if (!visuals.TryGetValue(box.id, out var model) || !model)
                 {
                     model=new GameObject(box.id);model.transform.SetParent(transform);HandItemModels.Build("crate",model.transform);
                     var icon=new GameObject("CrateItemIcon").AddComponent<SpriteRenderer>();icon.transform.SetParent(model.transform,false);icon.transform.localPosition=new(0,.25f,.44f);icon.transform.localScale=Vector3.one*.45f;icon.sprite=ItemIconAtlas.Get(box.item);
-                    int quantity=game.Transactions.View.stacks.Where(x=>x.owner==box.id).Sum(x=>x.quantity);Art.Label("×"+quantity,new(0,.75f,0),model.transform,.14f);visuals.Add(box.id,model);
+                    int quantity = game.Transactions.View.stacks.Where(x => x.owner == box.id).Sum(x => x.quantity);
+                    Art.Label("×" + quantity, new(0, .75f, 0), model.transform, .14f);
+                    visuals[box.id] = model;
                 }
-                if(box.holder==State.id){model.transform.SetParent(Vehicle,false);model.transform.localPosition=new((cargo%2-.5f)*.85f,.7f,-.5f-(cargo/2)*.8f);cargo++;}
+                model.transform.localScale = Vector3.one *
+                    (box.holder != State.id && !box.holder.StartsWith("dock:") ? .8f : 1);
+                if (box.holder == State.id)
+                {
+                    model.transform.SetParent(Vehicle, false);
+                    model.transform.localPosition = new((cargo % 2 - .5f) * .70f, .928f,
+                        -.14f - cargo / 2 * .68f);
+                    cargo++;
+                }
                 else if(box.holder.StartsWith("dock:")){int n=ground.TryGetValue(box.holder,out int value)?value:0;ground[box.holder]=n+1;model.transform.SetParent(transform);model.transform.position=TruckRoutes.Dock(box.holder.Substring(5))+new Vector3(-1.7f,.1f+n*.7f,0);}
                 else if(box.holder=="player")
                 {
@@ -137,25 +153,13 @@ namespace Tycoon
             }
         }
         static Vector3 HeldCratePosition(int index, float height) =>
-            new((index % 3 - 1) * .54f, height + index / 6 * .52f, .65f + (index / 3 % 2 - .5f) * .48f);
+            new((index % 2 - .5f) * .54f, height + index / 6 * .35f, 1.13f + (index / 2 % 3 - 1) * .47f);
         IEnumerable<Vector3> People()
         {
             yield return game.Player.transform.position;
             foreach(var c in game.Commerce.Customers)if(c&&c.gameObject.activeInHierarchy)yield return c.transform.position;
             foreach(var d in game.Restaurant.Diners)if(d&&d.gameObject.activeInHierarchy)yield return d.transform.position;
             foreach(var w in game.Workers)if(w&&w.Role!="Driver")yield return w.transform.position;
-        }
-        Transform BuildTruck()
-        {
-            var root=new GameObject("CargoTruck").transform;root.SetParent(transform);
-            var collision=root.gameObject.AddComponent<BoxCollider>();collision.center=new(0,1,0);collision.size=new(2.1f,2,4.5f);
-            var obstacle=root.gameObject.AddComponent<UnityEngine.AI.NavMeshObstacle>();obstacle.shape=UnityEngine.AI.NavMeshObstacleShape.Box;obstacle.center=collision.center;obstacle.size=collision.size;obstacle.carving=true;obstacle.carveOnlyStationary=true;
-            Art.Box("Chassis",new(0,.42f,0),new(2.1f,.3f,4.5f),"#426A64",root);
-            Art.Box("Cab",new(0,1.1f,1.55f),new(1.95f,1.4f,1.25f),"#79A7A0",root);
-            Art.Box("Windshield",new(0,1.4f,2.18f),new(1.65f,.6f,.035f),"#A7D8DC",root);
-            Art.Box("CargoBed",new(0,.61f,-.65f),new(2.05f,.15f,3),"#A78457",root);
-            for(int i=0;i<4;i++){var wheel=Art.Cylinder("Wheel",new(i%2==0?-1.05f:1.05f,.36f,i<2?-1.35f:1.35f),new(.7f,.14f,.7f),"#354342",root);wheel.transform.rotation=Quaternion.Euler(0,0,90);}
-            return root;
         }
     }
 }

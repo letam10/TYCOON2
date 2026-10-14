@@ -107,6 +107,39 @@ namespace Tycoon.Tests
         }
 
         [UnityTest]
+        public IEnumerator PassengerCanAlightOntoRaisedSidewalk()
+        {
+            world.transform.position += Vector3.up * .13f;
+            Physics.SyncTransforms();
+            world.GetComponent<NavMeshSurface>().BuildNavMesh();
+            var passenger = SeatedPassenger(out var vehicle);
+            passenger.ReleaseCarrier();
+            for (int i = 0; i < 200; i++) passenger.Tick(.05f);
+            Assert.That(passenger.Phase, Is.EqualTo(CityPassengerPhase.Walking));
+            Assert.That(actor.transform.position.y, Is.GreaterThanOrEqualTo(.13f));
+            Assert.That(actor.GetComponent<CharacterController>().enabled, Is.True);
+            Assert.That(passenger.CompletedRides, Is.EqualTo(1));
+            yield break;
+        }
+
+        [UnityTest]
+        public IEnumerator PassengerCanAlightWhenSidewalkColliderIsAboveNavigation()
+        {
+            var sidewalk = new GameObject("UnbakedSidewalk", typeof(BoxCollider));
+            sidewalk.transform.SetParent(world.transform, false);
+            sidewalk.transform.position = new(0, .065f, 0);
+            sidewalk.GetComponent<BoxCollider>().size = new(240, .04f, 140);
+            Physics.SyncTransforms();
+            var passenger = SeatedPassenger(out _);
+            passenger.ReleaseCarrier();
+            for (int i = 0; i < 200; i++) passenger.Tick(.05f);
+            Assert.That(passenger.Phase, Is.EqualTo(CityPassengerPhase.Walking));
+            Assert.That(actor.transform.position.y, Is.GreaterThanOrEqualTo(.085f));
+            Assert.That(actor.GetComponent<CharacterController>().enabled, Is.True);
+            yield break;
+        }
+
+        [UnityTest]
         public IEnumerator ZeroDeltaDoesNotMoveASeatedOrDisembarkingPassenger()
         {
             var passenger = SeatedPassenger(out _);

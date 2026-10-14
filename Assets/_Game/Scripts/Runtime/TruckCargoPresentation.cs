@@ -25,7 +25,7 @@ namespace Tycoon
             int items = held.Sum(x => game.Transactions.View.stacks.Where(s => s.owner == x.id).Sum(s => s.quantity));
             cargoCount.gameObject.SetActive(items > 0);
             cargoCount.text = items + " / " + game.Player.Carry.Capacity;
-            cargoCount.transform.localPosition = new Vector3(0, 1.55f + (held.Length - 1) / 6 * .52f, .65f);
+            cargoCount.transform.localPosition = new Vector3(0, 1.55f + (held.Length - 1) / 6 * .35f, 1.13f);
         }
 
         Transform CargoMarker(string label, string color)

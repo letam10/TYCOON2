@@ -28,6 +28,8 @@ namespace Tycoon
 
         void Update()
         {
+            using var updateProbe = QaFrameProbe.Measure("ConveyorStation.1.Update");
+
             var game=GameSession.Instance;
             if(!game||!game.CanSimulate)return;
             bool open=IsUnlocked;

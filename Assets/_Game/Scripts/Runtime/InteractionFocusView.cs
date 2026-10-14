@@ -28,6 +28,7 @@ namespace Tycoon
         }
         void LateUpdate()
         {
+            using var lateUpdateProbe = QaFrameProbe.Measure("InteractionFocusView.1.LateUpdate");
             if (!line) return;
             var player = GameSession.Instance?.Player;
             var area = player?.ActiveInteraction;

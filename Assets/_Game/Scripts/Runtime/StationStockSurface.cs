@@ -7,8 +7,10 @@ namespace Tycoon
         public static void Build(Station station, Vector3 surface, Vector2 size, bool legs)
         {
             var root = TownModelParts.Root("StockSupport", Vector3.zero, station.transform);
-            TownModelParts.Box("StockTray", surface - Vector3.up * .04f,
+            var tray = TownModelParts.Box("StockTray", surface - Vector3.up * .04f,
                 new Vector3(size.x, .08f, size.y), "wood", "#B7996F", root);
+            if (station is ShelfStation or CheckoutStation)
+                tray.GetComponent<Renderer>().enabled = false;
             var solid = root.gameObject.AddComponent<BoxCollider>();
             solid.center = surface - Vector3.up * .06f;
             solid.size = new Vector3(size.x, .12f, size.y);

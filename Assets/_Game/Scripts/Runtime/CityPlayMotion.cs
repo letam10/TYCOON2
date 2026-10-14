@@ -1,6 +1,7 @@
 using System.Collections;
 using System.IO;
 using System.Linq;
+using System.Text;
 using UnityEngine;
 
 namespace Tycoon
@@ -22,6 +23,8 @@ namespace Tycoon
             string directory = Path.Combine(game.QaDirectory, "carry-motion-frames");
             Directory.CreateDirectory(directory);
             int frame = 0;
+            double captureStarted = Time.realtimeSinceStartupAsDouble;
+            var timestamps = new StringBuilder("frame,elapsedSeconds\n");
             float next = Time.realtimeSinceStartup;
             var route = Walk(plot.InteractionPoint + Vector3.back * 12);
             while (route.MoveNext())
@@ -29,12 +32,16 @@ namespace Tycoon
                 if (Time.realtimeSinceStartup >= next)
                 {
                     yield return new WaitForEndOfFrame();
-                    ScreenCapture.CaptureScreenshot(Path.Combine(directory, $"frame-{frame++:D4}.png"));
+                    string name = $"frame-{frame++:D4}.png";
+                    QaRenderedFrame.Write(Path.Combine(directory, name));
+                    timestamps.AppendFormat(System.Globalization.CultureInfo.InvariantCulture,
+                        "{0},{1:F6}\n", name, Time.realtimeSinceStartupAsDouble - captureStarted);
                     next = Time.realtimeSinceStartup + .1f;
                 }
                 yield return route.Current;
             }
             yield return Capture("carry-closeup");
+            File.WriteAllText(Path.Combine(directory, "capture-timestamps.csv"), timestamps.ToString());
             File.WriteAllText(Path.Combine(directory, "capture.txt"),
                 "Live 48-item carry walk, native 1080p, nominal 10 fps, outside FPS measurement. Frames=" + frame);
             follow.Distance = before;

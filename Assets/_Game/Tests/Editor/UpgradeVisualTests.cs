@@ -59,6 +59,32 @@ namespace Tycoon.Tests
         }
 
         [Test]
+        public void MachineCapacityAndSpeedPartsHaveGroundedSupports()
+        {
+            var root = new GameObject("MachineUpgradeSupport");
+            root.transform.SetParent(game.transform, false);
+            MachineUpgradeParts.Build(root.transform, 3, 3, 3);
+            MachineUpgradeParts.QualityMount(root.transform, 3);
+            var all = root.GetComponentsInChildren<MeshRenderer>();
+            var posts = all.Where(x => x.name == "TrayRackPost").ToArray();
+            Assert.That(posts.Length, Is.EqualTo(4));
+            foreach (var post in posts)
+                Assert.That(post.bounds.min.y, Is.EqualTo(0).Within(.0001f));
+            foreach (var tray in all.Where(x => x.name == "ExtraOutputTray"))
+                Assert.That(posts.All(x => x.bounds.Intersects(tray.bounds)), Is.True);
+            var motorPost = all.Single(x => x.name == "MotorMountPost");
+            Assert.That(motorPost.bounds.min.y, Is.EqualTo(0).Within(.0001f));
+            foreach (var plate in all.Where(x => x.name == "MotorMountPlate"))
+                Assert.That(motorPost.bounds.Intersects(plate.bounds), Is.True);
+            var stand = all.Single(x => x.name == "ControlPanelStand");
+            Assert.That(stand.bounds.min.y, Is.EqualTo(0).Within(.0001f));
+            Assert.That(stand.bounds.Intersects(all.Single(x => x.name == "DigitalControlPanel").bounds), Is.True);
+            var plaqueStand = all.Single(x => x.name == "QualityPlaqueStand");
+            Assert.That(plaqueStand.bounds.min.y, Is.EqualTo(0).Within(.0001f));
+            Assert.That(plaqueStand.bounds.Intersects(all.Single(x => x.name == "QualityPlaque").bounds), Is.True);
+        }
+
+        [Test]
         public void CrewRefreshReflectsAllAxesAndKeepsTheSharedSingleMesh()
         {
             var root = new GameObject("Worker");

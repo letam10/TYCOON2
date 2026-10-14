@@ -121,9 +121,12 @@ namespace Tycoon
         public void Checkpoint()
         {
             if (store == null || !store.CanCheckpoint) return;
-            var saved = core.CaptureCheckpoint();
+            TransactionState saved;
+            CheckpointHistoryCapture history;
+            using (CityOperationTiming.Measure(game, "Checkpoint.TransactionSnapshot"))
+                saved = core.CaptureDeferredCheckpoint(out history);
             saved.simulationTime = Now;
-            store.CheckpointOwned(saved);
+            store.CheckpointCaptured(saved, history);
         }
         public bool CheckpointPending => store != null && !store.CanCheckpoint;
         public void DrainCheckpoint() => store?.DrainCheckpoint();

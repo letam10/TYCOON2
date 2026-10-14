@@ -7,9 +7,10 @@ namespace Tycoon.Tests
     public sealed class CityLayoutTests
     {
         [Test]
-        public void GroundAreaIsDoubledAndDistrictsAreSeparated()
+        public void ExpandedGroundHasFourTimesPriorCityAreaAndDistrictsAreSeparated()
         {
-            Assert.That(CityDistricts.GroundWidth * CityDistricts.GroundDepth, Is.EqualTo(200 * 136 * 2).Within(.1));
+            Assert.That(CityDistricts.GroundWidth * CityDistricts.GroundDepth,
+                Is.EqualTo(200 * 136 * 2 * 4).Within(.1));
             Assert.That(CityDistricts.Footprint("farm").Intersects(CityDistricts.Footprint("restaurant")), Is.False);
             Assert.That(CityDistricts.Footprint("processing").Intersects(CityDistricts.Footprint("supermarket")), Is.False);
             Assert.That(CityDistricts.WorldBounds.Contains(CityDistricts.PlayerSpawn), Is.True);
@@ -46,8 +47,9 @@ namespace Tycoon.Tests
             data.diners.Add(new DinerSave { receipt = 8, x = -20, z = 39 });
             data.workers.Add(new WorkerSave { id = "kept-worker", x = -20, z = 39 });
             Assert.That(TownLayout.Migrate(data), Is.True);
-            Assert.That(data.playerX, Is.EqualTo(CityDistricts.PlayerSpawn.x));
-            Assert.That(data.playerZ, Is.EqualTo(CityDistricts.PlayerSpawn.z));
+            // Save cũ giữ vị trí đã dịch layout; điểm xuất hiện của trò chơi mới được kiểm riêng.
+            Assert.That(data.playerX, Is.EqualTo(-48.5f));
+            Assert.That(data.playerZ, Is.EqualTo(-23.5f));
             Assert.That(data.customers[0].x, Is.EqualTo(-46));
             Assert.That(data.customers[0].exitX, Is.EqualTo(143));
             Assert.That(data.diners[0].x, Is.EqualTo(-52));
@@ -56,7 +58,7 @@ namespace Tycoon.Tests
             Assert.That(state.cashInHand, Is.EqualTo(123));
             Assert.That(state.cashInSafe, Is.EqualTo(456));
             Assert.That(TownLayout.Migrate(data), Is.False);
-            Assert.That(data.playerX, Is.EqualTo(CityDistricts.PlayerSpawn.x));
+            Assert.That(data.playerX, Is.EqualTo(-48.5f));
         }
     }
 }

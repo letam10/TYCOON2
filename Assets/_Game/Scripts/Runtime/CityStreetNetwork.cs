@@ -29,6 +29,15 @@ namespace Tycoon
             yield return Road(new(21, 0, -7), new(21, 0, 29), 5);
             yield return Road(new(79, 0, -18), new(102, 0, -18), 5);
             yield return Road(new(46, 0, 56), new(57, 0, 56), 5);
+            // Vành đai đi vòng hai đầu hành lang đường sắt, không cắt ngang ray.
+            yield return Road(new(-195, 0, -45), new(-116, 0, -45), 8);
+            yield return Road(new(145, 0, -45), new(190, 0, -45), 8);
+            yield return Road(new(-195, 0, -112), new(-195, 0, 155), 8);
+            yield return Road(new(190, 0, -112), new(190, 0, 155), 8);
+            yield return Road(new(-195, 0, 155), new(190, 0, 155), 8);
+            yield return Road(new(-195, 0, -112), new(190, 0, -112), 8);
+            yield return Road(new(-195, 0, 29), new(-105, 0, 29), 8);
+            yield return Road(new(112, 0, 29), new(190, 0, 29), 8);
         }
 
         public static List<Vector3> Access(string id)

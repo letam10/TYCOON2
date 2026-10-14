@@ -20,7 +20,9 @@ namespace Tycoon
             game.Player.CanControl=false;game.Commerce.enabled=false;game.Restaurant.enabled=false;
             game.Commerce.ResetForLoad();game.Restaurant.ResetForLoad();game.PendingCustomers.Clear();game.PendingDiners.Clear();game.PendingWorkers.Clear();
             var data=game.CaptureSaveData();var seed=RuntimeTransactions.Migrate(game,data);
-            seed.money=f.wallet;seed.revenue=seed.cashCollected=seed.legacyRevenue=0;seed.legacyTransactions=f.orders;
+            if(seed.schemaVersion>=PhysicalCashRules.Version){seed.money=0;seed.cashInHand=0;seed.cashInSafe=f.wallet;}
+            else seed.money=f.wallet;
+            seed.revenue=seed.cashCollected=seed.legacyRevenue=0;seed.legacyTransactions=f.orders;
             seed.legacyCash.Clear();seed.legacyPaid.Clear();seed.legacyLosses.Clear();seed.stacks.Clear();seed.reservations.Clear();
             seed.orders.Clear();seed.payments.Clear();seed.purchases.Clear();seed.crews.Clear();seed.jobIds.Clear();seed.consumers.Clear();
             seed.unlocked=new(f.owned??Array.Empty<string>());seed.owners.RemoveAll(o=>o.kind is OwnerKind.Customer or OwnerKind.Worker or OwnerKind.Escrow);
@@ -68,7 +70,7 @@ namespace Tycoon
                 order=new(){new(item,quantity,game.ItemPrice(item))},x=counter.QueuePoint(0).x,z=counter.QueuePoint(0).z});
             customer.transform.position=counter.QueuePoint(customer);
             long money=game.Economy.Money,cash=counter.Cash;
-            yield return Travel(FinalZone(counter,InteractionKind.Serve).Center);yield return FinalWait(()=>customer.Order.Paid,8,"giao đơn "+item);
+            yield return Travel(FinalPoint(counter,InteractionKind.Serve));yield return FinalWait(()=>customer.Order.Paid,8,"giao đơn "+item);
             Check(game.Economy.Money==money&&counter.Cash>cash,"payment at counter before collection "+shop);
             yield return Travel(counter.CashZone.Center);yield return FinalWait(()=>counter.Cash==0,4,"thu payment "+shop);
             Check(game.Economy.Money>money,"real player collection reaches purchase boundary "+shop);
@@ -86,12 +88,12 @@ namespace Tycoon
                 {
                     foreach(var m in game.Machines.Where(m=>m.AreaId=="processing"))
                     {
-                        yield return Travel(FinalZone(m,InteractionKind.Operate).Center);yield return FinalWait(()=>m.Batches==50,15,"49→50 batches "+m.Recipe.id);
+                        yield return Travel(FinalPoint(m,InteractionKind.Operate));yield return FinalWait(()=>m.Batches==50,15,"49→50 batches "+m.Recipe.id);
                     }
                 }
                 if(f.id=="restaurant")
                 {
-                    var oven=game.Machines.First(m=>m.Recipe.id=="oven");yield return Travel(FinalZone(oven,InteractionKind.Operate).Center);
+                    var oven=game.Machines.First(m=>m.Recipe.id=="oven");yield return Travel(FinalPoint(oven,InteractionKind.Operate));
                     yield return FinalWait(()=>oven.Batches==1,15,"real bread batch before Restaurant gate");yield return MilestoneSale("bakery","bread",1);
                     Check(game.Progression.SuccessfulOrdersAt("bakery")==60,"59→60 successful Bakery orders");
                 }
@@ -104,20 +106,20 @@ namespace Tycoon
                 if(f.id is "barn" or "milk_line")
                 {
                     string product=f.id=="barn"?"beef":"milk";var animal=game.Producers.First(p=>p.ItemId==product);
-                    yield return FinalGetItem("carrot",3);yield return Travel(FinalZone(animal,InteractionKind.Drop).Center);
+                    yield return FinalGetItem("carrot",3);yield return Travel(FinalPoint(animal,InteractionKind.Drop));
                     yield return FinalWait(()=>animal.Feed==3,5,"cho ăn đủ tuyến "+product);yield return FinalStash();
-                    yield return Travel(FinalZone(animal,InteractionKind.Operate).Center);yield return FinalWait(()=>animal.Cycle==0,35,"chăm chu kỳ "+product);
+                    yield return Travel(FinalPoint(animal,InteractionKind.Operate));yield return FinalWait(()=>animal.Cycle==0,35,"chăm chu kỳ "+product);
                     int herd=animal.Herd;yield return MilestoneSale("farm",product,1);
                     Check(product!="beef"||animal.Herd==herd-1,"meat consumes exactly one real animal");
                 }
             }
             game.Restaurant.enabled=true;var kitchen=game.Machines.First(m=>m.Recipe.id=="kitchen");
-            yield return Travel(FinalZone(kitchen,InteractionKind.Operate).Center);yield return FinalWait(()=>kitchen.Batches==1,20,"player cook after Restaurant purchase");
+            yield return Travel(FinalPoint(kitchen,InteractionKind.Operate));yield return FinalWait(()=>kitchen.Batches==1,20,"player cook after Restaurant purchase");
             yield return FinalGetItem("meal",1);yield return FinalWait(()=>game.Tables.Any(t=>t.NeedsMeal),20,"diner sits and orders");
             var servedTable=game.Tables.First(t=>t.NeedsMeal);long receipt=servedTable.Occupant.Receipt;
-            yield return Travel(FinalZone(servedTable,InteractionKind.Serve).Center);yield return FinalWait(()=>!servedTable.NeedsMeal,5,"serve correct Restaurant table");
+            yield return Travel(FinalPoint(servedTable,InteractionKind.Serve));yield return FinalWait(()=>!servedTable.NeedsMeal,5,"serve correct Restaurant table");
             yield return FinalWait(()=>servedTable.Cleaning>0,12,"eat and Restaurant payment");Check(servedTable.Cleaning>0,"dirty table remains unavailable before cleaning");
-            yield return Travel(FinalZone(servedTable,InteractionKind.Operate).Center);yield return FinalWait(()=>servedTable.Cleaning==0,6,"player cleans table");
+            yield return Travel(FinalPoint(servedTable,InteractionKind.Operate));yield return FinalWait(()=>servedTable.Cleaning==0,6,"player cleans table");
             yield return FinalCollect();game.Transactions.Checkpoint();
             Check(game.Transactions.Snapshot().payments.Any(p=>p.order==RuntimeTransactions.OrderId(receipt)&&p.collected),"Restaurant payment collected by player");
             long wallet=game.Economy.Money,total=game.Transactions.Snapshot().stacks.Sum(s=>s.quantity),collected=game.Economy.CashCollected;
@@ -132,19 +134,19 @@ namespace Tycoon
         IEnumerator FinalQuickRegression(MilestoneCase preset)
         {
             SeedMilestone(preset);var machine=game.Machines.First(m=>m.Recipe.id=="mill");
-            yield return Travel(FinalZone(machine,InteractionKind.Operate).Center);
+            yield return Travel(FinalPoint(machine,InteractionKind.Operate));
             yield return FinalWait(()=>machine.Running&&machine.Remaining<5,5,"start interrupted machine");
-            yield return WalkTo(FinalZone(machine,InteractionKind.Operate).Center+Vector3.back*2);
+            yield return WalkTo(FinalPoint(machine,InteractionKind.Operate)+Vector3.back*2);
             float remaining=machine.Remaining;int input=machine.Input.Total;string job=game.Transactions.Station(machine.Id).jobId;
             yield return new WaitForSeconds(1);Check(Mathf.Abs(machine.Remaining-remaining)<.001f,"leaving machine preserves progress");
             game.Transactions.Checkpoint();game.LoadGame();
             Check(machine.Running&&Mathf.Abs(machine.Remaining-remaining)<.001f&&machine.Input.Total==input&&game.Transactions.Station(machine.Id).jobId==job,"load preserves running job input and progress");
-            yield return Travel(FinalZone(machine,InteractionKind.Operate).Center);yield return FinalWait(()=>machine.Batches==50,12,"resume same machine job");
+            yield return Travel(FinalPoint(machine,InteractionKind.Operate));yield return FinalWait(()=>machine.Batches==50,12,"resume same machine job");
             var counter=game.Checkouts.First(c=>c.ShopId=="farm");
             yield return FinalGetItem("carrot",2);
             var root=new GameObject("PartialAbandonment");root.SetActive(false);root.transform.SetParent(game.transform);var partial=root.AddComponent<CustomerAgent>();
             partial.Restore(new CustomerSave{receipt=game.NextReceipt++,shop="farm",lane=counter.Id,phase=(int)CustomerAgent.State.Queue,remaining=90,order=new(){new("carrot",3,10)}});
-            partial.transform.position=counter.QueuePoint(partial);yield return Travel(FinalZone(counter,InteractionKind.Serve).Center);
+            partial.transform.position=counter.QueuePoint(partial);yield return Travel(FinalPoint(counter,InteractionKind.Serve));
             yield return FinalWait(()=>partial.Basket.Total==2,5,"partial order receives exactly two carrots");
             long lossBefore=game.Economy.LostItems,cashBefore=counter.Cash;yield return WalkTo(counter.WorkPoint+Vector3.forward*3);
             yield return FinalWait(()=>partial.Order.RemainingPatience(Time.time)==0,100,"partial order patience expires");

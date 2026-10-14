@@ -73,7 +73,7 @@ namespace Tycoon
         void CrewButton(Transform parent, int column, string label, UnityEngine.Events.UnityAction click)
         {
             var button = Button(parent, "CrewUpgrade", click);
-            button.GetComponentInChildren<Text>().text = label;
+            SetText(button.GetComponentInChildren<Text>(), label);
             button.GetComponentInChildren<Text>().fontSize = 20;
             button.interactable = click != null;
             Rect((RectTransform)button.transform, new(column / 3f, 0), new((column + 1) / 3f, 0), new(12, 14),

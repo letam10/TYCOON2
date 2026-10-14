@@ -19,6 +19,7 @@ Shader "TYCOON/Town Surface"
         HLSLINCLUDE
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+        #include "CoastalShore.hlsl"
         TEXTURE2D(_SurfaceMap);
         SAMPLER(sampler_SurfaceMap);
         CBUFFER_START(UnityPerMaterial)
@@ -129,6 +130,14 @@ Shader "TYCOON/Town Surface"
         }
         half3 GroundColor(float3 p, half3 normal, half3 albedo)
         {
+            if (_SurfaceKind > 3.5 && normal.y > .75)
+            {
+                float grain = GroundNoise(p.xz * 1.7);
+                float wet = 1 - smoothstep(0, 5, 247 + CoastalShoreOffset(p.z) - p.x);
+                float wash = .5 + .5 * sin(p.z * .15 - _Time.y * .55);
+                wet *= .7 + wash * .3;
+                return albedo * (.95 + grain * .055) * (1 - wet * .23);
+            }
             if (_SurfaceKind < .5 || normal.y < .75) return GroundGravel(p, normal, albedo, 1);
             float broad = GroundNoise(p.xz * .19 + 17.3);
             if (_SurfaceKind < 1.5)
@@ -201,6 +210,7 @@ Shader "TYCOON/Town Surface"
             Name "ForwardLit"
             Tags { "LightMode"="UniversalForward" }
             HLSLPROGRAM
+            #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
             #pragma vertex Vert
             #pragma fragment Frag
             #pragma multi_compile_instancing
@@ -219,6 +229,7 @@ Shader "TYCOON/Town Surface"
             ZWrite On
             ColorMask 0
             HLSLPROGRAM
+            #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
             #pragma vertex ShadowVert
             #pragma fragment DepthFrag
             #pragma multi_compile_instancing
@@ -232,6 +243,7 @@ Shader "TYCOON/Town Surface"
             ZWrite On
             ColorMask R
             HLSLPROGRAM
+            #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
             #pragma vertex Vert
             #pragma fragment DepthFrag
             #pragma multi_compile_instancing
@@ -243,6 +255,7 @@ Shader "TYCOON/Town Surface"
             Tags { "LightMode"="DepthNormals" }
             ZWrite On
             HLSLPROGRAM
+            #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
             #pragma vertex Vert
             #pragma fragment NormalFrag
             #pragma multi_compile_instancing

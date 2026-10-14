@@ -72,10 +72,13 @@ namespace Tycoon
             AddQuickAction("Xem kho / chọn hàng", "Kho", OpenStock);
             AddQuickAction("Vận chuyển xe tải", "Xe tải", OpenCargo);
             AddQuickAction("Thông tin", "Thông tin", OpenInformation);
+            AddQuickAction("SettingsButton", "Cài đặt", OpenSettings);
             AddQuickAction("Menu", "Menu", TogglePause);
             if (DevelopmentAssistance.Enabled)
             AddQuickAction("Mod game", "Mod game", ToggleModMenu);
-            help = Text("Help", root, "", 14, TextAnchor.MiddleCenter, Ink);
+            var helpBackground = Panel("HelpBackground", root, Surface, .96f);
+            help = Text("Help", helpBackground.transform, "", 14, TextAnchor.MiddleCenter, Ink);
+            Inset(help.rectTransform, 0);
             toastRoot = Panel("Toast", root, "#3C5936");
             toast = Text("ToastText", toastRoot.transform, "", 18, TextAnchor.MiddleCenter, Ink);
             Inset(toast.rectTransform, 8);
@@ -87,7 +90,7 @@ namespace Tycoon
         {
             var button = Button(dockRect, name, click);
             var text = button.GetComponentInChildren<Text>();
-            text.text = label;
+            SetText(text, label);
             text.fontSize = 19;
             if(name=="Mod game")
             {
@@ -128,13 +131,14 @@ namespace Tycoon
             var subtitle = Text("PauseSubtitle", card.transform, "Từ nông trại đến đế chế kinh doanh", 22,
                 TextAnchor.MiddleCenter, Muted);
             Rect(subtitle.rectTransform, new(0, 1), new(1, 1), new(26, -160), new(-26, -108));
-            continueButton = PauseButton(card.transform, "Tiếp tục", -210, TogglePause, true);
-            PauseButton(card.transform, "Thông tin kinh doanh", -298, OpenInformation);
-            PauseButton(card.transform, "Kho • chọn hàng", -386, OpenStock);
-            PauseButton(card.transform, "Vận chuyển xe tải", -474, OpenCargo);
-            PauseButton(card.transform, "Quản lý đội", -562, OpenCrewMenu);
-            PauseButton(card.transform, "Lưu trò chơi", -650, () => game.SaveGame());
-            PauseButton(card.transform, "Lưu & thoát", -738, () =>
+            continueButton = PauseButton(card.transform, "Tiếp tục", -204, TogglePause, true);
+            PauseButton(card.transform, "Thông tin kinh doanh", -282, OpenInformation);
+            PauseButton(card.transform, "Kho • chọn hàng", -360, OpenStock);
+            PauseButton(card.transform, "Vận chuyển xe tải", -438, OpenCargo);
+            PauseButton(card.transform, "Quản lý đội", -516, OpenCrewMenu);
+            PauseButton(card.transform, "Cài đặt", -594, OpenSettings).name = "PauseSettingsButton";
+            PauseButton(card.transform, "Slot lưu • Chơi mới", -672, OpenSaveSlots);
+            PauseButton(card.transform, "Lưu & thoát", -750, () =>
             {
                 game.SaveGame();
                 Application.Quit();

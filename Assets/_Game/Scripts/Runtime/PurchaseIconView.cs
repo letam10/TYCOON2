@@ -33,6 +33,7 @@ namespace Tycoon
         }
         void LateUpdate()
         {
+            using var lateUpdateProbe = QaFrameProbe.Measure("PurchaseIconView.1.LateUpdate");
             if(Camera.main)transform.rotation=Camera.main.transform.rotation;
         }
         void ReleaseImage()

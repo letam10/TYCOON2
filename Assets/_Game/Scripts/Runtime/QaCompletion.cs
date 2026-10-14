@@ -18,6 +18,7 @@ namespace Tycoon
             if (group is "All" or "Progression") yield return CompletionProgression();
             if (group is "All" or "Crews") yield return CompletionCrews();
             if (group is "All" or "Roles") yield return CompletionRoleFlows();
+            if (group == "Transport") yield return CompletionTransport();
             if (group is "All" or "Cargo") yield return CompletionCargo();
             if (group is "All" or "Events") yield return CompletionEvents();
             if (group is "All" or "Save") yield return CompletionSave();
@@ -95,6 +96,7 @@ namespace Tycoon
 
         IEnumerator CompletionWait(Func<bool> predicate, float seconds, string label)
         {
+            Debug.Log("COMPLETION_WAIT " + label);
             double limit = Time.realtimeSinceStartupAsDouble + Math.Max(20, seconds);
             float end = Time.time + seconds;
             while (!predicate())
@@ -104,11 +106,13 @@ namespace Tycoon
                 yield return null;
             }
             Check(true, label);
+            Debug.Log("COMPLETION_OK " + label);
         }
 
         IEnumerator CompletionEvents()
         {
             yield return CompletionReset(new[] { "repair_processing" }, "machine_mill");
+            CompletionSafeCash(false);
             var machine = game.Machines.First(m => m.Id == "machine_mill");
             var warehouse = game.StorageFor("processing");
             int amount = game.Transactions.Transfer(warehouse.Inventory, machine.Input, "wheat", 4);
@@ -121,8 +125,16 @@ namespace Tycoon
             yield return CompletionWait(() => machine.RepairPaid, 35, "Specialist reaches machine and pays repair once");
             Check(Math.Abs(machine.Remaining - remaining) < .01f, "Broken batch preserves production progress");
             float began = Time.time;
-            yield return CompletionWait(() => !machine.Broken, 35, "Repairer finishes the 30-second repair");
-            Check(Time.time - began > 27, "Base Repairer does not finish at player speed");
+            var repairCrew = game.ReadCrew("repair_processing");
+            float repairSeconds = (1 - game.Transactions.Station(machine.Id).progress.repairProgress)
+                * RepairTiming.Employee(repairCrew.speedLevel) / WorkforceRules.Capability;
+            yield return CompletionWait(() => !machine.Broken, 35, "Repairer finishes at workforce capability");
+            float elapsed = Time.time - began;
+            float tolerance = 2 * Mathf.Max(Time.deltaTime, .1f / WorkforceRules.Capability);
+            Debug.Log("COMPLETION_REPAIR_SECONDS actual=" + elapsed.ToString("F3")
+                + " expected=" + repairSeconds.ToString("F3"));
+            Check(Math.Abs(elapsed - repairSeconds) <= tolerance,
+                "Repair timing matches employee level and workforce capability");
             Check(game.Economy.Money == wallet - 40, "Repair incident charges exactly one fee");
             yield return CompletionWait(() => machine.Batches == 1, 12, "Production resumes after specialist repair");
             Check(machine.Inventory.Count("flour") == machine.Recipe.yield,
@@ -149,6 +161,19 @@ namespace Tycoon
                 "Rush returns to normal cooldown without immediate repeat");
             game.Milestone = 0;
             game.Commerce.enabled = false;
+        }
+
+        void CompletionSafeCash(bool deposit)
+        {
+            long amount = deposit ? game.Economy.CashInHand : game.Economy.CashInSafe;
+            long total = game.Economy.CashInHand + game.Economy.CashInSafe;
+            Check(amount > 0 && game.Player.Carry.Total == 0,
+                "Completion cash: transfer owned money with empty hands");
+            var kind = deposit ? TransactionKind.DepositCash : TransactionKind.WithdrawCash;
+            game.Transactions.Execute(game.Transactions.Command(kind, "player", PhysicalCashRules.SafeId));
+            Check((deposit ? game.Economy.CashInHand : game.Economy.CashInSafe) == 0 &&
+                game.Economy.CashInHand + game.Economy.CashInSafe == total,
+                "Completion cash: safe transfer conserves exact cash");
         }
     }
 }

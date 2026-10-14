@@ -19,7 +19,7 @@ namespace Tycoon
         public int SpeedLevel { get; private set; }
 
         public static void Initialize(GameSession game) => RefreshAll(game, false);
-        public static void RefreshAll(GameSession game, bool animate)
+        public static void RefreshAll(GameSession game, bool animate, bool defer = false)
         {
             if (!game) return;
             foreach (var station in game.Stations)
@@ -32,26 +32,27 @@ namespace Tycoon
                 if (!view) view = station.gameObject.AddComponent<UpgradeModelView>();
                 view.game = game;
                 view.station = station;
-                view.Refresh(animate);
+                view.Refresh(animate, defer);
             }
             foreach (var worker in game.Workers)
             {
-                AttachWorker(game, worker, animate);
+                AttachWorker(game, worker, animate, defer);
             }
         }
 
-        public static void AttachWorker(GameSession game, WorkerAgent worker, bool animate)
+        public static void AttachWorker(GameSession game, WorkerAgent worker, bool animate, bool defer = false)
         {
             if (!game || !worker) return;
             var view = worker.GetComponent<UpgradeModelView>();
             if (!view) view = worker.gameObject.AddComponent<UpgradeModelView>();
             view.game = game;
             view.worker = worker;
-            view.Refresh(animate);
+            view.Refresh(animate, defer);
         }
 
         void LateUpdate()
         {
+            using var lateUpdateProbe = QaFrameProbe.Measure("UpgradeModelView.1.LateUpdate");
             if (!game) return;
             if (Time.unscaledTime >= nextCheck)
             {
@@ -62,7 +63,7 @@ namespace Tycoon
             if (station) parts.gameObject.SetActive(station.IsUnlocked);
         }
 
-        void Refresh(bool animate)
+        void Refresh(bool animate, bool defer = false)
         {
             int quality = 1;
             if (worker)
@@ -87,7 +88,7 @@ namespace Tycoon
             signature = current;
             qualityLevel = quality;
             pendingAnimation |= animate;
-            if (Application.isPlaying && animate)
+            if (Application.isPlaying && (animate || defer))
             {
                 if (queued) return;
                 queued = true;

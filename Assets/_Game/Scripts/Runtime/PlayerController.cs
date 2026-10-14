@@ -41,23 +41,26 @@ namespace Tycoon
             Move.AddCompositeBinding("2DVector").With("Up", "<Keyboard>/upArrow").With("Down", "<Keyboard>/downArrow").With("Left", "<Keyboard>/leftArrow").With("Right", "<Keyboard>/rightArrow");
             Move.AddBinding("<Gamepad>/leftStick");
             Use = new InputAction("Use", InputActionType.Button); Use.AddBinding("<Keyboard>/e"); Use.AddBinding("<Gamepad>/buttonSouth");
-            Sprint = new InputAction("Sprint", InputActionType.Button); Sprint.AddBinding("<Keyboard>/leftShift"); Sprint.AddBinding("<Gamepad>/leftStickPress");
+            Sprint = new InputAction("Sprint", InputActionType.Button); Sprint.AddBinding("<Keyboard>/leftShift"); Sprint.AddBinding("<Keyboard>/rightShift"); Sprint.AddBinding("<Gamepad>/leftStickPress");
             Withdraw = new InputAction("Withdraw", InputActionType.Button); Withdraw.AddBinding("<Keyboard>/r"); Withdraw.AddBinding("<Gamepad>/buttonWest");
             Cycle = new InputAction("Cycle", InputActionType.Button); Cycle.AddBinding("<Keyboard>/q"); Cycle.AddBinding("<Gamepad>/rightShoulder");
             Save = new InputAction("Save", InputActionType.Button); Save.AddBinding("<Keyboard>/f5"); Save.AddBinding("<Gamepad>/start");
+            GameKeyBindings.ApplyPlayer(this);
             Move.Enable(); Use.Enable(); Sprint.Enable(); Withdraw.Enable(); Cycle.Enable(); Save.Enable();
             View = GetComponentInChildren<ActorView>();
             View?.Initialize();
         }
         void Update()
         {
+            using var updateProbe = QaFrameProbe.Measure("PlayerController.1.Update");
+
             if (!CanControl || Move == null || GameSession.Instance == null || !GameSession.Instance.CanSimulate) { ResetMotion(); StopInteraction(); return; }
             var game = GameSession.Instance;
             if (Cycle.WasPressedThisFrame()) { game.SelectedItem = (game.SelectedItem + 1) % Definitions.Items.Length; StopInteraction(); }
             if (Save.WasPressedThisFrame()) game.SaveGame();
             Vector2 input = Move.ReadValue<Vector2>();
             var direction = CameraRelativeDirection(input, Camera.main ? Camera.main.transform : null);
-            float speed = Sprint.IsPressed() && !HasCarry ? 6.2f : HasCarry ? 3.8f : 4.8f;
+            float speed = Sprint.IsPressed() && !HasCarry ? 10f : HasCarry ? 3.8f : 4.8f;
             // Tăng tốc ngắn, dừng nhanh để vẫn thao tác chính xác khi đứng sát trạm.
             bool braking = direction.sqrMagnitude < .0025f || Vector3.Dot(movement, direction) < 0;
             movement = Vector3.MoveTowards(movement, direction * speed, (braking ? 46 : 32) * Time.deltaTime);
@@ -70,11 +73,11 @@ namespace Tycoon
             Vector3 travelled = transform.position - before; travelled.y = 0;
             DistanceWalked += travelled.magnitude;
             CurrentSpeed = travelled.magnitude / Mathf.Max(Time.deltaTime, .001f);
-            IsSprinting = !HasCarry && Sprint.IsPressed() && CurrentSpeed > 5.5f;
+            IsSprinting = !HasCarry && Sprint.IsPressed() && direction.sqrMagnitude > .01f;
             if (direction.sqrMagnitude > .01f)
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(direction), 540 * Time.deltaTime);
-            View?.SetMotion(CurrentSpeed, HasCarry);
-            InteractAtCurrentPosition(Time.deltaTime);
+            View?.SetMotion(CurrentSpeed, HasCarry, IsSprinting);
+            InteractAtCurrentPosition(Time.deltaTime, Withdraw.IsPressed());
         }
         public static Vector3 CameraRelativeDirection(Vector2 input, Transform camera)
         {
@@ -94,7 +97,7 @@ namespace Tycoon
             var before = interaction.Current;
             string previousReason = InteractionReason;
             var result = interaction.Tick(game.PlayerInteractionAreas(),
-                new InteractionContext(this, Definitions.Items[game.SelectedItem].id), transform.position, delta);
+                new InteractionContext(this, Definitions.Items[game.SelectedItem].id, withdraw), transform.position, delta);
             if (!ReferenceEquals(before, interaction.Current) || result.Worked || interaction.Current == null) InteractionReason = "";
             if (!string.IsNullOrEmpty(result.Reason)) InteractionReason = result.Reason;
             if (!string.IsNullOrEmpty(result.Reason) && (!ReferenceEquals(before, interaction.Current) || result.Reason != previousReason))
@@ -125,7 +128,7 @@ namespace Tycoon
         {
             interaction.Stop(); InteractionReason = "";
         }
-        void ResetMotion() { movement = Vector3.zero; CurrentSpeed = 0; IsSprinting = false; View?.SetMotion(0, HasCarry); }
+        void ResetMotion() { movement = Vector3.zero; CurrentSpeed = 0; IsSprinting = false; View?.SetMotion(0, HasCarry, false); }
         void OnEnable() { Move?.Enable(); Use?.Enable(); Sprint?.Enable(); Withdraw?.Enable(); Cycle?.Enable(); Save?.Enable(); }
         void OnDisable() { ResetMotion(); StopInteraction(); Move?.Disable(); Use?.Disable(); Sprint?.Disable(); Withdraw?.Disable(); Cycle?.Disable(); Save?.Disable(); }
         void OnDestroy()
@@ -135,4 +138,3 @@ namespace Tycoon
         }
     }
 }
-

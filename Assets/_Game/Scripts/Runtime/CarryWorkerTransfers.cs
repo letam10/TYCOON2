@@ -12,6 +12,7 @@ namespace Tycoon
 
         void LateUpdate()
         {
+            using var lateUpdateProbe = QaFrameProbe.Measure("CarryWorkerTransfers.1.LateUpdate");
             if (!Worker) return;
             var inventory = Worker.Carry;
             if (!ReferenceEquals(observed, inventory))

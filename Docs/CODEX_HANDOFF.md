@@ -1,9 +1,521 @@
 # CODEX_HANDOFF
 
-Cập nhật 08/10/2026, Asia/Bangkok. Tiếp tục trực tiếp tại D:\GAME\TYCOON2.
+## V20 — Shift 10 m/s, kiểm chức năng nhanh và bản Windows (14/10/2026)
+
+**Đây là mục hiện hành.** V19 trở xuống là lịch sử. Bản để người dùng test:
+`D:/GAME/TYCOON2/Builds/Windows/TYCOON2.exe`; giữ toàn bộ thư mục Windows cạnh exe.
+Không dùng các ZIP/build lịch sử làm bản Shift 10 m/s. Không publish/deploy/push.
+
+### Đã làm
+
+- Giữ Shift trái/phải khi di chuyển: chạy **10 m/s khi tay trống**; đi thường 4,8 m/s,
+  cầm hàng/tiền/thùng 3,8 m/s theo luật sẵn có. Gamepad nhấn cần trái cũng chạy 10 m/s.
+- HUD Việt/Anh có hướng dẫn Shift. Chạy chéo được chuẩn hóa; nhả phím, pause/resume
+  và animation Run/Walk/CarryWalk đã được kiểm qua Input System trong Windows Player.
+- Sửa lỗi loader đứng ngoài thân xe nhưng chờ mãi: `TruckHandlingPoint` suy điểm bốc/dỡ
+  từ collider xe và bán kính người/agent, lấy cùng điểm NavMesh để đi và xét đến nơi.
+  Collider xe vẫn hoạt động; Cargo và All đã kiểm bốc, chở, dỡ hàng thực tế.
+- Cập nhật bộ QA cho luật tiền trên tay/két, ClaimCrate trước Load/Unload,
+  chờ checkpoint bất đồng bộ hoàn tất trước so sánh save, kiểm riêng hai số dư tiền.
+  Thời hạn transport suy từ route/speed; thời gian repair suy từ capability nhân viên.
+  Đây là sửa ca kiểm đã lỗi thời, không đổi luật kinh tế hoặc tốc độ nhân viên.
+- Chẩn đoán QA không đọc trạng thái NavMesh khi agent tài xế bị tắt; thêm test
+  chuyển động thật qua connector processing. Script completion đọc log UTF-8.
+- README và DOCS_INDEX trỏ handoff hiện hành; build-report trong Windows đã cập nhật.
+
+### Đã kiểm — cùng bản build cuối, các lệnh đều exit 0
+
+Build: `Tools/run_unity.ps1 -Task Build`, Succeeded lúc **06:39:46 UTC 14/10**,
+118.715.759 byte, **0 errors / 28 warnings**. Report: `QA/build-report.json` và
+`Builds/Windows/build-report.json`; log: `work/logs/build.log`.
+Tests: `Tools/run_unity.ps1 -Task Tests`, **912/912 pass, 0 fail, 0 skip**;
+XML `QA/editmode-results.xml` kết thúc **06:46:21 UTC**, log `work/logs/tests.log`.
+
+| Lệnh Player trên Builds/Windows/TYCOON2.exe | Kết quả | Report dưới work |
+|---|---|---|
+| `Tools/run_sprint.ps1` | 57 checks pass | `shift-final-20261014/foundation-20261014T064912346Z/foundation-report.json` |
+| `Tools/run_completion.ps1 -Case All -BuildPath Builds/Windows/TYCOON2.exe` | 699 checks pass | `completion-audit/player-all-20261014T064647766Z/completion-report.json` |
+| `Tools/run_completion.ps1 -Case Save -BuildPath Builds/Windows/TYCOON2.exe` | 166 checks pass | `completion-audit/player-save-20261014T064536857Z/completion-report.json` |
+| `Tools/run_completion.ps1 -Case Load -BuildPath Builds/Windows/TYCOON2.exe -LoadPath work/completion-audit/player-save-20261014T064536857Z/completion-midflight.json` | 52 checks pass, process mới | `completion-audit/player-load-20261014T064612902Z/completion-load-report.json` |
+| `Tools/run_carrot_settings.ps1 -BuildPath Builds/Windows/TYCOON2.exe` | 164 checks pass | `carrot-settings-20261008/player-20261014T065056429Z/carrot-settings-report.json` |
+
+Tất cả các report Player trên có **0 runtime errors**. All chạy khoảng 6 phút 27 giây,
+bao phủ mốc mua/nâng cấp tới restaurant, nghề sản xuất/bán hàng/nông trại/chăn nuôi,
+thiếu nguyên liệu/kho đầy và phục hồi, vận chuyển liên khu, truck/loader, repair/Rush,
+pause, save/load. Các fixture QA dùng simulation 3x và save riêng; save người dùng được giữ.
+Load qua process mới giữ tiền/hàng/đơn/reservation/tiến độ/xe và tiếp tục giao hàng,
+sửa chữa, dỡ cargo đúng một lần khi lặp command.
+
+Đo khoảng cách/thời gian thật trong `sprint-measurements.json` của Foundation cuối:
+Shift trái **9,999966**, phải **10,000013**, chéo **9,999938 m/s**; đi thường **4,800007**;
+cầm hàng trái/phải **3,799987 / 3,800028 m/s**. Đã xem ảnh HUD bàn phím
+`01a-shift-controls.png` và menu `settings-vi-1920.png`: hình mới rõ, không đen.
+Settings kiểm độ phân giải 1280/1920/2560/3840, tiếng Việt/English, chất lượng, VSync,
+bật/tắt FPS, lưu cài đặt và trở lại game. Bật overlay chỉ là kiểm chức năng.
+
+Report tổng: `work/shift-final-20261014/final-report.json` có lệnh, thời gian và hash.
+SHA256 `Builds/Windows/TYCOON2_Data/Managed/Tycoon.Runtime.dll`:
+`0521DC7803AC6476CB2F814F8F458F5F9C671EC0984273F8D2A9E04D00705EAD`.
+
+### Đã dọn work và kiểm riêng sau dọn
+
+- Xóa **31 thư mục build phát sinh cũ**, 4.530.196.437 byte. Từng build có record
+  `Task=Build` trỏ đúng output, report Succeeded/errors 0, chỉ chứa runtime;
+  đã kiểm hash/inventory không đổi, không process dùng build và không reparse point.
+- Xóa archive trùng `work/city-model-current-20261011/Delivery/Evidence.zip`,
+  4.429.530.808 byte. Giữ `Delivery-20261011-docs-clean-v2/Evidence.zip` cùng parent.
+  Hai archive SHA256 trùng; bản giữ lại đã kiểm CRC đủ 2.459 file và rehash sau dọn đạt.
+- Tổng đã xóa **8.959.727.245 byte (~8,96 GB / 8,34 GiB)** theo độ dài file.
+  Source, save, log, ảnh, ZIP còn lại và Unity Library được giữ.
+- Danh sách chính xác/provenance: `cleanup-build-plan.jsonl`, `cleanup-preflight.json`;
+  kết quả hậu kiểm: `cleanup-result.json`, cùng nằm trong `work/shift-final-20261014`.
+  Bản Windows hiện hành vẫn nguyên vẹn. Các đường dẫn build cũ trong mục lịch sử có thể
+  đã bị dọn; không coi chúng là build hiện hành hoặc tự tạo lại chỉ để hợp thức báo cáo cũ.
+
+### Chưa kiểm / còn lưu ý / thay đổi phạm vi
+
+- Theo yêu cầu mới nhất: **test chức năng nhanh, không benchmark dài**. Không chạy
+  soak, tour dài, đo FPS ổn định hoặc campaign cân bằng 180–240 phút ở lượt này.
+  Kết quả fixture chức năng không chứng minh thời lượng/cân bằng một campaign từ 0 tiền.
+- Không còn lỗi runtime trong các ca đã chạy. Build còn **28 warning** về Unity object
+  API obsolete và shader TownSurface; không tuyên bố warning bằng 0 hay mọi lỗi đều hết.
+- Không đổi công nghệ/phạm vi game 3D. Giữ điều kiện tay trống khi chạy.
+- `Tools/verify_city_delivery.py` là validator gói V14 lịch sử, dùng đường dẫn đã cũ;
+  không dùng nó chứng nhận bản Windows V20. Gate hiện hành là Tests/Build và các Player
+  command/report trên, đều đã exit 0.
+
+## V19 — Bàn giao kiểm tra toàn bộ project, game và kế hoạch (11/10/2026)
+
+**Mục lịch sử, đã được V20 thay thế.** Các checkpoint V10–V17 ở
+phía dưới được giữ làm lịch sử, nhưng không được dùng để ghi đè trạng thái V18.
+
+### 0. Dọn work ngày 11/10/2026
+
+- Đã xóa bản build trung gian `work/build-windows-20261011`; bản hiện hành là
+  `Builds/Windows` và staging `work/city-model-current-20261011/CityRepairBuild`.
+- Đã xóa `work/city-model-current-20261010`, bản output cũ đã được thay thế.
+- Đã xóa `work/city-model-current-20261011/DeliveryEvidence`, vì toàn bộ 2.459 file
+  đã đối chiếu với `Delivery-20261011-docs-clean-v2/Evidence.zip`.
+- Đã xóa các thư mục rỗng `stage01`, `stage02`, `stage08-save-tests`,
+  `stage10-save-tests`, `tests` và `save-recovery` dưới `work`.
+- Dung lượng giải phóng khoảng 7.071.843.945 byte. Các gói nén, save, evidence lịch sử
+  được handoff tham chiếu và thư mục `items-vehicles-20261008` vẫn được giữ.
+
+### 1. Phạm vi và nguyên tắc đọc handoff
+
+- Checkout duy nhất: D:/GAME/TYCOON2.
+- Unity 6000.6.3f1, URP 17.6.0, Windows Player, Direct3D11, chơi đơn offline.
+- Hướng hình ảnh đã chốt là bán thực tế: vật liệu rõ hơn, ánh sáng chi tiết hơn,
+  cỏ và đất trống trên mặt phẳng, model cầm tay có hình 3D nhận ra được.
+- Quy tắc gameplay đã chốt: tay chỉ giữ một loại hàng hoặc tiền; tiền thu nằm trên
+  tay; tiền trong két phải rút lên tay trước khi chi; đồ dễ vỡ mới dùng két/khay/hộp/vỉ.
+- Người dùng đã bỏ mục tiêu benchmark ổn định 165 FPS. Mọi FPS/tải trong phần dưới chỉ
+  là chẩn đoán của một lượt Player, không phải điều kiện chặn bàn giao.
+- Không được nhầm “có source” với “đã chạy Player”, “gallery nhiều góc” với “mọi model
+  được duyệt bằng mắt”, hoặc “ảnh không đen” với “đã chứng minh hiển thị liên tục”.
+- Không xóa save, evidence hoặc work cũ chỉ để làm nhẹ thư mục khi chưa lập danh sách
+  lưu trữ riêng. Work hiện có gần 40 GB và gồm cả lịch sử cần đối chiếu.
+- Thứ tự đọc tài liệu được ghi tại `Docs/DOCS_INDEX.md`. 34 contract/findings cũ đã được
+  gộp nguyên văn vào `Docs/History/LEGACY_DOCS_20261011.md`; các file package bắt buộc
+  vẫn giữ nguyên đường dẫn.
+
+### 2. Kiểm kê checkout tại thời điểm bàn giao
+
+| Khu vực | Số file | Dung lượng byte | Vai trò |
+|---|---:|---:|---|
+| Assets | 1.731 | 246.731.509 | Unity source, art, runtime, test và prefab |
+| ASSET | 7.553 | 429.442.129 | Thư viện nguồn đã tải, giữ license/hash |
+| Docs | 105 trước khi thêm handoff này | 3.238.346 | Kế hoạch, contract, audit và hướng dẫn |
+| Documentation | 2 | 6.428 | REPLAN và REFERENCE |
+| Tools | 49 | 441.288 | build, test, Player, gallery, package và validator |
+| QA | 102 | 36.986.087 | XML, report và evidence nền |
+| ProjectSettings | 27 | 60.786 | Unity settings, URP/quality/input |
+| Packages | 2 | 6.649 | manifest và lock file |
+| work | 20.349 | 39.828.026.483 | build, save QA, log, report, ảnh, zip lịch sử |
+
+Git HEAD đã kiểm tra là 3ae6638cb9ce4de5c586ae05c7c2aaea9cebbb80 với message
+Upgrade city layout, physical cargo, workforce and transit. Checkout dirty có chủ ý:
+nhiều runtime/test/doc/art và file tải về đang sửa hoặc untracked từ các công đoạn trước.
+Không coi dirty status là lỗi phát hành và không reset các file không liên quan.
+
+Các thư mục work quan trọng:
+
+- city-expansion-20261008: lượt Player gameplay bình thường và evidence thành phố.
+- items-vehicles-20261009: gallery item, vehicle, dining, rail và city model.
+- city-model-current-20261011: build hiện hành, source staging, Delivery và evidence đã gom.
+- city-model-v10 đến v18, stage*, shadow*, ocean*, save-recovery, tests: lịch sử đối chứng,
+  không tự coi là build hiện hành.
+
+### 3. Bản đồ kế hoạch và trạng thái thực hiện
+
+| Tài liệu/kế hoạch | Nội dung | Trạng thái trong V18 |
+|---|---|---|
+| PLAN.md | vòng chơi từ 0 tiền, farm, shop, processing, supermarket, bakery, restaurant | Luồng runtime và Player chính đã kiểm; cân bằng 180–240 phút chưa chạy dài |
+| Documentation/REPLAN.md | luật đơn hàng FIFO, 90 giây, giao từng phần, save v2, ownership | Các primitive và regression hiện có; không dùng mốc lịch sử chưa xác minh |
+| CITY_EXPANSION_20261008 | thành phố x2, đường chính, cỏ, NPC, xe buýt/coach/taxi | Đã dựng và đi qua trong Player hiện hành |
+| PHYSICAL_CARRY/ITEM_MODEL/CARRY_CONTAINERS | hàng 3D, xếp 2x3 mỗi tầng, chỉ đồ dễ vỡ dùng container | Đã có source và gallery; cần giữ report khi chỉnh tiếp |
+| V10–V13 model/city/ocean | landmark, nhà, bến tàu, nước, gallery nhiều góc | Đã hợp nhất vào source current; gallery current đạt native report |
+| V14–V17 performance/history/capture | checkpoint history, shadow, capture, hitches | Capture path đã sửa; không khôi phục mục tiêu stable165 |
+| CITY_REPAIR_CONTRACT_20261011 | sửa route collider và ảnh đen của một run cũ | Đã giải quyết trong build current bằng pedestrian links và capture mới |
+
+### 4. Những phần đã triển khai trong source
+
+**Kinh tế, tiền, két và save**
+
+- GameSession, RuntimeTransactions, GameplayTransactionStore, SafeStation,
+  CheckoutCashModels và CheckpointHistoryCapture giữ cashInHand/cashInSafe,
+  giao dịch gửi/rút, idempotency và journal.
+- Tiền thu từ quầy đi lên tay; tiền trong két không tự chi. HUD tách tiền đang cầm
+  và tiền trong két, không dùng nhãn Ví cho luồng mới.
+- Mod game có đúng hai lựa chọn: Mod tiền cộng 999.999 vào két và Mod xây dựng tối đa.
+  Mod tối đa lấy cấp hiện có, cập nhật hình ảnh và không tạo trùng đối tượng.
+- Save cũ replay journal trước rồi migration một lần; giữ hàng đang cầm, tiền quầy,
+  tiến độ góp và stable IDs. Không có bằng chứng cho phép xóa save prototype.
+
+**Hàng cầm tay và container**
+
+- CarryItemLayout, CarryPresentation, CarryTransferVisual, HandItemModels,
+  HandItemProduce, HandItemProducts và HandItemSurfaceAtlas dựng model 3D khi cầm,
+  số lượng trên đầu chồng và hiệu ứng chuyển hàng.
+- CarryContainerLayout/Profile/Geometry chỉ bật cho egg, milk, bottled_milk, sauce và
+  soy_sauce. Hàng khác cầm trực tiếp; một chai/quả trong container vẫn là một món.
+- Xếp hàng theo hai cột, ba hàng mỗi tầng; cà rốt, lúa và hàng dài nằm ngang, giảm
+  kích thước cầm theo yêu cầu. Container test hiện hành đã đạt 60/60.
+
+**Ô nâng cấp và UI**
+
+- UpgradeModelParts, UpgradeModelView, UpgradeVisualMotion, UpgradeVisualQueue,
+  PurchasePadView và PurchaseIconView cập nhật model theo cấp, animation ngắn,
+  tiến độ góp, icon 2D và ẩn pad ở cấp cuối.
+- PlayerInteraction và ProximityTarget giữ hold 0,25 giây, góp dần, tiếp tục sau
+  khi hiệu ứng hoàn tất; đứng lâu tăng tốc góp theo đường cong đã chốt.
+- GameHud, GameHudNotices, GameHudSettings, FpsOverlay và các widget dùng Canvas cố
+  định, thông báo ngắn, icon khách, thanh kiên nhẫn và tùy chọn ngôn ngữ/đồ họa/FPS.
+
+**Mặt đất, shader, ánh sáng và bóng**
+
+- TownSurface.shader và TownWater.shader cung cấp cỏ trên mặt phẳng, mảng đất,
+  vết đường, đá nhỏ và nước ripple/bọt nhẹ; không dùng khối đá lớn rời làm texture.
+- PC_RPAsset.asset và các file render hiện hành dùng URP, shadow cascade thấp và
+  occlusion để giảm tải. CityAccessPaths đánh dấu collider lối dẫn là trigger để
+  không khóa CharacterController, còn collider nhà/vật cản thật vẫn giữ.
+- QaRenderedFrame tách đường URP SingleCameraRequest ra khỏi gameplay, phục hồi camera,
+  Canvas, RectTransform và RenderTexture trong finally để ảnh gallery không làm bẩn scene.
+
+**Thành phố, nhà, máy, bàn ghế và giao thông**
+
+- WorldFactory, CityDistricts, CityOuterDistricts, CityStaticGeometry,
+  CityCommercialModels, CityCivicModels, CityLeisureModels, CityCoastModels,
+  CityHarborHull, CityMarinaModels và CityStreetPropDetails tạo thành phố rộng/dài x2.
+- Các landmark đã có trong run current: PoliceStation, FireStation, SeasideBar,
+  EntertainmentHall, Playground, FoundersMonument, Harbor, Beach, CoffeeHouse,
+  Bank, Hotel, Theater và Marina.
+- CityRailNetwork/Station/Train/VehicleModel tạo hai đường ray, ga hai sân và tàu;
+  CityPublicTransport và CityVehicleModel tạo CityBus, PassengerCoach, CityTaxi,
+  Sedan, SmallTruck, CargoTruck, Tanker, Luxury và Sports.
+- DiningFurniture, DinerSeating và DinerSeatingPose đặt bàn tròn với hai ghế,
+  bàn vuông với ghế dài và ghế quầy gần mặt bàn. Gallery có ảnh đặt và ảnh model riêng.
+- Đường đi chính, bến tàu, cầu và pedestrian links được ưu tiên; NPC không tự chọn
+  đường xuyên nhà. CityAccessPaths là điểm sửa route cuối của mốc 11/10.
+
+### 5. Bằng chứng kiểm chứng hiện hành
+
+**Compile, test và build**
+
+- Lệnh test:
+  powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\run_unity.ps1 -Task Tests
+- Kết quả gần nhất: 910/910 EditMode pass, 0 fail, 0 skip, exit 0; XML tại
+  QA/editmode-results.xml. Không dùng con số cũ 173/173, 792/792 hoặc 866/866 thay thế.
+- Lệnh build:
+  powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\run_unity.ps1 -Task Build
+  -BuildPath 'work/city-model-current-20261011/CityRepairBuild/TYCOON2.exe'
+- Build hiện hành exit 0, executable nằm tại
+  work/city-model-current-20261011/CityRepairBuild/TYCOON2.exe.
+
+**Player gameplay tự nhiên**
+
+- Report: work/city-expansion-20261008/ordinary-play-20261010T231833892Z/
+  ordinary-play-report.json.
+- passed=true, exit 0, 886,233 giây, 155.702 frame, 39 nhân viên, 17 khách,
+  4.182,475 m di chuyển, 712 tương tác thành công và 0 runtime errors.
+- GPU RTX 4060 Laptop, Direct3D11, 1920x1080. Average 175,690 FPS; full-city
+  average 164,331 FPS; P95 8,259 ms; P99 11,377 ms; worst 840,399 ms.
+- Average CPU frame 5,923 ms và GPU frame 2,148 ms. Đây là frame time của game,
+  không phải phần trăm CPU/GPU, xung CPU/GPU hay nhiệt độ phần cứng.
+- Report ghi gpuOcclusionEnabled=true, displaySync=true, displayRefreshHz=165,
+  configuredFpsLimit=165 nhưng stable165FrameBudget=false. Không tuyên bố game ổn định
+  165 FPS; người dùng đã yêu cầu bỏ gate này.
+- Hoàn tất trong report: 377 điểm tương tác, thu hoạch/bán/thu/gửi/rút tiền thật,
+  mod tiền, góp ô nâng cấp, sáu khu cũ, 13 landmark mới, hai cầu gỗ và ít nhất bốn
+  phút gameplay liên tục. Đây là bounded tour, không phải playthrough 180–240 phút.
+
+**Ảnh, NPC, route và phương tiện**
+
+- capture-validity.json cùng thư mục Player: passed=true, 44 ảnh, 0 ảnh lỗi,
+  mọi ảnh 1920x1080, màu khác rỗng.
+- npc-motion-evidence.json: 98 NPC quan sát, 87 NPC đi, 82 NPC có animation,
+  tổng quãng đường 113.017,253 m, passed=true.
+- city-navigation.json: checkedPoints=377, blocked=[].
+- city-mobility-evidence.json: 39 worker, 26 profession, capability=1.5;
+  CityBus 16/16, PassengerCoach 16/15, CityTaxi 5/4 board/alight, passed=true.
+- Run cũ ordinary-play-20261010T160928100Z từng timeout ở (206,0,-123) và có ảnh
+  đen do PedestrianLinkCollision cùng WindowStyle Hidden. Đó là evidence lỗi lịch sử,
+  không phải trạng thái current; repair docs vẫn lưu nguyên nhân và cách phân biệt.
+
+**Gallery model, item, dining và vehicle**
+
+- City gallery:
+  work/items-vehicles-20261009/player-20261010T233459441Z/
+  city-models-v11-report.json.
+  passed=true, 2.032 checks, 664 ảnh, 0 runtime errors; model đặt có 5 hướng
+  front/right/rear/left/top và model riêng có 9 hướng gồm three-quarter.
+- Gallery này bao phủ 13 landmark, đồ đường phố, bàn ghế, bến tàu, nước và vehicle
+  placed. Đây là kiểm hình học/capture, không thay thế gameplay tự nhiên.
+- Item/vehicle gallery:
+  work/items-vehicles-20261009/player-20261010T233931748Z/
+  items-vehicles-v8-report.json.
+  passed=true, 4.218 checks, 1.551 ảnh, 0 runtime errors; có count 1/24/48,
+  layout 2x3, chồng hàng, model tiền, container dễ vỡ và nhiều góc.
+- vehicle-live-facts.json chứng minh hai tàu có quãng đường khoảng 1.105,625 m và
+  1.103,491 m, mỗi tàu 3 board/2 alight; xe công cộng và 6 xe đường bộ có boarding
+  và alighting, worldErrors=0. Distance=0 ở xe đường bộ là field placeholder,
+  không được gọi là quãng đường đo.
+- water-detail-performance.json có bốn mẫu detail 0/1 trong gallery beach; đây là
+  ABBA render detail có giới hạn, không phải benchmark 165 hoặc soak test.
+
+### 6. Gói bàn giao và checksum
+
+Manifest: work/city-model-current-20261011/Delivery/manifest.json.
+
+- Windows.zip: 138 file, nén 47.501.942 byte, SHA256
+  05960c49dd6331f8107094be2bb8eb0a011ae77c7782c9a612147c5732b9f644, CRC verified.
+- Source.zip: 9.618 file, nén 660.437.238 byte, SHA256
+  be804b5c7194f0328f001a738d8c064bd45605c14973fd27509917cf57b35fe1, CRC verified.
+- Evidence.zip: 2.459 file, nén 4.429.530.808 byte, SHA256
+  4428178a8da4c70b4fdebf42245a31c58fe086c31702107fe9295965f130148e, CRC verified.
+- SourceList.txt có 9.618 source entries. Delivery ghi tracked_checkout_dirty=true;
+  package commit là 3ae6638cb9ce4de5c586ae05c7c2aaea9cebbb80.
+- package_city.py đã tạo và kiểm CRC/SHA. verify_city_delivery.py hiện hardcode V14,
+  nên không ghi nó là validator của Delivery current. Generic validate_city_capture.ps1
+  cũng không phù hợp gallery vì tìm report ở layout ordinary; native reports ở trên mới
+  là nguồn cho gallery.
+
+### 7. Điều còn mở hoặc không được tuyên bố
+
+1. Không có stable 165 FPS, nhiệt độ/xung CPU thật hoặc GPU/CPU percent từ report
+   current. Chỉ có CPU/GPU frame ms và thông tin GPU/API/display.
+2. Chưa có một campaign 180–240 phút từ 0 để chốt cân bằng kinh tế, giá và pacing.
+   Tour 886 giây chứng minh luồng tương tác, không chứng minh thời gian mở khóa mục tiêu.
+3. Chưa có nghiệm thu độc lập trên mọi độ phân giải cho toàn bộ gameplay. Gallery có
+   mẫu 1280x720/1920x1080/2560x1440 trong presentation audit; 44 ảnh Player current
+   là 1920x1080.
+4. Gallery không tự chứng minh topology, texture PBR hoặc vật liệu đúng cho tất cả
+   27 hàng ở mọi góc mắt người. Khi chỉnh model, phải giữ report và chụp lại 8 góc
+   riêng/5 góc đặt.
+5. Instancing không phải do phím Ctrl+D: nhân bản cùng mesh/material chỉ giúp GPU
+   instancing khi renderer, material, SRP Batcher/GPU Resident Drawer và culling cho
+   phép. Cần Frame Debugger/Profiler nếu tối ưu tiếp.
+6. Samples 4096/1024 là tham số bake/render offline; không tự đổi thành FPS real-time.
+   Không giảm shadow/light/sample thêm chỉ để đạt con số FPS đã hủy.
+7. Work gần 40 GB chứa nhiều bản lịch sử. Chỉ archive/xóa sau khi tạo retention list
+   và xác nhận Delivery current giải nén được; bản bàn giao này không xóa artifact.
+8. Worktree dirty và các raw ASSET/download vẫn được giữ. Không reset, clean hoặc
+   đổi remote/push nếu người dùng chưa yêu cầu.
+
+### 8. Cách chat sau tiếp tục
+
+1. Đọc phần V18 này, sau đó đọc contract đúng phạm vi trước khi sửa.
+2. Mở build current để xem gameplay: TYCOON2.exe trong CityRepairBuild.
+3. Nếu sửa runtime, chạy Tests rồi Build; nếu sửa Player/visual, chạy bounded Player
+   và ghi report mới cạnh report hiện hành, không ghi đè evidence cũ.
+4. Nếu sửa model, chạy gallery items/city, kiểm file count/ảnh không đen và ghi rõ
+   góc nào là isolated, góc nào là placed.
+5. Nếu sửa NPC/route, phải kiểm destination clearance, final distance, nonblank capture
+   và animation metric trong cửa sổ hiển thị; không dùng run hidden/black làm proof.
+6. Không chạy benchmark stable165 trừ khi người dùng yêu cầu lại. Có thể ghi frame time
+   chẩn đoán trong report mà không biến thành acceptance gate.
+7. Cuối công đoạn cập nhật chính file Docs/CODEX_HANDOFF.md, thêm ngày/version và
+   liên kết report; giữ lịch sử V10–V17 bên dưới để truy nguyên.
+
+Cập nhật 10/10/2026, Asia/Bangkok. Tiếp tục trực tiếp tại D:\GAME\TYCOON2.
 Đây là trạng thái hiện hành; các bản bàn giao cũ đã chuyển nguyên nội dung sang Docs/History.
 
-## Thành phố hiện hành 08/10/2026
+## V16 checkpoint hiện hành
+
+## Phạm vi kiểm chứng hiện hành
+
+- Theo chỉ đạo mới, không tiếp tục benchmark hoặc dùng mục tiêu 165 FPS ổn định làm điều kiện nghiệm thu.
+- Các số FPS/tải/nhiệt đã ghi chỉ giữ làm thông tin chẩn đoán, không dùng để chặn bàn giao chức năng.
+- Tiếp tục kiểm tra gameplay, save/load, vật chứa, model, NPC, giao thông, thành phố và gói bàn giao.
+- Trace chụp ảnh V17 đã hoàn tác vì lượt Player trace giảm còn 93,837 FPS và GPU frame 11,764 ms.
+- Hai tài liệu V17 vẫn giữ bằng chứng chẩn đoán, không coi bản trace là candidate phát hành.
+- Vật chứa hiện chỉ hỗ trợ egg, milk, bottled_milk, sauce và soy_sauce; hàng khác cầm trực tiếp.
+- CarryContainerTests hiện hành đạt 60/60, 0 lỗi/0 bỏ qua, exit 0; kết quả ở work/carry-container-current/results.xml.
+- Test bao phủ số lượng 1,2,5,6,7,13,48; đổi loại; tái sử dụng khay; hình học không giao cắt.
+
+- V16 chụp history bất biến cùng revision dưới khóa, dựng receipt/event DTO ở worker trước khi ghi.
+- Giữ API CaptureCheckpoint/Start cũ; ProjectOwned vẫn ở main thread, worker không đọc world sống.
+- Module history 12/12 đạt; full native V16 910/910 đạt, 0 lỗi/0 bỏ qua, exit 0.
+- Full suite: work/city-model-v16-20261010/full-tests-final.xml, duration 19,5747589 giây.
+- Hai test tích hợp mới: DeferredCheckpointTests.cs, giữ revision và lỗi worker qua nhiều lần drain.
+- V16 IL2CPP build 11:33:32 UTC, 71,033 giây, 0 error/28 warning; bản riêng Candidate/TycoonTown.exe.
+- ABBA cùng save 39 nhân viên, 1080p/Balanced/cap165: V14 161,525/157,989; V16 161,694/161,370 FPS.
+- Snapshot trung bình bốn mẫu: V14 11,734 ms, V16 9,077 ms; không coi đây là bảo đảm giảm mọi hitch.
+- Cả bốn Player exit 0, functional/NPC PASS, 20/20 ảnh không blank; V16 đã xem ảnh farm thực tế.
+- Mọi lượt ngắn stable165=false; tour V16 T114554647Z/PID26948 đang chạy, session67265 cần resume.
+- Hardware V16 session16444 đã exit0:132mẫu/181,183s, samples-20261010T114746317Z, đúngPID26948.
+- CPUgame17,19%/CPUtotal37,61%; GPUtotal34,52%/2,123GHz/62,05C(58-67)/34,55W trong đoạn giữa tour.
+- CPUtemp/effectiveclock chưa có; field Windows3801MHz không phải clock đo thực; presentation165Hz=false.
+- Tools/measure_game_hardware.ps1 đã sửa process name từ ExpectedExe, vẫn so executable path chính xác.
+- Docs/V14_HARDWARE_AND_FPS.md phân biệt phần V16 mới và số V14 cũ; không ghép các cửa sổ khác nhau.
+- V15 thử copy DTO đơn giản không tăng FPS lặp lại được trong ABBA; đã phục hồi trước khi tích hợp V16.
+- Giữ goal active. V16 là candidate đã kiểm bước đầu; cần tour toàn thành phố và xác minh hiển thị 165 Hz.
+
+## V14 đã đóng gói, chưa nghiệm thu 165 FPS
+
+- Tour V14 Normal/1080p/sync đã kết thúc:ordinary-play-20261010T085522987Z,PID35148,exit0.
+- PASS937,574s/172600frame/184,092FPS,39nhân viên,456tương tác,42ảnh không blank.
+- P958,819ms/P9912,261ms,worst587,419ms;318frame>16,67ms/47>33,33ms/6>100ms;stable165=false.
+- Hardware180s đã xong:samples-20261010T085522643Z,128mẫu,CPUgame17,44%/CPUtotal61,63%.
+- GPUtotal75,71%,graphics2,467GHz,temp77,39C(66-84),power73,03W;chỉ đoạn đầu,khác cap165 ngắn.
+- Log tour có IDXGISwapChain timestamp fallback; chưa chứng minh trình bày165Hz.
+- Agent audit xong:Docs/V14_REQUIREMENT_EVIDENCE.md và Docs/V14_HARDWARE_SENSOR_AVAILABILITY.md.
+- HWiNFO có cài nhưng sensor interface chưa active;CPUtemp/effectiveclock chưa có dữ liệu thật.
+- Docs/V14_PLAYER_GUIDE.md đã có; Source.zip V14 gồm 2065 file theo whitelist, không gồm save riêng.
+- QA/city-model-v14-acceptance-20261010.json có5hash đã đối chiếu;objectiveComplete=false.
+- Báo cáo FPS/tải/nhiệt: Docs/V14_HARDWARE_AND_FPS.md; Delivery V14 đã có ba ZIP và manifest.
+- SHA/CRC kiểm đúng: Windows 54 file, Source 2065 file, Evidence 1154 file; 954 PNG giải mã được.
+- Tools/verify_city_delivery.py kiểm gói exit 0; 22/22 test checker đạt. Báo cáo POST_PACKAGE_CHECKS.json.
+- Player giải nén PackageSmoke đã chạy T101001772Z exit 0, chức năng PASS, 20 ảnh không blank.
+- PackageSmoke: 162,390 FPS, P95 6,330 ms/P99 8,141 ms; 64 NPC đi, 11 có animation; stable165=false.
+- Tools/measure_game_hardware.ps1 mới yêu cầu executable/scope/output,output dướiwork/,97dòng.
+- Tools/package_city.py thêm docs V14;python Tools/test_package_city.py PASS3/3.
+- Native full V14 PASS896/896,0failed/0skip;work/city-model-v14-20261010/full-tests-final.xml,exit0.
+- So Source.zip V13 với303runtimeCSharp:chỉCheckpointSnapshot.cs thay đổi;runtime-source-comparison.json.
+- Script đo mới chạy thật11mẫu/15,404s cuối lượt,cùngPID;GPU35,27%/2,150GHz/58,45C(56-62).
+- Candidate 08:13:12 UTC buildSucceeded, 0 error/28 warning; ZIP V14 đã có, chưa nghiệm thu 165 ổn định.
+- Giữ goal active;chi tiết hardware/đo:Docs/V14_PERFORMANCE_FINDINGS.md và work/fps-hardware-20261010.
+
+## Model thành phố V13 bản kiểm 10/10/2026
+
+- Hướng dẫn hiện hành: Docs/V13_PLAYER_GUIDE.md; phạm vi nước: Docs/V13_OCEAN_CONTINUITY.md.
+- Native887/887PASS,0skip; work/city-model-v13-20261010/full-tests-final.xml.
+- IL2CPP FinalRelease dựng06:27:31UTC,0error/28warning; backend dự án đã phục hồi Mono.
+- Gallery player-20261010T062809251Z:15góc ven biển/hai fog toggles,PASS,0runtimeerror; đã xem ảnh.
+- Biển xa và nền cỏ nối tiếp sửa khoảng xám ở góc bên, không thêm collider/NavMesh.
+- ABBA toàn cảnh Marina GPU:1,431/1,618/1,628/1,461ms; chân trời tăng khoảng0,177ms trong cảnh này.
+- Lượt V13 ordinary-play-20261010T063058411Z đã PASS:186748frame/935,489s,39nhân viên,456tương tác.
+- EngineFPS199,626;P956,914ms/P999,183ms,worst603,454ms;stable165=false,0runtimeerror.
+- Gói V13 Delivery đã tạo/kiểm SHA+CRC;WindowsZIP giải nén khớp45file,IL2CPP có GameAssembly.dll.
+- Ca cap165 chạy nền T073717087Z:163,697FPS,worst192,297ms;NPC animation evidence FAIL,0runtimeerror.
+- Hardware nềnT073717087Z bị loại cho nghiệm thu chơi:ảnh scenery-farm đen,toàn lượt0FrameTiming/0NPCanimated.
+- Chưa có xung CPU thực tế/nhiệt độ CPU;không dùng số chạy nền để kết luận tải khi chơi hiển thị.
+- V14 đã tối ưu copy history;24/24native tests(gồm9mới),IL2CPP Candidate exit0;PlayerNormal T081545725Z PASS.
+- 162,836FPS/P956,186/P997,661ms;20ảnh đạt,10NPCanimated;checkpoint snapshot11,237/8,789ms;stable165=false.
+- Đo gần165 có render:CPUgame15,62%,CPUtotal27,35%,GPU34,5%,1,967GHz,53,54C(52-56);26mẫu/36,321s.
+- Hợp đồng/đo: Docs/History/LEGACY_DOCS_20261011.md (SOURCE:
+  V14_PERFORMANCE_NPC_CONTRACT) và Docs/V14_PERFORMANCE_FINDINGS.md; CPU temp/boost chưa đo được.
+- Native red và các vòng ảnh lỗi được giữ;V13 source/Windows/evidence ở work/city-model-v13-20261010/Delivery.
+- Model khác giữ geometry V11:664ảnh/2058checks,27loại hàng,13landmark và11loại phương tiện.
+- V12 sau sửa bộ đo PASS194.505frame/880,977s,706tương tác,39nhân viên,377điểm,0runtimeerror.
+- EngineFPS220,783/toàn lượt và207,242/đầy thành phố;P956,468ms/P998,641ms; chưa chứng minh scanout.
+- V12 WindowsZIP giải nén khớp42file; smoke PASS; ZIP có SHA/CRC giữ nguyên.
+- Chi tiết V12: Docs/V12_LABEL_PERFORMANCE_ACCEPTANCE.md và Delivery/POST_PACKAGE_CHECKS.json.
+- Trình bày thực tế165Hz còn chờ xác nhận;UI chưa có xác nhận mở khóa,stable165 chưa đạt,goal active.
+- Phạm vi và lệnh: `Docs/V11_CITY_MODEL_ACCEPTANCE.md`; native hiện hành866/866PASS,0skip.
+  Lưu tại `work/city-model-v11-20261010/full-tests-string-list.xml`.
+- Két/kệ/quầy/thùng chi tiết hơn; café, ngân hàng, khách sạn, nhà hát và marina đưa tổng landmark lên13.
+- Café có hai ghế sát mỗi bàn tròn; thuyền có thân kín, cabin, lan can, phao và thiết bị trên boong.
+- Civic/leisure/công viên/đồ đường phố đã được sửa hỗ trợ và chi tiết; giữ business/save ID.
+- Candidate `work/city-model-v11-20261010/Candidate`:buildSucceeded,0error,28warning.
+- Gallery `player-20261010T001752914Z`:PASS2055checks/655ảnh,0runtimeerror; riêng9góc/đặt5góc.
+- Gallery tạm dừng simulation khi chụp; không dùng nó để chứng minh gameplay hoặc FPS toàn thành phố.
+- Lượt phương tiện `player-20261010T002505325Z`FAIL CargoTruck0lên/0xuống;10xe/tàu khác đạt.
+- Nhóm traffic đang sửa lookup/reserve/path; không sửa ngưỡng240s hoặc tạo hành khách giả để đạt.
+- Sau Candidate đã thêm lối nối vỉa hè, xoay café, biển ngoài và noise sóng giảm lưới lặp.
+- AccessCandidate đang dựng; cần gallery/ABBA lại và full-tour13khu/bốn cầu tàu trên source hiện hành.
+- Nước Candidate GPU off/on/on/off1,944/1,950/1,955/1,946ms; noise mới chưa được đo.
+- Bóng cân bằng55m/2048/1cascade có đối chứng ổn định; xem `Docs/SHADOW_FIX_20261010.md`.
+- Trước V11 diagnostic152,421FPS, P957,206ms; mục tiêu165FPS còn chưa đạt.
+- Gallery AccessCandidate đạt2062checks/664ảnh,0runtimeerror; video nước61frame có timestamp thật.
+- Full-tour AccessCandidate `ordinary-play-20261010T010240947Z`PASS;377điểm thông,13khu/bốn cầu tàu.
+  147,05FPS/939,61s,39nhân viên,456tương tác;165FPS chưa đạt.
+- Source sau AccessCandidate thêm dấu đo capsule/idle/sync và thay thùng thu tiền cùng bó tiền ở quầy.
+- Ba test thùng/tiền đã native PASS. CashCandidate diagnostic sau đó FAIL năm điểm thu bị chặn.
+- Điểm thu chuyển ra trước thùng; test tái hiện2FAIL rồi nhóm liên quan18/18PASS.
+  Bằng chứng `cash-navigation-red.xml`/`cash-navigation-green.xml`; cần Player377điểm lại.
+- Source sửa renderer mặt đỡ trùng ở kệ/quầy, POS chìm và khung kho trùng; chưa gallery mới.
+- Đã thêm CityPlay.CheckCityNavigation vào operation-timings.csv để truy nguyên hitch đầu lượt.
+- PlacementCandidate gallery `player-20261010T015328423Z`PASS2058checks/664ảnh,0runtimeerror.
+- Diagnostic PlacementCandidate `ordinary-play-20261010T015709724Z`PASS377điểm thông;
+  154,845FPS/62,295s,39nhân viên/24khách,CPU5,334/GPU2,074ms.
+- Full-tour khởi đầu `ordinary-play-20261010T015900930Z`PASS899,733s/159,341FPS;
+  686tương tác,39nhân viên,4.179,34m,13khu/bốn cầu tàu,thu/gửi/rút tiền thật,0runtimeerror.
+- PacingCandidate dựng02:28:27UTC; thêm đo ResumeCity/LoadGame/Snapshot sau bản kiểm hình.
+- Gate11phương tiện PacingCandidate PASS `player-20261010T023025621Z`,0runtimeerror.
+  CargoTruck2lên/2xuống; hai tàu đi1.078,028m và1.075,906m,3lên/2xuống mỗi tàu.
+  Xe đường bộ có lượt lên/xuống thật; distance0 là placeholder,không là quãng đường đo.
+- Mặc định syncDisplay=true; các sốFPS vừa nêu dùng Manual165 cap phần mềm, stable165=false.
+  Cần so sánh VSync bằng cùng build/save; `Docs/V11_PACING_FINDINGS.md` chỉ là rà đọc code.
+- ABBA pacing PacingCandidate/save cũ đang đo; ba lượt146,899/100,963/145,497FPS,
+  sync/manual/manual. Chưa đủ cơ sở đổi mặc định; dữ liệu raw giữ cả hitch phục hồi/lưu.
+- Rà checkpoint có hợp đồng `Docs/V11_CHECKPOINT_PERFORMANCE_CONTRACT.md`;
+  không xóa receipt/journal hoặc kéo dài autosave để che khựng.
+- ABBA đã hoàn tất:sync/manual/manual/sync146,899/100,963/145,497/127,580FPS;
+  cả bốn stable165=false;chưa đổi mặc định. Raw `work/city-model-v11-20261010/pacing-abba.json`.
+- CheckpointProbe đo Snapshot72,879/66,029ms;World capture/copy/projection chỉ khoảng1–3ms.
+- Receipt QA đổi sangHashSet5,179ms;giảm overheadQA,không dùng để tuyên bố tăngFPS game.
+- Source tối ưu MemberwiseClone delegate,giữ deep copy;4test mới về isolation/type/long/20.000receipt.
+  Native864/864PASS;Release đã dựng và đang đo đối chứng checkpoint trên save riêng.
+- Chỉ mục ảnh/video `work/city-model-v11-20261010/evidence-index-placement.json` đã tạo.
+  664ảnh,61frame nước;phải giữ phiên bản capture và build tương ứng trong hồ sơ cuối.
+- Release đầu snapshot delegatePASS154,368FPS nhưngSnapshot52–59ms còn khựng.
+- QA checkpoint có9.277event với9.277consumer list rỗng;source copy List<string> bằng newList trực tiếp.
+  Thêm2test null/duplicate/order/isolation;compiler access failure đã sửa test bằng reflection.
+  Native866/866PASS,0skip;Release đang dựng lại trước đối chứng và full-tour cuối.
+- Release hiện hành03:33:25UTC,0error/28warning. Diagnostic033534095ZPASS150,498FPS;
+  Snapshot17,727–26,152ms thay66,029–72,879ms ở baseline,checkpoint20,074–44,714ms.
+  Không tuyên bố tăngFPS game từ phép so một cặp lượt;stable165=false.
+- Full-tour Release mặc định sync đang chạy `ordinary-play-20261010T034124820Z`,PID12224/session10147.
+  Dùng save riêng,không Profile/overlay/manual override;đã qua vòng thu/gửi/rút/chi tiền.
+- Source list2.015file đã tạo;chưa nén gói khi Player FPS đang chạy.
+- Full-tour Release034124820ZPASS900,990s/143.701frame,685tương tác,4.172,56m,
+  đủ13khu/bốn cầu tàu,39nhân viên/18khách,0runtimeerror;PID12224/session10147đã kết thúc.
+  Sync=true165Hz1080p:159,492FPS toàn lượt/149,008FPS đủ nhân viên;
+  P9510,115/P9915,217ms,worst2924,458ms;stable165=false. DXGI timestamp warning giữ nguyên.
+  Checkpoint cuối lượt khoảng19–25ms;còn frame dài khác chưa giải thích hết.
+- Không xem850test hoặc gallery AccessCandidate là bằng chứng cho các sửa source sau bản dựng.
+- Không đóng goal, không publish/push; chỉ dùng save QA riêng và giữ các dirty file không liên quan.
+
+## Thành phố và model v10 hiện hành 09/10/2026
+
+- Hướng dẫn: `Docs/CITY_MODEL_V10_ACCEPTANCE_20261009.md`; build: `work/city-model-v10-20261009/Release`.
+- Thành phố 565,685424 × 384,666088 m, gấp đôi mỗi chiều; thêm tám khu ngoại vi và nước nhẹ.
+- 27 hàng; chỉ egg/milk/bottled_milk/sauce/soy_sauce dùng vật chứa khi cầm, đúng số lượng thực.
+- Máy công nghiệp mới, phần nâng cấp có chân/giá đỡ; hàng cầm 2 cột × 3 hàng theo tầng.
+- Windows build thành công; EditMode **792/792 PASS**, không skip, XML tại `work/city-model-v10-20261009`.
+- Mod diagnostic hiện cửa sổ PASS: `ordinary-play-20261009T135924656Z`, 0 runtime errors.
+- Bỏ vẽ lại icon cho ô cấp cuối đã hoàn tất; giữ điểm neo icon trong bước dựng bố cục đầu tiên.
+- Khựng quanh mod giảm từ khoảng 774,936 ms xuống 86,385 ms; ca profiler đạt 162,292 FPS trung bình.
+- Lượt chơi đầy đủ hiện cửa sổ không profiler PASS: `ordinary-play-20261009T140232595Z`.
+- 635,243 giây, 2.936,326 m, 1.038 tương tác, đủ mọi khu/hai cầu bến tàu, 0 runtime errors.
+- FPS 147,361, P95 9,418 ms, CPU/GPU 6,172/2,060 ms; chưa đạt 165, đang tìm chi phí CPU.
+- Chỉ mục đơn hàng mỗi projection bỏ quét lịch sử/tạo chuỗi từng đơn; thêm ba regression test.
+- Ca CPU sau sửa: `ordinary-play-20261009T142946144Z`, 151,562 FPS gồm khởi tạo, P95 7,783 ms.
+- Update khách giảm 0,569 → 0,076 ms/frame; các ca đứng tại chỗ không thay thế full-tour.
+- Capsule nghỉ kiểm sàn mỗi 80 ms, mọi bước ngang xử lý ngay; rotor chỉ ghi chuyển động cần thiết.
+- Full-suite 792 PASS và build đã xong; visible full-tour đang chạy `ordinary-play-20261009T144927602Z`.
+- Ca 60 giây đứng tại chỗ có thể thiếu lượt xe lên/xuống, không thay thế nghiệm thu phương tiện.
+- Harness thêm timestamp CSV cho video cầm hàng; ca mới cần chụp lại để encode đúng thời gian thực.
+- Gallery mới còn cần chạy để xác nhận chân nâng cấp, nước và 55 góc đặt thực tế của 11 xe/tàu.
+- Goods và props/bàn ghế đã có kiểm hình riêng; xem `Docs/Art/V10_*_REVIEW.md`.
+- Cửa sổ ẩn từng cho ảnh đen và Animator culling không chạy chân: không dùng FPS đó để nghiệm thu render.
+- VSync D3D11 từng báo refresh drift; chế độ manual165 đo riêng, không đổi NVIDIA/Windows.
+- Không overwrite save thật; giữ nguyên thay đổi có sẵn tại QA/build-report.json, AGENTS.md,
+  ASSET/Downloaded, ASSET/downloaded_summary.json và mod/test/overnight-campaign.json.
+- Chưa đóng goal hoặc kết luận 165 FPS ổn định tuyệt đối; đóng gói sau khi Player và kiểm hình bản mới hoàn tất.
+
+## Lịch sử thành phố 08/10/2026
 
 - Hướng dẫn hiện hành: [CITY_EXPANSION_20261008.md](CITY_EXPANSION_20261008.md), README tại root.
 - Nền tăng gấp đôi diện tích; sáu khu độc lập, đường nối, cảnh quan, cư dân và xe đường phố.

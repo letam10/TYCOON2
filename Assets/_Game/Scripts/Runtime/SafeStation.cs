@@ -21,13 +21,11 @@ namespace Tycoon
             station.InteractionPoint = root.transform.position;
             station.Deposit = new SafeInteractionArea(station, true, new Vector3(-1.65f, 0, 0));
             station.Withdraw = new SafeInteractionArea(station, false, new Vector3(1.65f, 0, 0));
-            Art.Box("SafeBase", new(0, .12f, 0), new(1.6f, .24f, 1.3f), "#777F7B", root.transform, true);
-            Art.Box("SafeBody", new(0, .83f, 0), new(1.3f, 1.3f, 1.05f), "#426762", root.transform, true);
-            Art.Box("SafeDoor", new(0, .84f, .55f), new(1.12f, 1.1f, .1f), "#92AAA2", root.transform);
-            Art.Box("SafeInset", new(0, .84f, .615f), new(.85f, .83f, .03f), "#284D49", root.transform);
-            var dial = Art.Cylinder("SafeDial", new(.18f, .91f, .67f), new(.26f, .035f, .26f), "#CFB77F", root.transform);
-            dial.transform.localRotation = Quaternion.Euler(90, 0, 0);
-            Art.Box("SafeHandle", new(-.22f, .78f, .69f), new(.06f, .32f, .12f), "#D0D9D4", root.transform);
+            Art.Box("SafeBase", new(0, .12f, 0), new(1.6f, .24f, 1.3f), "#777F7B", root.transform, true)
+                .GetComponent<Renderer>().enabled = false;
+            Art.Box("SafeBody", new(0, .83f, 0), new(1.3f, 1.3f, 1.05f), "#426762", root.transform, true)
+                .GetComponent<Renderer>().enabled = false;
+            SafeModelDetails.Build(root.transform);
             BuildZone(root.transform, -1.65f, "GỬI", "#69AC8E");
             BuildZone(root.transform, 1.65f, "RÚT", "#D5B45F");
             Art.Label("KÉT TIỀN", new(0, 1.75f, 0), root.transform, .13f);

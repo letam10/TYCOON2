@@ -18,9 +18,32 @@ namespace Tycoon
         public const float MinimumDistance = 12, MaximumDistance = 27;
         Vector3 velocity, previousTargetPosition, lookAhead;
         Transform followedTarget;
+        bool overviewLens;
+        bool savedFog;
+        float savedFar;
+
+        void UpdateOverviewLens()
+        {
+            if (overviewLens == Overview) return;
+            var lens = GetComponent<Camera>();
+            overviewLens = Overview;
+            if (Overview)
+            {
+                savedFar = lens.farClipPlane;
+                savedFog = RenderSettings.fog;
+                lens.farClipPlane = 1600;
+                RenderSettings.fog = false;
+            }
+            else
+            {
+                lens.farClipPlane = savedFar;
+                RenderSettings.fog = savedFog;
+            }
+        }
         void Awake() => GetComponent<Camera>().orthographic = false;
         void LateUpdate()
         {
+            using var lateUpdateProbe = QaFrameProbe.Measure("FollowCamera.1.LateUpdate");
             var game = GameSession.Instance;
             if (!Overview && game && game.Player && Target == game.Player.transform && game.Player.CanControl)
             {
@@ -48,8 +71,9 @@ namespace Tycoon
             Vector3 lead = Overview ? Vector3.zero : Vector3.ClampMagnitude(travelled / delta * .12f, .9f);
             lookAhead = Vector3.Lerp(lookAhead, lead, 1 - Mathf.Exp(-7 * delta));
             var rotation = Quaternion.Euler(Pitch, Yaw, 0);
-            var focus = Overview ? new Vector3(5, .1f, 20) : Target.position + FocusOffset + lookAhead;
-            float distance = Overview ? 95 : Distance;
+            UpdateOverviewLens();
+            var focus = Overview ? CityDistricts.WorldCenter : Target.position + FocusOffset + lookAhead;
+            float distance = Overview ? CityCameraFraming.OverviewDistance(GetComponent<Camera>(), rotation) : Distance;
             var destination = focus - rotation * Vector3.forward * distance;
             transform.position = Vector3.SmoothDamp(transform.position, destination, ref velocity, Damping, Mathf.Infinity, delta);
             transform.rotation = rotation;
@@ -59,9 +83,11 @@ namespace Tycoon
             if (!Target) return;
             followedTarget = Target; previousTargetPosition = Target.position; lookAhead = Vector3.zero;
             var rotation = Quaternion.Euler(Pitch, Yaw, 0);
+            UpdateOverviewLens();
             transform.rotation = rotation;
-            var focus = Overview ? new Vector3(5, .1f, 20) : Target.position + FocusOffset;
-            transform.position = focus - rotation * Vector3.forward * (Overview ? 95 : Distance);
+            var focus = Overview ? CityDistricts.WorldCenter : Target.position + FocusOffset;
+            float distance = Overview ? CityCameraFraming.OverviewDistance(GetComponent<Camera>(), rotation) : Distance;
+            transform.position = focus - rotation * Vector3.forward * distance;
             GetComponent<Camera>().orthographic = false;
             velocity = Vector3.zero;
         }

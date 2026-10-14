@@ -9,11 +9,10 @@ namespace Tycoon
         public readonly float Scale;
         public readonly Quaternion Rotation;
         public readonly Vector3 Spacing;
-
         CarryItemLayout(float scale, Vector3 rotation)
         {
-            Rows = 2;
-            Columns = 3;
+            Rows = 3;
+            Columns = 2;
             Scale = scale;
             Rotation = Quaternion.Euler(rotation);
             Spacing = new Vector3(.018f, .012f, .018f);
@@ -21,17 +20,18 @@ namespace Tycoon
 
         public static CarryItemLayout For(string id) => id switch
         {
-            "beef" => new(.78f, Vector3.zero),
-            "carrot" or "wheat" => new(.84f, new Vector3(90, 0, 0)),
-            "corn" => new(.75f, new Vector3(90, 0, 0)),
-            "sauce" or "soy_sauce" or "bottled_milk" => new(.72f, new Vector3(90, 0, 0)),
-            "milk" => new(.50f, new Vector3(90, 0, 0)),
-            "flour" or "animal_feed" => new(.65f, new Vector3(90, 0, 0)),
-            "yarn" => new(.58f, new Vector3(90, 0, 0)),
-            "egg" => new(.50f, new Vector3(90, 0, 0)),
-            "bread" or "cheese" or "cloth" or "bread_dough" => new(.72f, Vector3.zero),
-            "meal" or "salad" or "pasta" or "beef_soy" or "egg_sandwich" or "corn_soup" =>
-                new(.68f, Vector3.zero),
+            "beef" => new(.77f, Vector3.zero),
+            "carrot" => new(.756f, new Vector3(0, 0, 90)),
+            "wheat" => new(.84f, new Vector3(90, 0, 90)),
+            "corn" => new(.66f, new Vector3(0, 0, 90)),
+            "sauce" or "soy_sauce" or "bottled_milk" => new(.65f, new Vector3(0, 0, 90)),
+            "milk" => new(.48f, new Vector3(0, 0, 90)),
+            "flour" or "animal_feed" => new(.62f, new Vector3(90, 0, 90)),
+            "yarn" => new(.58f, new Vector3(0, 0, 90)),
+            "egg" => new(.50f, new Vector3(0, 0, 90)),
+            "bread" or "cheese" or "cloth" or "bread_dough" => new(.65f, Vector3.zero),
+            "meal" or "soy_vegetables" or "pasta" or "beef_soy" or "egg_sandwich" or "corn_soup" =>
+                new(.62f, Vector3.zero),
             _ => new(.42f, Vector3.zero)
         };
 
@@ -59,9 +59,8 @@ namespace Tycoon
             int layer = index / (Columns * Rows);
             float stepX = bounds.size.x + Spacing.x;
             float stepZ = bounds.size.z + Spacing.z;
-            // Sáu món mỗi tầng; hai hàng so le nhẹ nhưng các tầng vẫn thẳng theo cột.
-            float stagger = rows > 1 ? (row - .5f) * stepX * .32f : 0;
-            return new Vector3((index % Columns - (columns - 1) * .5f) * stepX + stagger,
+            // Tầng trên đặt đúng cột dưới; mọi món đều giữ nguyên hướng.
+            return new Vector3((index % Columns - (columns - 1) * .5f) * stepX,
                 layer * (bounds.size.y + Spacing.y) - bounds.min.y,
                 (row - (rows - 1) * .5f) * stepZ) - new Vector3(bounds.center.x, 0, bounds.center.z);
         }

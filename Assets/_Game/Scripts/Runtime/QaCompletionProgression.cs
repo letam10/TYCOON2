@@ -56,9 +56,15 @@ namespace Tycoon
                     "Real player completes boundary order for " + row.id);
                 Check(game.Economy.Money == beforeSale && counter.Cash > 0,
                     "Delivery leaves money at counter before " + row.id);
+                if (game.Player.Carry.Total > 0) yield return FinalStash();
                 yield return Travel(counter.CollectionPoint);
                 yield return CompletionWait(() => game.Economy.Money > beforeSale, 5,
                     "Player collects the last boundary cash for " + row.id);
+                var safe = game.Stations.OfType<SafeStation>().Single();
+                yield return Travel(safe.Withdraw.Center);
+                yield return CompletionWait(() => game.Economy.CashInSafe == 0 &&
+                    game.Economy.Money > beforeSale, 5,
+                    "Player withdraws the seeded wallet before " + row.id);
                 long beforePurchase = game.Economy.Money;
                 yield return FinalStash();
                 var pad = game.Stations.OfType<PurchasePad>().First(p => p.Upgrade.id == row.id);

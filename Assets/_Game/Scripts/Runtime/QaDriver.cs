@@ -45,7 +45,32 @@ namespace Tycoon
             if(milestones14)mode="stage14-milestones";
             if(assets)mode="asset-library";
             if(town||townLayout||townLoad)mode=townLoad?"town-load":townLayout?"town-layout":"town-redesign";
-            if (Array.Exists(arguments, argument => argument == "--qa-completion"))
+            if (Array.Exists(arguments, argument => argument == "--qa-world-features"))
+            {
+                mode = "world-features";
+                routines.Push(WorldFeaturesAcceptance());
+            }
+            else if (Array.Exists(arguments, argument => argument == "--qa-world-features-load"))
+            {
+                mode = "world-features-load";
+                routines.Push(FeatureSlotsRelaunch());
+            }
+            else if (Array.Exists(arguments, argument => argument == "--qa-ocean-v13"))
+            {
+                mode = "ocean-v13";
+                routines.Push(OceanV13Acceptance());
+            }
+            else if (Array.Exists(arguments, argument => argument == "--qa-city-models-v11"))
+            {
+                mode = "city-models-v11";
+                routines.Push(CityModelsV11());
+            }
+            else if (Array.Exists(arguments, argument => argument == "--qa-shadow-sweep"))
+            {
+                mode = "shadow-sweep";
+                routines.Push(ShadowSweep());
+            }
+            else if (Array.Exists(arguments, argument => argument == "--qa-completion"))
             {
                 mode = "completion";
                 routines.Push(CompletionAudit());
@@ -59,6 +84,16 @@ namespace Tycoon
             {
                 mode = "save-recovery";
                 routines.Push(SaveRecovery());
+            }
+            else if (Array.Exists(arguments, argument => argument == "--qa-items-vehicles-v8"))
+            {
+                mode = "items-vehicles-v8";
+                routines.Push(ItemVehicleAcceptance());
+            }
+            else if (Array.Exists(arguments, argument => argument == "--qa-carrot-settings"))
+            {
+                mode = "carrot-settings";
+                routines.Push(CarrotSettingsAcceptance());
             }
             else if (Array.Exists(arguments, argument => argument == "--qa-physical-migration"))
             {
@@ -105,6 +140,10 @@ namespace Tycoon
                 if (yielded is IEnumerator child) { routines.Push(child); continue; }
                 yield return yielded;
             }
+            // Đóng iterator cha để finally phục hồi cảnh khi coroutine chụp/đo con bị lỗi.
+            if (mode == "ocean-v13")
+                while (routines.Count > 0)
+                    (routines.Pop() as IDisposable)?.Dispose();
             Keys();
             if (failure != null) { WriteState("failure-state.txt"); yield return Capture("failure.png"); }
             report.failure = failure ?? "";
@@ -168,6 +207,30 @@ namespace Tycoon
         void WriteState(string name)
         {
             var lines=new List<string>{"UTC="+DateTime.UtcNow.ToString("o"),"timeScale="+Time.timeScale+" money="+game.Economy.Money+" pending="+game.Economy.PendingCash+" transactions="+game.Economy.Transactions,"player="+game.Player.transform.position+" nearest="+game.NearestStation(game.Player.transform.position)?.Id+" input="+game.Player.Use.IsPressed(),"unlocked="+string.Join(",",game.Economy.Unlocked)};
+            lines.Add("carry="+JsonUtility.ToJson(new InventorySave("player",game.Player.Carry))+" speed="+game.Player.CurrentSpeed+" reason="+game.Player.InteractionReason+" transactionReason="+game.Transactions?.LastReason);
+            if(game.Player.ActiveInteraction is ProximityTarget active)lines.Add("active="+active.Target.Id+" cash="+active.Cash+" kind="+active.Kind);
+            foreach(var area in game.PlayerInteractionAreas())
+                if(area is ProximityTarget nearby && nearby.Distance(game.Player.transform.position)<3)
+                    lines.Add("nearby="+nearby.Target.Id+" cash="+nearby.Cash+" distance="+nearby.Distance(game.Player.transform.position)+" contains="+nearby.Contains(game.Player.transform.position));
+            foreach(var worker in game.Workers)
+            {
+                var agent=worker.Agent;
+                bool navigating = agent && agent.enabled && agent.isOnNavMesh;
+                lines.Add("worker="+worker.Diagnostic()+" pos="+worker.transform.position+" destination="+
+                    (navigating?agent.destination.ToString():"inactive")+" remaining="+(navigating?agent.remainingDistance.ToString():"inactive")+
+                    " path="+(navigating?agent.pathStatus.ToString():"inactive")+
+                    " hasPath="+(navigating&&agent.hasPath)+" pending="+(navigating&&agent.pathPending)+
+                    " stopped="+(navigating&&agent.isStopped)+" velocity="+(navigating?agent.velocity.ToString():"inactive")+
+                    " routeNodes="+worker.GetComponent<CityPedestrianRoute>()?.RemainingNodes+
+                    " final="+worker.GetComponent<CityPedestrianRoute>()?.FinalDestination);
+                if (navigating)
+                    foreach (var point in new[] { worker.transform.position, agent.destination })
+                        foreach (var obstacle in Physics.OverlapCapsule(point + Vector3.up * .3f,
+                            point + Vector3.up * 1.5f, .4f, ~0, QueryTriggerInteraction.Ignore))
+                            lines.Add("workerObstacle="+worker.WorkerId+" at="+point+
+                                " collider="+obstacle.name+" parent="+obstacle.transform.parent?.name+
+                                " bounds="+obstacle.bounds);
+            }
             foreach(var station in game.Stations)if(station.Inventory!=null)lines.Add(station.Id+" total="+station.Inventory.Total+" "+JsonUtility.ToJson(new InventorySave(station.Id,station.Inventory)));
             foreach(var machine in game.Machines)lines.Add(machine.Id+" input="+JsonUtility.ToJson(new InventorySave(machine.Id,machine.Input))+" running="+machine.Running+" remaining="+machine.Remaining+" batches="+machine.Batches);
             foreach(var worker in game.Workers)lines.Add(worker.Diagnostic());
@@ -198,6 +261,8 @@ namespace Tycoon
             public List<string> checks = new();
             public List<string> screenshots = new();
             public string[] runtimeErrors;
+            public string renderCostScope;
+            public List<OceanRenderCostRun> renderCostRuns;
         }
     }
 }

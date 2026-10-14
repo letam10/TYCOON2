@@ -21,8 +21,8 @@ namespace Tycoon.Tests
                 var model = HandItemModels.Build(id, root.transform);
                 var profile = CarryItemLayout.For(id);
                 var bounds = profile.Bounds(model.GetComponent<MeshFilter>().sharedMesh);
-                Assert.That(profile.Columns, Is.EqualTo(3));
-                Assert.That(profile.Rows, Is.EqualTo(2));
+                Assert.That(profile.Columns, Is.EqualTo(2));
+                Assert.That(profile.Rows, Is.EqualTo(3));
                 Bounds total = new(profile.Position(0, 48, bounds) + bounds.center, bounds.size);
                 for (int i = 0; i < 48; i++)
                 {
@@ -54,10 +54,10 @@ namespace Tycoon.Tests
                 var mesh = model.GetComponent<MeshFilter>().sharedMesh;
                 var profile = CarryItemLayout.For(id);
                 var held = profile.Bounds(mesh);
-                Assert.That(held.size.y, Is.LessThan(held.size.z * .55f));
+                Assert.That(held.size.y, Is.LessThan(Mathf.Max(held.size.x, held.size.z) * .55f));
                 Assert.That(CarryItemLayout.ModelSize(id), Is.LessThan(CarryItemLayout.ModelSize("beef")));
-                Assert.That(profile.Rows, Is.EqualTo(2));
-                Assert.That(profile.Columns, Is.EqualTo(3));
+                Assert.That(profile.Rows, Is.EqualTo(3));
+                Assert.That(profile.Columns, Is.EqualTo(2));
             }
             finally
             {

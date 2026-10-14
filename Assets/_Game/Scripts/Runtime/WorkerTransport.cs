@@ -26,10 +26,11 @@ namespace Tycoon
                 foreach(var output in machine.Inventory.Snapshot())if(local.Inventory.FreeFor(output.id)>0){BeginMove(machine,local,output.id,Carry.Capacity,false);return;}
                 foreach(var input in machine.Recipe.inputs)
                 {
-                    if(machine.Input.FreeFor(input.id)<=0)continue;
+                    int missing=Mathf.Max(0,input.count-machine.Input.Available(input.id));
+                    if(missing<=0||machine.Input.FreeFor(input.id)<missing)continue;
                     Station supply=null;
                     supply=SupplyFor(input.id);
-                    if(supply){BeginMove(supply,machine,input.id,Carry.Capacity,true);return;}
+                    if(supply){BeginMove(supply,machine,input.id,Mathf.Min(Carry.Capacity,missing),true);return;}
                 }
             }
             // Bán thành phẩm từ kho khu; đây là tuyến cố định của đội vận chuyển.
@@ -83,7 +84,12 @@ namespace Tycoon
             {CancelTransport();Reason="Đơn bàn đã kết thúc";return;}
             if(destination is CheckoutStation requestedCounter&&requestedCounter.FrontOrder?.Receipt!=tableReceipt)
             {CancelTransport();Reason="Đơn quầy đã kết thúc";return;}
-            if((transform.position-target.WorkPoint).sqrMagnitude>1.3f){Navigation.Go(Agent,target.WorkPoint);return;}
+            if((transform.position-target.WorkPoint).sqrMagnitude>1.3f)
+            {
+                // Giữ tiến độ qua các điểm trung gian; dựng lại mỗi frame làm NPC quay về nút đầu.
+                Navigation.Go(Agent,target.WorkPoint);
+                return;
+            }
             Agent.ResetPath();
             if(phase==1)
             {

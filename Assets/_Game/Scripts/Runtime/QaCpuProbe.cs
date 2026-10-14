@@ -11,6 +11,10 @@ namespace Tycoon
         public long count;
         public double totalMs;
         public double maximumMs;
+        public double maximumFrameMs;
+        public int maximumFrame;
+        [NonSerialized] internal int accumulatedFrame = -1;
+        [NonSerialized] internal double accumulatedMs;
     }
 
     public static class QaCpuProbe

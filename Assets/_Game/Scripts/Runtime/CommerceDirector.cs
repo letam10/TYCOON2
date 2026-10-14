@@ -18,6 +18,8 @@ namespace Tycoon
 
         void Update()
         {
+            using var updateProbe = QaFrameProbe.Measure("CommerceDirector.1.Update");
+
             var game = GameSession.Instance;
             if (!game.NavigationReady || !game.CanRestore) return;
             if (!restored)
@@ -94,7 +96,7 @@ namespace Tycoon
         public override Vector3 WaitingPoint=>HasTownWaitingPoint?TownWaitingPoint:transform.position+Vector3.right*4.8f+Vector3.forward*1.9f;
         public string ShopId;
         public StationZone CashZone;
-        public Vector3 CollectionPoint=>transform.position+new Vector3(2.7f,0,.6f);
+        public Vector3 CollectionPoint => transform.position + CheckoutCashModels.CollectionOffset;
         public string[] AcceptedItems => GameSession.Instance.Shelves.Where(x=>x.ShopId==ShopId&&x.AllowedItems!=null)
             .SelectMany(x=>x.AllowedItems).Distinct().ToArray();
         public bool AcceptsItem(string id)
@@ -102,7 +104,25 @@ namespace Tycoon
         public readonly List<CustomerAgent> Queue = new();
         long cash;
         int sales;
-        public long Cash {get {if(Authority==null)return cash;long total=Authority.View.legacyCash.Find(x=>x.id==Id)?.amount??0;foreach(var p in Authority.View.payments)if(p.counter==Id&&!p.collected)total+=p.amount;return total;} set{if(Authority!=null&&value!=Cash)throw new System.InvalidOperationException("Cash chỉ được cập nhật qua transaction.");cash=value;}}
+        public long Cash
+        {
+            get
+            {
+                using var cashProbe = QaFrameProbe.Measure("CheckoutStation.ReadCash");
+                if (Authority == null) return cash;
+                long total = Authority.View.legacyCash.Find(x => x.id == Id)?.amount ?? 0;
+                foreach (var payment in Authority.View.payments)
+                    if (payment.counter == Id && !payment.collected)
+                        total += payment.amount;
+                return total;
+            }
+            set
+            {
+                if (Authority != null && value != Cash)
+                    throw new System.InvalidOperationException("Cash chỉ được cập nhật qua transaction.");
+                cash = value;
+            }
+        }
         public int Sales {get {if(Authority==null)return sales;int total=0;foreach(var p in Authority.View.payments)if(p.counter==Id)total++;return total;} set{if(Authority!=null&&value!=Sales)throw new System.InvalidOperationException("Sales chỉ được cập nhật qua transaction.");sales=value;}}
         public OrderState FrontOrder => Queue.Count > 0 ? Queue[0].Order : null;
         readonly List<GameObject> bills = new();
@@ -125,14 +145,19 @@ namespace Tycoon
 
         void Update()
         {
-            if (!IsUnlocked || shownCash == Cash) return;
-            int count = (int)System.Math.Min(20, Cash / 20 + (Cash % 20 > 0 ? 1 : 0));
-            while (bills.Count < count) bills.Add(Art.Box("CashBill", Vector3.zero, new Vector3(.55f, .075f, .28f), "#66E932", transform));
+            using var updateProbe = QaFrameProbe.Measure("CommerceDirector.2.Update");
+
+            if (!IsUnlocked) return;
+            long amount = Cash;
+            if (shownCash == amount) return;
+            int count = (int)System.Math.Min(20, amount / 20 + (amount % 20 > 0 ? 1 : 0));
+            while (bills.Count < count) bills.Add(CheckoutCashModels.Bill(transform));
             for (int i = 0; i < bills.Count; i++)
             {
-                bills[i].SetActive(i < count); bills[i].transform.localPosition = new Vector3(2.4f + (i % 2) * .6f, .8f + (i / 2) * .08f, .6f);
+                bills[i].SetActive(i < count);
+                bills[i].transform.localPosition = CheckoutCashModels.Position(i, bills[i]);
             }
-            shownCash = Cash;
+            shownCash = amount;
         }
 
         public bool Serve(Inventory source) => Serve(source, null);
@@ -175,5 +200,3 @@ namespace Tycoon
         {if(StatusLabel){StatusLabel.text="THU NGÂN\n"+Cash+" xu • "+Queue.Count+" chờ";StatusLabel.gameObject.SetActive(!PlayerUsesZones&&IsUnlocked&&GameSession.Instance.Player&&(GameSession.Instance.Player.transform.position-InteractionPoint).sqrMagnitude<36);}}
     }
 }
-
-

@@ -31,6 +31,17 @@ namespace Tycoon
             }
             pad = InputSystem.AddDevice<Gamepad>("CityPlay_Gamepad");
             while (!game.NavigationReady || !game.CanSimulate || !game.Player.CanControl) yield return null;
+            if (GameSession.Argument("--qa-legacy-shadows", "") == "true")
+            {
+                // Đối chứng bóng cùng binary và save; chỉ chạy trong bộ chơi QA.
+                var pipeline = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline
+                    as UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset;
+                pipeline.shadowCascadeCount = 2;
+                pipeline.mainLightShadowmapResolution = 2048;
+                pipeline.shadowDistance = 45;
+                pipeline.cascade2Split = .25f;
+                pipeline.cascadeBorder = .1077586f;
+            }
             started = Time.realtimeSinceStartupAsDouble;
             recording = true;
             var routines = new Stack<IEnumerator>();
@@ -88,6 +99,13 @@ namespace Tycoon
                         "Gửi tiền đang cầm trước khi chơi hàng sau phục hồi");
                 }
                 BeginCityProfile();
+                if (GameSession.Argument("--qa-city-mod-only", "") == "true")
+                {
+                    yield return Hold(60);
+                    Check(game.ActiveWorkerCount == WorkforceRules.MaximumActive,
+                        "Giữ đủ đội ngũ trong ca đo CPU sau phục hồi");
+                    yield break;
+                }
                 yield return Tour();
                 Check(game.ActiveWorkerCount == WorkforceRules.MaximumActive,
                     "Giữ đủ đội ngũ khi tiếp tục chơi");
@@ -95,6 +113,7 @@ namespace Tycoon
                 yield break;
             }
             CheckCityNavigation();
+            BeginCityProfile();
             var plot = game.Producers.First(x => x.Id == "field_carrot");
             var counter = game.Checkouts.First(x => x.ShopId == "farm");
             var safe = game.Stations.OfType<SafeStation>().Single();
@@ -134,7 +153,11 @@ namespace Tycoon
             yield return Click("Mod xây dựng tối đa");
             yield return Hold(2);
             Check(game.Workers.Count == game.Transactions.View.crews.Sum(x => x.count), "Đội ngũ đúng tiến trình");
-            BeginCityProfile();
+            if (GameSession.Argument("--qa-city-mod-only", "") == "true")
+            {
+                yield return Hold(3);
+                yield break;
+            }
             yield return Tour();
             Check(Time.realtimeSinceStartupAsDouble - started >= 240, "Chơi liên tục ít nhất bốn phút");
             Check(game.Player.DistanceWalked >= 300, "Di chuyển thật qua các khu");

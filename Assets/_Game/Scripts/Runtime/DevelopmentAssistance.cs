@@ -24,7 +24,12 @@ namespace Tycoon
             using (CityOperationTiming.Measure(game, "ModMaximum.Transaction"))
                 applied = game.Transactions.TryExecute(
                     game.Transactions.Command(TransactionKind.GrantMaximum, "player"), out _);
-            if(applied)UpgradeModelView.RefreshAll(game,false);
+            if (applied)
+            {
+                // Cấp và save đổi ngay; chia phần dựng model tối đa qua nhiều frame để tránh giật.
+                using (CityOperationTiming.Measure(game, "ModMaximum.VisualDispatch"))
+                    UpgradeModelView.RefreshAll(game, false, true);
+            }
             return applied;
         }
         public static bool ApplyCashOnly(GameSession game)

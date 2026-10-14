@@ -46,6 +46,8 @@ namespace Tycoon
 
         void Update()
         {
+            using var updateProbe = QaFrameProbe.Measure("PurchaseBurst.1.Update");
+
             if (GameSession.Instance && !GameSession.Instance.CanSimulate) return;
             Advance(Time.deltaTime);
         }

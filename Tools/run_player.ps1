@@ -3,7 +3,7 @@ param(
         'Probe','Foundation','Vertical','Progression','Load','Diagnostic','Visual','Assets',
         'Stage23','Stage45','Stage67','Stage14','Stage14Layout','Stage14Visual','Stage14Milestones',
         'Town','TownLayout','TownLoad','Physical','PhysicalLoad','PhysicalVisual','PhysicalMigration',
-        'PhysicalPerformance'
+        'PhysicalPerformance','OceanV13'
     )] [string]$Task = 'Foundation',
     [string]$LoadFrom = 'Vertical',
     [string]$BuildPath = '',
@@ -31,6 +31,10 @@ if($Task -eq 'PhysicalMigration'){
     $outputRoot=Join-Path $taskRoot ('work\physical-carry-20261007\migration-'+
         [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'))
     $mode='--qa-physical-migration'
+}
+if($Task -eq 'OceanV13'){
+    $outputRoot=Join-Path $taskRoot ('work\ocean-v13\player-'+[DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'))
+    $mode='--qa-ocean-v13'
 }
 New-Item -ItemType Directory -Path $outputRoot -Force | Out-Null
 if($Task -in @('PhysicalLoad','PhysicalVisual','PhysicalPerformance')){

@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
@@ -27,25 +28,34 @@ namespace Tycoon
 
         IEnumerator ResumeCity(string path)
         {
+            using var restoreTiming = CityOperationTiming.Measure(game, "CityPlay.ResumeCity");
             var source = SaveStore.Read(path);
             if (source?.transactionState == null) throw new InvalidDataException("Checkpoint không hợp lệ");
             Time.timeScale = 0;
             game.Player.CanControl = false;
             game.Transactions.Detach();
             SaveStore.Write(game.SavePath, source);
-            game.LoadGame();
+            using (CityOperationTiming.Measure(game, "CityPlay.Restore.LoadGame"))
+                game.LoadGame();
             float end = Time.realtimeSinceStartup + 12;
             while (!game.CanSimulate && Time.realtimeSinceStartup < end) yield return null;
             if (!game.CanSimulate) throw new InvalidOperationException("Không phục hồi được thành phố");
-            var state = game.Transactions.Snapshot();
+            TransactionState state;
+            using (CityOperationTiming.Measure(game, "CityPlay.Restore.Snapshot"))
+                state = game.Transactions.Snapshot();
             var before = source.transactionState;
             Check(state.cashInHand == source.cashInHand && state.cashInSafe == source.cashInSafe,
                 "Giữ nguyên tiền tay và két khi phục hồi");
             string Goods(TransactionState value) => string.Join(";", value.stacks.GroupBy(x => x.item)
                 .OrderBy(x => x.Key).Select(x => x.Key + ":" + x.Sum(y => y.quantity)));
             Check(Goods(state) == Goods(before), "Giữ nguyên tổng từng loại hàng khi phục hồi");
-            Check(before.receipts.All(x => state.receipts.Any(y => y.id == x.id)),
-                "Giữ mã giao dịch để chống lặp sau phục hồi");
+            using (CityOperationTiming.Measure(game, "CityPlay.Restore.Receipts"))
+            {
+                // Tra ID một lần; vẫn kiểm đủ mọi receipt cũ kể cả khi danh sách có ID lặp.
+                var restoredIds = new HashSet<string>(state.receipts.Select(x => x.id), StringComparer.Ordinal);
+                Check(before.receipts.All(x => restoredIds.Contains(x.id)),
+                    "Giữ mã giao dịch để chống lặp sau phục hồi");
+            }
             File.WriteAllText(Path.Combine(game.QaDirectory, "city-restore.json"),
                 JsonUtility.ToJson(new CityRestoreReport
                 {

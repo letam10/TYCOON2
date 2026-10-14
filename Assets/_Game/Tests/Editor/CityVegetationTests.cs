@@ -52,8 +52,8 @@ namespace Tycoon.Tests
                 CityProps.Planter(geometry, Vector3.right * 5, 2.5f);
                 CityProps.Lamp(geometry, Vector3.right * 10);
                 geometry.Finish();
-                AssertSize("BenchCollision", new Vector3(2.5f, 1.18f, .8f));
-                AssertSize("PlanterCollision", new Vector3(2.62f, .66f, 1.12f));
+                AssertSize("BenchCollision", new Vector3(2.5f, 1.21f, .8f));
+                AssertSize("PlanterCollision", new Vector3(2.62f, .68f, 1.12f));
                 AssertSize("LampBaseCollision", new Vector3(.5f, .3f, .5f));
                 AssertSize("LampPostCollision", new Vector3(.2f, 4.6f, .2f));
                 void AssertSize(string name, Vector3 size)
@@ -61,6 +61,7 @@ namespace Tycoon.Tests
                     var collider = root.transform.Find(name).GetComponent<BoxCollider>();
                     Assert.That(Vector3.Distance(collider.size, size), Is.LessThan(.001f));
                     Assert.That(collider.isTrigger, Is.False);
+                    Assert.That(collider.bounds.min.y, Is.EqualTo(0).Within(.001f));
                 }
             }
             finally

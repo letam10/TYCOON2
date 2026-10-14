@@ -8,6 +8,7 @@ namespace Tycoon
     {
         public static Vector3 ModelSize(string key)
         {
+            if (RetailPropModels.Supports(key)) return RetailPropModels.Size(key);
             foreach(var entry in Catalog.models)if(entry.key==key)return entry.size;
             if(TownArt.Supports(key))return TownArt.Size(key);
             return Vector3.one*.4f;
@@ -42,6 +43,16 @@ namespace Tycoon
         }
         public static GameObject Model(string key, Vector3 position, Transform parent = null, float scale = 1, float yaw = 0)
         {
+            if (RetailPropModels.Supports(key))
+            {
+                var retail = RetailPropModels.Build(key);
+                retail.transform.SetParent(parent, false);
+                retail.name = key;
+                retail.transform.localPosition = position;
+                retail.transform.localRotation = Quaternion.Euler(0, yaw, 0);
+                retail.transform.localScale = Vector3.one * scale;
+                return retail;
+            }
             var prefab = Catalog.Model(key);
             if (prefab == null && !TownArt.Supports(key)) throw new System.InvalidOperationException("Thiếu model: " + key);
             var go = prefab ? Object.Instantiate(prefab,parent) : TownArt.Build(key);
@@ -58,6 +69,7 @@ namespace Tycoon
             go.transform.SetParent(parent, false); go.transform.localPosition = position;
             var mesh = go.AddComponent<TextMesh>();
             mesh.text = text;
+            go.AddComponent<LocalizedLabel>().SetSource(text);
             mesh.font = Catalog.font;
             mesh.fontSize = 128;
             mesh.characterSize = size * 30f / 128f;

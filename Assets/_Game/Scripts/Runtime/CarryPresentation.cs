@@ -51,8 +51,8 @@ namespace Tycoon
             stack.Inventory = inventory;
             stack.Pool = pool;
             stack.HeldLayout = true;
-            stack.Columns = 3;
-            stack.Rows = 2;
+            stack.Columns = 2;
+            stack.Rows = 3;
             stack.Maximum = 48;
             stack.Spacing = .14f;
             stack.Scale = .85f;
@@ -85,20 +85,23 @@ namespace Tycoon
             float magnitude = amount <= 0 ? 0 : (float)System.Math.Log10((double)amount + 1);
             int count = amount <= 0 ? 0 : Mathf.Clamp(Mathf.CeilToInt(magnitude * 3), 1, 18);
             while (notes.Count < count) notes.Add(HandItemModels.Build("cash", cashRoot));
-            Vector3 size = notes.Count == 0 ? Vector3.zero :
-                notes[0].GetComponent<MeshFilter>().sharedMesh.bounds.size * .9f;
-            int columns = Mathf.Min(3, count);
-            int rows = Mathf.Min(2, Mathf.CeilToInt(count / 3f));
+            var layout = CarryItemLayout.For("cash");
+            var bounds = notes.Count == 0 ? new Bounds() :
+                layout.Bounds(notes[0].GetComponent<MeshFilter>().sharedMesh);
+            float rear = 0;
             for (int i = 0; i < notes.Count; i++)
             {
                 notes[i].SetActive(i < count);
-                notes[i].transform.localPosition = new Vector3((i % 3 - (columns - 1) * .5f) * (size.x + .015f),
-                    i / 6 * (size.y + .012f), (i / 3 % 2 - (rows - 1) * .5f) * (size.z + .015f));
-                notes[i].transform.localRotation = Quaternion.identity;
-                notes[i].transform.localScale = Vector3.one * .9f;
+                notes[i].transform.localPosition = layout.Position(i, count, bounds);
+                notes[i].transform.localRotation = layout.Rotation;
+                notes[i].transform.localScale = Vector3.one * layout.Scale;
+                if (i < count)
+                    rear = Mathf.Max(rear, -notes[i].transform.localPosition.z - bounds.min.z);
             }
-            cashLabel.text = amount.ToString("N0") + " xu";
-            float top = Mathf.Max(0, Mathf.CeilToInt(count / 6f) - 1) * (size.y + .012f) + size.y;
+            anchor.GetComponent<CarrySway>().MinimumForward = Mathf.Max(.78f, rear + .45f);
+            cashLabel.text = GameLocalization.Translate(amount.ToString("N0") + " xu");
+            float top = Mathf.Max(0, Mathf.CeilToInt(count / 6f) - 1) *
+                (bounds.size.y + layout.Spacing.y) + bounds.size.y;
             cashLabel.transform.localPosition = new Vector3(0, Mathf.Max(1.15f, top + .16f), 0);
             cashLabel.GetComponent<BillboardLabel>()?.RefreshNow();
         }
@@ -114,6 +117,8 @@ namespace Tycoon
         Quaternion filteredRotation;
         float movement;
         bool initialized;
+        InventoryStack stack;
+        public float MinimumForward = .78f;
         void LateUpdate()
         {
             if (!Actor) return;
@@ -124,7 +129,10 @@ namespace Tycoon
                 filteredPosition = transform.position;
                 filteredRotation = transform.rotation;
                 initialized = true;
+                stack = GetComponent<InventoryStack>();
             }
+            if (stack && stack.HeldLayout)
+                origin.z = Mathf.Max(MinimumForward, stack.RearExtent + .45f);
             float distance = Vector3.Distance(previous, Actor.position);
             float speed = distance / Mathf.Max(.001f, Time.deltaTime);
             previous = Actor.position;
@@ -134,7 +142,7 @@ namespace Tycoon
             Vector3 target = Actor.TransformPoint(origin + Vector3.up *
                 (Mathf.Sin(Time.time * 12) * .012f * movement));
             Quaternion rotation = Actor.rotation * Quaternion.Euler(0, 0, Mathf.Sin(Time.time * 6) * movement);
-            if (distance > 2)
+            if (distance > 2 || Time.deltaTime <= 0)
             {
                 filteredPosition = target;
                 filteredRotation = rotation;

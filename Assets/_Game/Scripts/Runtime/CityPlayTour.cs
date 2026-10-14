@@ -35,6 +35,17 @@ namespace Tycoon
                 lap++;
             } while (Time.realtimeSinceStartupAsDouble - started < 240);
             yield return Hold(1);
+            foreach (var landmark in game.GetComponentsInChildren<CityLandmark>())
+            {
+                yield return Walk(landmark.Approach);
+                yield return Capture("visited-" + landmark.Id);
+                completed.Add("Đi bộ tới khu mới " + landmark.Id);
+                if (landmark.Id is not ("Harbor" or "Marina")) continue;
+                float pier = landmark.Id == "Harbor" ? 18 : 12;
+                yield return Walk(landmark.transform.position + new Vector3(14, 0, -pier));
+                yield return Walk(landmark.transform.position + new Vector3(14, 0, pier));
+                completed.Add("Đi bộ thật ra cả hai cầu gỗ bến tàu");
+            }
         }
     }
 }

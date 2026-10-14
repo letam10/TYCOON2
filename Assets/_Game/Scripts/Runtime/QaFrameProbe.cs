@@ -42,7 +42,9 @@ namespace Tycoon
                     name = sample.name,
                     count = sample.count,
                     totalMs = sample.totalMs,
-                    maximumMs = sample.maximumMs
+                    maximumMs = sample.maximumMs,
+                    maximumFrameMs = sample.maximumFrameMs,
+                    maximumFrame = sample.maximumFrame
                 };
             }
             Array.Sort(snapshot, CompareSamples);
@@ -87,6 +89,18 @@ namespace Tycoon
                 sample.count++;
                 sample.totalMs += elapsed;
                 sample.maximumMs = Math.Max(sample.maximumMs, elapsed);
+                int frame = UnityEngine.Time.frameCount;
+                if (sample.accumulatedFrame != frame)
+                {
+                    sample.accumulatedFrame = frame;
+                    sample.accumulatedMs = 0;
+                }
+                sample.accumulatedMs += elapsed;
+                if (sample.accumulatedMs > sample.maximumFrameMs)
+                {
+                    sample.maximumFrameMs = sample.accumulatedMs;
+                    sample.maximumFrame = frame;
+                }
             }
         }
     }

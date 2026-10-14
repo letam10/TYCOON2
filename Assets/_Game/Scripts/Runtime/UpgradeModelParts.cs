@@ -11,12 +11,13 @@ namespace Tycoon
                 if (producer.Animal) Pen(parent, tier, capacity, speed);
                 else Farm(parent, tier, capacity, speed);
             }
-            else if (station is MachineStation) Machine(parent, tier, capacity, speed);
+            else if (station is MachineStation) MachineUpgradeParts.Build(parent, tier, capacity, speed);
             else if (station is StorageStation) Storage(parent, tier, capacity);
             else Shelf(parent, tier, capacity);
             if (quality > 1)
             {
                 float height = station is ProductionStation ? .65f : 1.45f;
+                if (station is MachineStation) MachineUpgradeParts.QualityMount(parent, quality);
                 for (int i = 0; i < quality - 1; i++)
                     Art.Cylinder("QualitySeal", new Vector3(.18f * i, height, -.55f),
                         new Vector3(.13f, .022f, .13f), "#C2A05F", parent).transform.localRotation =
@@ -67,38 +68,6 @@ namespace Tycoon
             for (int i = 1; i < capacity; i++)
                 Art.Box("FeedStorage", new Vector3(.75f, .2f + i * .18f, .5f),
                     new Vector3(.35f, .17f, .36f), "#BCA37A", p);
-        }
-
-        static void Machine(Transform p, int tier, int capacity, int speed)
-        {
-            for (int i = 1; i < tier; i++)
-                Art.Box("MachineSteelBrace", new Vector3((i == 1 ? -1 : 1) * .83f, .65f, .45f),
-                    new Vector3(.09f, 1.25f, .16f), "#8FABA5", p);
-            if (tier > 2)
-            {
-                Art.Box("DigitalControlPanel", new Vector3(.6f, 1.2f, -.61f),
-                    new Vector3(.36f, .27f, .06f), "#415653", p);
-                Art.Box("ControlDisplay", new Vector3(.6f, 1.22f, -.65f),
-                    new Vector3(.25f, .13f, .02f), "#A6CCB8", p);
-            }
-            for (int i = 1; i < speed; i++)
-            {
-                var motor = Art.Cylinder("SpeedMotor", new Vector3(.7f, .4f + i * .33f, .73f),
-                    new Vector3(.3f, .21f, .3f), "#748F93", p);
-                motor.transform.localRotation = Quaternion.Euler(90, 0, 0);
-                Art.Cylinder("MotorHub", new Vector3(.7f, .4f + i * .33f, .95f),
-                    new Vector3(.12f, .04f, .12f), "#B6C0AF", p).transform.localRotation = Quaternion.Euler(90, 0, 0);
-                var rotor = new GameObject("MotorRotor").transform;
-                rotor.SetParent(p, false);
-                rotor.localPosition = new Vector3(.7f, .4f + i * .33f, 1.0f);
-                rotor.localRotation = Quaternion.Euler(90, 0, 0);
-                for (int blade = 0; blade < 3; blade++)
-                    Art.Box("FanBlade", Vector3.zero, new Vector3(.22f, .025f, .045f),
-                        "#C0CBBD", rotor).transform.localRotation = Quaternion.Euler(0, blade * 60, 0);
-            }
-            for (int i = 1; i < capacity; i++)
-                Art.Box("ExtraOutputTray", new Vector3(-.7f, .45f + i * .23f, .55f),
-                    new Vector3(.53f, .07f, .62f), "#A1B0A3", p);
         }
 
         static void Storage(Transform p, int tier, int capacity)

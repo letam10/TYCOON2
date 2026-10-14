@@ -11,7 +11,7 @@ namespace Tycoon
         ActorPhysicalMotion motion;
         ActorView view;
         Transform originalParent;
-        CityPublicTransportVehicle vehicle;
+        ICityPassengerCarrier vehicle;
         Vector3 exit;
         Vector3 seat;
         Vector3 doorPosition;
@@ -23,10 +23,14 @@ namespace Tycoon
         Vector3 releaseExitLocal;
         Transform carrierHull;
         readonly RaycastHit[] movementHits = new RaycastHit[16];
+        readonly Collider[] exitHits = new Collider[24];
+        float walkingSpeed;
+        bool HasCarrier => vehicle != null && vehicle.Hull;
         public CityPassengerPhase Phase { get; private set; }
         public bool IsTravelling => Phase != CityPassengerPhase.Walking;
         public bool CanBoard => !IsTravelling && Time.time >= cooldown;
         public int CompletedRides { get; private set; }
+        public Vector3 SeatLocal => seat;
 
         void Awake()
         {
@@ -36,12 +40,13 @@ namespace Tycoon
             originalParent = transform.parent;
         }
 
-        public bool Reserve(CityPublicTransportVehicle carrier, Vector3 seatPosition)
+        public bool Reserve(ICityPassengerCarrier carrier, Vector3 seatPosition)
         {
             if (!agent) Awake();
-            if (!CanBoard || !agent || !agent.enabled || !agent.isOnNavMesh) return false;
+            if (carrier == null || !carrier.Hull || !CanBoard || !agent || !agent.enabled || !agent.isOnNavMesh)
+                return false;
             vehicle = carrier;
-            carrierHull = carrier.transform;
+            carrierHull = carrier.Hull;
             rode = false;
             seat = seatPosition;
             Phase = CityPassengerPhase.Approaching;
@@ -54,7 +59,7 @@ namespace Tycoon
         {
             if (Phase != CityPassengerPhase.Approaching) return;
             if (agent && agent.enabled && agent.isOnNavMesh) agent.ResetPath();
-            agent.GetComponent<CityPedestrianRoute>()?.Clear();
+            if (agent) agent.GetComponent<CityPedestrianRoute>()?.Clear();
             Phase = CityPassengerPhase.Walking;
             vehicle = null;
             cooldown = Time.time + 8;
@@ -62,6 +67,8 @@ namespace Tycoon
 
         void Update()
         {
+            using var updateProbe = QaFrameProbe.Measure("CityPublicTransportPassenger.1.Update");
+
             if (GameSession.Instance && !GameSession.Instance.CanSimulate || Time.deltaTime <= 0) return;
             Tick(Time.deltaTime);
         }
@@ -81,24 +88,24 @@ namespace Tycoon
             }
             if (Phase == CityPassengerPhase.Approaching)
             {
-                if (!vehicle || !vehicle.DoorsOpen)
+                if (!HasCarrier || !vehicle.DoorsOpen)
                 {
                     CancelApproach();
                     return;
                 }
                 if (view) view.SetMotion(Navigation.ActualSpeed(agent), false);
                 if (!Navigation.Arrived(agent)) return;
-                exit = vehicle.DoorOutside;
+                exit = GroundExit(vehicle.DoorOutside);
                 Navigation.Suspend(agent);
-                transform.SetParent(vehicle.transform, true);
+                transform.SetParent(vehicle.Hull, true);
                 Phase = CityPassengerPhase.Boarding;
                 throughDoor = false;
+                walkingSpeed = 0;
             }
             if (Phase == CityPassengerPhase.Boarding)
             {
-                Vector3 target = vehicle ? vehicle.transform.TransformPoint(
+                Vector3 target = HasCarrier ? vehicle.Hull.TransformPoint(
                     throughDoor ? seat : vehicle.DoorInsideLocal) : exit;
-                if (view) view.SetMotion(1.8f, false);
                 if (!Move(target, delta)) return;
                 if (!throughDoor)
                 {
@@ -107,7 +114,7 @@ namespace Tycoon
                 }
                 Phase = CityPassengerPhase.Seated;
                 rode = true;
-                if (vehicle) vehicle.RecordBoarding();
+                if (HasCarrier) vehicle.RecordBoarding();
                 transform.localRotation = Quaternion.identity;
                 if (view) view.Play("Sit");
             }
@@ -122,7 +129,6 @@ namespace Tycoon
                     if (!Move(doorPosition, delta)) return;
                     throughDoor = true;
                 }
-                if (view) view.SetMotion(1.8f, false);
                 if (!ClearExit(exit) || !Move(exit, delta)) return;
                 RestoreOutside();
             }
@@ -130,7 +136,9 @@ namespace Tycoon
 
         bool Move(Vector3 point, float delta)
         {
-            Vector3 next = Vector3.MoveTowards(transform.position, point, delta * 1.8f);
+            float distance = Vector3.Distance(transform.position, point);
+            walkingSpeed = Mathf.MoveTowards(walkingSpeed, Mathf.Min(1.8f, distance * 5), delta * 5);
+            Vector3 next = Vector3.MoveTowards(transform.position, point, delta * walkingSpeed);
             Vector3 direction = next - transform.position;
             if (direction.sqrMagnitude > .000001f)
             {
@@ -141,19 +149,28 @@ namespace Tycoon
                 {
                     var hit = movementHits[i].collider.transform;
                     if (hit.IsChildOf(transform) || carrierHull && hit.IsChildOf(carrierHull)) continue;
+                    walkingSpeed = 0;
+                    if (view) view.SetMotion(0, false);
                     return false;
                 }
             }
             transform.position = next;
+            Vector3 facing = direction;
+            facing.y = 0;
+            if (facing.sqrMagnitude > .000001f)
+                transform.rotation = Quaternion.RotateTowards(transform.rotation,
+                    Quaternion.LookRotation(facing), delta * 360);
+            if (view) view.SetMotion(direction.magnitude / Mathf.Max(.001f, delta), false);
             return (transform.position - point).sqrMagnitude < .0025f;
         }
 
         public void Disembark()
         {
-            if (Phase != CityPassengerPhase.Seated || !vehicle || !vehicle.DoorsOpen) return;
-            exit = vehicle.DoorOutside;
-            doorPosition = vehicle.transform.TransformPoint(vehicle.DoorInsideLocal);
+            if (Phase != CityPassengerPhase.Seated || !HasCarrier || !vehicle.DoorsOpen) return;
+            exit = GroundExit(vehicle.DoorOutside);
+            doorPosition = vehicle.Hull.TransformPoint(vehicle.DoorInsideLocal);
             throughDoor = false;
+            walkingSpeed = 0;
             Phase = CityPassengerPhase.Disembarking;
         }
 
@@ -161,10 +178,30 @@ namespace Tycoon
         {
             if (!NavMesh.SamplePosition(point, out var hit, .45f, NavMesh.AllAreas)) return false;
             if (Mathf.Abs(hit.position.y - point.y) > .3f) return false;
-            foreach (var collider in Physics.OverlapCapsule(point + Vector3.up * .36f,
-                point + Vector3.up * 1.48f, .32f, ~0, QueryTriggerInteraction.Ignore))
-                if (collider.transform != transform && !collider.transform.IsChildOf(transform)) return false;
+            int count = Physics.OverlapCapsuleNonAlloc(point + Vector3.up * .36f,
+                point + Vector3.up * 1.48f, .32f, exitHits, ~0, QueryTriggerInteraction.Ignore);
+            if (count == exitHits.Length) return false;
+            for (int i = 0; i < count; i++)
+                if (!exitHits[i].transform.IsChildOf(transform)) return false;
             return true;
+        }
+
+        static Vector3 GroundExit(Vector3 point)
+        {
+            // Cửa giữ vị trí ngang; chân khách phải theo mặt vỉa hè thay vì cao độ đường xe.
+            if (NavMesh.SamplePosition(point, out var hit, .45f, NavMesh.AllAreas)
+                && Mathf.Abs(hit.position.y - point.y) <= .3f)
+                point.y = hit.position.y;
+            foreach (var surface in Physics.RaycastAll(point + Vector3.up * .35f, Vector3.down,
+                .7f, ~0, QueryTriggerInteraction.Ignore))
+            {
+                if (surface.normal.y < .8f || Mathf.Abs(surface.point.y - point.y) > .3f
+                    || surface.collider.GetComponentInParent<ActorPhysicalMotion>()
+                    || surface.collider.GetComponentInParent<CityVehicleRig>())
+                    continue;
+                point.y = Mathf.Max(point.y, surface.point.y + .015f);
+            }
+            return point;
         }
 
         void RestoreOutside()
@@ -185,7 +222,7 @@ namespace Tycoon
             if (rode)
             {
                 CompletedRides++;
-                if (vehicle) vehicle.RecordAlighting();
+                if (HasCarrier) vehicle.RecordAlighting();
             }
             vehicle = null;
             carrierHull = null;
@@ -203,10 +240,10 @@ namespace Tycoon
             }
             if (!IsTravelling) return;
             rode |= Phase == CityPassengerPhase.Seated;
-            if (vehicle)
+            if (HasCarrier)
             {
-                exit = vehicle.DoorOutside;
-                doorPosition = vehicle.transform.TransformPoint(vehicle.DoorInsideLocal);
+                exit = GroundExit(vehicle.DoorOutside);
+                doorPosition = vehicle.Hull.TransformPoint(vehicle.DoorInsideLocal);
             }
             if (carrierHull)
             {

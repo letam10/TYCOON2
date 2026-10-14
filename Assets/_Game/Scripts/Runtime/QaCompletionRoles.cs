@@ -61,16 +61,7 @@ namespace Tycoon
             Check(animal.WorkCount > 0 && game.Workers.Any(w => w.Deliveries > 0),
                 "Animal care completes production and storage delivery");
 
-            yield return CompletionReset(new[] { "transport_bakery" }, "machine_breadmixer");
-            var bakery = game.StorageFor("bakery");
-            var processing = game.StorageFor("processing");
-            int flour = bakery.Inventory.Available("flour");
-            Check(game.Transactions.Transfer(bakery.Inventory, processing.Inventory, "flour", flour) == flour,
-                "Cross area fixture keeps flour in the Processing owner");
-            yield return CompletionWait(() => bakery.Inventory.Count("bread_dough") > 0, 120,
-                "Transport worker brings cross area inputs and stores mixer output");
-            Check(game.Workers.Single(w => w.Role == "Transporter").Deliveries >= 4,
-                "Transport completes distinct input and output deliveries");
+            yield return CompletionTransport();
 
             yield return CompletionReset(new[] { "cook", "waiter" }, "machine_kitchen");
             var diner = CompletionDiner("corn_soup");
@@ -89,6 +80,53 @@ namespace Tycoon
             yield return CompletionWait(() => game.Economy.Money > money, 5,
                 "Only player collection moves restaurant payment into the wallet");
             game.Player.CanControl = false;
+        }
+
+        IEnumerator CompletionTransport()
+        {
+            yield return CompletionReset(new[] { "transport_bakery" }, "machine_breadmixer");
+            var bakery = game.StorageFor("bakery");
+            var processing = game.StorageFor("processing");
+            int flour = bakery.Inventory.Available("flour");
+            Check(game.Transactions.Transfer(bakery.Inventory, processing.Inventory, "flour", flour) == flour,
+                "Cross area fixture keeps flour in the Processing owner");
+            var worker = game.Workers.Single(w => w.Role == "Transporter");
+            var mixer = game.Machines.First(m => m.Id == "machine_breadmixer");
+            float toSource = CompletionRouteSeconds(worker, mixer.WorkPoint, processing.WorkPoint);
+            float toMixer = CompletionRouteSeconds(worker, processing.WorkPoint, mixer.WorkPoint);
+            float toLocal = CompletionRouteSeconds(worker, mixer.WorkPoint, bakery.WorkPoint);
+            float fromLocal = CompletionRouteSeconds(worker, bakery.WorkPoint, mixer.WorkPoint);
+            // Bột đi liên khu; trứng/sữa đi kho gần. Thợ có thể nạp bột mẻ sau trước khi lấy đầu ra.
+            float budget = CompletionRouteSeconds(worker, worker.transform.position, processing.WorkPoint)
+                + toMixer + toSource + toMixer + 2 * (toLocal + fromLocal) + toLocal
+                + mixer.Recipe.seconds;
+            Debug.Log("COMPLETION_TRANSPORT_BUDGET " + budget.ToString("F3") + " simulation seconds");
+            yield return CompletionWait(() => bakery.Inventory.Count("bread_dough") > 0, budget,
+                "Transport worker brings cross area inputs and stores mixer output");
+            Check(worker.Deliveries >= 4,
+                "Transport completes distinct input and output deliveries");
+        }
+
+        float CompletionRouteSeconds(WorkerAgent worker, Vector3 from, Vector3 destination)
+        {
+            float distance = 0;
+            int corners = 0;
+            var path = new UnityEngine.AI.NavMeshPath();
+            foreach (var node in CityPedestrianNetwork.Plan(from, destination))
+            {
+                Check(UnityEngine.AI.NavMesh.SamplePosition(node, out var hit, 2, worker.Agent.areaMask),
+                    "Transport budget: route node lies on NavMesh");
+                Check(UnityEngine.AI.NavMesh.CalculatePath(from, hit.position, worker.Agent.areaMask, path)
+                    && path.status == UnityEngine.AI.NavMeshPathStatus.PathComplete,
+                    "Transport budget: connector has a complete native path");
+                for (int i = 1; i < path.corners.Length; i++)
+                    distance += Vector3.Distance(path.corners[i - 1], path.corners[i]);
+                corners += path.corners.Length;
+                from = hit.position;
+            }
+            float speed = WorkforceRules.MovementSpeed(game.ReadCrew(worker.UpgradeId).speedLevel);
+            // Mỗi góc được tính thêm cả pha tăng tốc từ 0: v/a, không dùng timeout đoán sẵn.
+            return distance / speed + corners * speed / worker.Agent.acceleration;
         }
 
         DinerAgent CompletionDiner(string item)

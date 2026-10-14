@@ -33,13 +33,13 @@ namespace Tycoon
             previousForward = transform.parent ? transform.parent.forward : transform.forward;
             poseReady = true;
         }
-        public void SetMotion(float speed, bool carry)
+        public void SetMotion(float speed, bool carry, bool sprint = false)
         {
             using var frameProbe = QaFrameProbe.Measure("ActorView.SetMotion");
             movementSpeed = speed;
             if (Time.time < interactionEnd && speed < .3f) return;
             bool moving = speed > (State is "Walk" or "Run" or "CarryWalk" ? .12f : .3f);
-            Play(carry ? moving ? "CarryWalk" : "Carry" : speed > 5.5f ? "Run" : moving ? "Walk" : "Idle");
+            Play(carry ? moving ? "CarryWalk" : "Carry" : sprint || speed > 5.5f ? "Run" : moving ? "Walk" : "Idle");
             if (!Animator) return;
             float rate = moving ? Mathf.Clamp(speed / (State == "Run" ? 6f : 3.3f), .35f, 1.9f) : 1;
             Animator.speed = Mathf.Lerp(Animator.speed, rate, 1 - Mathf.Exp(-8 * Time.deltaTime));
@@ -93,6 +93,7 @@ namespace Tycoon
 
         void LateUpdate()
         {
+            using var lateUpdateProbe = QaFrameProbe.Measure("ActorView.1.LateUpdate");
             if (!poseReady || !transform.parent || Time.deltaTime <= 0) return;
             Vector3 forward = transform.parent.forward;
             float turn = Vector3.SignedAngle(previousForward, forward, Vector3.up);

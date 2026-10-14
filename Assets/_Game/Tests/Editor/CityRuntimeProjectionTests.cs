@@ -8,6 +8,56 @@ namespace Tycoon.Tests
     {
         TransactionState ReadRuntimeView() => (TransactionState)typeof(RuntimeTransactions)
             .GetProperty("View", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(game.Transactions);
+
+        OrderRuntimeState ReadRuntimeOrder(long receipt) => (OrderRuntimeState)typeof(RuntimeTransactions)
+            .GetMethod("Order", BindingFlags.Instance | BindingFlags.NonPublic)
+            .Invoke(game.Transactions, new object[] { receipt });
+
+        CustomerAgent AddOrderCustomer(long receipt)
+        {
+            var customer = Add<CustomerAgent>("OrderCustomer" + receipt);
+            customer.Restore(new CustomerSave
+            {
+                receipt = receipt,
+                shop = "farm",
+                lane = counter.Id,
+                phase = (int)CustomerAgent.State.Queue,
+                remaining = 90,
+                order = new() { new("carrot", 1, 10) }
+            });
+            return customer;
+        }
+
+        [Test]
+        public void RuntimeOrderIndexFindsExactReceiptAndReusesCurrentProjection()
+        {
+            AddOrderCustomer(77);
+            var order = ReadRuntimeOrder(77);
+            Assert.That(order.id, Is.EqualTo("order:77"));
+            Assert.That(ReadRuntimeOrder(77), Is.SameAs(order));
+            Assert.That(ReadRuntimeOrder(770), Is.Null);
+        }
+
+        [Test]
+        public void RuntimeOrderIndexRefreshesAfterNewCustomer()
+        {
+            AddOrderCustomer(77);
+            var previous = ReadRuntimeOrder(77);
+            AddOrderCustomer(78);
+            Assert.That(ReadRuntimeOrder(78).id, Is.EqualTo("order:78"));
+            Assert.That(ReadRuntimeOrder(77), Is.Not.SameAs(previous));
+        }
+
+        [Test]
+        public void RuntimeOrderIndexPublishesDeliveredLinesWithoutMutatingOldView()
+        {
+            AddOrderCustomer(77);
+            Inventory.Transfer(storage.Inventory, game.Player.Carry, "carrot", 1);
+            var previous = ReadRuntimeOrder(77);
+            Assert.That(game.Transactions.Deliver(77, game.Player.Carry), Is.EqualTo(1));
+            Assert.That(ReadRuntimeOrder(77).lines[0].delivered, Is.EqualTo(1));
+            Assert.That(previous.lines[0].delivered, Is.Zero);
+        }
         [Test]
         public void RejectedCommandKeepsProjectionAndInventory()
         {

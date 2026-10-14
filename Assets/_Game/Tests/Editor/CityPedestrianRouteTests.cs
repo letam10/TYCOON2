@@ -70,6 +70,24 @@ namespace Tycoon.Tests
         }
 
         [UnityTest]
+        public IEnumerator RepeatedGoCompletesProcessingConnectorWithPhysicalMotion()
+        {
+            var agent = CreateAgent(new(97.6f, 0, -40.1f));
+            Vector3 goal = new(73.8f, 0, -19.52f);
+            float deadline = Time.realtimeSinceStartup + 22;
+            do
+            {
+                Assert.That(Navigation.Go(agent, goal), Is.True);
+                yield return null;
+            } while (!Navigation.Arrived(agent) && Time.realtimeSinceStartup < deadline);
+            Assert.That(Navigation.Arrived(agent), Is.True,
+                "Physical actor must finish the connector, not stay at an intermediate route node. " +
+                "position=" + actor.transform.position + " destination=" + agent.destination +
+                " remaining=" + agent.remainingDistance + " nodes=" +
+                actor.GetComponent<CityPedestrianRoute>().RemainingNodes);
+        }
+
+        [UnityTest]
         public IEnumerator PoolSuspensionClearsOldRouteAndCannotReportArrival()
         {
             var agent = CreateAgent(new(141, 0, -40.1f));

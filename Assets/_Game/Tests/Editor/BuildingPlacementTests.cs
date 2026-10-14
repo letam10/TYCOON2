@@ -129,10 +129,10 @@ namespace Tycoon.Tests
             var table = root.AddComponent<TableStation>();
             WorldDressing.Table(table);
             Physics.SyncTransforms();
-            ClearCapsule(new Vector3(1.4f, .37f, 0));
-            ClearCapsule(new Vector3(1.4f, .37f, -.6f));
             var furniture = root.transform.Find("DiningFurniture");
-            Assert.That(furniture.GetComponentsInChildren<BoxCollider>(), Has.Length.EqualTo(2));
+            var approach = furniture.GetComponent<DiningFurniture>().Approach;
+            ClearCapsule(approach.position - root.transform.position + Vector3.up * .35f);
+            Assert.That(furniture.GetComponentsInChildren<BoxCollider>(), Has.Length.EqualTo(3));
             foreach (var collider in furniture.GetComponentsInChildren<BoxCollider>())
                 Assert.That(collider.bounds.min.y, Is.EqualTo(.06f).Within(.0001f));
         }

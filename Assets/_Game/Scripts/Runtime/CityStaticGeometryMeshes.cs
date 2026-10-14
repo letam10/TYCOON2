@@ -82,6 +82,30 @@ namespace Tycoon
 
         static Mesh Build(List<Vector3> vertices, List<int> triangles)
         {
+            // Bỏ tam giác co về điểm ở đỉnh nón/cực tán lá và đỉnh không còn được dùng.
+            var clean = new List<Vector3>();
+            var indices = new List<int>();
+            var remap = new Dictionary<int, int>();
+            for (int i = 0; i < triangles.Count; i += 3)
+            {
+                Vector3 a = vertices[triangles[i]];
+                Vector3 b = vertices[triangles[i + 1]];
+                Vector3 c = vertices[triangles[i + 2]];
+                if (Vector3.Cross(b - a, c - a).sqrMagnitude < 1e-12f) continue;
+                for (int corner = 0; corner < 3; corner++)
+                {
+                    int original = triangles[i + corner];
+                    if (!remap.TryGetValue(original, out int target))
+                    {
+                        target = clean.Count;
+                        remap[original] = target;
+                        clean.Add(vertices[original]);
+                    }
+                    indices.Add(target);
+                }
+            }
+            vertices = clean;
+            triangles = indices;
             var mesh = new Mesh { name = "CitySharedPrimitive" };
             mesh.SetVertices(vertices);
             mesh.SetTriangles(triangles, 0);

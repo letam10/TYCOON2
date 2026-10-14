@@ -69,6 +69,11 @@ namespace Tycoon
                             height = .48f + broad * .035f;
                             light = .92f + broad * .055f;
                             break;
+                        case "sand":
+                            float ripple = Mathf.Sin(v * Mathf.PI * 16 + broad * 1.2f);
+                            height = .5f + ripple * .018f + broad * .015f;
+                            light = .94f + broad * .035f + ripple * .008f;
+                            break;
                         default:
                             height = .49f + broad * .02f;
                             light = .93f + broad * .04f;

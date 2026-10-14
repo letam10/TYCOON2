@@ -1,6 +1,8 @@
 param(
     [ValidateSet('Import','ArtLibrary','Tests','Build','Scene','Polish','Stage14Tests','Stage14Layout','Stage14Play','Baseline','Stage23','Stage45','Stage67','Stage08','Stage09','Stage10','Stage11','Stage12','Stage13')] [string]$Task = 'Import',
-    [string]$BuildPath = ''
+    [string]$BuildPath = '',
+    [string]$TestFilter = '',
+    [switch]$Il2Cpp
 )
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
@@ -18,6 +20,7 @@ if ($Task -in @('Tests','Stage08','Stage09','Stage10','Stage11','Stage12','Stage
     $stage=if($Task -match '^Stage(\d+)'){'stage'+$Matches[1]}else{$null}
     $results=if($stage){Join-Path $taskRoot ('work\'+$stage+'\editmode-results.xml')}else{Join-Path $taskRoot 'QA\editmode-results.xml'}
     $arguments += @('-runTests','-testPlatform','EditMode','-testResults',('"' + $results + '"'))
+    if ($Task -eq 'Tests' -and $TestFilter) { $arguments += @('-testFilter', $TestFilter) }
     if($Task -eq 'Stage08'){$arguments += @('-testFilter','Tycoon.Tests.SaveV2Tests')}
     if($Task -in @('Stage09','Stage10')){$arguments += @('-testFilter','Tycoon.Tests.StageProgressionTests')}
     if($Task -in @('Stage11','Stage12','Stage13')){$arguments += @('-testFilter',('Tycoon.Tests.'+$Task+'Tests'))}
@@ -50,7 +53,12 @@ if ($Task -in @('Tests','Stage08','Stage09','Stage10','Stage11','Stage12','Stage
         $arguments += @('-executeMethod','Tycoon.Editor.ProjectBuilder.PlayBaseline','--qa','--qa-stage67','--qa-output',('"'+$qaOutput+'"'))
     }
     if ($Task -eq 'Build') {
-        $arguments += @('-executeMethod','Tycoon.Editor.ProjectBuilder.BuildWindows')
+        $buildMethod = if ($Il2Cpp) {
+            'Tycoon.Editor.OptimizedPlayerBuilder.BuildWindows'
+        } else {
+            'Tycoon.Editor.ProjectBuilder.BuildWindows'
+        }
+        $arguments += @('-executeMethod', $buildMethod)
         if($BuildPath)
         {
             $fullBuildPath=[System.IO.Path]::GetFullPath((Join-Path $taskRoot $BuildPath))

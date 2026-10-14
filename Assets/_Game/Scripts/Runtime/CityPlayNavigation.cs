@@ -18,6 +18,7 @@ namespace Tycoon
 
         void CheckCityNavigation()
         {
+            using var operation = CityOperationTiming.Measure(game, "CityPlay.CheckCityNavigation");
             var blocked = new List<string>();
             int count = 0;
             var path = new NavMeshPath();
@@ -38,6 +39,12 @@ namespace Tycoon
                 Point(safe.Id + ":deposit", safe.Deposit.Center);
                 Point(safe.Id + ":withdraw", safe.Withdraw.Center);
             }
+            foreach (var landmark in game.GetComponentsInChildren<CityLandmark>())
+                Point(landmark.Id + ":approach", landmark.Approach);
+            Point("Harbor:pier-south", new Vector3(245, 0, -141));
+            Point("Harbor:pier-north", new Vector3(245, 0, -105));
+            Point("Marina:pier-south", new Vector3(245, 0, -52));
+            Point("Marina:pier-north", new Vector3(245, 0, -28));
             File.WriteAllText(Path.Combine(game.QaDirectory, "city-navigation.json"),
                 JsonUtility.ToJson(new NavigationReport { checkedPoints = count, blocked = blocked.ToArray() }, true));
             Check(blocked.Count == 0, "Đường tới " + count + " điểm tương tác và hàng chờ");

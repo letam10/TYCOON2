@@ -16,7 +16,9 @@ namespace Tycoon
         readonly GameplayTransactionStore store;
         TransactionState view;
         TransactionState stationView;
+        TransactionState orderView;
         readonly Dictionary<string, StationRuntimeState> stationsById = new(StringComparer.Ordinal);
+        readonly Dictionary<string, OrderRuntimeState> ordersById = new(StringComparer.Ordinal);
         double origin;readonly double restoredTime;bool frozen;
         public bool Ready => core.Lifecycle == CoreLifecycle.Ready && !game.SaveBlocked;
         public long Revision => core.Revision;
@@ -74,7 +76,17 @@ namespace Tycoon
             }
             return stationsById.TryGetValue(id, out var found) ? found : null;
         }
-        internal OrderRuntimeState Order(long receipt) => view.orders.Find(x => x.id == OrderId(receipt));
+        internal OrderRuntimeState Order(long receipt)
+        {
+            if (!ReferenceEquals(orderView, view))
+            {
+                // Khách hỏi đơn nhiều lần/frame; không quét và tạo ID cho từng đơn lịch sử.
+                ordersById.Clear();
+                foreach (var order in view.orders) ordersById.Add(order.id, order);
+                orderView = view;
+            }
+            return ordersById.TryGetValue(OrderId(receipt), out var found) ? found : null;
+        }
         public static string OrderId(long receipt) => "order:" + receipt;
         public static string CustomerId(long receipt) => "customer:" + receipt;
         public static string WorkerOwner(string id) => "worker:" + id;

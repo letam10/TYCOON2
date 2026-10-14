@@ -166,6 +166,8 @@ namespace Tycoon
         }
         void Update()
         {
+            using var updateProbe = QaFrameProbe.Measure("OrderBubbleCustomerAgent.1.Update");
+
             if(!GameSession.Instance.CanSimulate || Time.deltaTime <= 0)return;
             if (terminalFeedback && terminalFeedback.IsPlaying) return;
             if (View && Agent) View.SetMotion(Navigation.ActualSpeed(Agent), Basket.Total > 0);

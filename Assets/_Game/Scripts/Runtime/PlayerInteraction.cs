@@ -20,10 +20,11 @@ namespace Tycoon
         public readonly Inventory Carry;
         public readonly EntityId Actor;
         public readonly string SelectedItem;
-        public InteractionContext(PlayerController player,string selectedItem)
-        {Player=player;Carry=player.Carry;Actor=player.GetEntityId();SelectedItem=selectedItem;}
-        public InteractionContext(Inventory carry,EntityId actor,string selectedItem)
-        {Player=null;Carry=carry;Actor=actor;SelectedItem=selectedItem;}
+        public readonly bool Withdraw;
+        public InteractionContext(PlayerController player,string selectedItem,bool withdraw=false)
+        {Player=player;Carry=player.Carry;Actor=player.GetEntityId();SelectedItem=selectedItem;Withdraw=withdraw;}
+        public InteractionContext(Inventory carry,EntityId actor,string selectedItem,bool withdraw=false)
+        {Player=null;Carry=carry;Actor=actor;SelectedItem=selectedItem;Withdraw=withdraw;}
     }
     public interface IPlayerInteractionTarget
     {

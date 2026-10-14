@@ -18,6 +18,7 @@ namespace Tycoon
             CityArchitecture.Businesses(geometry, space);
             CityArchitecture.Neighborhoods(geometry, space);
             CityProps.Districts(geometry, space);
+            CityOuterDistricts.Build(world, space);
             CityLandscape.Build(geometry, space);
             geometry.Finish();
             if (game.IsOrdinaryPlayCheck) space.WriteReport(game.QaDirectory);
@@ -48,6 +49,8 @@ namespace Tycoon
 
         public CityDressingSpace(GameSession game, Transform world)
         {
+            Reserve(CityRailNetwork.Corridor, "Railway corridor");
+            Reserve(CityRailNetwork.StationBounds, "Railway station access");
             foreach (var road in CityStreetNetwork.Bounds())
             {
                 var bounds = road;

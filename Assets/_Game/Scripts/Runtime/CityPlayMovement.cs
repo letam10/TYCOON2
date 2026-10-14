@@ -36,7 +36,7 @@ namespace Tycoon
                     Vector3 forward = Vector3.ProjectOnPlane(Camera.main.transform.forward, Vector3.up).normalized;
                     Vector3 right = Vector3.Cross(Vector3.up, forward);
                     var stick = new Vector2(Vector3.Dot(direction, right), Vector3.Dot(direction, forward));
-                    float speed = game.Player.HasCarry ? 3.8f : 6.2f;
+                    float speed = game.Player.HasCarry ? 3.8f : 10f;
                     stick *= Mathf.Clamp(remaining / (speed * .12f), .15f, 1);
                     var state = new GamepadState { leftStick = stick };
                     if (remaining > 2 && !game.Player.HasCarry) state = state.WithButton(GamepadButton.LeftStick);
@@ -89,7 +89,7 @@ namespace Tycoon
             StopInput();
             yield return Hold(.25f);
             yield return new WaitForEndOfFrame();
-            ScreenCapture.CaptureScreenshot(System.IO.Path.Combine(game.QaDirectory, name + ".png"));
+            QaRenderedFrame.Write(System.IO.Path.Combine(game.QaDirectory, name + ".png"));
             captures.Add(name + ".png");
             yield return null;
         }

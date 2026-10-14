@@ -28,6 +28,7 @@ namespace Tycoon
         public void InitializeIcon()
         {
             if (Upgrade == null) return;
+            if (initialized && HideCompletedPad()) return;
             if (!icon)
             {
                 var root = new GameObject("PurchaseIcon2D");
@@ -65,8 +66,10 @@ namespace Tycoon
 
         protected override void LateUpdate()
         {
+            using var lateUpdateProbe = QaFrameProbe.Measure("PurchasePadView.1.LateUpdate");
             var game = GameSession.Instance;
             if (!game || Upgrade == null) return;
+            if (HideCompletedPad()) return;
             if (!initialized || shownUpgrade != Upgrade.id)
             {
                 StopContributing();
@@ -75,6 +78,22 @@ namespace Tycoon
             RefreshDisplay();
             if (game.Player && (game.Player.transform.position - InteractionPoint).sqrMagnitude > 3)
                 StopContributing();
+        }
+
+        bool HideCompletedPad()
+        {
+            if (Time.time < transitionUntil) return false;
+            if (!IsDuplicateTier && Evaluation.State != PurchaseState.Purchased) return false;
+            // Không vẽ lại icon cho ô cuối đã hoàn tất, nhất là khi mở tối đa hàng loạt.
+            displayRenderers ??= GetComponentsInChildren<Renderer>(true);
+            interactionColliders ??= GetComponentsInChildren<Collider>(true);
+            foreach (var renderer in displayRenderers)
+                if (renderer) renderer.enabled = false;
+            foreach (var collider in interactionColliders)
+                if (collider) collider.enabled = false;
+            StopContributing();
+            gameObject.SetActive(false);
+            return true;
         }
 
         void RefreshDisplay()

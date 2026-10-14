@@ -131,7 +131,7 @@ namespace Tycoon
                 if(m.kind=="table")Require(m.progress.playerServeCount>=0&&m.progress.playerCleanCount>=0,"table","Số lượt phục vụ/dọn bàn không hợp lệ.");
                 if (m.kind != "machine")
                 {
-                    Require(m.kind is "producer" or "storage" or "shelf" or "counter" or "table" or "purchase" or "conveyor" or "dock", "station", "Station kind sai: " + m.id);
+                    Require(m.kind is "producer" or "storage" or "shelf" or "counter" or "table" or "purchase" or "conveyor" or "dock" or "safe", "station", "Station kind sai: " + m.id);
                     if (m.kind == "producer") Require(Definitions.Item(m.item) != null && m.batchYield>=1&&float.IsFinite(m.cycleSeconds)&&m.cycleSeconds>=0&&m.progress.phase is >= 0 and <= 3 && m.progress.herd is >= 0 and <= 3 && m.progress.feed is >= 0 and <= 3 && float.IsFinite(m.progress.remaining) && m.progress.remaining >= 0 && float.IsFinite(m.progress.action) && m.progress.action >= 0 && float.IsFinite(m.progress.cycle) && m.progress.cycle >= 0 && float.IsFinite(m.progress.breeding) && m.progress.breeding >= 0, "station", "Producer state sai: " + m.id);
                     continue;
                 }

@@ -16,6 +16,7 @@ namespace Tycoon
 
         void LateUpdate()
         {
+            using var lateUpdateProbe = QaFrameProbe.Measure("UpgradeVisualQueue.1.LateUpdate");
             if (pending.Count == 0) return;
             using var operation = CityOperationTiming.Measure(GameSession.Instance, "UpgradeVisuals.BuildPending");
             double start = Time.realtimeSinceStartupAsDouble;

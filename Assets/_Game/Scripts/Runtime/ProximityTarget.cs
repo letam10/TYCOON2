@@ -12,19 +12,25 @@ namespace Tycoon
         float elapsed;
         public ProximityTarget(Station target,bool cash=false){Target=target;Cash=cash;}
         public InteractionKind Kind=>kind;
-        public Vector3 Center=>Cash && Target is CheckoutStation c ? c.CollectionPoint :Target is CargoDock?Target.transform.position+Vector3.left*1.7f:Target.transform.position;
+        public Vector3 Center=>Cash && Target is CheckoutStation c ? c.CollectionPoint :Target is CargoDock?Target.transform.position+Vector3.left*1.7f:Target.InteractionPoint;
         public bool Available=>Target && Target.isActiveAndEnabled && Target.IsUnlocked;
         Vector3 Surface(Vector3 point)
         {
             if(Cash||Target is CargoDock)return Center;
             Vector3 size=Target is ProductionStation p&&!p.Animal?new(4,.2f,4):Target is MachineStation?new(2.65f,1,2.25f):
                 Target is ShelfStation?new(1.4f,1,4.7f):Target is StorageStation?new(3.3f,1,2.5f):Target is CheckoutStation?new(2.6f,1,1.2f):new(2,1,2);
-            return new Bounds(Center+Vector3.up*.5f,size).ClosestPoint(point);
+            // InteractionPoint là chỗ player đứng; mặt vật thể phải bám theo model gốc.
+            return new Bounds(Target.transform.position+Vector3.up*.5f,size).ClosestPoint(point);
         }
         public float Distance(Vector3 point){var surface=Surface(point);surface.y=point.y;return Vector3.Distance(point,surface);}
         public bool Contains(Vector3 point)
         {
-            if(!Available||Mathf.Abs(point.y-Center.y)>1.2f||Distance(point)>1.2f)return false;
+            if(!Available||Mathf.Abs(point.y-Center.y)>1.2f)return false;
+            float radius = Target is ProductionStation ? 1.8f :
+                Mathf.Max(1.2f, Vector3.Distance(Center, Surface(Center)) + .2f);
+            if(Distance(point)>radius)return false;
+            // Ô trồng là mặt phẳng mở; collider cây/đất trang trí không được làm mất vùng thao tác.
+            if(Target is ProductionStation)return true;
             Vector3 start=point+Vector3.up*.8f,end=Surface(point);end.y=start.y;
             var delta=end-start;
             foreach(var hit in Physics.RaycastAll(start,delta.normalized,delta.magnitude,~0,QueryTriggerInteraction.Ignore))
@@ -54,6 +60,13 @@ namespace Tycoon
             }
             else if(Target is CheckoutStation counter)kind=counter.FrontOrder==null&&context.Carry.Total>0?InteractionKind.Drop:InteractionKind.Serve;
             else if(Target is TableStation t)kind=t.Cleaning>0&&t.Occupant==null?InteractionKind.Operate:InteractionKind.Serve;
+            else if(Target is StorageStation or ShelfStation)
+            {
+                if(context.Carry.Total>0)kind=InteractionKind.Drop;
+                else if(context.Withdraw)kind=InteractionKind.Pickup;
+                else return InteractionResult.Waiting;
+                directionChosen=true;
+            }
             else if(!directionChosen){kind=context.Carry.Total>0?InteractionKind.Drop:InteractionKind.Pickup;directionChosen=true;}
             elapsed+=delta;if(elapsed<.1f)return InteractionResult.Waiting;
             float step=elapsed;elapsed=0;return Target.Perform(kind,context,step);

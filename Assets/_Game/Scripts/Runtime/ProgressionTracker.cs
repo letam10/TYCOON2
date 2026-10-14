@@ -125,9 +125,9 @@ namespace Tycoon
                 if(evaluations.TryGetValue(upgrade.id,out var cached))return cached;
             }
             int contributed = game.Contribution(upgrade.id);
-            string[] reasons = State != null ? MissingRequirements(State, upgrade) : MissingRequirements(game, upgrade);
-
             bool purchased = Unlocked(upgrade.id);
+            string[] reasons = purchased ? System.Array.Empty<string>() : State != null
+                ? MissingRequirements(State, upgrade) : MissingRequirements(game, upgrade);
             var result=new PurchaseEvaluation
             {
                 State = purchased ? PurchaseState.Purchased : reasons.Length > 0 ?
