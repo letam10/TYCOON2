@@ -61,3 +61,38 @@ Fresh bounded evidence:\n+
 The smoke run is functional evidence, not a replacement for a fresh Player visual pass. Manual
 acceptance should still inspect model pivots, labels, water readability, roof cutaways and boarding
 from the player camera. No benchmark, soak test or long campaign run was performed.
+
+## Continuation verification 2026-10-15 expansion and animation
+
+1. `WorldExpansionCatalog` defines five new POIs inside the doubled world bounds: forest reserve,
+   industrial yard, north village, east marina and south highway. `WorldExpansionDressing` creates
+   lightweight primitive dressing, labels, approach routes and interaction areas for each POI.
+2. `CityDistricts.GroundWidth` and `GroundDepth` are doubled around the existing world center.
+   Existing area IDs, spawn coordinates and save identifiers remain unchanged. The map now contains
+   fourteen stable points and its right hand travel buttons use a six percent row height so labels fit.
+3. `ActorAnimationSmoothing` centralizes locomotion, action crossfade and animator parameter updates.
+   `ActorView` keeps root motion disabled and forwards movement, pickup, drop and work states to the
+   smoothing component.
+4. `WorldAssetBudgetAudit` counts mesh vertices, shared materials and unique texture pixels and
+   rejects non finite bounds. The audit now checks mesh bounds before reading `Renderer.bounds`, so a
+   deliberately invalid mesh is reported by the test without producing a native Unity worldAABB log.
+5. Expansion ground has physics colliders for the current runtime NavMesh bake. Expansion map points
+   use clear route anchors and a bounded expansion only teleport fallback so the five new destinations
+   remain usable while their navigation surface is being refined.
+
+Fresh bounded evidence from this continuation:\n
+- `Tycoon.Tests.ActorAnimationSmoothingTests` exited 0.
+- `Tycoon.Tests.WorldAssetBudgetAuditTests` exited 0 after the non finite bounds fix.
+- `Tycoon.Tests.CityPedestrianRouteContractTests` exited 0.
+- `Tycoon.Tests.WorldModelAlignmentAuditTests` exited 0.
+- `Tycoon.Tests.WorldRouteCorridorTests` exited 0.
+- `Tycoon.Tests.WorldCutawayVolumeTests` exited 0.
+- `Tools/run_unity.ps1 -Task Build` exited 0 after the final map and NavMesh changes.
+- `Tools/run_world_features.ps1 -BuildPath Builds/Windows/TYCOON2.exe
+  -OutputPath work/world-features-current-20261015-expansion-finalpass` exited 0 with
+  `WORLD-FEATURES_QA PASS`.
+
+The build output is in `D:\GAME\TYCOON2\Builds\Windows`. This is a bounded functional smoke,
+not a benchmark, soak test, performance campaign or replacement for fresh manual Player visual
+acceptance. External downloaded models were not added in this slice; the new areas use the existing
+low overhead primitive and material catalog so the texture and geometry budget stays predictable.

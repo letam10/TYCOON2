@@ -6,6 +6,7 @@ namespace Tycoon
     public sealed class ActorView : MonoBehaviour
     {
         public Animator Animator;
+        public ActorAnimationSmoothing Smoothing { get; private set; }
         public string State { get; private set; }
         readonly Dictionary<string, float> clipLengths = new();
         readonly Dictionary<string, int> stateHashes = new();
@@ -19,6 +20,9 @@ namespace Tycoon
         {
             Animator = GetComponentInChildren<Animator>();
             if (Animator == null) return;
+            Smoothing = GetComponent<ActorAnimationSmoothing>();
+            if (!Smoothing) Smoothing = gameObject.AddComponent<ActorAnimationSmoothing>();
+            Smoothing.Initialize(Animator, 3.3f);
             Animator.applyRootMotion = false;
             Animator.cullingMode = AnimatorCullingMode.CullUpdateTransforms;
             if (Animator.runtimeAnimatorController)
@@ -40,6 +44,7 @@ namespace Tycoon
             if (Time.time < interactionEnd && speed < .3f) return;
             bool moving = speed > (State is "Walk" or "Run" or "CarryWalk" ? .12f : .3f);
             Play(carry ? moving ? "CarryWalk" : "Carry" : sprint || speed > 5.5f ? "Run" : moving ? "Walk" : "Idle");
+            if (Smoothing) Smoothing.SetMotion(transform.forward * speed, true);
             if (!Animator) return;
             float rate = moving ? Mathf.Clamp(speed / (State == "Run" ? 6f : 3.3f), .35f, 1.9f) : 1;
             Animator.speed = Mathf.Lerp(Animator.speed, rate, 1 - Mathf.Exp(-8 * Time.deltaTime));
@@ -49,6 +54,7 @@ namespace Tycoon
             interactionEnd = Time.time + .42f;
             if (Animator) Animator.speed = 1;
             Play(pickup ? "Pickup" : "Drop", true);
+            if (Smoothing) Smoothing.SetAction(pickup ? "Pickup" : "Drop");
         }
         public void Work(string state)
         {
@@ -56,6 +62,7 @@ namespace Tycoon
             interactionEnd = Time.time + .22f;
             if (Animator) Animator.speed = 1;
             Play(state);
+            if (Smoothing) Smoothing.SetAction(state);
         }
         public static string WorkState(Station target, InteractionKind kind) => kind switch
         {

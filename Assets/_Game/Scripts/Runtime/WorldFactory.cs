@@ -99,6 +99,7 @@ namespace Tycoon
             TownLayout.Apply(game,world);
             TruckRoutes.BuildDocks(game,world);
             CityDressing.Build(game, world);
+            WorldExpansionDressing.Build(world);
             WorldCutawayDirector.Build(game, world);
             CityTrafficSignalSystem.Build(world);
             world.gameObject.AddComponent<CityLife>();

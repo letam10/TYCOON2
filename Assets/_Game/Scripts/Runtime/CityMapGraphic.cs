@@ -16,8 +16,11 @@ namespace Tycoon
             game = session; Local = local; raycastTarget = false;
             roads = CityStreetNetwork.Bounds().ToArray();
             districts = areas.Select(CityDistricts.Footprint).ToArray();
-            landmarks = game.GetComponentsInChildren<CityLandmark>()
-                .Select(x => new Bounds(x.transform.position, x.Footprint)).ToArray();
+            var existingLandmarks = game.GetComponentsInChildren<CityLandmark>()
+                .Select(x => new Bounds(x.transform.position, x.Footprint));
+            var expansionLandmarks = WorldExpansionCatalog.BuildDefault()
+                .Select(x => x.FootprintBounds);
+            landmarks = existingLandmarks.Concat(expansionLandmarks).ToArray();
         }
 
         public Bounds ViewBounds

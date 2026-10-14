@@ -6,8 +6,8 @@ namespace Tycoon
     {
         public static readonly Vector3 ParkCenter = new(-19, 0, 42);
         public const int Revision = 2;
-        public const float GroundWidth = 565.685424f;
-        public const float GroundDepth = 384.666088f;
+        public const float GroundWidth = 1131.370848f;
+        public const float GroundDepth = 769.332176f;
         public static Vector3 WorldCenter => new(8, 0, 22);
         public static Bounds WorldBounds => new(WorldCenter, new(GroundWidth, 4, GroundDepth));
         // Trước quầy khu TYCOON khởi đầu: vị trí quầy (-13, 0, 0), lùi 5 m rồi dịch theo khu farm.
