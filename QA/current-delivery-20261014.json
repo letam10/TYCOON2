@@ -1,0 +1,153 @@
+{
+    "version":  "V21",
+    "completedUtc":  "2026-10-14T09:38:53.8372209Z",
+    "sourceCommit":  "16e8218eb0a8246e085cedc6b2ded4e3409703b8",
+    "buildCommand":  "Tools/run_unity.ps1 -Task Build",
+    "buildExitCode":  0,
+    "build":  {
+                  "result":  "Succeeded",
+                  "builtUtc":  "2026-10-14T09:26:55.5371749Z",
+                  "bytes":  118775007,
+                  "seconds":  18.4807916,
+                  "errors":  0,
+                  "warnings":  28
+              },
+    "tests":  {
+                  "command":  "Tools/run_unity.ps1 -Task Tests",
+                  "exitCode":  0,
+                  "total":  935,
+                  "passed":  935,
+                  "failed":  0,
+                  "skipped":  0,
+                  "startUtc":  "2026-10-14 09:27:14Z",
+                  "endUtc":  "2026-10-14 09:27:48Z"
+              },
+    "playerRuns":  [
+                       {
+                           "name":  "World features",
+                           "command":  "Tools/run_world_features.ps1 -OutputPath work/final-20261014/world-features-release",
+                           "exitCode":  0,
+                           "report":  "work/final-20261014/world-features-release/world-features-report.json",
+                           "startedUtc":  "2026-10-14T09:27:14.5327286Z",
+                           "finishedUtc":  "2026-10-14T09:27:42.1219635Z",
+                           "passed":  true,
+                           "checkCount":  2370,
+                           "runtimeErrors":  [
+
+                                             ],
+                           "screenshotCount":  49
+                       },
+                       {
+                           "name":  "World relaunch",
+                           "command":  "Tools/run_world_features.ps1 -Load -OutputPath work/final-20261014/world-features-release",
+                           "exitCode":  0,
+                           "report":  "work/final-20261014/world-features-release/world-features-load-report.json",
+                           "startedUtc":  "2026-10-14T09:28:00.5714979Z",
+                           "finishedUtc":  "2026-10-14T09:28:01.9869842Z",
+                           "passed":  true,
+                           "checkCount":  9,
+                           "runtimeErrors":  [
+
+                                             ],
+                           "screenshotCount":  1
+                       },
+                       {
+                           "name":  "Completion All",
+                           "command":  "Tools/run_completion.ps1 -Case All -BuildPath Builds/Windows/TYCOON2.exe",
+                           "exitCode":  0,
+                           "report":  "work/completion-audit/player-all-20261014T092827598Z/completion-report.json",
+                           "startedUtc":  "2026-10-14T09:28:33.7164018Z",
+                           "finishedUtc":  "2026-10-14T09:34:56.6075071Z",
+                           "passed":  true,
+                           "checkCount":  699,
+                           "runtimeErrors":  [
+
+                                             ],
+                           "screenshotCount":  1
+                       },
+                       {
+                           "name":  "Completion Load",
+                           "command":  "Tools/run_completion.ps1 -Case Load -BuildPath Builds/Windows/TYCOON2.exe -LoadPath work/completion-audit/player-all-20261014T092827598Z/completion-midflight.json",
+                           "exitCode":  0,
+                           "report":  "work/completion-audit/player-load-20261014T093506262Z/completion-load-report.json",
+                           "startedUtc":  "2026-10-14T09:35:12.8540899Z",
+                           "finishedUtc":  "2026-10-14T09:35:26.0999646Z",
+                           "passed":  true,
+                           "checkCount":  52,
+                           "runtimeErrors":  [
+
+                                             ],
+                           "screenshotCount":  1
+                       },
+                       {
+                           "name":  "Foundation and Shift",
+                           "command":  "Tools/run_sprint.ps1",
+                           "exitCode":  0,
+                           "report":  "work/shift-final-20261014/foundation-20261014T093549651Z/foundation-report.json",
+                           "startedUtc":  "2026-10-14T09:35:55.9335720Z",
+                           "finishedUtc":  "2026-10-14T09:37:01.3468818Z",
+                           "passed":  true,
+                           "checkCount":  57,
+                           "runtimeErrors":  [
+
+                                             ],
+                           "screenshotCount":  5
+                       },
+                       {
+                           "name":  "Carrot and settings",
+                           "command":  "Tools/run_carrot_settings.ps1 -BuildPath Builds/Windows/TYCOON2.exe",
+                           "exitCode":  0,
+                           "report":  "work/carrot-settings-20261008/player-20261014T093719190Z/carrot-settings-report.json",
+                           "startedUtc":  "2026-10-14T09:37:25.4642359Z",
+                           "finishedUtc":  "2026-10-14T09:37:32.8251841Z",
+                           "passed":  true,
+                           "checkCount":  173,
+                           "runtimeErrors":  [
+
+                                             ],
+                           "screenshotCount":  12
+                       }
+                   ],
+    "visualReview":  {
+                         "passed":  true,
+                         "imageCount":  50,
+                         "sourceDirectory":  "D:\\GAME\\TYCOON2\\work\\final-20261014\\world-features-release",
+                         "report":  "work/final-20261014/visual-review.json",
+                         "status":  "Fresh release set: all 50 PNGs reviewed; V01 and V02 visibly resolved in all three original coastal captures; no unresolved visual defect found in this screenshot scope."
+                     },
+    "sourcePackage":  {
+                          "status":  "pass_staged_source_and_assets",
+                          "report":  "work/final-20261014/source-package-audit.json",
+                          "sourceHashChecks":  48,
+                          "importedFbxHashChecks":  48,
+                          "newMissingGuids":  0,
+                          "unchangedBaselineMissingGuids":  11,
+                          "selectedNewDownloadFiles":  76,
+                          "stagedLfsPointersVerified":  35,
+                          "stagedTextFilesScreened":  379
+                      },
+    "binaryAndTestHashes":  [
+                                {
+                                    "path":  "Builds/Windows/TYCOON2.exe",
+                                    "sha256":  "96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873"
+                                },
+                                {
+                                    "path":  "Builds/Windows/TYCOON2_Data/Managed/Tycoon.Runtime.dll",
+                                    "sha256":  "3757843E837684B9F1087406590DEFC086475A19A4474DD54A7A682D56E8C9B2"
+                                },
+                                {
+                                    "path":  "Builds/Windows/build-report.json",
+                                    "sha256":  "020D2BB9F9C813F7BB3808438ED01A594C2174460E7D8BBE471B5243FD6D5BFB"
+                                },
+                                {
+                                    "path":  "QA/editmode-results.xml",
+                                    "sha256":  "BED4E70A3F140CBF50804796EE6B56C1B81B8AEA4787300F3992DEF49DD5EDBD"
+                                }
+                            ],
+    "limitations":  [
+                        "Functional fixtures only; no benchmark, soak or 180-240 minute campaign.",
+                        "Native UI: 1280x720, 1920x1080, 2560x1440. 3840x2160 is an offscreen render.",
+                        "28 existing build warnings; no claim of zero warnings or exhaustive whole-game art acceptance.",
+                        "Unused downloads, local save journals and historical generated QA artifacts are retained locally."
+                    ]
+}

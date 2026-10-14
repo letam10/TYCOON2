@@ -1,5 +1,9 @@
 # Dừng theo yêu cầu người dùng — 14/10/2026
 
+**Checkpoint lịch sử.** Người dùng đã yêu cầu tiếp tục, kiểm chức năng nhanh, build
+và commit/push. Trạng thái mới nằm ở mục V21 trong `Docs/CODEX_HANDOFF.md`;
+không áp dụng lệnh dừng bên dưới cho đợt bàn giao mới.
+
 Người dùng yêu cầu dừng tại đây. Không chạy thêm test, commit hoặc push.
 Giữ nguyên các thay đổi chưa commit và bản Windows hiện có.
 

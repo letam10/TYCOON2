@@ -1,8 +1,108 @@
 # CODEX_HANDOFF
 
+## V21 — Hoàn thiện bản đồ, phím, slot lưu và bàn giao Windows (14/10/2026)
+
+**Đây là mục hiện hành.** V20 trở xuống và
+`Docs/world-map-20261014/PAUSED_HANDOFF.md` là lịch sử.
+Yêu cầu tiếp tục ngày 14/10 cho phép kiểm chức năng nhanh, build và commit/push GitHub.
+Không chạy benchmark, soak hoặc campaign dài.
+
+### Bản chơi và điều khiển
+
+- Mở `D:/GAME/TYCOON2/Builds/Windows/TYCOON2.exe`; giữ nguyên cả thư mục Windows.
+- WASD di chuyển, Shift chạy 10 m/s khi tay trống, M mở bản đồ, F5 lưu nhanh.
+  Minimap dưới trái; bấm minimap hoặc Cài đặt → Bản đồ cũng mở map và tạm dừng game.
+- Có 5 điểm dịch chuyển: TYCOON/nông trại, công viên, nhà ga, bãi biển và bến cảng.
+- Cài đặt → Đổi phím: 10 thao tác, chặn trùng/phím dành riêng, Esc hủy, khôi phục mặc định.
+- Cài đặt hoặc Menu → Slot lưu: 3 slot độc lập, tải/lưu bản sao/chơi mới,
+  xác nhận trước ghi đè. Slot 1 giữ đường dẫn save cũ; F5 dùng slot đang chọn.
+  Checkpoint trước được giữ ở `.previous.json`; game mới xuất hiện trước quầy TYCOON.
+
+### Đã hoàn thiện từ checkpoint dừng
+
+- Kiểm tra mở lại Player bằng tiến trình mới: slot đang dùng, phím tùy chỉnh,
+  map và tiến trình lưu được phục hồi; dùng save QA riêng, không thay save người dùng.
+- Bổ sung tiếng Anh cho thông báo động của map, đổi phím, lưu/tải/chơi mới và xác nhận.
+  Sửa nhãn lối tắt Settings bị mất do vùng chữ thấp hơn chiều cao glyph.
+- Kiểm menu Việt/Anh ở 1280×720, 1920×1080, 2560×1440 bằng cửa sổ thật.
+  3840×2160 dùng render target riêng do màn hình máy này giới hạn cửa sổ ở 2560×1600;
+  ảnh và assertion 4K ghi rõ `offscreen`, không nhận là native 4K.
+- Sửa chữ hướng dẫn chìm trên nền cát bằng nền HUD tối. Khép khe đứng 2,5 cm
+  giữa cát và nước: cát chuyển tuyến tính từ cao độ đất 0,0275 m tới mép nước 0,0525 m.
+  Test đã tái hiện lỗi trước sửa; giữ x/z bờ cong và không đổi collider/gameplay.
+- Sửa test deferred checkpoint so sánh cùng một vòng JSON như Snapshot, tránh sai số
+  double 1 ULP khi so chuỗi. Giữ kiểm history/isolation/idempotence, không sửa runtime.
+- Đưa các thay đổi source còn chờ của city/gameplay/Shift/save và asset phụ thuộc
+  vào cùng đợt bàn giao. Chỉ chọn 76 file nguồn art/dependency/license được manifest dùng;
+  không đưa toàn bộ kho download chưa dùng vào Git.
+
+### Kiểm chứng trên bản build cuối
+
+Build: `Tools/run_unity.ps1 -Task Build`, exit 0, Succeeded lúc
+**09:26:55 UTC 14/10/2026**, 118.775.007 byte, **0 errors / 28 warnings**.
+Report: `QA/build-report.json` và `Builds/Windows/build-report.json`.
+
+Tests: `Tools/run_unity.ps1 -Task Tests`, exit 0, **935/935 pass, 0 fail/skip**,
+09:27:14–09:27:48 UTC. XML: `QA/editmode-results.xml`.
+Log build/test: `work/logs/build.log`, `work/logs/tests.log`.
+
+- `Tools/run_world_features.ps1 -OutputPath work/final-20261014/world-features-release`:
+  exit 0, **2.370 checks pass**, 0 runtime errors.
+- `Tools/run_world_features.ps1 -Load -OutputPath work/final-20261014/world-features-release`:
+  exit 0, **9 checks pass**, 0 runtime errors, tiến trình mới.
+- `Tools/run_completion.ps1 -Case All -BuildPath Builds/Windows/TYCOON2.exe`:
+  exit 0, **699 checks pass**, 0 runtime errors, 09:28:33–09:34:56 UTC (~6 phút 23 giây).
+  Report: `work/completion-audit/player-all-20261014T092827598Z/completion-report.json`.
+  Kiểm mốc mua/nâng cấp, nghề/crew, kho, sản xuất, truck/loader, repair/Rush và checkpoint.
+- `Tools/run_completion.ps1 -Case Load -BuildPath Builds/Windows/TYCOON2.exe -LoadPath
+  work/completion-audit/player-all-20261014T092827598Z/completion-midflight.json`:
+  exit 0, **52 checks pass**, 0 runtime errors, tiến trình mới.
+  Report: `work/completion-audit/player-load-20261014T093506262Z/completion-load-report.json`.
+- Đã xem đủ 50 ảnh mới: UI/label đọc được, không cắt chữ, không ảnh trống/magenta;
+  nền hướng dẫn và khe bờ đã sửa trong cả ba ảnh bờ biển.
+  Báo cáo độc lập: `work/final-20261014/visual-review.json`, passed=true.
+  Bản lỗi trước sửa được giữ ở `visual-review-before.json`.
+- `Tools/run_sprint.ps1`: exit 0, **57 checks pass**, 0 runtime errors.
+  Report: `work/shift-final-20261014/foundation-20261014T093549651Z/foundation-report.json`.
+  Shift trái/phải/chéo lần lượt **9,999955 / 10,000006 / 9,999937 m/s**;
+  đi thường **4,799976**, cầm hàng **3,799927 / 3,800026 m/s**.
+  Đây là đo hành vi di chuyển để kiểm chức năng, không phải benchmark hiệu năng.
+- `Tools/run_carrot_settings.ps1 -BuildPath Builds/Windows/TYCOON2.exe`:
+  exit 0, **173 checks pass**, 0 runtime errors.
+  Report: `work/carrot-settings-20261008/player-20261014T093719190Z/carrot-settings-report.json`.
+  Kiểm thu hoạch/giao/bán, cài đặt đồ họa, ngôn ngữ, VSync, FPS overlay và quay lại game.
+
+Source commit đã kiểm: `16e8218eb0a8246e085cedc6b2ded4e3409703b8`.
+Audit Git index đạt: 48/48 hash nguồn + 48/48 FBX, đủ 78 đường dẫn dependency/license
+(76 download mới), 35 pointer LFS hợp lệ và không phát hiện secret theo bộ mẫu quét.
+Report: `work/final-20261014/source-package-audit.json`.
+
+**Gate bàn giao đạt:** 935 EditMode + **3.360 assertion Player**, tất cả lệnh exit 0,
+0 runtime errors; 50 ảnh đã được xem. Báo cáo tổng có lệnh, timestamp, nguồn,
+giới hạn và hash: `QA/current-delivery-20261014.json`.
+Gate tổng `work/final-20261014/write-delivery-report.ps1` đã chạy exit 0.
+Repo đích: `https://github.com/letam10/TYCOON2.git`, nhánh `main`;
+commit hồ sơ V21 đi sau source commit nêu trên. Không tạo release/site hay đổi visibility.
+
+SHA256 runtime cuối:
+`3757843E837684B9F1087406590DEFC086475A19A4474DD54A7A682D56E8C9B2`.
+Đường dẫn: `Builds/Windows/TYCOON2_Data/Managed/Tycoon.Runtime.dll`.
+
+### Giới hạn và dữ liệu giữ lại
+
+- Đây là fixture chức năng ngắn, không chứng minh cân bằng campaign 180–240 phút,
+  hiệu năng/FPS ổn định hay nghiệm thu toàn bộ art của game. Không benchmark/soak.
+- Còn 28 warning có sẵn về Unity object API obsolete và shader TownSurface.
+- Kiểm package giữ 11 GUID tham chiếu cũ chưa resolve của URP probe/volume ở baseline;
+  không có GUID thiếu mới do đợt này. Build và các gate thực thi quyết định nghiệm thu.
+- Giữ nguyên download chưa dùng, reference image, save/journal QA, build và evidence
+  lịch sử ở máy. Chúng không phải source cần push; không reset/clean hay xóa dữ liệu.
+- `Tools/verify_city_delivery.py` kiểm package V14 lịch sử, không chứng nhận Windows V21.
+  Gate V21 là Tests/Build, Player chức năng và báo cáo tổng có timestamp/hash bên trên.
+
 ## V20 — Shift 10 m/s, kiểm chức năng nhanh và bản Windows (14/10/2026)
 
-**Đây là mục hiện hành.** V19 trở xuống là lịch sử. Bản để người dùng test:
+**Mục lịch sử, đã được V21 thay thế.** Bản tại thời điểm V20:
 `D:/GAME/TYCOON2/Builds/Windows/TYCOON2.exe`; giữ toàn bộ thư mục Windows cạnh exe.
 Không dùng các ZIP/build lịch sử làm bản Shift 10 m/s. Không publish/deploy/push.
 

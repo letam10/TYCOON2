@@ -7,7 +7,9 @@ dưới đây; tài liệu lịch sử không được dùng để ghi đè tr�
 
 ## Ưu tiên 1 — nguồn sự thật của dự án
 
-1. `Docs/CODEX_HANDOFF.md` — mục V20: Shift 10 m/s, kiểm chức năng nhanh, build Windows và dọn work.
+1. `Docs/CODEX_HANDOFF.md` — mục V21: bản đồ, đổi phím, slot lưu, hồi quy nhanh và bàn giao Windows.
+   `QA/current-delivery-20261014.json` ghi lệnh, kết quả, thời gian, hash của đợt bàn giao.
+   `Docs/world-map-20261014/PAUSED_HANDOFF.md` chỉ ghi checkpoint dừng trước khi tiếp tục.
 
 ## Ưu tiên 2 — phạm vi sửa hiện hành
 
@@ -26,7 +28,7 @@ dưới đây; tài liệu lịch sử không được dùng để ghi đè tr�
 - `Docs/CARRY_CONTAINERS_V10.md`, `Docs/INDUSTRIAL_MODELS_V10.md`,
   `Docs/RENDER_OPTIMIZATION_V10.md` — yêu cầu vật phẩm, máy và render.
 - `Docs/V11_PLAYER_GUIDE.md` đến `Docs/V14_PLAYER_GUIDE.md` — hướng dẫn và giới hạn
-  của các gói kiểm; không xem chúng là bằng chứng Player hiện hành nếu V20 đã có số mới hơn.
+  của các gói kiểm; không xem chúng là bằng chứng Player hiện hành nếu V21 đã có số mới hơn.
 - Các file V11–V14 được `Tools/package_city.py` liệt kê vẫn phải giữ nguyên đường dẫn,
   vì chúng là đầu vào của gói Evidence.
 
