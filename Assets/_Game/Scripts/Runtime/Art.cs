@@ -80,6 +80,9 @@ namespace Tycoon
             renderer.sharedMaterial = WorldTypography.Material(Catalog.font);
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             renderer.receiveShadows = false;
+            var anchor = go.AddComponent<WorldLabelAnchor>();
+            anchor.Billboard = billboard;
+            anchor.ModelRoot = parent;
             if (billboard) go.AddComponent<BillboardLabel>().RefreshNow();
             return mesh;
         }

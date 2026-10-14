@@ -175,6 +175,30 @@ namespace Tycoon.Tests
             }
         }
 
+        [Test]
+        public void ArtLabelRegistersModelAnchorAndBillboardMetadata()
+        {
+            GameCatalog previousCatalog = Art.Catalog;
+            Art.Catalog = ScriptableObject.CreateInstance<GameCatalog>();
+            var parent = new GameObject("LabelModelRoot");
+            try
+            {
+                TextMesh label = Art.Label("TEST", new Vector3(0, 1, 0), parent.transform,
+                    .1f, "#FFFFFF", true);
+                WorldLabelAnchor anchor = label.GetComponent<WorldLabelAnchor>();
+
+                Assert.That(anchor, Is.Not.Null);
+                Assert.That(anchor.Billboard, Is.True);
+                Assert.That(anchor.ModelRoot, Is.EqualTo(parent.transform));
+                Assert.That(label.GetComponent<BillboardLabel>(), Is.Not.Null);
+            }
+            finally
+            {
+                Art.Catalog = previousCatalog;
+                Object.DestroyImmediate(parent);
+            }
+        }
+
         static GameObject CreateModel(string name, float bodyHeight)
         {
             var root = new GameObject(name);
