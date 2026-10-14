@@ -23,6 +23,32 @@ namespace Tycoon
             ("south_highway", "Xa lộ phía Nam", new(0, .05f, -300))
         };
 
+        public static Vector2 CaptionOffset(string id) => id switch
+        {
+            "tycoon" => new(12, -24),
+            "park" => new(12, 16),
+            "station" => new(-180, -24),
+            "beach" => new(12, 16),
+            "harbor" => new(12, -24),
+            "marina" => new(-180, -24),
+            "bank" => new(-180, 16),
+            "restaurant" => new(-180, 16),
+            "forest" => new(12, 16),
+            "forest_reserve" => new(12, 16),
+            "industrial_yard" => new(-205, 16),
+            "north_village" => new(-180, 16),
+            "east_marina" => new(-220, -24),
+            "south_highway" => new(12, 16),
+            _ => new(12, 16)
+        };
+
+        public static float CaptionWidth(string id) => id switch
+        {
+            "east_marina" or "industrial_yard" or "forest_reserve" => 200f,
+            "north_village" or "south_highway" => 180f,
+            _ => 160f
+        };
+
         public static bool Teleport(GameSession game, int index, out string reason)
         {
             if (index < 0 || index >= Points.Length || game.SaveBlocked || game.IsRestoring

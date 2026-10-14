@@ -56,7 +56,11 @@ namespace Tycoon
                 var caption = Text("MapLabel_" + point.id, worldMap.transform, point.label,
                     11, TextAnchor.MiddleLeft, Ink);
                 caption.raycastTarget = false;
-                Rect(caption.rectTransform, position, position, new(10, -9), new(170, 9));
+                Vector2 captionOffset = CityMapLocations.CaptionOffset(point.id);
+                float captionWidth = CityMapLocations.CaptionWidth(point.id);
+                Rect(caption.rectTransform, position, position,
+                    captionOffset + new Vector2(0, -9),
+                    captionOffset + new Vector2(captionWidth, 9));
             }
             mapPlayer = NewRect("MapPlayerIndicator", worldMap.transform).gameObject.AddComponent<MapPlayerIndicator>();
             Rect(mapPlayer.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
