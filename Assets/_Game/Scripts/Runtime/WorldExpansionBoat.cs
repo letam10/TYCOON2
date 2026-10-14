@@ -27,6 +27,11 @@ namespace Tycoon
             CityStaticGeometry geometry = new CityStaticGeometry(root);
             CityBoatModels.Yacht(geometry, Vector3.zero);
             geometry.Finish();
+            Transform hullColliderRoot = new GameObject("BoatHullCollision").transform;
+            hullColliderRoot.SetParent(root, false);
+            hullColliderRoot.localPosition = new Vector3(0, 1.1f, .6f);
+            BoxCollider hullCollider = hullColliderRoot.gameObject.AddComponent<BoxCollider>();
+            hullCollider.size = new Vector3(5.2f, 2.2f, 8.8f);
             return boat;
         }
 
