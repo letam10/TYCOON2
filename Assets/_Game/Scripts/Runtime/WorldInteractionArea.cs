@@ -113,6 +113,17 @@ namespace Tycoon
                 failure = "Người chơi chưa sẵn sàng lên phương tiện.";
                 return false;
             }
+            if (passengerCarrier != null && !passengerCarrier.DoorsOpen)
+            {
+                failure = "Hãy đợi cửa phương tiện mở.";
+                return false;
+            }
+            Transform hull = passengerCarrier != null ? passengerCarrier.Hull : fallback;
+            if (!hull)
+            {
+                failure = "Phương tiện chưa sẵn sàng để lên.";
+                return false;
+            }
             var ride = target.GetComponent<WorldPlayerRide>();
             if (!ride) ride = target.gameObject.AddComponent<WorldPlayerRide>();
             if (ride.activeRide)
@@ -156,6 +167,7 @@ namespace Tycoon
             }
             endsAt = Time.time + Mathf.Max(1.5f, seconds);
             activeRide = true;
+            carrier?.RecordBoarding();
             GameSession.Instance?.Say(message);
         }
 
@@ -169,6 +181,7 @@ namespace Tycoon
 
         void EndRide()
         {
+            ICityPassengerCarrier completedCarrier = carrier;
             Transform parent = originalParent;
             player.transform.SetParent(parent, true);
             Vector3 target = exitPoint;
@@ -178,6 +191,7 @@ namespace Tycoon
             player.Controller.enabled = true;
             player.CanControl = true;
             player.StopInteraction();
+            completedCarrier?.RecordAlighting();
             activeRide = false;
             carrier = null;
             fallbackHull = null;
