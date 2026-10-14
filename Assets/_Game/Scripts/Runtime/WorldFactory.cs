@@ -104,6 +104,7 @@ namespace Tycoon
             world.gameObject.AddComponent<CityLife>();
             CityPublicTransport.Build(game, world);
             CityRailService.Build(game, world);
+            WorldInteractionRegistry.Build(world);
             TownSurfaceMaterials.Apply(world);
             world.gameObject.AddComponent<NavigationWorld>();
         }

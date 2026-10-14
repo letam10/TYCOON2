@@ -161,6 +161,8 @@ namespace Tycoon
         public IEnumerable<IPlayerInteractionArea> PlayerInteractionAreas()
         {
             if(Logistics)foreach(var cargoArea in Logistics.PlayerAreas())yield return cargoArea;
+            foreach(var worldArea in GetComponentsInChildren<WorldInteractionArea>(true))
+                if(worldArea && worldArea.Available)yield return worldArea;
             foreach (var station in Stations)
             {
                 if(!station || station is StationZone or ConveyorStation)continue;

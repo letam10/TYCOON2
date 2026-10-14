@@ -11,7 +11,11 @@ namespace Tycoon
             ("park", "Công viên", CityDistricts.ParkCenter + Vector3.back * 8),
             ("station", "Nhà ga", new(CityRailNetwork.StationX, .05f, CityRailNetwork.StationBounds.max.z - 3)),
             ("beach", "Bãi biển", new(202, .05f, 77)),
-            ("harbor", "Bến cảng", new(197, .05f, -123))
+            ("harbor", "Bến cảng", new(197, .05f, -123)),
+            ("marina", "Bến du thuyền", new(199, .05f, -40)),
+            ("bank", "Ngân hàng", new(-226, .05f, 101)),
+            ("restaurant", "Nhà hàng", CityDistricts.Center("restaurant") + Vector3.back * 8),
+            ("forest", "Rừng nguyên sinh", new(30, .05f, 133))
         };
 
         public static bool Teleport(GameSession game, int index, out string reason)
