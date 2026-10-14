@@ -16,7 +16,7 @@ namespace Tycoon
             ("bank", "Ngân hàng", new(-226, .05f, 101)),
             ("restaurant", "Nhà hàng", CityDistricts.Center("restaurant") + Vector3.back * 8),
             ("forest", "Rừng nguyên sinh", new(30, .05f, 133)),
-            ("forest_reserve", "Khu bảo tồn rừng", new(-420, .05f, 250)),
+            ("forest_reserve", "Khu bảo tồn rừng", new(-370, .05f, 275)),
             ("industrial_yard", "Bãi công nghiệp", new(465, .05f, 330)),
             ("north_village", "Làng phía Bắc", new(0, .05f, 330)),
             ("east_marina", "Bến du thuyền phía Đông", new(370, .05f, -135)),

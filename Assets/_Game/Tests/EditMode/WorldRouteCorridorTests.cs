@@ -12,7 +12,7 @@ namespace Tycoon.Tests
             IReadOnlyList<WorldRouteCorridor> routes = WorldRouteCatalog.BuildDefault();
 
             Assert.That(routes, Is.Not.Null);
-            Assert.That(routes.Count, Is.EqualTo(6));
+            Assert.That(routes.Count, Is.EqualTo(11));
             Assert.That(WorldRouteCatalog.ValidateContinuous(), Is.True);
 
             var kinds = new HashSet<RouteKind>();

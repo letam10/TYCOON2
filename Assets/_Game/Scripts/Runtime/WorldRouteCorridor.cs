@@ -267,6 +267,64 @@ namespace Tycoon
                         new Vector3(30, 0, 133)
                     },
                     4f,
+                    true),
+                new WorldRouteCorridor(
+                    "expansion-forest-access",
+                    RouteKind.FarmPath,
+                    new[]
+                    {
+                        new Vector3(-370, 0, 275),
+                        new Vector3(-270, 0, 235),
+                        new Vector3(-170, 0, 195),
+                        new Vector3(-70, 0, 165),
+                        new Vector3(30, 0, 133)
+                    },
+                    4.5f,
+                    true),
+                new WorldRouteCorridor(
+                    "expansion-industrial-approach",
+                    RouteKind.Highway,
+                    new[]
+                    {
+                        new Vector3(190, 0, 155),
+                        new Vector3(250, 0, 205),
+                        new Vector3(330, 0, 250),
+                        new Vector3(465, 0, 330)
+                    },
+                    7f,
+                    true),
+                new WorldRouteCorridor(
+                    "expansion-village-road",
+                    RouteKind.Sidewalk,
+                    new[]
+                    {
+                        new Vector3(-55, 0, 320),
+                        new Vector3(0, 0, 330),
+                        new Vector3(55, 0, 345)
+                    },
+                    3.5f,
+                    true),
+                new WorldRouteCorridor(
+                    "expansion-marina-dock",
+                    RouteKind.Dock,
+                    new[]
+                    {
+                        new Vector3(370, 0, -135),
+                        new Vector3(420, 0, -120),
+                        new Vector3(470, 0, -105)
+                    },
+                    5f,
+                    true),
+                new WorldRouteCorridor(
+                    "expansion-south-highway",
+                    RouteKind.Highway,
+                    new[]
+                    {
+                        new Vector3(-190, 0, -300),
+                        new Vector3(0, 0, -300),
+                        new Vector3(190, 0, -300)
+                    },
+                    8f,
                     true)
             };
             return new System.Collections.ObjectModel.ReadOnlyCollection<WorldRouteCorridor>(routes);

@@ -96,3 +96,31 @@ The build output is in `D:\GAME\TYCOON2\Builds\Windows`. This is a bounded funct
 not a benchmark, soak test, performance campaign or replacement for fresh manual Player visual
 acceptance. External downloaded models were not added in this slice; the new areas use the existing
 low overhead primitive and material catalog so the texture and geometry budget stays predictable.
+
+## Continuation verification 2026-10-15 route contracts
+
+1. `WorldRouteCatalog` now includes five reserved expansion corridors for the forest reserve,
+   industrial approach, north village road, east marina dock and south highway. The existing
+   `CityAccessPaths` renderer and placement reservation logic consume the same catalog, so route
+   signs, walkable corridors and no placement zones stay aligned.
+2. `CityMapLocations.forest_reserve` now points to the forest approach anchor instead of the dense
+   POI center. Industrial and east marina already target their clear approach anchors; village and
+   south highway map points sit on their corridor nodes.
+3. `WorldExpansionContractTests` verifies expanded bounds, finite approach anchors, unique reserved
+   route IDs, continuous nodes and map destinations that land on expansion corridors.
+
+Fresh bounded evidence:\n- `Tycoon.Tests.WorldExpansionContractTests` exited 0.
+- `Tycoon.Tests.WorldRouteCorridorTests` exited 0 after the catalog grew to 11 routes.
+- `Tycoon.Tests.CityPedestrianRouteContractTests` exited 0.
+- `Tycoon.Tests.WorldModelAlignmentAuditTests` exited 0.
+- `Tycoon.Tests.WorldCutawayVolumeTests` exited 0.
+- `Tycoon.Tests.ActorAnimationSmoothingTests` exited 0.
+- `Tycoon.Tests.WorldAssetBudgetAuditTests` exited 0.
+- `Tools/run_unity.ps1 -Task Build` exited 0.
+- `Tools/run_world_features.ps1 -BuildPath Builds/Windows/TYCOON2.exe
+  -OutputPath work/world-features-current-20261015-expansion-routes` exited 0 with
+  `WORLD-FEATURES_QA PASS`.
+
+This remains bounded functional evidence. It does not replace a fresh Player camera review of
+model pivots, label placement, water edge appearance, cutaway roof behavior or physical boarding.
+No benchmark, soak test or long campaign run was performed.
