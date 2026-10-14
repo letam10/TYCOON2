@@ -12,6 +12,10 @@ namespace Tycoon
         IEnumerator WorldFeaturesAcceptance()
         {
             yield return CompletionWait(() => game.NavigationReady && !game.IsRestoring, 30, "Map: gameplay ready");
+            CityTrafficSignalVisual signalVisual = game.GetComponentInChildren<CityTrafficSignalVisual>(true);
+            Check(signalVisual && signalVisual.LampCount
+                == CityTrafficSignalSystem.Definitions.Count * 3,
+                "Traffic signals expose dynamic red amber green lamps");
             Check(Vector3.Distance(game.Player.transform.position, CityDistricts.PlayerSpawn) < .4f,
                 "New game starts directly in front of the starter TYCOON counter");
             yield return FeatureUiAcceptance();

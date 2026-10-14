@@ -61,10 +61,15 @@ namespace Tycoon
         {
             if (world == null) return null;
             var existing = world.GetComponentInChildren<CityTrafficSignalSystem>();
-            if (existing) return existing;
+            if (existing)
+            {
+                CityTrafficSignalVisual.Build(existing.transform.parent, existing);
+                return existing;
+            }
             var root = new GameObject("CityTrafficSignals").transform;
             root.SetParent(world, false);
             var system = root.gameObject.AddComponent<CityTrafficSignalSystem>();
+            CityTrafficSignalVisual.Build(world, system);
             return system;
         }
 

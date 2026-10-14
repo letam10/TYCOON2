@@ -34,5 +34,20 @@ namespace Tycoon.Tests
 
             Assert.That(signals.ShouldWaitPedestrian(new Vector3(0, 0, 0)), Is.False);
         }
+
+        [Test]
+        public void SignalVisualBuildsThreeLampsPerDefinition()
+        {
+            root = new GameObject("PedestrianSignals");
+            CityTrafficSignalSystem signals = CityTrafficSignalSystem.Build(root.transform);
+            CityTrafficSignalVisual visual = root.GetComponentInChildren<CityTrafficSignalVisual>(true);
+
+            Assert.That(signals, Is.Not.Null);
+            Assert.That(visual, Is.Not.Null);
+            Assert.That(visual.LampCount,
+                Is.EqualTo(CityTrafficSignalSystem.Definitions.Count * 3));
+            Assert.That(root.GetComponentsInChildren<Light>(true).Length,
+                Is.EqualTo(CityTrafficSignalSystem.Definitions.Count * 3));
+        }
     }
 }
