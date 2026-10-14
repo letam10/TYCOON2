@@ -48,10 +48,8 @@ namespace Tycoon.Tests
                 WorldCutawayVolume volume = landmarkObject.GetComponent<WorldCutawayVolume>();
 
                 Assert.That(volume, Is.Not.Null);
-                Assert.That(volume.upperShellRenderers,
-                    Does.Contain(upper.GetComponent<Renderer>()));
-                Assert.That(volume.upperShellRenderers,
-                    Does.Not.Contain(interior.GetComponent<Renderer>()));
+                Assert.That(volume.upperShellRenderers.Contains(upper.GetComponent<Renderer>()), Is.True);
+                Assert.That(volume.upperShellRenderers.Contains(interior.GetComponent<Renderer>()), Is.False);
             }
             finally
             {
