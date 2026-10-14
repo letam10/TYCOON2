@@ -251,6 +251,25 @@ namespace Tycoon
         {
             g.Box(new Vector3(30, .02f, 0), new Vector3(84f, .04f, 70f),
                 "water", "#346D73");
+            const float terminalX = -43f;
+            g.Box(new Vector3(terminalX, .05f, 0), new Vector3(38f, .1f, 18f),
+                "stone", "#AAA89A");
+            g.Box(new Vector3(terminalX, 2.2f, 8.7f), new Vector3(38f, 4.4f, .3f),
+                "plaster", "#A9B6A3");
+            g.Box(new Vector3(terminalX - 18.85f, 2.2f, 0), new Vector3(.3f, 4.4f, 18f),
+                "plaster", "#A9B6A3");
+            g.Box(new Vector3(terminalX + 18.85f, 2.2f, 0), new Vector3(.3f, 4.4f, 18f),
+                "plaster", "#A9B6A3");
+            g.Box(new Vector3(terminalX, 4.55f, 0), new Vector3(39f, .25f, 19f),
+                "roof", "#5D7772");
+            g.Box(new Vector3(terminalX, 1.05f, -3.2f), new Vector3(10f, .18f, 1.8f),
+                "wood", "#806449");
+            g.Collider("MarinaTerminalBackWall", new Vector3(terminalX, 2.2f, 8.7f),
+                new Vector3(38f, 4.4f, .3f));
+            g.Collider("MarinaTerminalSideWall", new Vector3(terminalX - 18.85f, 2.2f, 0),
+                new Vector3(.3f, 4.4f, 18f));
+            g.Collider("MarinaTerminalSideWall", new Vector3(terminalX + 18.85f, 2.2f, 0),
+                new Vector3(.3f, 4.4f, 18f));
             WorldExpansionBoat.Build(root, new Vector3(20, 0, -27));
             AddPier(g, root, poi, -32f);
             AddPier(g, root, poi, 27f);

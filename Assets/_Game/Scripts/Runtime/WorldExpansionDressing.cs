@@ -94,7 +94,10 @@ namespace Tycoon
 
         static void AddExpansionCutaway(Transform root, Vector3 footprint)
         {
-            Transform cutawayRoot = new GameObject("ExpansionCutaway").transform;
+            string cutawayName = root.name == "Expansion_NorthVillage"
+                ? "VillageCutaway"
+                : "ExpansionCutaway";
+            Transform cutawayRoot = new GameObject(cutawayName).transform;
             cutawayRoot.SetParent(root, false);
             WorldCutawayVolume volume = cutawayRoot.gameObject.AddComponent<WorldCutawayVolume>();
             volume.localFootprint = footprint;
