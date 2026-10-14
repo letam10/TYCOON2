@@ -52,6 +52,16 @@ namespace Tycoon
                     AddTree(g, root, poi, local, 4.8f + (column & 1) * .8f, (row + column) % 2 == 0);
                 }
             }
+            for (int row = -4; row <= 4; row++)
+            {
+                for (int column = -5; column <= 5; column++)
+                {
+                    if ((row * 3 + column) % 5 == 0)
+                        continue;
+                    Vector3 local = new Vector3(column * 13f + (row & 1) * 4f, 0, row * 13f);
+                    AddGrass(g, root, poi, local, .65f + ((row + column) & 2) * .12f);
+                }
+            }
             Vector3[] rocks =
             {
                 new Vector3(-54, 0, -18), new Vector3(-12, 0, -32),
@@ -61,6 +71,20 @@ namespace Tycoon
                 AddRock(g, root, poi, rocks[index], 1.25f + index % 2 * .45f);
             AddBench(g, root, poi, new Vector3(-8, 0, 27), 0f);
             AddBench(g, root, poi, new Vector3(52, 0, -6), 90f);
+        }
+
+        static void AddGrass(
+            CityStaticGeometry g,
+            Transform root,
+            WorldExpansionPoi poi,
+            Vector3 local,
+            float height)
+        {
+            if (!CanPlace(root, local, poi.Footprint, .8f))
+                return;
+            string color = ((Mathf.RoundToInt(local.x) + Mathf.RoundToInt(local.z)) & 1) == 0
+                ? "#4E824A" : "#6B9954";
+            g.Cone(local + Vector3.up * height * .5f, .55f, height, "grass", color);
         }
         static void AddTree(
             CityStaticGeometry g,
