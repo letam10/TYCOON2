@@ -89,7 +89,8 @@ namespace Tycoon
             texture.filterMode = FilterMode.Trilinear;
             texture.anisoLevel = 4;
             texture.SetPixels32(pixels);
-            texture.Apply(true, true);
+            // Giữ pixel đọc được để công cụ editor có thể xuất texture đúng dữ liệu CPU.
+            texture.Apply(true, false);
             cache[surface] = texture;
             return texture;
         }

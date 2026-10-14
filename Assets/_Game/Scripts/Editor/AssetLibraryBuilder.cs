@@ -103,6 +103,7 @@ namespace Tycoon.Editor
             AssetDatabase.SaveAssets();
             Directory.CreateDirectory(Path.Combine(Root, "work/art-refresh"));
             File.WriteAllText(Path.Combine(Root, "work/art-refresh/unity-import.json"), JsonUtility.ToJson(report, true));
+            TownSurfaceTextureExporter.Export();
             Debug.Log("ASSET_LIBRARY_IMPORT PASS " + report.models + " models, " + report.triangles + " triangles.");
         }
 
