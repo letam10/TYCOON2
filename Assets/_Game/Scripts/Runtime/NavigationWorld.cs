@@ -28,6 +28,7 @@ namespace Tycoon
             {
                 Physics.SyncTransforms();
                 surface.BuildNavMesh();
+                WorldExpansionDressing.BuildNavigation(transform);
             }
             finally
             {

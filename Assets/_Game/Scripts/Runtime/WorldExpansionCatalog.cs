@@ -51,14 +51,14 @@ namespace Tycoon
                     "Khu bảo tồn rừng",
                     new Vector3(-420, 0, 250),
                     new Vector3(180, 4, 150),
-                    new Vector3(-460, 0, 230),
-                    new Vector3(-370, 0, 275)),
+                    new Vector3(-370, 0, 275),
+                    new Vector3(-350, 0, 267)),
                 new WorldExpansionPoi(
                     "IndustrialYard",
                     "Bãi công nghiệp",
                     new Vector3(410, 0, 300),
                     new Vector3(180, 4, 140),
-                    new Vector3(365, 0, 280),
+                    new Vector3(330, 0, 250),
                     new Vector3(465, 0, 330)),
                 new WorldExpansionPoi(
                     "NorthVillage",

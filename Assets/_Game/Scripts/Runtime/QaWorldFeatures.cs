@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
@@ -60,10 +61,28 @@ namespace Tycoon
                 Check(Vector3.Distance(game.Player.transform.position, CityMapLocations.Points[i].position) < 3.5f,
                     "Map lands at the chosen special point " + CityMapLocations.Points[i].id);
             }
+            CheckExpansionNavigation();
             yield return CoastalWaterPictures();
             yield return FeatureBindingsAcceptance();
             yield return FeatureSlotsAcceptance();
             Check(game.RuntimeErrors.Count == 0, "Map, bindings and save slots have no runtime errors");
+        }
+
+        void CheckExpansionNavigation()
+        {
+            var path = new NavMeshPath();
+            foreach (WorldExpansionPoi poi in WorldExpansionCatalog.BuildDefault())
+                foreach (Vector3 anchor in poi.RouteAnchors)
+                {
+                    bool sampled = NavMesh.SamplePosition(anchor, out var hit, 2f, NavMesh.AllAreas);
+                    bool calculated = sampled && NavMesh.CalculatePath(game.Player.transform.position, hit.position,
+                        NavMesh.AllAreas, path);
+                    bool reachable = calculated && path.status == NavMeshPathStatus.PathComplete;
+                    string status = sampled ? path.status.ToString() : "SampleMissing";
+                    string distance = sampled ? hit.distance.ToString("0.00") : "-";
+                    Check(reachable, "Expansion route reaches " + poi.Id + " " + anchor
+                        + " sampleDistance=" + distance + " pathStatus=" + status);
+                }
         }
 
         IEnumerator FeatureKey(Key key)
