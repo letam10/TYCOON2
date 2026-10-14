@@ -53,6 +53,10 @@ namespace Tycoon
                 pin.name = "MapPin_" + point.id;
                 Vector2 position = worldMap.Position(point.position);
                 Rect((RectTransform)pin.transform, position, position, new(-12, -12), new(12, 12));
+                var caption = Text("MapLabel_" + point.id, worldMap.transform, point.label,
+                    11, TextAnchor.MiddleLeft, Ink);
+                caption.raycastTarget = false;
+                Rect(caption.rectTransform, position, position, new(10, -9), new(170, 9));
             }
             mapPlayer = NewRect("MapPlayerIndicator", worldMap.transform).gameObject.AddComponent<MapPlayerIndicator>();
             Rect(mapPlayer.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
