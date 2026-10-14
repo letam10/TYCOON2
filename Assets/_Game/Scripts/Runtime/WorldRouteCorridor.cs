@@ -344,9 +344,13 @@ namespace Tycoon
                     RouteKind.Highway,
                     new[]
                     {
-                        new Vector3(-190, 0, -300),
+                        new Vector3(190, 0, -112),
+                        new Vector3(205, 0, -150),
+                        new Vector3(218, 0, -205),
+                        new Vector3(205, 0, -255),
+                        new Vector3(190, 0, -300),
                         new Vector3(0, 0, -300),
-                        new Vector3(190, 0, -300)
+                        new Vector3(-190, 0, -300)
                     },
                     8f,
                     true)

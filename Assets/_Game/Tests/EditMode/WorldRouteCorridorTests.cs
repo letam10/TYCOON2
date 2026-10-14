@@ -74,6 +74,17 @@ namespace Tycoon.Tests
             Assert.That(HasHeadingChange(industrial.Nodes), Is.True);
         }
 
+        [Test]
+        public void SouthHighwayConnectsRingToExpansionRoad()
+        {
+            Assert.That(WorldRouteCatalog.TryGet("highway-ring", out WorldRouteCorridor ring), Is.True);
+            Assert.That(WorldRouteCatalog.TryGet("expansion-south-highway", out WorldRouteCorridor south),
+                Is.True);
+            Assert.That(Vector3.Distance(ring.Nodes[3], south.Nodes[0]), Is.LessThan(.01f));
+            Assert.That(Vector3.Distance(south.Nodes[4], new Vector3(190, 0, -300)), Is.LessThan(.01f));
+            Assert.That(HasHeadingChange(south.Nodes), Is.True);
+        }
+
         static bool HasHeadingChange(IReadOnlyList<Vector3> nodes)
         {
             for (int index = 1; index < nodes.Count - 1; index++)
