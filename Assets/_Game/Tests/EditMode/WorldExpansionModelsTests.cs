@@ -80,5 +80,30 @@ namespace Tycoon.Tests
                 Object.DestroyImmediate(root);
             }
         }
+
+        [Test]
+        public void WayfindingBuildCreatesOneSignSetPerPoi()
+        {
+            foreach (WorldExpansionPoi poi in WorldExpansionCatalog.BuildDefault())
+            {
+                GameObject root = new GameObject("ExpansionWayfindingTest_" + poi.Id);
+                root.transform.localPosition = poi.Center;
+                try
+                {
+                    WorldExpansionWayfinding.Build(root.transform, poi);
+                    WorldExpansionWayfinding.Build(root.transform, poi);
+                    Transform signs = root.transform.Find("Wayfinding");
+                    Assert.That(signs, Is.Not.Null, poi.Id + " did not create wayfinding root");
+                    Assert.That(signs.GetComponentsInChildren<Renderer>(true).Length, Is.GreaterThanOrEqualTo(3),
+                        poi.Id + " has no complete sign set");
+                    Assert.That(root.transform.childCount, Is.EqualTo(1),
+                        poi.Id + " created duplicate wayfinding roots");
+                }
+                finally
+                {
+                    Object.DestroyImmediate(root);
+                }
+            }
+        }
     }
 }

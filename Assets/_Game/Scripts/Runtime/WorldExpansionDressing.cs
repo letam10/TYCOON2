@@ -76,6 +76,7 @@ namespace Tycoon
                     poi.RouteAnchors[index] - poi.Center, RouteColor(poi.Id));
 
             WorldExpansionModels.Build(root, poi);
+            WorldExpansionWayfinding.Build(root, poi);
 
             WorldInteractionAction action = poi.Id == "EastMarina"
                 ? WorldInteractionAction.BoardVessel
