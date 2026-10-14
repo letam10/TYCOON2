@@ -77,8 +77,8 @@ namespace Tycoon
 
             WorldExpansionModels.Build(root, poi);
             WorldExpansionWayfinding.Build(root, poi);
-            if (poi.Id == "NorthVillage")
-                AddVillageCutaway(root, poi.Footprint);
+            if (poi.Id is "NorthVillage" or "IndustrialYard" or "EastMarina")
+                AddExpansionCutaway(root, poi.Footprint);
 
             WorldInteractionAction action = poi.Id == "EastMarina"
                 ? WorldInteractionAction.BoardVessel
@@ -92,9 +92,9 @@ namespace Tycoon
                 area.CarrierSource = boat;
         }
 
-        static void AddVillageCutaway(Transform root, Vector3 footprint)
+        static void AddExpansionCutaway(Transform root, Vector3 footprint)
         {
-            Transform cutawayRoot = new GameObject("VillageCutaway").transform;
+            Transform cutawayRoot = new GameObject("ExpansionCutaway").transform;
             cutawayRoot.SetParent(root, false);
             WorldCutawayVolume volume = cutawayRoot.gameObject.AddComponent<WorldCutawayVolume>();
             volume.localFootprint = footprint;
@@ -102,10 +102,17 @@ namespace Tycoon
             {
                 if (!renderer || renderer.transform.IsChildOf(cutawayRoot))
                     continue;
-                string material = renderer.sharedMaterial ? renderer.sharedMaterial.name.ToLowerInvariant() : "";
-                if (material.Contains("roof"))
+                if (IsExpansionShell(renderer))
                     volume.RegisterRenderer(renderer);
             }
+        }
+
+        static bool IsExpansionShell(Renderer renderer)
+        {
+            string name = renderer.gameObject.name.ToLowerInvariant();
+            string material = renderer.sharedMaterial ? renderer.sharedMaterial.name.ToLowerInvariant() : "";
+            return name.Contains("roof") || name.Contains("upper") || material.Contains("roof")
+                || material.Contains("tile") || renderer.bounds.center.y > 4.5f;
         }
 
         static void Segment(Transform parent, Vector3 start, Vector3 end, string color)
