@@ -42,14 +42,14 @@ namespace Tycoon
         }
         static void Forest(CityStaticGeometry g, Transform root, WorldExpansionPoi poi)
         {
-            for (int row = -2; row <= 2; row++)
+            for (int row = -3; row <= 3; row++)
             {
-                for (int column = -3; column <= 3; column++)
+                for (int column = -4; column <= 4; column++)
                 {
-                    Vector3 local = new Vector3(column * 28f + (row & 1) * 7f, 0, row * 27f);
-                    if ((row + column) % 3 == 0)
+                    Vector3 local = new Vector3(column * 22f + (row & 1) * 6f, 0, row * 23f);
+                    if ((row + column) % 4 == 0 || column == -1 || column == 3)
                         continue;
-                    AddTree(g, root, poi, local, 4.8f + (column & 1) * .8f, (row & 1) == 0);
+                    AddTree(g, root, poi, local, 4.8f + (column & 1) * .8f, (row + column) % 2 == 0);
                 }
             }
             Vector3[] rocks =
@@ -113,17 +113,42 @@ namespace Tycoon
         }
         static void Industrial(CityStaticGeometry g, Transform root, WorldExpansionPoi poi)
         {
-            for (int row = 0; row < 2; row++)
+            for (int row = 0; row < 3; row++)
             {
-                for (int column = 0; column < 3; column++)
+                for (int column = 0; column < 4; column++)
                 {
-                    Vector3 local = new Vector3(-54f + column * 25f, 0, -29f + row * 34f);
-                    AddContainer(g, root, poi, local, false, (row + column) % 2 == 0);
+                    Vector3 local = new Vector3(-62f + column * 30f, 0, -43f + row * 39f);
+                    AddContainer(g, root, poi, local, row == 2, (row + column) % 2 == 0);
                 }
             }
-            AddContainer(g, root, poi, new Vector3(23, 0, 34), true, true);
-            AddSilo(g, root, poi, new Vector3(52, 0, -25));
-            AddStackBoundary(g, root, poi, new Vector3(36, 0, 27));
+            AddContainer(g, root, poi, new Vector3(46, 0, 42), true, true);
+            AddSilo(g, root, poi, new Vector3(48, 0, 49));
+            AddSilo(g, root, poi, new Vector3(70, 0, 49));
+            AddSilo(g, root, poi, new Vector3(70, 0, 23));
+            AddPipeRun(g, root, poi, new Vector3(48, 0, 49), new Vector3(48, 0, 14));
+            AddPipeRun(g, root, poi, new Vector3(70, 0, 49), new Vector3(30, 0, 49));
+            AddPipeRun(g, root, poi, new Vector3(70, 0, 23), new Vector3(70, 0, -8));
+            AddStackBoundary(g, root, poi, new Vector3(24, 0, 53));
+        }
+
+        // Ống chỉ tạo khi cả hai đầu và điểm giữa còn cách route đủ xa.
+        static void AddPipeRun(
+            CityStaticGeometry g,
+            Transform root,
+            WorldExpansionPoi poi,
+            Vector3 start,
+            Vector3 end)
+        {
+            Vector3 midpoint = (start + end) * .5f;
+            if (!CanPlace(root, start, poi.Footprint, 3.2f)
+                || !CanPlace(root, midpoint, poi.Footprint, 3.2f)
+                || !CanPlace(root, end, poi.Footprint, 3.2f))
+                return;
+            Vector3 elevatedStart = start + Vector3.up * 8.2f;
+            Vector3 elevatedEnd = end + Vector3.up * 8.2f;
+            g.Beam(elevatedStart, elevatedEnd, .7f, "metal", "#788883");
+            g.Cylinder(start + Vector3.up * 4.1f, .42f, 8.2f, "metal", "#65746F");
+            g.Cylinder(end + Vector3.up * 4.1f, .42f, 8.2f, "metal", "#65746F");
         }
         static void AddContainer(
             CityStaticGeometry g,

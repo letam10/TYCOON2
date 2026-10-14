@@ -43,10 +43,12 @@ Shader "TYCOON/Town Water"
             UNITY_SETUP_INSTANCE_ID(input);
             UNITY_TRANSFER_INSTANCE_ID(input, output);
             output.positionWS = TransformObjectToWorld(input.positionOS.xyz);
-            // Sóng cao tối đa 3 cm; cùng phép dịch dùng trong mọi pass để depth khớp mặt nước.
+            // Sóng nhiều tầng cao tối đa khoảng 6 cm; mọi pass dùng cùng phép dịch để depth khớp.
             float calm = _Shoreline.w > 0 ? smoothstep(0, _Shoreline.w, WaterShoreDistance(output.positionWS)) : 1;
+            float swell = sin(dot(output.positionWS.xz, float2(.07, .11)) + _Time.y * .19) * .025;
             output.positionWS.y += (sin(dot(output.positionWS.xz, float2(.37, .21)) + _Time.y * .55) * .02
-                + sin(dot(output.positionWS.xz, float2(-.15, .49)) - _Time.y * .37) * .01) * calm;
+                + sin(dot(output.positionWS.xz, float2(-.15, .49)) - _Time.y * .37) * .01
+                + swell) * calm;
             output.positionCS = TransformWorldToHClip(output.positionWS);
             return output;
         }

@@ -37,6 +37,32 @@ namespace Tycoon.Tests
             }
         }
 
+        [Test]
+        public void EveryMapPointHasStableTypedIcon()
+        {
+            foreach (var point in CityMapLocations.Points)
+            {
+                string kind = CityMapGraphic.PoiKind(point.id);
+                string glyph = CityMapGraphic.PoiGlyph(point.id);
+                Color color = CityMapGraphic.PoiColor(point.id);
+                Assert.That(kind, Is.Not.Empty, point.id);
+                Assert.That(glyph, Is.Not.Empty, point.id);
+                Assert.That(CityMapGraphic.PoiKind(point.id), Is.EqualTo(kind), point.id);
+                Assert.That(CityMapGraphic.PoiGlyph(point.id), Is.EqualTo(glyph), point.id);
+                Assert.That(color.a, Is.GreaterThan(0f), point.id);
+            }
+        }
+
+        [Test]
+        public void ExpansionMapIconsUseDistinctAreaTypes()
+        {
+            Assert.That(CityMapGraphic.PoiKind("forest_reserve"), Is.EqualTo("forest"));
+            Assert.That(CityMapGraphic.PoiKind("industrial_yard"), Is.EqualTo("industrial"));
+            Assert.That(CityMapGraphic.PoiKind("south_highway"), Is.EqualTo("highway"));
+            Assert.That(CityMapGraphic.PoiColor("forest_reserve"),
+                Is.Not.EqualTo(CityMapGraphic.PoiColor("industrial_yard")));
+        }
+
         static Rect CaptionRect(string id)
         {
             Vector3 position = FindPoint(id).position;

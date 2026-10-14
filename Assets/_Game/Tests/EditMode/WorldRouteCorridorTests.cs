@@ -37,7 +37,7 @@ namespace Tycoon.Tests
         [Test]
         public void ReservedCorridorDoesNotBlockPointFarFromEveryRoute()
         {
-            bool reserved = WorldRouteCatalog.IsReserved(new Vector3(260, 0, 205), .5f,
+            bool reserved = WorldRouteCatalog.IsReserved(new Vector3(520, 0, 40), .5f,
                 out string corridorId);
 
             Assert.That(reserved, Is.False);
@@ -59,6 +59,32 @@ namespace Tycoon.Tests
             Assert.That(WorldRouteCatalog.TryGet("rail-mainline", out WorldRouteCorridor rail), Is.True);
             Assert.That(rail.Kind, Is.EqualTo(RouteKind.Rail));
             Assert.That(WorldRouteCatalog.TryGet("missing-route", out _), Is.False);
+        }
+
+        [Test]
+        public void ExpansionAccessRoutesUseCurvedIntermediateNodes()
+        {
+            Assert.That(WorldRouteCatalog.TryGet("expansion-forest-access", out WorldRouteCorridor forest),
+                Is.True);
+            Assert.That(WorldRouteCatalog.TryGet("expansion-industrial-approach", out WorldRouteCorridor industrial),
+                Is.True);
+            Assert.That(forest.Nodes.Count, Is.GreaterThanOrEqualTo(8));
+            Assert.That(industrial.Nodes.Count, Is.GreaterThanOrEqualTo(8));
+            Assert.That(HasHeadingChange(forest.Nodes), Is.True);
+            Assert.That(HasHeadingChange(industrial.Nodes), Is.True);
+        }
+
+        static bool HasHeadingChange(IReadOnlyList<Vector3> nodes)
+        {
+            for (int index = 1; index < nodes.Count - 1; index++)
+            {
+                Vector3 incoming = nodes[index] - nodes[index - 1];
+                Vector3 outgoing = nodes[index + 1] - nodes[index];
+                float turn = incoming.x * outgoing.z - incoming.z * outgoing.x;
+                if (Mathf.Abs(turn) > .01f)
+                    return true;
+            }
+            return false;
         }
     }
 }

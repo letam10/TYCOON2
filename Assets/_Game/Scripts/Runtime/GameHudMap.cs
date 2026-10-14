@@ -49,8 +49,17 @@ namespace Tycoon
                 button.name = "MapTravel_" + point.id;
                 float top = .94f - i * .06f;
                 Rect((RectTransform)button.transform, new(.755f, top - .06f), new(.97f, top), Vector2.zero, Vector2.zero);
-                var pin = Button(worldMap.transform, "•", () => MapTravel(index), true);
+                var pin = Button(worldMap.transform, CityMapGraphic.PoiGlyph(point.id),
+                    () => MapTravel(index), true);
                 pin.name = "MapPin_" + point.id;
+                if (pin.targetGraphic is Image pinImage)
+                    pinImage.color = Color.clear;
+                var pinLabel = pin.GetComponentInChildren<Text>();
+                if (pinLabel)
+                {
+                    pinLabel.color = CityMapGraphic.PoiColor(point.id);
+                    pinLabel.fontSize = 17;
+                }
                 Vector2 position = worldMap.Position(point.position);
                 Rect((RectTransform)pin.transform, position, position, new(-12, -12), new(12, 12));
                 var caption = Text("MapLabel_" + point.id, worldMap.transform, point.label,

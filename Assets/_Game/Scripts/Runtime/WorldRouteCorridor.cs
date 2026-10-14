@@ -287,8 +287,13 @@ namespace Tycoon
                     new[]
                     {
                         new Vector3(-370, 0, 275),
-                        new Vector3(-270, 0, 235),
-                        new Vector3(-170, 0, 195),
+                        new Vector3(-342, 0, 286),
+                        new Vector3(-309, 0, 276),
+                        new Vector3(-274, 0, 248),
+                        new Vector3(-235, 0, 226),
+                        new Vector3(-192, 0, 208),
+                        new Vector3(-150, 0, 190),
+                        new Vector3(-108, 0, 176),
                         new Vector3(-70, 0, 165),
                         new Vector3(30, 0, 133)
                     },
@@ -300,8 +305,13 @@ namespace Tycoon
                     new[]
                     {
                         new Vector3(190, 0, 155),
-                        new Vector3(250, 0, 205),
-                        new Vector3(330, 0, 250),
+                        new Vector3(220, 0, 176),
+                        new Vector3(251, 0, 205),
+                        new Vector3(286, 0, 221),
+                        new Vector3(323, 0, 247),
+                        new Vector3(359, 0, 265),
+                        new Vector3(397, 0, 291),
+                        new Vector3(432, 0, 309),
                         new Vector3(465, 0, 330)
                     },
                     7f,
