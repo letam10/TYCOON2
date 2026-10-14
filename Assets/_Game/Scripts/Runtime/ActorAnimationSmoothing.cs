@@ -30,6 +30,13 @@ namespace Tycoon
 
         public float CurrentSpeed => currentSpeed;
 
+        public void ClearAction()
+        {
+            if (actionState == null) return;
+            actionState = null;
+            ApplyLocomotionState();
+        }
+
         public void Initialize(Animator animator, float locomotionSpeed = 1f)
         {
             this.animator = animator;
