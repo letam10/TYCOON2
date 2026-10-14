@@ -156,6 +156,10 @@ namespace Tycoon
             g.Box(p + new Vector3(0, 2.4f, 0), new(1.5f, .48f, .08f), "metal", "#557E70");
             g.Beam(p + new Vector3(-.5f, 2.4f, -.06f), p + new Vector3(.5f, 2.4f, -.06f),
                 .06f, "metal", "#E1DBC2");
+            g.Beam(p + new Vector3(0, 4.18f, 0), p + new Vector3(0, 4.18f, -2.25f),
+                .1f, "metal", Metal);
+            g.Box(p + new Vector3(0, 4.18f, -2.35f), new(.52f, 1.45f, .35f),
+                "metal", "#35474B");
             g.Collider("TrafficSignal", p + Vector3.up * 2, new(.22f, 4, .22f));
         }
 
