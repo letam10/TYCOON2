@@ -60,12 +60,49 @@ namespace Tycoon
                     "Map travels to unblocked destination " + CityMapLocations.Points[i].id);
                 Check(Vector3.Distance(game.Player.transform.position, CityMapLocations.Points[i].position) < 3.5f,
                     "Map lands at the chosen special point " + CityMapLocations.Points[i].id);
+                if (CityMapLocations.Points[i].id.Contains("_"))
+                {
+                    yield return new WaitForSecondsRealtime(.2f);
+                    yield return Capture("expansion-" + CityMapLocations.Points[i].id + ".png");
+                    yield return CaptureExpansionCenter(CityMapLocations.Points[i].id);
+                }
             }
             CheckExpansionNavigation();
             yield return CoastalWaterPictures();
             yield return FeatureBindingsAcceptance();
             yield return FeatureSlotsAcceptance();
             Check(game.RuntimeErrors.Count == 0, "Map, bindings and save slots have no runtime errors");
+        }
+
+        IEnumerator CaptureExpansionCenter(string id)
+        {
+            string poiId = id switch
+            {
+                "forest_reserve" => "ForestReserve",
+                "industrial_yard" => "IndustrialYard",
+                "north_village" => "NorthVillage",
+                "east_marina" => "EastMarina",
+                "south_highway" => "SouthHighway",
+                _ => string.Empty
+            };
+            WorldExpansionPoi poi = WorldExpansionCatalog.BuildDefault()
+                .First(candidate => candidate.Id == poiId);
+            Transform originalTarget = game.CameraRig.Target;
+            float originalYaw = game.CameraRig.Yaw;
+            float originalDistance = game.CameraRig.Distance;
+            var focus = new GameObject("QaExpansionFocus");
+            focus.transform.position = poi.Center + Vector3.up * .5f;
+            game.CameraRig.Target = focus.transform;
+            game.CameraRig.Yaw = 45;
+            game.CameraRig.Distance = 125;
+            game.CameraRig.Snap();
+            yield return new WaitForSecondsRealtime(.25f);
+            yield return Capture("expansion-center-" + id + ".png");
+            game.CameraRig.Target = originalTarget;
+            game.CameraRig.Yaw = originalYaw;
+            game.CameraRig.Distance = originalDistance;
+            game.CameraRig.Snap();
+            Destroy(focus);
         }
 
         void CheckExpansionNavigation()
