@@ -77,6 +77,8 @@ namespace Tycoon
 
             WorldExpansionModels.Build(root, poi);
             WorldExpansionWayfinding.Build(root, poi);
+            if (poi.Id == "NorthVillage")
+                AddVillageCutaway(root, poi.Footprint);
 
             WorldInteractionAction action = poi.Id == "EastMarina"
                 ? WorldInteractionAction.BoardVessel
@@ -88,6 +90,22 @@ namespace Tycoon
                 approach, 6f);
             if (boat)
                 area.CarrierSource = boat;
+        }
+
+        static void AddVillageCutaway(Transform root, Vector3 footprint)
+        {
+            Transform cutawayRoot = new GameObject("VillageCutaway").transform;
+            cutawayRoot.SetParent(root, false);
+            WorldCutawayVolume volume = cutawayRoot.gameObject.AddComponent<WorldCutawayVolume>();
+            volume.localFootprint = footprint;
+            foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>(true))
+            {
+                if (!renderer || renderer.transform.IsChildOf(cutawayRoot))
+                    continue;
+                string material = renderer.sharedMaterial ? renderer.sharedMaterial.name.ToLowerInvariant() : "";
+                if (material.Contains("roof"))
+                    volume.RegisterRenderer(renderer);
+            }
         }
 
         static void Segment(Transform parent, Vector3 start, Vector3 end, string color)

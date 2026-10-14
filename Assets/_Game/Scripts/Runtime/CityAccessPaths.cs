@@ -109,8 +109,9 @@ namespace Tycoon
                 "#526C6C", root);
             Art.Box("SignBoard", Vector3.up * 2.25f, new(2.8f, .62f, .08f),
                 "#3D7165", root);
-            Art.Label(text, Vector3.up * 2.25f + Vector3.back * .06f, root,
-                .16f, "#F2E8C7", true);
+            if (Art.Catalog)
+                Art.Label(text, Vector3.up * 2.25f + Vector3.back * .06f, root,
+                    .16f, "#F2E8C7", true);
         }
 
         static string SignText(string id)

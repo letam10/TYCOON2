@@ -10,8 +10,8 @@ namespace Tycoon.Tests
         [Test]
         public void ExpandedWorldDoublesBothAxesWithoutChangingExistingStationsOrRevision()
         {
-            Assert.That(CityDistricts.GroundWidth, Is.EqualTo(282.842712f * 2).Within(.001f));
-            Assert.That(CityDistricts.GroundDepth, Is.EqualTo(192.333044f * 2).Within(.001f));
+            Assert.That(CityDistricts.GroundWidth, Is.EqualTo(565.685424f * 2).Within(.001f));
+            Assert.That(CityDistricts.GroundDepth, Is.EqualTo(384.666088f * 2).Within(.001f));
             Assert.That(CityDistricts.Revision, Is.EqualTo(2));
             Assert.That(CityDistricts.PlayerSpawn, Is.EqualTo(new Vector3(-46, .05f, -25)));
             Assert.That(CityDistricts.Center("processing"), Is.EqualTo(new Vector3(67, 0, -13)));

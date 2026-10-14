@@ -17,6 +17,9 @@ namespace Tycoon
         public bool usePlayerLayer;
         public LayerMask playerLayerMask = ~0;
 
+        [Header("Director footprint")]
+        public Vector3 localFootprint;
+
         [Header("Trigger and hysteresis")]
         public bool useTriggerCallbacks = true;
         [Min(0f)]

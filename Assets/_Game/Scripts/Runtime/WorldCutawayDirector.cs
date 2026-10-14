@@ -55,6 +55,19 @@ namespace Tycoon
                     Volume = volume
                 });
             }
+
+            foreach (var volume in world.GetComponentsInChildren<WorldCutawayVolume>(true))
+            {
+                if (!volume || volume.GetComponent<CityLandmark>() || volume.localFootprint.x <= 0
+                    || volume.localFootprint.z <= 0)
+                    continue;
+                entries.Add(new Entry
+                {
+                    Root = volume.transform,
+                    Footprint = volume.localFootprint,
+                    Volume = volume
+                });
+            }
         }
 
         void Update()

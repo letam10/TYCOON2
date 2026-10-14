@@ -24,12 +24,32 @@ namespace Tycoon
             Fence(g, -58.95f);
             Fence(g, -69.05f);
             g.Finish();
+            AddCutaway(root, new Vector3(-17, 0, -51.5f), new Vector3(15, 8, 6));
             if (signage)
             {
                 Art.Label("GA TRUNG TÂM", new(-17, 3.1f, -49.2f), root, .17f);
                 Art.Label("SÂN GA 1", new(5, 2.9f, -57.5f), root, .13f);
                 Art.Label("SÂN GA 2", new(5, 2.9f, -70.5f), root, .13f);
                 Art.Label("LỐI QUA HAI SÂN GA", new(-15.5f, 2.25f, -54), root, .105f);
+            }
+        }
+
+        static void AddCutaway(Transform root, Vector3 localCenter, Vector3 footprint)
+        {
+            Transform cutawayRoot = TownModelParts.Root("StationCutaway", localCenter, root);
+            WorldCutawayVolume volume = cutawayRoot.gameObject.AddComponent<WorldCutawayVolume>();
+            volume.localFootprint = footprint;
+            Bounds area = new Bounds(root.TransformPoint(localCenter) + Vector3.up * 3f,
+                new Vector3(footprint.x, 8f, footprint.z));
+            foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>(true))
+            {
+                if (!renderer || renderer.transform.IsChildOf(cutawayRoot))
+                    continue;
+                string material = renderer.sharedMaterial ? renderer.sharedMaterial.name.ToLowerInvariant() : "";
+                bool upper = material.Contains("roof") || material.Contains("tile")
+                    || renderer.bounds.center.y > 3.1f;
+                if (upper && renderer.bounds.Intersects(area))
+                    volume.RegisterRenderer(renderer);
             }
         }
 
