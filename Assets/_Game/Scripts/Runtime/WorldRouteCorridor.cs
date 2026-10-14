@@ -324,6 +324,7 @@ namespace Tycoon
                     {
                         new Vector3(370, 0, -135),
                         new Vector3(420, 0, -120),
+                        new Vector3(440, 0, -152),
                         new Vector3(470, 0, -105)
                     },
                     5f,
