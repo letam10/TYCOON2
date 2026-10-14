@@ -71,6 +71,29 @@ namespace Tycoon.Tests
             Assert.That(player.transform.localPosition, Is.EqualTo(carrier.DoorInsideLocal));
         }
 
+        [Test]
+        public void LandmarkAndDistrictAreasExposeSpecificActions()
+        {
+            root = new GameObject("InteractionRegistry");
+            var bankObject = new GameObject("Bank");
+            bankObject.transform.SetParent(root.transform, false);
+            var bank = bankObject.AddComponent<CityLandmark>();
+            bank.Id = "Bank";
+            bank.Footprint = new Vector3(38, 12, 38);
+
+            WorldInteractionRegistry.Build(root.transform);
+
+            WorldInteractionArea bankArea = bankObject.GetComponent<WorldInteractionArea>();
+            WorldInteractionArea restaurant = root.transform.Find("WorldInteraction_restaurant")
+                .GetComponent<WorldInteractionArea>();
+            WorldInteractionArea forest = root.transform.Find("WorldInteraction_forest")
+                .GetComponent<WorldInteractionArea>();
+
+            Assert.That(bankArea.Action, Is.EqualTo(WorldInteractionAction.Banking));
+            Assert.That(restaurant.Action, Is.EqualTo(WorldInteractionAction.Dine));
+            Assert.That(forest.Action, Is.EqualTo(WorldInteractionAction.Explore));
+        }
+
         sealed class TestCarrier : MonoBehaviour, ICityPassengerCarrier
         {
             public int Boardings;

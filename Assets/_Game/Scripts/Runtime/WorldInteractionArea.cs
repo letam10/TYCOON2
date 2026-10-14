@@ -9,6 +9,9 @@ namespace Tycoon
     {
         Visit,
         Swim,
+        Explore,
+        Dine,
+        Banking,
         BoardVessel,
         BoardTrain,
         CallTaxi
@@ -258,6 +261,7 @@ namespace Tycoon
                 }
                 else if (landmark.Id == "Bank")
                 {
+                    action = WorldInteractionAction.Banking;
                     label = "Ngân hàng";
                     message = "Mở quầy ngân hàng để gửi hoặc rút tiền.";
                 }
@@ -273,9 +277,9 @@ namespace Tycoon
                     3.2f);
             }
             AddDistrict("restaurant", "Nhà hàng", "Bạn có thể vào nhà hàng để phục vụ và dùng bữa.",
-                WorldInteractionAction.Visit, CityDistricts.Center("restaurant") + Vector3.back * 3);
+                WorldInteractionAction.Dine, CityDistricts.Center("restaurant") + Vector3.back * 3);
             AddDistrict("forest", "Rừng nguyên sinh", "Đường rừng đã mở; hãy đi theo lối mòn.",
-                WorldInteractionAction.Visit, new Vector3(30, 0, 133));
+                WorldInteractionAction.Explore, new Vector3(30, 0, 133));
         }
 
         void AddDistrict(
