@@ -184,7 +184,26 @@ namespace Tycoon
                 CityLandmark landmark = landmarks.SingleOrDefault(item => item.Id == id);
                 Check(landmark && landmark.GetComponent<WorldCutawayVolume>(),
                     "Interactive landmark has cutaway volume " + id);
+                if (id is "Harbor" or "Marina")
+                {
+                    WorldInteractionArea area = landmark
+                        ? landmark.GetComponent<WorldInteractionArea>()
+                        : null;
+                    Check(area && area.Action == WorldInteractionAction.BoardVessel,
+                        "Dock has vessel boarding interaction " + id);
+                    ICityPassengerCarrier carrier = area?.CarrierSource as ICityPassengerCarrier;
+                    Check(carrier != null && carrier.Hull,
+                        "Dock interaction owns a vessel carrier " + id);
+                    Check(area && carrier != null
+                        && Vector3.Distance(area.Center, carrier.DoorOutside) < .1f,
+                        "Dock interaction is aligned to vessel door " + id);
+                }
             }
+
+            WorldInteractionArea[] trainAreas = game.GetComponentsInChildren<WorldInteractionArea>(true)
+                .Where(area => area && area.Action == WorldInteractionAction.BoardTrain)
+                .ToArray();
+            Check(trainAreas.Any(), "Passenger train has a boarding interaction area");
 
             WorldCutawayVolume[] expansionVolumes = game.GetComponentsInChildren<WorldCutawayVolume>(true)
                 .Where(volume => volume && volume.name == "ExpansionCutaway")

@@ -267,16 +267,22 @@ namespace Tycoon
                     label = "Ngân hàng";
                     message = "Mở quầy ngân hàng để gửi hoặc rút tiền.";
                 }
-                WorldInteractionArea.Add(
+                WorldExpansionBoat boat = landmark.GetComponentInChildren<WorldExpansionBoat>(true);
+                Vector3 localCenter = boat
+                    ? landmark.transform.InverseTransformPoint(boat.DoorOutside)
+                    : landmark.Approach == landmark.transform.position
+                        ? Vector3.zero
+                        : landmark.transform.InverseTransformPoint(landmark.Approach);
+                WorldInteractionArea area = WorldInteractionArea.Add(
                     landmark.transform,
                     "landmark_" + landmark.Id,
                     label,
                     message,
                     action,
-                    landmark.Approach == landmark.transform.position
-                        ? Vector3.zero
-                        : landmark.transform.InverseTransformPoint(landmark.Approach),
+                    localCenter,
                     3.2f);
+                if (boat && action == WorldInteractionAction.BoardVessel)
+                    area.CarrierSource = boat;
             }
             AddDistrict("restaurant", "Nhà hàng", "Bạn có thể vào nhà hàng để phục vụ và dùng bữa.",
                 WorldInteractionAction.Dine, CityDistricts.Center("restaurant") + Vector3.back * 3);
