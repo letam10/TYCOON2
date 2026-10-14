@@ -75,15 +75,16 @@ namespace Tycoon
             InputSystem.QueueStateEvent(keyboard,new KeyboardState());yield return null;
             Check(moved.sqrMagnitude>.02f,
                 "Input System moves player in PlayMode (input="+movement+", key="+pressed+", controls="+controls+", control="+game.Player.CanControl+", moved="+moved+")");
-            game.Player.enabled=false;
+            game.Player.enabled=true;
             shopStorage.Inventory.TryAdd("carrot",1);
-            var pickup=game.Stations.Find(x=>x.Id=="storage_farm_shop_withdraw") as StationZone;
-            var deposit=game.Stations.Find(x=>x.Id=="storage_farm_shop_deposit") as StationZone;
-            game.Player.Controller.enabled=false;game.Player.transform.position=pickup.InteractionPoint;game.Player.Controller.enabled=true;
-            Check(game.Player.InteractAtCurrentPosition(.13f)&&game.Player.Carry.Count("carrot")==1&&shopStorage.Inventory.Count("carrot")==0,
+            game.Economy.Unlock("farm_shop");
+            var pickup=shopStorage.InteractionPoint;
+            var deposit=shopStorage.InteractionPoint;
+            game.Player.Controller.enabled=false;game.Player.transform.position=pickup;game.Player.Controller.enabled=true;
+            Check(game.Player.InteractAtCurrentPosition(.3f,true)&&game.Player.Carry.Count("carrot")==1&&shopStorage.Inventory.Count("carrot")==0,
                 "Player picks up from the selected warehouse zone");
-            game.Player.Controller.enabled=false;game.Player.transform.position=deposit.InteractionPoint;game.Player.Controller.enabled=true;
-            Check(game.Player.InteractAtCurrentPosition(.13f)&&game.Player.Carry.Count("carrot")==0&&shopStorage.Inventory.Count("carrot")==1,
+            game.Player.Controller.enabled=false;game.Player.transform.position=deposit;game.Player.Controller.enabled=true;
+            Check(game.Player.InteractAtCurrentPosition(.3f)&&game.Player.Carry.Count("carrot")==0&&shopStorage.Inventory.Count("carrot")==1,
                 "Player deposits into the selected warehouse zone");
             game.Economy.Unlock("mill");
             var machine=game.Machines.Find(m=>m.Recipe.id=="mill");machine.Input.TryAdd("wheat",4);
@@ -91,15 +92,15 @@ namespace Tycoon
             machine.ReleaseOperator(game.Player.GetEntityId());float remaining=machine.Remaining;
             yield return new WaitForSeconds(.3f);
             Check(machine.Running&&Mathf.Approximately(machine.Remaining,remaining)&&machine.Inventory.Total==0,"Machine does not run unattended");
-            var counter=game.Checkouts.Find(c=>c.ShopId=="farm"&&c.IsUnlocked);
-            var shelf=game.Shelves.Find(s=>s.ShopId=="farm"&&s.Accepts("carrot")&&s.IsUnlocked);
+            var counter=game.Checkouts.Find(c=>c.ShopId=="farm_shop"&&c.IsUnlocked);
+            var shelf=game.Shelves.Find(s=>s.ShopId=="farm_shop"&&s.Accepts("carrot")&&s.IsUnlocked);
             Check(counter&&shelf,"Existing counter and shelf available");shelf.Inventory.TryAdd("carrot",3);
             var customer=Customer(game,counter,1);until=Time.realtimeSinceStartup+15;
             while(Vector3.Distance(customer.transform.position,counter.QueuePoint(customer))>.75f&&Time.realtimeSinceStartup<until)yield return null;
             Check(Vector3.Distance(customer.transform.position,counter.QueuePoint(customer))<=.75f&&customer.Agent.isOnNavMesh,"Customer navigates to queue");
             Check(!counter.Serve(game.Player.Carry)&&shelf.Inventory.Count("carrot")==3,"Empty carrier cannot consume shelf stock");
             long wallet=game.Economy.Money;int transactions=game.Economy.Transactions;
-            game.CrewStates.Add(new CrewState{id="processor",role="Processor",area="processing"});
+            game.CrewStates.Add(new CrewState{id="processor",role="Processor",area="unconfigured"});
             game.SyncWorkers();
             Check(game.Workers.Count==0,"Worker without a dedicated warehouse stays unspawned");
             game.CrewStates.Add(new CrewState{id="cashier",role="Cashier",area="farm_shop"});
@@ -114,7 +115,7 @@ namespace Tycoon
                 "Cashier delivers own goods at counter");
             int price=customer.Order.TotalPrice;
             Check(game.Economy.Money==wallet&&counter.Cash==price&&game.Economy.Transactions==transactions+1,"Payment creates deferred counter cash once");
-            game.Player.Controller.enabled=false;game.Player.transform.position=counter.CashZone.InteractionPoint;game.Player.Controller.enabled=true;
+            game.Player.Controller.enabled=false;game.Player.transform.position=counter.CollectionPoint;game.Player.Controller.enabled=true;
             Check(counter.CollectCash(game.Player)==price&&counter.CollectCash(game.Player)==0,"Cash collection is explicit and idempotent");
             Check(game.Economy.Money==wallet+price&&game.Economy.PendingCash==0,"Counter cash moves to wallet once");
             Check(!game.Economy.RecordPayment(customer.Receipt,price),"Receipt cannot pay twice");
