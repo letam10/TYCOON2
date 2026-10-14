@@ -75,6 +75,13 @@ namespace Tycoon
         {
             if (next < 0 || next >= points.Count)
                 return Fail("route waypoint index is invalid");
+            if (ShouldWaitAtCrossing(points[next]))
+            {
+                agent.isStopped = true;
+                active = true;
+                return true;
+            }
+            agent.isStopped = false;
             bool accepted = agent.SetDestination(points[next]);
             if (!accepted)
                 return Fail("NavMeshAgent rejected route waypoint");
@@ -99,11 +106,22 @@ namespace Tycoon
 
             if (!active || !agent || !agent.enabled || !agent.isOnNavMesh ||
                 GameSession.Instance && !GameSession.Instance.CanSimulate) return;
+            if (next < points.Count && ShouldWaitAtCrossing(points[next]))
+            {
+                agent.isStopped = true;
+                return;
+            }
+            if (agent.isStopped) agent.isStopped = false;
             if (next < points.Count - 1 && Reached(agent, points[next]))
             {
                 next++;
                 SetNext();
             }
+        }
+
+        static bool ShouldWaitAtCrossing(Vector3 point)
+        {
+            return CityTrafficSignalSystem.Instance?.ShouldWaitPedestrian(point) == true;
         }
 
         public void Clear()

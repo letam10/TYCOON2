@@ -91,6 +91,12 @@ namespace Tycoon
             return PhaseAt(point, true) == CitySignalPhase.Walk;
         }
 
+        public bool ShouldWaitPedestrian(Vector3 point)
+        {
+            return TryNearest(point, out _, out float distance) &&
+                distance <= DetectionRadius && !CanCross(point);
+        }
+
         public bool TryNearest(Vector3 point, out CityTrafficSignalDefinition signal, out float distance)
         {
             signal = default;
