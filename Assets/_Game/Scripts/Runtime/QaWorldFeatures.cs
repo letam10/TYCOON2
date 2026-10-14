@@ -125,6 +125,7 @@ namespace Tycoon
 
         IEnumerator CutawayPictures()
         {
+            VerifyLandmarkCutawayCoverage();
             WorldCutawayVolume[] volumes = game.GetComponentsInChildren<WorldCutawayVolume>(true)
                 .Where(volume => volume && (volume.name == "StationCutaway" || volume.name == "VillageCutaway"))
                 .ToArray();
@@ -162,6 +163,33 @@ namespace Tycoon
             game.CameraRig.Distance = originalDistance;
             game.CameraRig.Snap();
             game.Player.transform.position = playerPosition;
+        }
+
+        void VerifyLandmarkCutawayCoverage()
+        {
+            CityLandmark[] landmarks = game.GetComponentsInChildren<CityLandmark>(true)
+                .Where(landmark => landmark && landmark.Footprint.x > 0 && landmark.Footprint.z > 0)
+                .ToArray();
+            Check(landmarks.Length >= 13, "Every placed landmark participates in cutaway coverage");
+            foreach (CityLandmark landmark in landmarks)
+            {
+                WorldCutawayVolume volume = landmark.GetComponent<WorldCutawayVolume>();
+                Check(volume, "Cutaway volume exists for landmark " + landmark.Id);
+                Check(volume && volume.upperShellRenderers.Any(renderer => renderer),
+                    "Cutaway shell exists for landmark " + landmark.Id);
+            }
+
+            foreach (string id in new[] { "Harbor", "Marina", "Bank" })
+            {
+                CityLandmark landmark = landmarks.SingleOrDefault(item => item.Id == id);
+                Check(landmark && landmark.GetComponent<WorldCutawayVolume>(),
+                    "Interactive landmark has cutaway volume " + id);
+            }
+
+            WorldCutawayVolume[] expansionVolumes = game.GetComponentsInChildren<WorldCutawayVolume>(true)
+                .Where(volume => volume && volume.name == "ExpansionCutaway")
+                .ToArray();
+            Check(expansionVolumes.Length > 0, "Expansion districts have cutaway volumes");
         }
 
         IEnumerator FeatureKey(Key key)
