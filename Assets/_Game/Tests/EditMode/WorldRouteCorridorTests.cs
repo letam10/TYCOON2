@@ -12,8 +12,9 @@ namespace Tycoon.Tests
             IReadOnlyList<WorldRouteCorridor> routes = WorldRouteCatalog.BuildDefault();
 
             Assert.That(routes, Is.Not.Null);
-            Assert.That(routes.Count, Is.EqualTo(11));
+            Assert.That(routes.Count, Is.EqualTo(12));
             Assert.That(WorldRouteCatalog.ValidateContinuous(), Is.True);
+            Assert.That(WorldRouteCatalog.TryGet("farm-service-loop", out _), Is.True);
 
             var kinds = new HashSet<RouteKind>();
             for (int index = 0; index < routes.Count; index++)
