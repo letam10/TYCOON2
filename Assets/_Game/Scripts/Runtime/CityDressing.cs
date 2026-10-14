@@ -57,6 +57,20 @@ namespace Tycoon
                 bounds.Expand(new Vector3(2, 0, 2));
                 Reserve(bounds, "Road");
             }
+            foreach (var corridor in WorldRouteCatalog.BuildDefault())
+            {
+                if (!corridor.ReservesPlacement) continue;
+                for (int node = 1; node < corridor.Nodes.Count; node++)
+                {
+                    Vector3 start = corridor.Nodes[node - 1];
+                    Vector3 end = corridor.Nodes[node];
+                    Vector3 delta = end - start;
+                    var bounds = new Bounds((start + end) * .5f,
+                        new Vector3(Mathf.Abs(delta.x) + corridor.Width, 10,
+                            Mathf.Abs(delta.z) + corridor.Width));
+                    Reserve(bounds, "Route:" + corridor.Id);
+                }
+            }
             // Chừa cả vị trí đứng và đường nối hàng chờ, kể cả trạm chưa mở khóa.
             foreach (var station in game.Stations)
             {
@@ -96,6 +110,8 @@ namespace Tycoon
                 if (bounds.min.x < other.max.x && bounds.max.x > other.min.x
                     && bounds.min.z < other.max.z && bounds.max.z > other.min.z)
                 {
+                    if (IsLandmarkPlacement(name) && names[index].StartsWith("Route:",
+                        StringComparison.Ordinal)) continue;
                     attempt.blocker = names[index];
                     attempt.blockingBounds = other;
                     return false;
@@ -104,6 +120,13 @@ namespace Tycoon
             Reserve(bounds, name);
             attempt.placed = true;
             return true;
+        }
+
+        static bool IsLandmarkPlacement(string name)
+        {
+            return name is "PoliceStation" or "FireStation" or "SeasideBar" or "EntertainmentHall"
+                or "Playground" or "FoundersMonument" or "Harbor" or "Beach" or "CoffeeHouse"
+                or "Bank" or "Hotel" or "Theater" or "Marina";
         }
 
         public void WriteReport(string directory)

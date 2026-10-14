@@ -20,6 +20,7 @@ namespace Tycoon
         GameSession game;
         CityLife life;
         CityPublicTransport publicTransport;
+        CityTrafficSignalSystem signals;
         public int VehicleCount => cars.Count;
 
         void Start()
@@ -27,6 +28,8 @@ namespace Tycoon
             game = GameSession.Instance;
             life = GetComponent<CityLife>();
             publicTransport = GetComponentInChildren<CityPublicTransport>();
+            signals = GetComponentInParent<CityTrafficSignalSystem>()
+                ?? GetComponentInChildren<CityTrafficSignalSystem>();
             string[] colors = { "#6E9C98", "#C5B391", "#6A8BAD", "#A1ACAB", "#314A64", "#BD5148" };
             CityVehicleKind[] kinds = { CityVehicleKind.Sedan, CityVehicleKind.SmallTruck,
                 CityVehicleKind.CargoTruck, CityVehicleKind.Tanker, CityVehicleKind.Luxury, CityVehicleKind.Sports };
@@ -80,6 +83,7 @@ namespace Tycoon
                 Vector3 forward = delta.normalized;
                 float step = car.Velocity * Time.deltaTime;
                 bool blocked = PeopleAhead(car, forward, step) || CarAhead(car, step) ||
+                    signals && signals.ShouldStopVehicle(car.Root.position) ||
                     publicTransport && publicTransport.BlocksTraffic(car.Root.position, forward, step);
                 car.Velocity = Mathf.MoveTowards(car.Velocity, blocked ? 0 : car.Speed, 3.8f * Time.deltaTime);
                 if (blocked)
