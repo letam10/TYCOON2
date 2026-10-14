@@ -63,6 +63,26 @@ namespace Tycoon.Tests
         }
 
         [Test]
+        public void FarmServiceLoopReservesPlacementButPublicTripAvoidsIt()
+        {
+            Assert.That(WorldRouteCatalog.TryGet("farm-service-loop", out WorldRouteCorridor loop), Is.True);
+            Assert.That(loop.Kind, Is.EqualTo(RouteKind.FarmPath));
+            Vector3 reservedPoint = Vector3.Lerp(loop.Nodes[0], loop.Nodes[1], .5f);
+            Assert.That(WorldRouteCatalog.IsReserved(reservedPoint, .2f, out string routeId), Is.True);
+            Assert.That(routeId, Is.EqualTo("farm-service-loop"));
+
+            bool planned = CityPedestrianNetwork.TryPlan(
+                CityDistricts.Center("farm"), CityDistricts.Center("supermarket"),
+                out List<Vector3> route, out string failure);
+
+            Assert.That(planned, Is.True, failure);
+            bool enteredServiceLoop = route.Any(point =>
+                WorldRouteCatalog.IsReserved(point, .05f, out string pointRoute)
+                && pointRoute == "farm-service-loop");
+            Assert.That(enteredServiceLoop, Is.False);
+        }
+
+        [Test]
         public void NonFinitePointReturnsFailureAndNoPartialRoute()
         {
             bool planned = CityPedestrianNetwork.TryPlan(new(float.NaN, 0, 0), Vector3.zero,

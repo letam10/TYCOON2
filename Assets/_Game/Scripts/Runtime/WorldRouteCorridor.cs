@@ -206,6 +206,19 @@ namespace Tycoon
                     4.5f,
                     true),
                 new WorldRouteCorridor(
+                    "farm-service-loop",
+                    RouteKind.FarmPath,
+                    new[]
+                    {
+                        new Vector3(-89, 0, -24),
+                        new Vector3(-23, 0, -24),
+                        new Vector3(-23, 0, 25),
+                        new Vector3(-89, 0, 25),
+                        new Vector3(-89, 0, -24)
+                    },
+                    3.2f,
+                    true),
+                new WorldRouteCorridor(
                     "sidewalk-crossings",
                     RouteKind.Sidewalk,
                     new[]
