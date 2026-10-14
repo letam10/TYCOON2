@@ -191,8 +191,10 @@ namespace Tycoon
         {
             ICityPassengerCarrier completedCarrier = carrier;
             Transform parent = originalParent;
+            Vector3 target = completedCarrier != null && completedCarrier.Hull
+                ? completedCarrier.DoorOutside
+                : exitPoint;
             player.transform.SetParent(parent, true);
-            Vector3 target = exitPoint;
             if (NavMesh.SamplePosition(target, out var hit, 2.5f, NavMesh.AllAreas))
                 target = hit.position + Vector3.up * .05f;
             player.transform.position = target;

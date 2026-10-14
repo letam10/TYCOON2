@@ -69,6 +69,24 @@ namespace Tycoon.Tests
             Assert.That(player.CanControl, Is.True);
         }
 
+        [Test]
+        public void AlightingUsesCurrentDoorAfterCarrierMoves()
+        {
+            PlayerController player = CreatePlayer();
+            TestCarrier carrier = CreateCarrier(true, true);
+
+            Assert.That(WorldPlayerRide.TryBoard(player, carrier, carrier.transform, 5f,
+                "ride", out string failure), Is.True, failure);
+            carrierObject.transform.position = new Vector3(8, 0, 0);
+
+            WorldPlayerRide ride = player.GetComponent<WorldPlayerRide>();
+            typeof(WorldPlayerRide).GetMethod("EndRide", BindingFlags.Instance | BindingFlags.NonPublic)
+                .Invoke(ride, null);
+
+            Assert.That(Vector3.Distance(player.transform.position, carrier.DoorOutside),
+                Is.LessThan(.001f));
+        }
+
         PlayerController CreatePlayer()
         {
             playerObject = new GameObject("RidePlayer");
