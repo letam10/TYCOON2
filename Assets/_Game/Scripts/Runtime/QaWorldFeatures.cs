@@ -67,6 +67,7 @@ namespace Tycoon
                     yield return CaptureExpansionCenter(CityMapLocations.Points[i].id);
                 }
             }
+            yield return CutawayPictures();
             CheckExpansionNavigation();
             yield return CoastalWaterPictures();
             yield return FeatureBindingsAcceptance();
@@ -120,6 +121,47 @@ namespace Tycoon
                     Check(reachable, "Expansion route reaches " + poi.Id + " " + anchor
                         + " sampleDistance=" + distance + " pathStatus=" + status);
                 }
+        }
+
+        IEnumerator CutawayPictures()
+        {
+            WorldCutawayVolume[] volumes = game.GetComponentsInChildren<WorldCutawayVolume>(true)
+                .Where(volume => volume && (volume.name == "StationCutaway" || volume.name == "VillageCutaway"))
+                .ToArray();
+            Check(volumes.Length >= 2, "Station and village cutaway volumes are registered");
+            Vector3 playerPosition = game.Player.transform.position;
+            Transform originalTarget = game.CameraRig.Target;
+            float originalYaw = game.CameraRig.Yaw;
+            float originalDistance = game.CameraRig.Distance;
+            foreach (WorldCutawayVolume volume in volumes)
+            {
+                game.Player.transform.position = volume.transform.position + Vector3.up * .05f;
+                volume.SetPlayerInside(true);
+                yield return null;
+                Check(volume.IsRevealed, "Cutaway reveals " + volume.name + " while player is inside");
+                Check(volume.upperShellRenderers.Any(renderer => renderer),
+                    "Cutaway has registered upper shell renderers " + volume.name);
+                Check(volume.upperShellRenderers.Where(renderer => renderer)
+                    .All(renderer => !renderer.enabled), "Cutaway hides upper shell " + volume.name);
+                var focus = new GameObject("QaCutawayFocus");
+                focus.transform.position = volume.transform.position + Vector3.up * .5f;
+                game.CameraRig.Target = focus.transform;
+                game.CameraRig.Yaw = 45;
+                game.CameraRig.Distance = volume.name == "VillageCutaway" ? 70 : 22;
+                game.CameraRig.Snap();
+                yield return new WaitForSecondsRealtime(.2f);
+                yield return Capture("cutaway-" + volume.name + ".png");
+                game.Player.transform.position = playerPosition;
+                volume.SetPlayerInside(false);
+                yield return null;
+                Check(!volume.IsRevealed, "Cutaway restores upper shell " + volume.name);
+                Destroy(focus);
+            }
+            game.CameraRig.Target = originalTarget;
+            game.CameraRig.Yaw = originalYaw;
+            game.CameraRig.Distance = originalDistance;
+            game.CameraRig.Snap();
+            game.Player.transform.position = playerPosition;
         }
 
         IEnumerator FeatureKey(Key key)
