@@ -1,9 +1,30 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Tycoon
 {
     public static class CityAccessPaths
     {
+        public static IReadOnlyList<Vector3> CreateCurvedPath(
+            Vector3 start,
+            Vector3 end,
+            Vector3 control,
+            int subdivisions)
+        {
+            int segmentCount = Mathf.Max(1, subdivisions);
+            var points = new List<Vector3>(segmentCount + 1);
+            for (int index = 0; index <= segmentCount; index++)
+            {
+                float t = index / (float)segmentCount;
+                float inverse = 1f - t;
+                Vector3 point = inverse * inverse * start
+                    + 2f * inverse * t * control
+                    + t * t * end;
+                points.Add(point);
+            }
+            return points.AsReadOnly();
+        }
+
         public static void Build(Transform world)
         {
             var root = new GameObject("LandmarkFootpaths").transform;
@@ -36,14 +57,26 @@ namespace Tycoon
                 b.y = 0;
                 Vector3 delta = b - a;
                 if (delta.sqrMagnitude < .001f) return;
+                Vector3 lateral = Vector3.Cross(Vector3.up, delta).normalized;
+                float bend = Mathf.Clamp(delta.magnitude * .16f, 3f, 12f);
+                Vector3 control = (a + b) * .5f + lateral * bend;
+                IReadOnlyList<Vector3> points = CreateCurvedPath(a, b, control, 4);
+                for (int index = 1; index < points.Count; index++)
+                    PaveSegment(points[index - 1], points[index], width, surface, tint);
+            }
+
+            void PaveSegment(Vector3 start, Vector3 end, float width, string surface, string tint)
+            {
+                Vector3 delta = end - start;
                 float length = delta.magnitude;
-                Vector3 p = (a + b) * .5f;
-                g.Box(p + Vector3.up * .025f, new(width, .05f, length), surface, tint,
+                if (length < .001f) return;
+                Vector3 center = (start + end) * .5f;
+                g.Box(center + Vector3.up * .025f, new(width, .05f, length), surface, tint,
                     Quaternion.LookRotation(delta).eulerAngles.y);
                 Vector3 size = Mathf.Abs(delta.x) > Mathf.Abs(delta.z)
                     ? new(length + .05f, .08f, width) : new(width, .08f, length + .05f);
                 // Lối lát là vùng đi bộ, không phải tường; trigger giữ vùng định vị mà không chặn capsule.
-                g.Collider("PedestrianLink", p + Vector3.up * .01f, size, true);
+                g.Collider("PedestrianLink", center + Vector3.up * .01f, size, true);
             }
         }
 
