@@ -25,6 +25,57 @@ namespace Tycoon
             return points.AsReadOnly();
         }
 
+        public static IReadOnlyList<Vector3> CreateSmoothPath(
+            IReadOnlyList<Vector3> anchors,
+            int subdivisionsPerSpan)
+        {
+            if (anchors == null || anchors.Count == 0)
+                return new List<Vector3>().AsReadOnly();
+
+            if (anchors.Count == 1)
+                return new List<Vector3> { anchors[0] }.AsReadOnly();
+
+            int subdivisions = Mathf.Max(1, subdivisionsPerSpan);
+            var points = new List<Vector3>((anchors.Count - 1) * subdivisions + 1);
+            points.Add(anchors[0]);
+            for (int span = 0; span < anchors.Count - 1; span++)
+            {
+                Vector3 previous = span > 0 ? anchors[span - 1] : anchors[span];
+                Vector3 start = anchors[span];
+                Vector3 end = anchors[span + 1];
+                Vector3 next = span + 2 < anchors.Count ? anchors[span + 2] : end;
+                Vector3 startTangent = (end - previous) * .5f;
+                Vector3 endTangent = (next - start) * .5f;
+                for (int sample = 1; sample <= subdivisions; sample++)
+                {
+                    float t = sample / (float)subdivisions;
+                    float tSquared = t * t;
+                    float tCubed = tSquared * t;
+                    float startWeight = 2f * tCubed - 3f * tSquared + 1f;
+                    float startTangentWeight = tCubed - 2f * tSquared + t;
+                    float endWeight = -2f * tCubed + 3f * tSquared;
+                    float endTangentWeight = tCubed - tSquared;
+                    Vector3 point = startWeight * start
+                        + startTangentWeight * startTangent
+                        + endWeight * end
+                        + endTangentWeight * endTangent;
+                    if (sample == subdivisions)
+                        point = end;
+                    if (!IsFinite(point))
+                        point = sample == subdivisions ? end : start;
+                    points.Add(point);
+                }
+            }
+            return points.AsReadOnly();
+        }
+
+        static bool IsFinite(Vector3 value)
+        {
+            return !float.IsNaN(value.x) && !float.IsInfinity(value.x)
+                && !float.IsNaN(value.y) && !float.IsInfinity(value.y)
+                && !float.IsNaN(value.z) && !float.IsInfinity(value.z);
+        }
+
         public static void Build(Transform world)
         {
             var root = new GameObject("LandmarkFootpaths").transform;
@@ -107,8 +158,11 @@ namespace Tycoon
                 }
                 if (drawCorridor)
                 {
-                    for (int node = 1; node < corridor.Nodes.Count; node++)
-                        Segment(g, corridor.Nodes[node - 1], corridor.Nodes[node], width, surface, tint);
+                    IReadOnlyList<Vector3> points = corridor.Nodes.Count >= 3
+                        ? CreateSmoothPath(corridor.Nodes, 4)
+                        : corridor.Nodes;
+                    for (int point = 1; point < points.Count; point++)
+                        Segment(g, points[point - 1], points[point], width, surface, tint);
                 }
                 Sign(signs, corridor.Nodes[0], SignText(corridor.Id));
             }
