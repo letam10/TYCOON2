@@ -76,8 +76,11 @@ namespace Tycoon
                 return true;
             }
 
-            bool avoidFarm = IsFarmPoint(from) || IsFarmPoint(destination) ||
-                SegmentIntersectsFarm(from, destination);
+            bool fromInsideFarm = IsFarmPoint(from);
+            bool destinationInsideFarm = IsFarmPoint(destination);
+            bool publicTrip = !fromInsideFarm && !destinationInsideFarm;
+            bool crossesFarmBoundary = fromInsideFarm != destinationInsideFarm;
+            bool avoidFarm = publicTrip || crossesFarmBoundary;
             RoutingGraph graph = BuildGraph(avoidFarm);
             int start = graph.AddEndpoint(from, IsFarmPoint(from));
             int end = graph.AddEndpoint(destination, IsFarmPoint(destination));
@@ -99,8 +102,8 @@ namespace Tycoon
                 failure = "pedestrian graph returned an empty route";
                 return false;
             }
-            if (!avoidFarm && route.Count == 2 &&
-                Vector3.Distance(from, destination) > LocalTrip)
+            if (route.Count == 2 && Vector3.Distance(from, destination) > LocalTrip &&
+                (!publicTrip || !SegmentIntersectsFarm(from, destination)))
             {
                 // Giữ một waypoint giữa đoạn dài để agent không bỏ qua hành lang đã chọn.
                 route.Insert(1, Vector3.Lerp(from, destination, .5f));
@@ -138,7 +141,7 @@ namespace Tycoon
                 else
                 {
                     for (int index = 0; index < anchorCount; index++)
-                        if (!avoidFarm || !IsFarmPoint(Points[index])) candidates.Add(index);
+                        if (!avoidFarm || IsPublicPedestrianPoint(Points[index])) candidates.Add(index);
                 }
                 int nearest = -1;
                 float distance = float.PositiveInfinity;
@@ -228,7 +231,10 @@ namespace Tycoon
                     bool endpointLink = at >= graph.AnchorCount || next >= graph.AnchorCount;
                     if (next < 0 || avoidFarm && !endpointLink &&
                         IsFarmEdge(graph.Points[at], graph.Points[next])) continue;
-                    float candidate = cost[at] + Vector3.Distance(graph.Points[at], graph.Points[next]);
+                    float segmentCost = Vector3.Distance(graph.Points[at], graph.Points[next]);
+                    if (IsSidewalkPoint(graph.Points[at]) || IsSidewalkPoint(graph.Points[next]))
+                        segmentCost *= .78f;
+                    float candidate = cost[at] + segmentCost;
                     if (candidate >= cost[next]) continue;
                     cost[next] = candidate;
                     previous[next] = at;
@@ -251,16 +257,29 @@ namespace Tycoon
 
         static bool IsSidewalkPoint(Vector3 point)
         {
-            if (!WorldRouteCatalog.TryGet("sidewalk-crossings", out WorldRouteCorridor corridor))
-                return false;
-            for (int index = 0; index < corridor.Nodes.Count; index++)
-                if ((corridor.Nodes[index] - point).sqrMagnitude < .0001f) return true;
+            IReadOnlyList<WorldRouteCorridor> routes = WorldRouteCatalog.BuildDefault();
+            for (int routeIndex = 0; routeIndex < routes.Count; routeIndex++)
+            {
+                WorldRouteCorridor corridor = routes[routeIndex];
+                if (corridor.Kind != RouteKind.Sidewalk) continue;
+                for (int index = 0; index < corridor.Nodes.Count; index++)
+                    if ((corridor.Nodes[index] - point).sqrMagnitude < .0001f) return true;
+            }
             return false;
         }
 
         static bool IsFarmEdge(Vector3 first, Vector3 second)
         {
-            return IsFarmPoint(first) || IsFarmPoint(second) || SegmentIntersectsFarm(first, second);
+            if (!SegmentIntersectsFarm(first, second)) return false;
+            bool firstAllowed = IsPublicPedestrianPoint(first);
+            bool secondAllowed = IsPublicPedestrianPoint(second);
+            bool designatedSidewalk = IsSidewalkPoint(first) || IsSidewalkPoint(second);
+            return !(firstAllowed && secondAllowed && designatedSidewalk);
+        }
+
+        static bool IsPublicPedestrianPoint(Vector3 point)
+        {
+            return !IsFarmPoint(point) || IsSidewalkPoint(point);
         }
 
         public static bool SegmentIntersectsFarm(Vector3 first, Vector3 second)

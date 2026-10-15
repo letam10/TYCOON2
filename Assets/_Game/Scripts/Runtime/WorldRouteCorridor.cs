@@ -234,6 +234,16 @@ namespace Tycoon
                     3f,
                     true),
                 new WorldRouteCorridor(
+                    "farm-sidewalk-connector",
+                    RouteKind.Sidewalk,
+                    new[]
+                    {
+                        new Vector3(-78.6f, 0, 24.1f),
+                        new Vector3(-78.6f, 0, 61.6f)
+                    },
+                    2.8f,
+                    true),
+                new WorldRouteCorridor(
                     "highway-ring",
                     RouteKind.Highway,
                     new[]

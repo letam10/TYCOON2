@@ -154,6 +154,7 @@ namespace Tycoon
                 "farm-dirt-path" => "ĐƯỜNG ĐẤT NÔNG TRẠI",
                 "farm-service-loop" => "VÒNG DỊCH VỤ NÔNG TRẠI",
                 "sidewalk-crossings" => "VỈA HÈ VÀ QUA ĐƯỜNG",
+                "farm-sidewalk-connector" => "LỐI ĐI BỘ VEN NÔNG TRẠI",
                 "highway-ring" => "ĐƯỜNG CAO TỐC VÀNH ĐAI",
                 "rail-mainline" => "TUYẾN ĐƯỜNG SẮT CHÍNH",
                 "dock-harbor-approach" => "LỐI VÀO BẾN CẢNG",
