@@ -36,6 +36,13 @@ namespace Tycoon
             material.SetColor("_BaseColor", Art.Hex(tint));
             material.SetFloat("_Smoothness", Smoothness(surface));
             material.SetFloat("_Metallic", surface == "metal" ? .75f : 0);
+            if (water)
+            {
+                material.SetFloat("_WaveSeed", CityCoastWaterMesh.SurfaceSeed);
+                material.SetFloat("_WaveAmplitude", surface == "ocean" ? 1.1f : .8f);
+                material.SetFloat("_DepthScale", surface == "ocean" ? 1f : .7f);
+                material.SetFloat("_FoamWidth", surface == "ocean" ? 5f : 2.5f);
+            }
             if (surface == "ocean") material.SetVector("_Shoreline", new Vector4(1, 0, 247, 5));
             if (!water)
             {

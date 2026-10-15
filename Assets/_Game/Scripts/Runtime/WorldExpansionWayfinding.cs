@@ -22,7 +22,7 @@ namespace Tycoon
             return poi.Id switch
             {
                 "ForestReserve" => new Vector3(-68, 0, -48),
-                "IndustrialYard" => new Vector3(-68, 0, -44),
+                "IndustrialYard" => new Vector3(-68, 0, -60),
                 "NorthVillage" => new Vector3(-68, 0, -34),
                 "EastMarina" => new Vector3(-68, 0, 31),
                 "SouthHighway" => new Vector3(-180, 0, -15),

@@ -122,7 +122,7 @@ namespace Tycoon
 
         static void Tree(CityStaticGeometry g, Vector3 p, float scale)
         {
-            int species = Mathf.Abs(Mathf.RoundToInt(p.x * 1.7f + p.z * 2.3f)) % 3;
+            int species = WorldVegetationCatalog.StableSpecies("forest", p) % 3;
             CityVegetation.Tree(g, p, scale, species);
         }
     }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -27,12 +28,25 @@ namespace Tycoon
         public float Radius = 2.4f;
         public float Cooldown = .8f;
         public Vector3 LocalCenter;
+        public string StableGroup = "landmark";
+        public Vector3 LocalExitPoint;
         public Component CarrierSource;
         public float RideSeconds = 5f;
         float nextUse;
+        int useCount;
+        bool inside;
 
         public InteractionKind Kind => InteractionKind.Operate;
         public Vector3 Center => transform.TransformPoint(LocalCenter);
+        public Vector3 ApproachPoint => Center;
+        public Vector3 ExitPoint => LocalExitPoint == Vector3.zero
+            ? Center
+            : transform.TransformPoint(LocalExitPoint);
+        public string StableId => Id ?? string.Empty;
+        public string Prompt => string.IsNullOrEmpty(Message) ? Label : Message;
+        public string SaveKey => "world.interaction." + StableId;
+        public int UseCount => useCount;
+        public bool IsInside => inside;
         public bool Available => enabled && gameObject.activeInHierarchy;
 
         public static WorldInteractionArea Add(
@@ -52,6 +66,17 @@ namespace Tycoon
             area.Action = action;
             area.LocalCenter = localCenter;
             area.Radius = radius;
+            area.StableGroup = action switch
+            {
+                WorldInteractionAction.Banking => "bank",
+                WorldInteractionAction.Dine => "restaurant",
+                WorldInteractionAction.Explore => "forest",
+                WorldInteractionAction.Swim => "beach",
+                WorldInteractionAction.BoardVessel => "harbor",
+                WorldInteractionAction.BoardTrain => "train",
+                WorldInteractionAction.CallTaxi => "taxi",
+                _ => area.StableGroup
+            };
             return area;
         }
 
@@ -67,13 +92,53 @@ namespace Tycoon
         {
             if (!context.Player || delta <= 0 || Time.time < nextUse)
                 return InteractionResult.Waiting;
-            nextUse = Time.time + Mathf.Max(.1f, Cooldown);
+            if (!Enter(context.Player, out string failure))
+                return InteractionResult.Reject(failure);
+            InteractionResult result;
             if (Action is WorldInteractionAction.BoardTrain
                 or WorldInteractionAction.BoardVessel
                 or WorldInteractionAction.CallTaxi)
-                return Board(context.Player);
-            GameSession.Instance?.Say(Message);
-            return InteractionResult.Success;
+                result = Board(context.Player);
+            else
+            {
+                GameSession.Instance?.Say(Prompt);
+                result = InteractionResult.Success;
+            }
+            if (!result.Worked)
+            {
+                inside = false;
+                return result;
+            }
+            nextUse = Time.time + Mathf.Max(.1f, Cooldown);
+            useCount++;
+            return result;
+        }
+
+        public bool Enter(PlayerController player, out string failure)
+        {
+            failure = string.Empty;
+            if (!Available)
+            {
+                failure = "Khu vực tương tác đang tạm đóng.";
+                return false;
+            }
+            if (!player || !player.Controller)
+            {
+                failure = "Người chơi chưa sẵn sàng tương tác.";
+                return false;
+            }
+            if (!Contains(player.transform.position))
+            {
+                failure = "Hãy đứng tại điểm tiếp cận của khu vực.";
+                return false;
+            }
+            if (CarrierSource is ICityPassengerCarrier carrier && !carrier.DoorsOpen)
+            {
+                failure = "Hãy đợi cửa phương tiện mở.";
+                return false;
+            }
+            inside = true;
+            return true;
         }
 
         InteractionResult Board(PlayerController player)
@@ -94,6 +159,31 @@ namespace Tycoon
 
         public void Exit(EntityId actor)
         {
+            inside = false;
+        }
+
+        public string CaptureState()
+        {
+            string active = enabled ? "1" : "0";
+            return string.Join("|", StableId, active,
+                useCount.ToString(CultureInfo.InvariantCulture));
+        }
+
+        public bool RestoreState(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return false;
+            string[] fields = value.Split('|');
+            if (fields.Length != 3 || !string.Equals(fields[0], StableId, StringComparison.Ordinal))
+                return false;
+            if (fields[1] != "0" && fields[1] != "1") return false;
+            if (!int.TryParse(fields[2], NumberStyles.Integer, CultureInfo.InvariantCulture,
+                out int restoredUses) || restoredUses < 0)
+                return false;
+            enabled = fields[1] == "1";
+            useCount = restoredUses;
+            nextUse = 0;
+            inside = false;
+            return true;
         }
     }
 
@@ -234,6 +324,30 @@ namespace Tycoon
             return registry;
         }
 
+        public IReadOnlyList<WorldInteractionArea> Areas
+        {
+            get
+            {
+                return world
+                    ? world.GetComponentsInChildren<WorldInteractionArea>(true)
+                    : Array.Empty<WorldInteractionArea>();
+            }
+        }
+
+        public WorldInteractionArea Resolve(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return null;
+            foreach (WorldInteractionArea area in Areas)
+                if (area && string.Equals(area.StableId, id, StringComparison.Ordinal)) return area;
+            return null;
+        }
+
+        public static bool TryResolve(Transform root, string id, out WorldInteractionArea area)
+        {
+            area = Build(root)?.Resolve(id);
+            return area != null;
+        }
+
         void Update()
         {
             if (Time.time < nextRefresh) return;
@@ -275,12 +389,13 @@ namespace Tycoon
                         : landmark.transform.InverseTransformPoint(landmark.Approach);
                 WorldInteractionArea area = WorldInteractionArea.Add(
                     landmark.transform,
-                    "landmark_" + landmark.Id,
+                    StableLandmarkId(landmark.Id),
                     label,
                     message,
                     action,
                     localCenter,
                     3.2f);
+                area.StableGroup = StableLandmarkGroup(landmark.Id, action);
                 if (boat && action == WorldInteractionAction.BoardVessel)
                     area.CarrierSource = boat;
             }
@@ -334,9 +449,33 @@ namespace Tycoon
                     ? Vector3.zero
                     : carrier.transform.InverseTransformPoint(carrierInterface.DoorOutside),
                 2.8f);
+            area.StableGroup = prefix;
             area.CarrierSource = carrier;
             area.RideSeconds = action == WorldInteractionAction.BoardTrain ? 7f : 4f;
             dynamicAreas.Add(area);
+        }
+
+        static string StableLandmarkId(string landmarkId)
+        {
+            string lower = (landmarkId ?? string.Empty).ToLowerInvariant();
+            return lower switch
+            {
+                "bank" => "bank",
+                "beach" => "beach_swim",
+                "harbor" => "harbor_vessel",
+                "marina" => "marina_vessel",
+                _ => "house_" + lower
+            };
+        }
+
+        static string StableLandmarkGroup(string landmarkId, WorldInteractionAction action)
+        {
+            if (action == WorldInteractionAction.Banking) return "bank";
+            if (action == WorldInteractionAction.Swim) return "beach";
+            if (action == WorldInteractionAction.BoardVessel) return "harbor";
+            return string.Equals(landmarkId, "Restaurant", StringComparison.OrdinalIgnoreCase)
+                ? "restaurant"
+                : "house";
         }
     }
 }

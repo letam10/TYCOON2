@@ -16,6 +16,38 @@ namespace Tycoon
         public static Bounds Corridor => new(new Vector3(6, 2, -63), new Vector3(272, 8, 21));
         public static Bounds StationBounds => new(new Vector3(10, 2, -61), new Vector3(67, 8, 25));
 
+        public static bool TryGetMainline(out WorldRouteCorridor route)
+        {
+            return WorldRouteCatalog.TryGet("rail-mainline", out route) &&
+                route.Kind == RouteKind.Rail;
+        }
+
+        public static bool ValidateRouteCatalog(out string failure)
+        {
+            failure = null;
+            if (!TryGetMainline(out WorldRouteCorridor route))
+            {
+                failure = "rail-mainline is missing or has the wrong kind";
+                return false;
+            }
+            if (route.Nodes.Count < 2)
+            {
+                failure = "rail-mainline has fewer than two nodes";
+                return false;
+            }
+            for (int index = 0; index < Tracks.Length; index++)
+            {
+                Vector3 trackPoint = new(route.Nodes[0].x, 0, Tracks[index]);
+                if (!WorldRouteCatalog.TryGetNearestPoint(
+                    route.Id, trackPoint, route.Width * .5f, out _, out _))
+                {
+                    failure = "track " + index + " is outside the rail corridor";
+                    return false;
+                }
+            }
+            return true;
+        }
+
         public static Vector3 PlatformPoint(int track, float x = 10) =>
             new(x, PlatformHeight, Platforms[Mathf.Clamp(track, 0, 1)]);
 

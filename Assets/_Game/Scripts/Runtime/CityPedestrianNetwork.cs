@@ -52,6 +52,90 @@ namespace Tycoon
                 : new List<Vector3>();
         }
 
+        public static bool ValidateRoute(
+            IReadOnlyList<Vector3> route,
+            float capsuleRadius,
+            out string failure)
+        {
+            failure = null;
+            if (route == null || route.Count == 0)
+            {
+                failure = "route is null or empty";
+                return false;
+            }
+            if (!IsFinite(capsuleRadius) || capsuleRadius <= 0)
+            {
+                failure = "capsule radius must be finite and positive";
+                return false;
+            }
+
+            bool farmLocalTrip = route.Count > 1 && IsFarmPoint(route[0]) &&
+                IsFarmPoint(route[^1]);
+            for (int index = 0; index < route.Count; index++)
+            {
+                Vector3 point = route[index];
+                if (!IsFinite(point))
+                {
+                    failure = "route waypoint " + index + " is not finite";
+                    return false;
+                }
+                if (index > 0 && (point - route[index - 1]).sqrMagnitude <= .0001f)
+                {
+                    failure = "route waypoint " + index + " duplicates the previous waypoint";
+                    return false;
+                }
+
+                bool sidewalkCrossing = IsSidewalkPoint(point);
+                if (!farmLocalTrip && IsFarmPoint(point) && !sidewalkCrossing &&
+                    index != 0 && index != route.Count - 1)
+                {
+                    failure = "public route waypoint " + index +
+                        " enters the farm outside a designated sidewalk";
+                    return false;
+                }
+                if (!sidewalkCrossing && TryGetReservedCorridor(point, capsuleRadius,
+                    out WorldRouteCorridor corridor))
+                {
+                    if (corridor.Kind == RouteKind.FarmPath && !farmLocalTrip &&
+                        IsFarmPoint(point))
+                    {
+                        failure = "public route waypoint " + index +
+                            " uses farm service path '" + corridor.Id + "'";
+                        return false;
+                    }
+                    if (IsRestrictedCorridor(corridor.Kind))
+                    {
+                        failure = "route waypoint " + index + " intersects reserved corridor '" +
+                            corridor.Id + "' without a sidewalk crossing";
+                        return false;
+                    }
+                }
+            }
+
+            for (int index = 1; index < route.Count; index++)
+            {
+                Vector3 first = route[index - 1];
+                Vector3 second = route[index];
+                bool sidewalkCrossing = IsSidewalkPoint(first) || IsSidewalkPoint(second);
+                if (!farmLocalTrip && SegmentIntersectsFarm(first, second) && !sidewalkCrossing)
+                {
+                    failure = "public route segment " + (index - 1) +
+                        " enters the farm outside a designated sidewalk";
+                    return false;
+                }
+                if (sidewalkCrossing || !TryGetIntersectedCorridor(
+                    first, second, capsuleRadius, out WorldRouteCorridor corridor))
+                    continue;
+                if (IsRestrictedCorridor(corridor.Kind))
+                {
+                    failure = "route segment " + (index - 1) + " intersects reserved corridor '" +
+                        corridor.Id + "' without a sidewalk crossing";
+                    return false;
+                }
+            }
+            return true;
+        }
+
         public static bool TryPlan(
             Vector3 from,
             Vector3 destination,
@@ -73,6 +157,11 @@ namespace Tycoon
             if (Vector3.Distance(from, destination) <= LocalTrip)
             {
                 route.Add(destination);
+                if (!ValidateRoute(route, .38f, out failure))
+                {
+                    route.Clear();
+                    return false;
+                }
                 return true;
             }
 
@@ -110,6 +199,11 @@ namespace Tycoon
             }
             route[0] = from;
             route[^1] = destination;
+            if (!ValidateRoute(route, .38f, out failure))
+            {
+                route.Clear();
+                return false;
+            }
             return true;
         }
 
@@ -319,6 +413,126 @@ namespace Tycoon
             lower = Mathf.Max(lower, first);
             upper = Mathf.Min(upper, second);
             return lower <= upper;
+        }
+
+        static bool TryGetReservedCorridor(
+            Vector3 point,
+            float capsuleRadius,
+            out WorldRouteCorridor reserved)
+        {
+            reserved = null;
+            WorldRouteCorridor farmPath = null;
+            foreach (WorldRouteCorridor corridor in WorldRouteCatalog.BuildDefault())
+            {
+                if (!corridor.ReservesPlacement) continue;
+                float clearance = capsuleRadius + corridor.Width * .5f;
+                if (DistanceSquaredToRoute(point, corridor.Nodes) > clearance * clearance)
+                    continue;
+                if (IsRestrictedCorridor(corridor.Kind))
+                {
+                    reserved = corridor;
+                    return true;
+                }
+                if (corridor.Kind == RouteKind.FarmPath && farmPath == null)
+                    farmPath = corridor;
+            }
+            reserved = farmPath;
+            return reserved != null;
+        }
+
+        static bool TryGetIntersectedCorridor(
+            Vector3 first,
+            Vector3 second,
+            float capsuleRadius,
+            out WorldRouteCorridor intersected)
+        {
+            intersected = null;
+            WorldRouteCorridor farmPath = null;
+            foreach (WorldRouteCorridor corridor in WorldRouteCatalog.BuildDefault())
+            {
+                if (!corridor.ReservesPlacement) continue;
+                float clearance = capsuleRadius + corridor.Width * .5f;
+                for (int index = 1; index < corridor.Nodes.Count; index++)
+                {
+                    if (!SegmentsNear(first, second, corridor.Nodes[index - 1],
+                        corridor.Nodes[index], clearance)) continue;
+                    if (IsRestrictedCorridor(corridor.Kind))
+                    {
+                        intersected = corridor;
+                        return true;
+                    }
+                    if (corridor.Kind == RouteKind.FarmPath && farmPath == null)
+                        farmPath = corridor;
+                    break;
+                }
+            }
+            intersected = farmPath;
+            return intersected != null;
+        }
+
+        static bool IsRestrictedCorridor(RouteKind kind)
+        {
+            return kind == RouteKind.Rail || kind == RouteKind.Highway || kind == RouteKind.Dock;
+        }
+
+        // So sánh theo mặt bằng XZ để capsule không bị ảnh hưởng bởi cao độ waypoint.
+        static bool SegmentsNear(
+            Vector3 first,
+            Vector3 second,
+            Vector3 third,
+            Vector3 fourth,
+            float clearance)
+        {
+            float limit = clearance * clearance;
+            return SegmentsCross(first, second, third, fourth) ||
+                DistanceSquaredToSegment(first, third, fourth) <= limit ||
+                DistanceSquaredToSegment(second, third, fourth) <= limit ||
+                DistanceSquaredToSegment(third, first, second) <= limit ||
+                DistanceSquaredToSegment(fourth, first, second) <= limit;
+        }
+
+        static bool SegmentsCross(Vector3 first, Vector3 second, Vector3 third, Vector3 fourth)
+        {
+            float firstSide = Cross(second - first, third - first);
+            float secondSide = Cross(second - first, fourth - first);
+            float thirdSide = Cross(fourth - third, first - third);
+            float fourthSide = Cross(fourth - third, second - third);
+            return firstSide * secondSide < 0 && thirdSide * fourthSide < 0;
+        }
+
+        static float Cross(Vector3 first, Vector3 second)
+        {
+            return first.x * second.z - first.z * second.x;
+        }
+
+        static float DistanceSquaredToRoute(Vector3 point, IReadOnlyList<Vector3> nodes)
+        {
+            float closest = float.PositiveInfinity;
+            for (int index = 1; index < nodes.Count; index++)
+                closest = Mathf.Min(closest,
+                    DistanceSquaredToSegment(point, nodes[index - 1], nodes[index]));
+            return closest;
+        }
+
+        static float DistanceSquaredToSegment(Vector3 point, Vector3 start, Vector3 end)
+        {
+            float deltaX = end.x - start.x;
+            float deltaZ = end.z - start.z;
+            float lengthSquared = deltaX * deltaX + deltaZ * deltaZ;
+            if (lengthSquared <= .000001f)
+            {
+                float pointX = point.x - start.x;
+                float pointZ = point.z - start.z;
+                return pointX * pointX + pointZ * pointZ;
+            }
+            float offsetX = point.x - start.x;
+            float offsetZ = point.z - start.z;
+            float amount = Mathf.Clamp01((offsetX * deltaX + offsetZ * deltaZ) / lengthSquared);
+            float nearestX = start.x + deltaX * amount;
+            float nearestZ = start.z + deltaZ * amount;
+            float differenceX = point.x - nearestX;
+            float differenceZ = point.z - nearestZ;
+            return differenceX * differenceX + differenceZ * differenceZ;
         }
 
         static bool IsFarmPoint(Vector3 point)

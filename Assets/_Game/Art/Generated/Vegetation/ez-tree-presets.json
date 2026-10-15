@@ -1,0 +1,40 @@
+{
+  "generator": "ez-tree",
+  "upstream": "https://github.com/dgreenheck/ez-tree",
+  "pinnedCommit": "dcf309bd86bd521083d9c70f01f2de45fdc7c457",
+  "license": "MIT",
+  "seed": 20261015,
+  "outputPolicy": "Only generated outputs named in this file are used by the Unity map.",
+  "profiles": [
+    {
+      "id": "farm",
+      "seed": 20261032,
+      "preset": "Ash Medium",
+      "lod": [0, 28, 86],
+      "targetDensity": 0.58,
+      "minimumSpacing": 3.5,
+      "corridorClearance": 4.5,
+      "outputs": ["farm-tree.glb", "farm-tree-albedo.png"]
+    },
+    {
+      "id": "forest",
+      "seed": 20261058,
+      "preset": "Oak Dense",
+      "lod": [0, 34, 118, 180],
+      "targetDensity": 0.82,
+      "minimumSpacing": 2.75,
+      "corridorClearance": 5.5,
+      "outputs": ["forest-tree.glb", "forest-tree-albedo.png"]
+    },
+    {
+      "id": "coastal",
+      "seed": 20261086,
+      "preset": "Palm Coastal",
+      "lod": [0, 30, 102],
+      "targetDensity": 0.46,
+      "minimumSpacing": 4.25,
+      "corridorClearance": 6.0,
+      "outputs": ["coastal-tree.glb", "coastal-tree-albedo.png"]
+    }
+  ]
+}

@@ -115,43 +115,94 @@ namespace Tycoon
             return false;
         }
 
-        public static bool ValidateContinuous()
+        public static bool TryGetNearestPoint(
+            string id,
+            Vector3 point,
+            float maxDistance,
+            out Vector3 nearest,
+            out float distance)
         {
+            nearest = default;
+            distance = float.PositiveInfinity;
+            if (!TryGet(id, out WorldRouteCorridor corridor) || !IsFinite(point))
+                return false;
+            float squared = DistanceSquaredToRoute(point, corridor.Nodes, out Vector3 candidate);
+            if (!IsFinite(squared)) return false;
+            distance = Mathf.Sqrt(squared);
+            if (maxDistance >= 0f && distance > maxDistance) return false;
+            nearest = candidate;
+            return true;
+        }
+
+        public static bool ValidateContinuous(out string failure)
+        {
+            failure = null;
             var ids = new HashSet<string>(StringComparer.Ordinal);
             for (int routeIndex = 0; routeIndex < defaultRoutes.Count; routeIndex++)
             {
                 WorldRouteCorridor corridor = defaultRoutes[routeIndex];
                 if (string.IsNullOrWhiteSpace(corridor.Id) || !ids.Add(corridor.Id))
+                {
+                    failure = "route id is missing or duplicated";
                     return false;
+                }
                 if (corridor.Nodes == null || corridor.Nodes.Count < 2)
+                {
+                    failure = corridor.Id + " has fewer than two nodes";
                     return false;
+                }
                 if (corridor.Width <= 0f || !IsFinite(corridor.Width))
+                {
+                    failure = corridor.Id + " has an invalid width";
                     return false;
+                }
 
                 for (int nodeIndex = 0; nodeIndex < corridor.Nodes.Count; nodeIndex++)
                 {
                     if (!IsFinite(corridor.Nodes[nodeIndex]))
+                    {
+                        failure = corridor.Id + " has a non finite node";
                         return false;
-                    if (nodeIndex == 0)
-                        continue;
-
+                    }
+                    if (nodeIndex == 0) continue;
                     Vector3 previous = corridor.Nodes[nodeIndex - 1];
                     Vector3 current = corridor.Nodes[nodeIndex];
                     if ((current - previous).sqrMagnitude <= .0001f)
+                    {
+                        failure = corridor.Id + " has a zero length segment";
                         return false;
+                    }
                 }
             }
             return defaultRoutes.Count > 0;
         }
 
+        public static bool ValidateContinuous()
+        {
+            return ValidateContinuous(out _);
+        }
+
         static float DistanceSquaredToRoute(Vector3 point, IReadOnlyList<Vector3> nodes)
         {
+            return DistanceSquaredToRoute(point, nodes, out _);
+        }
+
+        static float DistanceSquaredToRoute(
+            Vector3 point,
+            IReadOnlyList<Vector3> nodes,
+            out Vector3 nearest)
+        {
             float closest = float.PositiveInfinity;
+            nearest = default;
             for (int index = 1; index < nodes.Count; index++)
             {
-                float distance = DistanceSquaredToSegment(point, nodes[index - 1], nodes[index]);
+                float distance = DistanceSquaredToSegment(
+                    point, nodes[index - 1], nodes[index], out Vector3 candidate);
                 if (distance < closest)
+                {
                     closest = distance;
+                    nearest = candidate;
+                }
             }
             return closest;
         }
@@ -159,11 +210,21 @@ namespace Tycoon
         // Khoảng cách theo mặt bằng XZ để vùng giữ chỗ không phụ thuộc độ cao collider.
         static float DistanceSquaredToSegment(Vector3 point, Vector3 start, Vector3 end)
         {
+            return DistanceSquaredToSegment(point, start, end, out _);
+        }
+
+        static float DistanceSquaredToSegment(
+            Vector3 point,
+            Vector3 start,
+            Vector3 end,
+            out Vector3 nearest)
+        {
             float deltaX = end.x - start.x;
             float deltaZ = end.z - start.z;
             float lengthSquared = deltaX * deltaX + deltaZ * deltaZ;
             if (lengthSquared <= .000001f)
             {
+                nearest = start;
                 float pointX = point.x - start.x;
                 float pointZ = point.z - start.z;
                 return pointX * pointX + pointZ * pointZ;
@@ -176,6 +237,7 @@ namespace Tycoon
             float nearestZ = start.z + deltaZ * amount;
             float differenceX = point.x - nearestX;
             float differenceZ = point.z - nearestZ;
+            nearest = new Vector3(nearestX, Mathf.Lerp(start.y, end.y, amount), nearestZ);
             return differenceX * differenceX + differenceZ * differenceZ;
         }
 

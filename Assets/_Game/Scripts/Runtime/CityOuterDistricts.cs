@@ -57,7 +57,9 @@ namespace Tycoon
                     if (!space.Take(p, 4, 8, "Avenue furniture")) continue;
                     CityProps.Lamp(g, p);
                     CityProps.Planter(g, p + Vector3.forward * 3, 2.2f);
-                    CityVegetation.Tree(g, p + Vector3.back * 2.6f, .85f, (z / 24 + 9) % 3);
+                    Vector3 treePoint = p + Vector3.back * 2.6f;
+                    CityVegetation.Tree(g, treePoint, .85f,
+                        WorldVegetationCatalog.StableSpecies("coastal", treePoint) % 3);
                 }
             }
             foreach (float x in new[] { -195f, 190f })
@@ -69,9 +71,12 @@ namespace Tycoon
             {
                 Vector3 p = new(x, 0, -138);
                 if (!space.Take(p, 16, 16, "Southern grove")) continue;
-                CityVegetation.Tree(g, p, 1.3f, 0);
-                CityVegetation.Tree(g, p + new Vector3(5, 0, 4), 1, 1);
-                CityVegetation.Tree(g, p + new Vector3(-4, 0, -3), .9f, 2);
+                CityVegetation.Tree(g, p, 1.3f,
+                    WorldVegetationCatalog.StableSpecies("forest", p) % 3);
+                Vector3 second = p + new Vector3(5, 0, 4);
+                Vector3 third = p + new Vector3(-4, 0, -3);
+                CityVegetation.Tree(g, second, 1, WorldVegetationCatalog.StableSpecies("forest", second) % 3);
+                CityVegetation.Tree(g, third, .9f, WorldVegetationCatalog.StableSpecies("forest", third) % 3);
             }
             g.Finish();
         }

@@ -4,6 +4,8 @@ namespace Tycoon
 {
     public static class CityCoastWaterMesh
     {
+        public const int SurfaceSeed = 20261015;
+
         public static Mesh Create(float width, float depth)
             => Surface(width, depth, 0, false, false);
         public static Mesh BeachWater(float width, float depth, float worldZ)
@@ -24,7 +26,11 @@ namespace Tycoon
                     float offset = coast ? .6f * Mathf.Sin((worldZ + localZ) * .06f)
                         + .25f * Mathf.Sin((worldZ + localZ) * .13f) : 0;
                     // Nâng cát từ cao độ đất tới đúng cao độ nước tại bờ, khép khe đứng 2,5 cm.
-                    float height = sand ? Mathf.Lerp(.0275f, .0525f, u) : .0525f;
+                    float waveFade = coast && !sand ? Mathf.SmoothStep(0, 1, u) : 0;
+                    float height = sand
+                        ? Mathf.Lerp(.0275f, .0525f, u)
+                        : .0525f + LayeredDisplacement((u - .5f) * width, worldZ + localZ)
+                            * waveFade;
                     vertices[z * (columns + 1) + x] = new((u - .5f) * width
                         + offset * (sand ? u : 1 - u), height, localZ);
                 }
@@ -41,6 +47,15 @@ namespace Tycoon
             mesh.RecalculateNormals(); mesh.RecalculateBounds();
             var bounds = mesh.bounds; bounds.Expand(new Vector3(0, .08f, 0)); mesh.bounds = bounds;
             return mesh;
+        }
+
+        public static float LayeredDisplacement(float x, float z)
+        {
+            float seed = SurfaceSeed * .001f;
+            float longWave = Mathf.Sin((x + seed) * .063f + z * .041f) * .018f;
+            float crossWave = Mathf.Sin(x * -.097f + (z - seed) * .073f) * .011f;
+            float shortWave = Mathf.Sin((x + z) * .19f + seed * .7f) * .004f;
+            return longWave + crossWave + shortWave;
         }
     }
 }

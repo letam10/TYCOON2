@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Profiling;
+using Unity.Profiling.LowLevel.Unsafe;
 using UnityEngine;
 
 namespace Tycoon
@@ -21,6 +23,68 @@ namespace Tycoon
             public int timingSamples;
             public int cpuTimingSamples;
             public int gpuTimingSamples;
+            public string gpuTimingBackend;
+            public string gpuTimingCounter;
+        }
+
+        sealed class GpuTimingProbe : System.IDisposable
+        {
+            public ProfilerRecorder Recorder;
+            public string Backend;
+            public string Counter;
+
+            public bool Valid => Recorder.Valid;
+
+            public static GpuTimingProbe Start()
+            {
+                var handles = new List<ProfilerRecorderHandle>();
+                ProfilerRecorderHandle.GetAvailable(handles);
+                foreach (ProfilerRecorderHandle handle in handles)
+                {
+                    var description = ProfilerRecorderHandle.GetDescription(handle);
+                    if (description.UnitType != ProfilerMarkerDataUnit.TimeNanoseconds)
+                        continue;
+                    string name = description.Name ?? string.Empty;
+                    if (name.IndexOf("GPU Frame Time", System.StringComparison.OrdinalIgnoreCase) < 0)
+                        continue;
+                    ProfilerRecorder recorder = ProfilerRecorder.StartNew(
+                        description.Category, description.Name, 1, ProfilerRecorderOptions.GpuRecorder);
+                    if (!recorder.Valid)
+                    {
+                        recorder.Dispose();
+                        continue;
+                    }
+                    return new GpuTimingProbe
+                    {
+                        Recorder = recorder,
+                        Backend = "ProfilerRecorder",
+                        Counter = description.Category.Name + ":" + description.Name
+                    };
+                }
+                return new GpuTimingProbe
+                {
+                    Backend = "FrameTimingManager",
+                    Counter = "FrameTimingManager.gpuFrameTime"
+                };
+            }
+
+            public bool TryRead(out double milliseconds)
+            {
+                milliseconds = 0;
+                if (!Valid)
+                    return false;
+                long nanoseconds = Recorder.LastValue;
+                if (nanoseconds <= 0)
+                    return false;
+                milliseconds = nanoseconds / 1000000d;
+                return !double.IsNaN(milliseconds) && !double.IsInfinity(milliseconds);
+            }
+
+            public void Dispose()
+            {
+                if (Recorder.Valid)
+                    Recorder.Dispose();
+            }
         }
 
         IEnumerator OceanV13Acceptance()
@@ -51,9 +115,13 @@ namespace Tycoon
             float savedYaw = camera.Yaw;
             Vector3 savedFocus = camera.FocusOffset;
             bool savedOverview = camera.Overview;
+            int savedVSyncCount = QualitySettings.vSyncCount;
+            int savedTargetFrameRate = Application.targetFrameRate;
             try
             {
                 Time.timeScale = 0;
+                QualitySettings.vSyncCount = 1;
+                Application.targetFrameRate = 60;
                 game.Player.CanControl = false;
                 horizon.enabled = true;
                 foreach (string id in ids)
@@ -115,18 +183,23 @@ namespace Tycoon
                 RenderSettings.fog = savedFog;
                 game.Player.CanControl = savedControl;
                 Time.timeScale = savedScale;
+                QualitySettings.vSyncCount = savedVSyncCount;
+                Application.targetFrameRate = savedTargetFrameRate;
             }
         }
 
         IEnumerator MeasureOceanV13(OceanRenderCostRun run)
         {
             var timings = new FrameTiming[1];
+            using GpuTimingProbe gpuProbe = GpuTimingProbe.Start();
+            run.gpuTimingBackend = gpuProbe.Backend;
+            run.gpuTimingCounter = gpuProbe.Counter;
             ulong previousTimestamp = 0;
             double settleUntil = Time.realtimeSinceStartupAsDouble + 2;
             while (Time.realtimeSinceStartupAsDouble < settleUntil)
             {
                 FrameTimingManager.CaptureFrameTimings();
-                yield return null;
+                yield return new WaitForEndOfFrame();
                 if (FrameTimingManager.GetLatestTimings(1, timings) > 0)
                     previousTimestamp = timings[0].frameStartTimestamp;
             }
@@ -136,7 +209,7 @@ namespace Tycoon
             while (Time.realtimeSinceStartupAsDouble - started < 15)
             {
                 FrameTimingManager.CaptureFrameTimings();
-                yield return null;
+                yield return new WaitForEndOfFrame();
                 run.frames++;
                 run.seconds = Time.realtimeSinceStartupAsDouble - started;
                 if (FrameTimingManager.GetLatestTimings(1, timings) == 0
@@ -146,6 +219,13 @@ namespace Tycoon
                 double gpuTime = timings[0].gpuFrameTime;
                 bool validCpu = cpuTime > 0 && !double.IsNaN(cpuTime) && !double.IsInfinity(cpuTime);
                 bool validGpu = gpuTime > 0 && !double.IsNaN(gpuTime) && !double.IsInfinity(gpuTime);
+                if (!validGpu && gpuProbe.TryRead(out double recorderGpuTime))
+                {
+                    gpuTime = recorderGpuTime;
+                    validGpu = true;
+                    run.gpuTimingBackend = gpuProbe.Backend;
+                    run.gpuTimingCounter = gpuProbe.Counter;
+                }
                 if (validCpu)
                 {
                     cpu += cpuTime;

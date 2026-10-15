@@ -5,6 +5,15 @@ namespace Tycoon
 {
     public sealed class CityTraffic : MonoBehaviour
     {
+        enum BlockReason
+        {
+            None,
+            Signal,
+            Actor,
+            Car,
+            PublicTransport
+        }
+
         sealed class Car
         {
             public Transform Root;
@@ -14,13 +23,23 @@ namespace Tycoon
             public float Velocity;
             public CityVehicleRig Rig;
             public CityRoadVehiclePassengers Passengers;
+            public float BlockedSeconds;
+            public bool IsBlocked;
+            public BlockReason Reason;
+            public bool DiagnosticReported;
         }
 
+        const float DiagnosticThresholdSeconds = 3f;
         readonly List<Car> cars = new();
         GameSession game;
         CityLife life;
         CityPublicTransport publicTransport;
         CityTrafficSignalSystem signals;
+        bool deadlockEpisodeActive;
+        [System.NonSerialized] public int StuckVehicleCount;
+        [System.NonSerialized] public int DeadlockCount;
+        [System.NonSerialized] public string LastDiagnostic;
+        public bool HasTrafficDeadlock => deadlockEpisodeActive;
         public int VehicleCount => cars.Count;
 
         void Start()
@@ -64,10 +83,12 @@ namespace Tycoon
             using var updateProbe = QaFrameProbe.Measure("CityTraffic.1.Update");
 
             if (!game || !game.CanSimulate || Time.deltaTime <= 0) return;
-            foreach (var car in cars)
+            for (int vehicleIndex = 0; vehicleIndex < cars.Count; vehicleIndex++)
             {
+                var car = cars[vehicleIndex];
                 if (car.Passengers.Tick(Time.deltaTime))
                 {
+                    ResetBlockedEpisode(car);
                     car.Velocity = 0;
                     if (car.Rig) car.Rig.SetTravel(0, Time.deltaTime);
                     continue;
@@ -78,25 +99,81 @@ namespace Tycoon
                     if (Mathf.Abs(car.Route[car.Next].x + 22) < .1f ||
                         Mathf.Abs(car.Route[car.Next].x - 70) < .1f) car.Passengers.BeginStop();
                     car.Next = (car.Next + 1) % car.Route.Length;
+                    ResetBlockedEpisode(car);
                     continue;
                 }
                 Vector3 forward = delta.normalized;
                 float step = car.Velocity * Time.deltaTime;
-                bool blocked = PeopleAhead(car, forward, step) || CarAhead(car, step) ||
-                    signals && signals.ShouldStopVehicle(car.Root.position) ||
-                    publicTransport && publicTransport.BlocksTraffic(car.Root.position, forward, step);
+                bool blockedByActor = PeopleAhead(car, forward, step);
+                bool blockedByCar = CarAhead(car, step);
+                bool blockedBySignal = signals && signals.ShouldStopVehicle(car.Root.position);
+                bool blockedByPublicTransport = publicTransport &&
+                    publicTransport.BlocksTraffic(car.Root.position, forward, step);
+                bool blocked = blockedByActor || blockedByCar || blockedBySignal || blockedByPublicTransport;
                 car.Velocity = Mathf.MoveTowards(car.Velocity, blocked ? 0 : car.Speed, 3.8f * Time.deltaTime);
                 if (blocked)
                 {
+                    car.IsBlocked = true;
+                    car.BlockedSeconds += Time.deltaTime;
+                    car.Reason = blockedBySignal ? BlockReason.Signal :
+                        blockedByActor ? BlockReason.Actor :
+                        blockedByCar ? BlockReason.Car : BlockReason.PublicTransport;
                     car.Velocity = 0;
                     if (car.Rig) car.Rig.SetTravel(0, Time.deltaTime);
                     continue;
                 }
+                ResetBlockedEpisode(car);
                 step = car.Velocity * Time.deltaTime;
                 car.Root.position = Vector3.MoveTowards(car.Root.position, car.Route[car.Next], step);
                 if (car.Rig) car.Rig.SetTravel(car.Velocity, Time.deltaTime);
                 car.Root.rotation = Quaternion.RotateTowards(car.Root.rotation,
                     Quaternion.LookRotation(forward), 180 * Time.deltaTime);
+            }
+            UpdateDiagnostics();
+        }
+
+        void UpdateDiagnostics()
+        {
+            int blockedCars = 0;
+            for (int i = 0; i < cars.Count; i++)
+                if (cars[i].IsBlocked) blockedCars++;
+            if (blockedCars < 2) deadlockEpisodeActive = false;
+            for (int i = 0; i < cars.Count; i++)
+            {
+                var car = cars[i];
+                if (!car.IsBlocked || car.BlockedSeconds < DiagnosticThresholdSeconds ||
+                    car.DiagnosticReported) continue;
+                car.DiagnosticReported = true;
+                if (blockedCars > 1)
+                {
+                    if (deadlockEpisodeActive) continue;
+                    deadlockEpisodeActive = true;
+                    DeadlockCount++;
+                    LastDiagnostic = "Vehicle " + i + " deadlock: " + GetReasonText(car.Reason);
+                    continue;
+                }
+                StuckVehicleCount++;
+                LastDiagnostic = "Vehicle " + i + " stuck: " + GetReasonText(car.Reason);
+            }
+        }
+
+        void ResetBlockedEpisode(Car car)
+        {
+            car.BlockedSeconds = 0;
+            car.IsBlocked = false;
+            car.Reason = BlockReason.None;
+            car.DiagnosticReported = false;
+        }
+
+        static string GetReasonText(BlockReason reason)
+        {
+            switch (reason)
+            {
+                case BlockReason.Signal: return "signal";
+                case BlockReason.Actor: return "actor";
+                case BlockReason.Car: return "car";
+                case BlockReason.PublicTransport: return "public transport";
+                default: return "traffic";
             }
         }
 

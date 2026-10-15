@@ -12,7 +12,7 @@ namespace Tycoon.Tests
             IReadOnlyList<WorldRouteCorridor> routes = WorldRouteCatalog.BuildDefault();
 
             Assert.That(routes, Is.Not.Null);
-            Assert.That(routes.Count, Is.EqualTo(12));
+            Assert.That(routes.Count, Is.EqualTo(13));
             Assert.That(WorldRouteCatalog.ValidateContinuous(), Is.True);
             Assert.That(WorldRouteCatalog.TryGet("farm-service-loop", out _), Is.True);
 
