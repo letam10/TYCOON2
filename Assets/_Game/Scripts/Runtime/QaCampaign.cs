@@ -72,29 +72,116 @@ namespace Tycoon
         }
         IEnumerator ManualEarn(int amount)
         {
-            var source = game.Producers.Find(x => x.ItemId == "milk");
-            var shelf = game.Shelves.Find(x => x.Accepts("milk"));
+            const string item = "carrot";
+            var source = game.Producers.Find(x => x.IsUnlocked && x.ItemId == item);
+            var shelf = game.Shelves.Find(x => x.Accepts(item));
             var lane = game.Checkouts[0];
+            var safe = game.Stations.OfType<SafeStation>().FirstOrDefault();
+            Check(source != null && shelf != null, "unlocked starter producer has a matching shelf");
+            Check(safe != null, "cash safe is reachable for the manual sales loop");
+            float previousTimeScale = Time.timeScale;
+            Time.timeScale = 2f;
+            game.Commerce.enabled = false;
+            foreach (var customer in game.Commerce.Customers.ToArray()) game.Commerce.Recycle(customer);
             float end = Time.realtimeSinceStartup + 200;
-            while (game.Economy.Money < amount)
+            while (game.Economy.Money + game.Economy.CashInSafe < amount)
             {
                 Check(Time.realtimeSinceStartup < end, "manual selling within deadline");
-                yield return Travel(source.InteractionPoint);
-                while (game.Player.Carry.Count("milk") < game.Player.Carry.Capacity && Time.realtimeSinceStartup < end) { Keys(Key.E); yield return null; }
-                Keys();
-                Check(game.Player.Carry.Count("milk") > 0, "manual harvest uses production inventory");
-                if (report.screenshots.Count < 2) yield return Capture("02-tall-carry.png");
-                yield return Travel(shelf.InteractionPoint);
-                while (game.Player.Carry.Total > 0 && Time.realtimeSinceStartup < end) { Keys(Key.E); yield return null; }
-                Keys();
+                if (game.Player.Carry.Total == 0)
+                {
+                    yield return Travel(source.InteractionPoint);
+                    while (game.Player.Carry.Count(item) < game.Player.Carry.Capacity &&
+                        Time.realtimeSinceStartup < end) { Keys(Key.E); yield return null; }
+                    Keys();
+                    Check(game.Player.Carry.Count(item) > 0, "manual harvest uses production inventory");
+                    if (report.screenshots.Count < 2) yield return Capture("02-tall-carry.png");
+                }
                 yield return Travel(lane.InteractionPoint);
-                float wait = Time.realtimeSinceStartup + 20;
-                Keys(Key.E);
-                while ((lane.Queue.Count > 0 || shelf.Inventory.Total > 0) && Time.realtimeSinceStartup < wait) yield return null;
-                yield return new WaitForSeconds(.5f); Keys();
-                Check(game.Economy.Transactions > 0, "customer checkout paid");
+                Check(game.Player.Carry.Count(item) > 0, "manual checkout carries one carrot");
+                while (game.Player.Carry.Total > 0 && game.Economy.Money + game.Economy.CashInSafe < amount &&
+                    Time.realtimeSinceStartup < end)
+                {
+                    if (lane.Queue.Count == 0) CreateSingleCarrotQaCustomer(lane, game.NextReceipt++);
+                    int transactionsBefore = game.Economy.Transactions;
+                    float wait = Time.realtimeSinceStartup + 20;
+                    Keys(Key.E);
+                    while (lane.Queue.Count > 0 && Time.realtimeSinceStartup < wait)
+                    {
+                        Keys(Key.E);
+                        yield return null;
+                    }
+                    Keys();
+                    if (game.Economy.Transactions == transactionsBefore)
+                    {
+                        WriteState("checkout-failure-state.txt");
+                        Check(false, "customer checkout paid");
+                    }
+                }
+                if (game.Player.Carry.Total > 0 || lane.Queue.Count > 0) continue;
+                Check(game.Player.Carry.Total == 0, "manual checkout empties the carried batch");
+                long balanceBeforeCash = game.Economy.Money;
+                yield return Travel(lane.CollectionPoint);
+                float cashDeadline = Time.realtimeSinceStartup + 8;
+                while (game.Economy.Money == balanceBeforeCash && Time.realtimeSinceStartup < cashDeadline)
+                {
+                    Keys(Key.E);
+                    yield return null;
+                }
+                Keys();
+                Check(game.Economy.Money > balanceBeforeCash, "player collects checkout cash");
+                float depositDeadline = Time.realtimeSinceStartup + 8;
+                yield return Travel(safe.Deposit.Center);
+                while (game.Economy.CashInHand > 0 && Time.realtimeSinceStartup < depositDeadline)
+                {
+                    Keys(Key.E);
+                    yield return null;
+                }
+                Keys();
+                Check(game.Economy.CashInHand == 0, "player deposits cash before the next harvest");
             }
+            yield return Travel(safe.Withdraw.Center);
+            float withdrawDeadline = Time.realtimeSinceStartup + 8;
+            while (game.Economy.Money < amount && Time.realtimeSinceStartup < withdrawDeadline)
+            {
+                Keys(Key.E);
+                yield return null;
+            }
+            Keys();
+            Check(game.Economy.Money >= amount, "player withdraws manual sales for the next upgrade");
+            Time.timeScale = previousTimeScale;
             yield return Capture("03-customer-checkout.png");
+        }
+        CustomerAgent CreateSingleCarrotQaCustomer(CheckoutStation counter, long sequence)
+        {
+            var root = new GameObject("ManualEarnCustomer_" + sequence);
+            root.transform.SetParent(game.Commerce.transform);
+            root.transform.position = counter.QueuePoint(0);
+            var model = Art.Model("customer", Vector3.zero, root.transform);
+            model.AddComponent<ActorView>();
+            var customer = root.AddComponent<CustomerAgent>();
+            customer.Initialize();
+            if (!UnityEngine.AI.NavMesh.SamplePosition(counter.QueuePoint(0), out var point, 3,
+                UnityEngine.AI.NavMesh.AllAreas)) throw new Exception("Manual QA customer cannot reach farm queue.");
+            var exit = TownLayout.Spawn(0);
+            customer.Restore(new CustomerSave
+            {
+                receipt = sequence,
+                shop = counter.ShopId,
+                lane = counter.Id,
+                phase = (int)CustomerAgent.State.Queue,
+                remaining = OrderState.Patience,
+                order = new List<OrderLine> { new("carrot", 1, game.ItemPrice("carrot")) },
+                x = point.position.x,
+                y = point.position.y,
+                z = point.position.z,
+                exitX = exit.x,
+                exitY = exit.y,
+                exitZ = exit.z
+            });
+            root.transform.position = point.position;
+            customer.Agent.Warp(point.position);
+            game.Commerce.Customers.Add(customer);
+            return customer;
         }
         IEnumerator Earn(int amount)
         {
@@ -116,7 +203,13 @@ namespace Tycoon
             var pad = (PurchasePad)game.Stations.Find(x => x.Id == "pad_" + id);
             yield return Travel(pad.InteractionPoint);
             long money = game.Economy.Money;
-            Keys(Key.E); yield return new WaitForSeconds(.35f); Keys();
+            float deadline = Time.realtimeSinceStartup + 8;
+            while (!game.Economy.Has(id) && Time.realtimeSinceStartup < deadline)
+            {
+                Keys(Key.E);
+                yield return null;
+            }
+            Keys();
             Check(game.Economy.Has(id), "purchased " + id);
             Check(game.Economy.Money == money - pad.Upgrade.cost, "exact cost " + id);
             yield return new WaitForSeconds(.2f);

@@ -92,9 +92,9 @@ namespace Tycoon
 
         Material CreateMaterial(Color color)
         {
-            Shader shader = Shader.Find("Universal Render Pipeline/Unlit")
-                ?? Shader.Find("Standard");
-            if (!shader)
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (!shader || shader.name.Contains("Error")) shader = Shader.Find("Standard");
+            if (!shader || shader.name.Contains("Error"))
                 return null;
             Material material = new Material(shader);
             material.color = color;

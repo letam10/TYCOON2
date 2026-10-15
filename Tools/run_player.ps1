@@ -48,18 +48,23 @@ if($Task -in @('PhysicalLoad','PhysicalVisual','PhysicalPerformance')){
     New-Item -ItemType Directory -Path $outputRoot -Force | Out-Null
 }
 if ($Task -notin @('Probe','Load')) {
-    $qaSavePath = [System.IO.Path]::GetFullPath((Join-Path $outputRoot 'qa-save.json'))
     $verifiedQaRoot = [System.IO.Path]::GetFullPath($outputRoot) + [System.IO.Path]::DirectorySeparatorChar
-    if (!$qaSavePath.StartsWith($verifiedQaRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
-        throw 'QA save path escaped its output directory.'
-    }
-    if (Test-Path -LiteralPath $qaSavePath) {
+    $qaSaveNames = @(
+        'qa-save-v2.json', 'qa-save-v2.json.journal', 'qa-save-v2.json.previous.json',
+        'active-slot.json', 'save-slot-2.json', 'save-slot-2.json.journal',
+        'save-slot-2.json.previous.json', 'save-slot-3.json', 'save-slot-3.json.journal',
+        'save-slot-3.json.previous.json'
+    )
+    foreach ($qaSaveName in $qaSaveNames) {
+        $qaSavePath = [System.IO.Path]::GetFullPath((Join-Path $outputRoot $qaSaveName))
+        if (!$qaSavePath.StartsWith($verifiedQaRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw 'QA save path escaped its output directory.'
+        }
+        if (!(Test-Path -LiteralPath $qaSavePath)) { continue }
         $ownerProcesses = Get-CimInstance Win32_Process | Where-Object {
             $_.Name -eq 'TYCOON2.exe' -and $_.CommandLine -and $_.CommandLine.Contains($outputRoot)
         }
         if ($ownerProcesses) { throw 'A QA player still owns this save.' }
-        $existingQaSave = Get-Content -LiteralPath $qaSavePath -Raw | ConvertFrom-Json
-        if ($existingQaSave.version -ne 1 -or !$existingQaSave.savedAt) { throw 'Unrecognized QA save; preserved.' }
         Remove-Item -LiteralPath $qaSavePath -Force
     }
 }
