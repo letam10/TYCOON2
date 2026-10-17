@@ -828,3 +828,11 @@ Chưa khởi chạy các lệnh Player này trong lượt chốt hiện tại.
 - Player evidence: latest bounded `Tools/run_player.ps1 -Task Stage14Visual` exited 2. The fresh overview image `work/stage14/player-stage14visual-20261017T023421913Z/02-final-layout.png` now shows the town, routes, coast and water after the FollowCamera far clip fix. The report fails later in `FinalGetItem` because field producer totals remain zero and the player cannot receive real carrot stock; `runtimeErrors` is empty. This is recorded as a warning and is not claimed as a Player pass.
 - limits: no benchmark, soak, long campaign, GPU timing or `run_completion -Case All` was run. Existing dirty and untracked model metadata, ASSET/Downloaded, QA history, saves and work artifacts remain excluded from the release allowlist.
 - release next: run diff/LFS/secret/large-file checks, stage only the reviewed allowlist, commit, push origin/main without force, verify HEAD equals origin/main, then append the final commit and push evidence here.
+
+## Release push confirmation 2026-10-17T02:47:00Z
+- source commit: `1790b81` (`Finalize visual realism tranche and Windows build evidence`), created from the reviewed 11 path allowlist.
+- push: `git push origin main` exit 0; remote accepted `4ce6dee..1790b81 main -> main` without force.
+- build: `D:\GAME\TYCOON2\Builds\Windows\TYCOON2.exe`, report `QA/build-report.json` result Succeeded, errors 0, warnings 32, bytes 117080559, builtUtc `2026-10-17T02:33:09.5772115Z`, SHA256 `96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873`.
+- tests: fresh full EditMode XML at `2026-10-17T02:43:18Z` reports 1066/1066 passed, 0 failed, 0 inconclusive, 0 skipped.
+- Player warning: latest Stage14Visual report exited 2 at `FinalGetItem` because producer totals were zero and real carrot stock was not obtained; camera overview evidence passed visually, but carry/delivery smoke is not claimed as pass.
+- preservation: unrelated dirty/untracked metadata, ASSET/Downloaded, historical QA, saves and work artifacts remain outside the commit.

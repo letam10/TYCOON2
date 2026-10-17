@@ -780,3 +780,12 @@ stage runs; no row is acceptance evidence before its commands and artifacts exis
 - runtime failure evidence: failure-state.txt records player at (-46.06, 0.02, -14.78), nearest field_carrot_2_operate, carry empty, nearby field_carrot_2, all producer totals zero, and message Cây đã chín; hãy sang vùng Lấy hàng. The failure is an interaction or production QA gate and is not hidden or reclassified as a visual pass.
 - open issues: Stage14Visual cannot complete the carry and delivery portion because FinalGetItem does not obtain real carrot stock before the timeout or transition. Full Player route acceptance, carry delivery, harbor, forest and save smoke remain unaccepted for this tranche. No GPU timing, benchmark, soak, campaign or run_completion was run.
 - next stage: repair the producer pickup or FinalGetItem interaction contract in its own focused stage, rerun the focused carry and route tests, then rerun one short Player smoke. Do not commit or push until that gate passes.
+
+## Final delivery push confirmation 2026-10-17T02:47:00Z
+- status: source/build/test commit pushed; documentation follow up is pending.
+- commit and push: source commit `1790b81` (`Finalize visual realism tranche and Windows build evidence`) contains exactly the reviewed 11 path allowlist. `git push origin main` exited 0 and accepted `4ce6dee..1790b81 main -> main` without force.
+- tests: `Tools/run_unity.ps1 -Task Tests` exited 0 on the latest source; fresh XML `QA/editmode-results.xml` at `2026-10-17T02:43:18Z` reports 1066 total, 1066 passed, 0 failed, 0 inconclusive, 0 skipped.
+- build: `Tools/run_unity.ps1 -Task Build` exited 0; `QA/build-report.json` reports result Succeeded, errors 0, warnings 32, bytes 117080559, builtUtc `2026-10-17T02:33:09.5772115Z`. Required executable is `D:\GAME\TYCOON2\Builds\Windows\TYCOON2.exe` with SHA256 `96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873`.
+- Player evidence and limits: latest Stage14Visual exited 2 at FinalGetItem because all producer totals were zero and real carrot stock was not obtained. The fresh overview frame passed the camera visual check, but carry and delivery Player acceptance remains open. No benchmark, soak, long campaign, GPU timing or run_completion All was run.
+- preservation: unrelated dirty and untracked metadata, ASSET/Downloaded, QA history, saves and work artifacts remain uncommitted and preserved.
+- next: commit this documentation follow up, push it, verify HEAD equals origin/main and report both commit SHAs.
