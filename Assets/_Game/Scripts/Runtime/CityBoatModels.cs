@@ -29,6 +29,19 @@ namespace Tycoon
             g.Box(p + new Vector3(0, 1.23f, -4.45f), new(4.1f, .16f, .65f), "wood", "#AC9775");
             g.Cylinder(p + new Vector3(0, 3.8f, -.4f), .07f, 1.4f, "metal", "#728781");
             g.Box(p + new Vector3(0, 4.35f, -.4f), new(1.6f, .1f, .3f), "metal", "#D6D2C4");
+            for (int side = -1; side <= 1; side += 2)
+            {
+                g.Cylinder(p + new Vector3(side * 1.42f, 1.55f, 3.52f), .055f, .08f,
+                    "glass", side < 0 ? "#D8B85C" : "#D7E5D8");
+                g.Beam(p + new Vector3(side * 1.55f, 1.56f, 2.05f),
+                    p + new Vector3(side * 1.55f, 1.56f, 4.62f), .035f, "metal", "#83958D");
+                for (int post = 0; post < 3; post++)
+                    g.Cylinder(p + new Vector3(side * 1.55f, 1.35f, 2.22f + post * 1.1f),
+                        .035f, .42f, "metal", "#83958D");
+            }
+            g.Beam(p + new Vector3(-1.55f, 1.56f, 4.62f),
+                p + new Vector3(1.55f, 1.56f, 4.62f), .035f, "metal", "#83958D");
+            g.Cylinder(p + new Vector3(0, 1.48f, 4.9f), .07f, .08f, "glass", "#E7D06E");
             Cleat(g, p + new Vector3(0, 1.22f, 5.6f));
             Lifebuoy(g, p + new Vector3(-1.73f, 1.98f, -1.2f));
         }

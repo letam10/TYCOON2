@@ -939,3 +939,15 @@ stage runs; no row is acceptance evidence before its commands and artifacts exis
 - Build SHA256: 96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873 for Builds/Windows/TYCOON2.exe.
 - Open issues: imported legacy POI meshes and hero facade closeups remain open. No benchmark, GPU timing, soak, overnight campaign or long campaign was run.
 - Next stage: preserve unrelated dirty and untracked paths and continue a separate POI or hero asset closeup tranche.
+
+### 2026-10-17 — Final visual tranche: yacht deck and navigation detail
+- **Status:** PASS for the focused boat tranche; broader visual redesign remains open.
+- **Assumption / pass criteria:** preserve stable boat IDs, boarding anchors, colliders and route contracts; improve visible yacht realism with small navigation and railing details only. Pass requires focused boat and route-access tests exit 0, the required Windows build succeeds without compile errors, and a short Player smoke completes without runtime errors or blank/magenta frames.
+- **Changed file:** `Assets/_Game/Scripts/Runtime/CityBoatModels.cs`.
+- **Change:** added port/starboard navigation light cylinders, bow light, side railings, stern rail and railing posts to the existing `Yacht` model. No economy, stable ID, boarding, door, collider or route logic changed.
+- **Focused checks:** `Tools/run_unity.ps1 -Task Tests -TestFilter Tycoon.Tests.WorldExpansionBoatTests` exit code `0`; `Tools/run_unity.ps1 -Task Tests -TestFilter Tycoon.Tests.WorldExpansionRouteAccessTests` exit code `0`; latest NUnit XML for the route-access filter reports `Total=1, Passed=1, Failed=0, Skipped=0`.
+- **Build:** `Tools/run_unity.ps1 -Task Build` exit code `0`; `QA/build-report.json` reports `result=Succeeded`, `errors=0`, `warnings=34`, `bytes=117099391`, `builtUtc=2026-10-17T11:32:08.5699039Z`; output `D:\GAME\TYCOON2\Builds\Windows\TYCOON2.exe`; SHA256 `96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873`.
+- **Player evidence:** `Tools/run_world_features.ps1 -BuildPath Builds/Windows/TYCOON2.exe -OutputPath work/visual-boat-20261017T1640Z` completed with `passed=true`, `interactions=30`, `screenshots=61`, `runtimeErrors=[]`, `distanceWalked=425.9306335`, `finishedUtc=2026-10-17T11:33:16.7639312Z`; `work/boat-smoke-20261017T1640.log` records Player exit code `0` and `WORLD-FEATURES_QA PASS`. The first interactive wait was user-interrupted, but the authoritative process/report completed successfully.
+- **Visual evidence:** fresh world-feature captures show the rebuilt world with no blank or magenta frame and no runtime error marker. The current smoke set does not include a dedicated close-up of the yacht; a dedicated boat close-up and legacy hero-asset pass remain open.
+- **Warnings / limits:** build contains 34 existing warnings; GPU timing, benchmark, soak, overnight and long campaign checks were intentionally not run. OceanV13 timing remains diagnostic unavailable on D3D11.
+- **Next stage:** continue with a separate bounded visual tranche for train or remaining legacy hero assets, preserving unrelated dirty/untracked files.
