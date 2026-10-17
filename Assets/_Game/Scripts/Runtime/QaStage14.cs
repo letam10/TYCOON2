@@ -62,7 +62,7 @@ namespace Tycoon
             foreach(string state in new[]{"Idle","Walk","Carry","Pickup","Drop","Operate","Farming","AnimalCare","Cashier","Cooking","Serving","Cleaning"})
                 Check(game.Player.View.Animator.HasState(0,Animator.StringToHash(state)),"final animation "+state);
             yield return Capture("01-final-starter.png");
-            game.CameraRig.Overview=true;yield return new WaitForSeconds(1);yield return Capture("02-final-layout.png");game.CameraRig.Overview=false;
+            game.CameraRig.Overview=true;game.CameraRig.Snap();yield return new WaitForSeconds(1);yield return Capture("02-final-layout.png");game.CameraRig.Overview=false;game.CameraRig.Snap();
             if(game.Economy.Money==0&&!game.Economy.Has("farm_shop"))
             {
                 yield return FinalGetItem("carrot",2);yield return FinalStash();

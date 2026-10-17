@@ -99,7 +99,7 @@ namespace Tycoon
                 else DestroyImmediate(collider);
             }
             Renderer renderer = root.GetComponent<Renderer>();
-            Material material = CreateMaterial(color);
+            Material material = CreateMaterial(color, false);
             if (renderer && material)
                 renderer.sharedMaterial = material;
         }
@@ -119,7 +119,7 @@ namespace Tycoon
             }
 
             Renderer renderer = root.GetComponent<Renderer>();
-            Material material = CreateMaterial(color);
+            Material material = CreateMaterial(color, true);
             if (renderer && material)
                 renderer.sharedMaterial = material;
 
@@ -132,17 +132,24 @@ namespace Tycoon
             return new Lamp { Root = root, Renderer = renderer, Light = light };
         }
 
-        Material CreateMaterial(Color color)
+        Material CreateMaterial(Color color, bool emissive)
         {
             Shader shader = Shader.Find("Universal Render Pipeline/Lit");
             if (!shader || shader.name.Contains("Error")) shader = Shader.Find("Standard");
             if (!shader || shader.name.Contains("Error"))
                 return null;
             Material material = new Material(shader);
+            material.name = emissive ? "TrafficLensMaterial" : "TrafficSignalMetalMaterial";
             material.color = color;
             if (material.HasProperty("_BaseColor"))
                 material.SetColor("_BaseColor", color);
-            if (material.HasProperty("_EmissionColor"))
+            if (material.HasProperty("_Metallic"))
+                material.SetFloat("_Metallic", emissive ? .18f : .72f);
+            if (material.HasProperty("_Smoothness"))
+                material.SetFloat("_Smoothness", emissive ? .88f : .62f);
+            if (material.HasProperty("_BaseMap"))
+                material.SetTexture("_BaseMap", TownSurfaceTexture.Get(emissive ? "glass" : "metal"));
+            if (emissive && material.HasProperty("_EmissionColor"))
             {
                 material.EnableKeyword("_EMISSION");
                 material.SetColor("_EmissionColor", color * 2.5f);

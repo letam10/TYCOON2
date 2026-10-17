@@ -31,7 +31,10 @@ namespace Tycoon
             {
                 savedFar = lens.farClipPlane;
                 savedFog = RenderSettings.fog;
-                lens.farClipPlane = 1600;
+                float overviewDistance = CityCameraFraming.OverviewDistance(
+                    lens, Quaternion.Euler(Pitch, Yaw, 0));
+                float boundsRadius = CityDistricts.WorldBounds.extents.magnitude;
+                lens.farClipPlane = Mathf.Max(savedFar, overviewDistance + boundsRadius * 1.25f);
                 RenderSettings.fog = false;
             }
             else

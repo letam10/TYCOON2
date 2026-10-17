@@ -115,13 +115,17 @@ Shader "TYCOON/Town Water"
             // Beer-Lambert: đỏ bị hấp thụ mạnh hơn xanh; thấy cát và caustic ở vùng nông.
             half3 transmission = exp(-half3(.8, .30, .18) * depth);
             float2 p = position.xz;
+            half depthBand = saturate(distanceToShore / 36);
+            half3 waterTint = lerp(_BaseColor.rgb * half3(.76, .94, .98),
+                _BaseColor.rgb * half3(.42, .72, .86), depthBand);
+            waterTint *= .92 + WaterNoise(p * .045 + _Time.y * .005) * .14;
             p += float2(WaterNoise(p * .11), WaterNoise(p * .11 + 17.3)) * 2.5;
             float a = sin(dot(p, float2(1.7, .8)) + _Time.y * .6);
             float b = sin(dot(p, float2(-.7, 1.8)) - _Time.y * .47);
             half caustic = pow(saturate(1 - abs(a + b) * .5), 12);
             half3 sand = half3(.64, .60, .43) * (.94 + WaterNoise(p * .3) * .06);
             sand += caustic * .10;
-            return sand * transmission + _BaseColor.rgb * (1 - transmission);
+            return sand * transmission + waterTint * (1 - transmission);
         }
         half4 Frag(Varyings input) : SV_Target
         {

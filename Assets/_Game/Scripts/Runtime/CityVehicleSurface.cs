@@ -19,13 +19,15 @@ namespace Tycoon
             paint.name = "VehiclePaint_" + tint;
             paint.enableInstancing = true;
             if (paint.HasProperty("_Metallic"))
-                paint.SetFloat("_Metallic", .64f);
+                paint.SetFloat("_Metallic", .72f);
             if (paint.HasProperty("_Smoothness"))
-                paint.SetFloat("_Smoothness", .68f);
+                paint.SetFloat("_Smoothness", .74f);
             if (paint.HasProperty("_CoatWeight"))
-                paint.SetFloat("_CoatWeight", .28f);
+                paint.SetFloat("_CoatWeight", .4f);
             if (paint.HasProperty("_CoatRoughness"))
-                paint.SetFloat("_CoatRoughness", .22f);
+                paint.SetFloat("_CoatRoughness", .18f);
+            if (paint.HasProperty("_IrregularDetail"))
+                paint.SetFloat("_IrregularDetail", 1);
             paintCache[tint] = paint;
             return paint;
         }
@@ -45,8 +47,15 @@ namespace Tycoon
                 if (glass) return glass;
                 glass = new Material(Shader.Find("Universal Render Pipeline/Lit"));
                 glass.name = "VehicleV8SharedClearGlass";
-                glass.SetColor("_BaseColor", new Color(.31f, .52f, .59f, .23f));
-                glass.SetFloat("_Smoothness", .84f);
+                glass.SetColor("_BaseColor", new Color(.18f, .37f, .43f, .3f));
+                if (glass.HasProperty("_BaseMap"))
+                    glass.SetTexture("_BaseMap", TownSurfaceTexture.Get("glass"));
+                glass.SetFloat("_Metallic", .05f);
+                glass.SetFloat("_Smoothness", .93f);
+                if (glass.HasProperty("_CoatWeight"))
+                    glass.SetFloat("_CoatWeight", .45f);
+                if (glass.HasProperty("_CoatRoughness"))
+                    glass.SetFloat("_CoatRoughness", .12f);
                 glass.SetFloat("_Surface", 1);
                 glass.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
                 glass.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);

@@ -14,7 +14,15 @@ namespace Tycoon
             var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             material.name = "Paint_" + hex;
             material.SetColor("_BaseColor", Art.Hex(hex));
-            material.SetFloat("_Smoothness", .28f);
+            material.SetFloat("_Smoothness", .36f);
+            material.SetFloat("_Metallic", .04f);
+            if (material.HasProperty("_BaseMap"))
+            {
+                material.SetTexture("_BaseMap", TownSurfaceTexture.Get("plaster"));
+                material.SetTextureScale("_BaseMap", new Vector2(.55f, .55f));
+            }
+            if (material.HasProperty("_BumpScale"))
+                material.SetFloat("_BumpScale", .06f);
             material.enableInstancing = true;
             cache[key] = material;
             return material;

@@ -96,9 +96,19 @@ namespace Tycoon
         {
             Art.Cylinder("GuidePost", local + Vector3.up * 1.05f,
                 new Vector3(.14f, 1.05f, .14f), "#536C67", parent);
+            Art.Cylinder("GuidePostFoot", local + Vector3.up * .08f,
+                new Vector3(.5f, .08f, .5f), "#2C4545", parent);
+            Art.Cylinder("GuidePostCap", local + Vector3.up * 2.76f,
+                new Vector3(.22f, .08f, .22f), "#B7C7B2", parent);
             GameObject board = Art.Box("GuideBoard", local + Vector3.up * 2.15f,
                 new Vector3(4.8f, .92f, .14f), color, parent);
             board.transform.localRotation = Quaternion.LookRotation(facing, Vector3.up);
+            GameObject trim = Art.Box("GuideBoardTrim", local + Vector3.up * 2.15f,
+                new Vector3(4.94f, 1.06f, .07f), "#C7D4C2", parent);
+            trim.transform.localRotation = board.transform.localRotation;
+            GameObject stripe = Art.Box("GuideBoardReflectiveStripe", local + Vector3.up * 1.79f,
+                new Vector3(4.52f, .07f, .08f), "#E1C879", parent);
+            stripe.transform.localRotation = board.transform.localRotation;
             if (!Art.Catalog)
                 return;
             Art.Label(title, local + Vector3.up * 2.3f,

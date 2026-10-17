@@ -265,11 +265,11 @@ namespace Tycoon
                 checkout.CashZone = zone;
             string color = mode switch
             {
-                "serve" => "#73CF4F",
-                "withdraw" => "#39A4D8",
-                "deposit" => "#F5AB3D",
-                "operate" => "#9A72D8",
-                _ => "#FFD63E"
+                "serve" => "#A8BDA0",
+                "withdraw" => "#9BB8B9",
+                "deposit" => "#C6A977",
+                "operate" => "#9B8FA8",
+                _ => "#C8B77C"
             };
             Art.Box("InteractionZone", new Vector3(0, .035f, 0), new Vector3(1.8f, .07f, 1.8f), color, zone.transform);
             Locked(zone);
