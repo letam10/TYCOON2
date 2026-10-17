@@ -891,3 +891,15 @@ stage runs; no row is acceptance evidence before its commands and artifacts exis
 - Build SHA256: 96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873 for Builds/Windows/TYCOON2.exe.
 - Open issues: tree geometry remains procedural and low texture by design; imported legacy vegetation and dedicated closeups remain open. No benchmark, GPU timing, soak, overnight campaign or long campaign was run.
 - Next stage: continue with a separate legacy material or closeup tranche while preserving unrelated dirty and untracked paths.
+
+## Wayfinding sign hardware follow up — 2026-10-17T11:02:00Z
+- Status: SOURCE, focused Stage9 wayfinding tests, Windows build and bounded Player smoke PASS.
+- Assumptions and pass criteria: preserve WorldRouteCatalog route anchors, board position/orientation, stable map IDs, traffic phases and no-collider contract. Add presentation geometry only.
+- Source: Assets/_Game/Scripts/Runtime/WorldExpansionWayfinding.cs. Added a dark backplate, two mounting brackets and a reflective chevron on each expansion guide board. Existing route-facing calculation, labels, title/subtitle and reserved-corridor clearance are unchanged.
+- Focused command: Tools/run_unity.ps1 -Task Tests -TestFilter Tycoon.Tests.Stage9MapWayfindingTests; exit 0; QA/editmode-results.xml reports 4 total, 4 passed, 0 failed, 0 skipped. Fresh log: work/wayfinding-focused-20261017T1200.log.
+- Build command: Tools/run_unity.ps1 -Task Build; exit 0; QA/build-report.json result Succeeded, errors 0, warnings 34, bytes 117097855, builtUtc 2026-10-17T10:58:42.7513770Z.
+- Player command: Tools/run_world_features.ps1 -BuildPath Builds/Windows/TYCOON2.exe -OutputPath work/visual-wayfinding-20261017T1230Z; exit 0; passed=true, interactions=32, screenshots=61, runtimeErrors=0, finishedUtc=2026-10-17T10:59:48.7062986Z.
+- Visual evidence: fresh map and expansion captures were generated; no blank or magenta frame or runtime error marker was reported. Close range board crop remains a later presentation check.
+- Build SHA256: 96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873 for Builds/Windows/TYCOON2.exe.
+- Open issues: imported legacy signs and a dedicated signal closeup remain open. No benchmark, GPU timing, soak, overnight campaign or long campaign was run.
+- Next stage: preserve unrelated dirty and untracked files and continue a separate focused legacy material or closeup tranche.

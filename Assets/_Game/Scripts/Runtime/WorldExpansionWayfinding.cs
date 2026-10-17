@@ -103,12 +103,30 @@ namespace Tycoon
             GameObject board = Art.Box("GuideBoard", local + Vector3.up * 2.15f,
                 new Vector3(4.8f, .92f, .14f), color, parent);
             board.transform.localRotation = Quaternion.LookRotation(facing, Vector3.up);
+            GameObject back = Art.Box("GuideBoardBackplate", local + Vector3.up * 2.15f,
+                new Vector3(4.7f, .82f, .08f), "#183A3A", parent);
+            back.transform.localRotation = board.transform.localRotation;
             GameObject trim = Art.Box("GuideBoardTrim", local + Vector3.up * 2.15f,
                 new Vector3(4.94f, 1.06f, .07f), "#C7D4C2", parent);
             trim.transform.localRotation = board.transform.localRotation;
             GameObject stripe = Art.Box("GuideBoardReflectiveStripe", local + Vector3.up * 1.79f,
                 new Vector3(4.52f, .07f, .08f), "#E1C879", parent);
             stripe.transform.localRotation = board.transform.localRotation;
+            for (int support = -1; support <= 1; support += 2)
+            {
+                GameObject bracket = Art.Box("GuideBoardBracket_" + support,
+                    local + Vector3.up * 1.48f + Vector3.right * (support * 1.55f),
+                    new Vector3(.14f, .26f, .28f), "#536C67", parent);
+                bracket.transform.localRotation = board.transform.localRotation;
+            }
+            GameObject arrowUpper = Art.Box("GuideBoardArrowUpper",
+                board.transform.TransformPoint(new Vector3(1.65f, .12f, -.1f)),
+                new Vector3(.52f, .1f, .035f), "#F2D77B", parent);
+            arrowUpper.transform.rotation = board.transform.rotation * Quaternion.Euler(0, 0, -32f);
+            GameObject arrowLower = Art.Box("GuideBoardArrowLower",
+                board.transform.TransformPoint(new Vector3(1.65f, -.12f, -.1f)),
+                new Vector3(.52f, .1f, .035f), "#F2D77B", parent);
+            arrowLower.transform.rotation = board.transform.rotation * Quaternion.Euler(0, 0, 32f);
             if (!Art.Catalog)
                 return;
             Art.Label(title, local + Vector3.up * 2.3f,

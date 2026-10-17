@@ -906,3 +906,11 @@ Chưa khởi chạy các lệnh Player này trong lượt chốt hiện tại.
 - Player smoke: Tools/run_world_features.ps1 -BuildPath Builds/Windows/TYCOON2.exe -OutputPath work/visual-vegetation-20261017T1130Z exit 0; passed=true, interactions=30, screenshots=61, runtimeErrors=0, finishedUtc=2026-10-17T10:48:57.1418466Z. Fresh forest evidence was inspected.
 - Limits: procedural foliage remains intentionally lightweight; legacy imported vegetation, dedicated closeups and photoreal texture replacement remain open. No benchmark, GPU timing, soak, overnight campaign, run_completion All or long campaign.
 - Handoff timestamp: 2026-10-17T10:52:00Z.
+
+## Wayfinding sign hardware follow up — 2026-10-17T11:03:00Z
+- Source: Assets/_Game/Scripts/Runtime/WorldExpansionWayfinding.cs. Expansion guide boards now include a dark backplate, two mounting brackets and a reflective chevron. The route-facing calculation, stable IDs, labels, reserved corridor check and no-collider behavior are unchanged.
+- Focused verification: Tools/run_unity.ps1 -Task Tests -TestFilter Tycoon.Tests.Stage9MapWayfindingTests exit 0; QA/editmode-results.xml reports 4 total, 4 passed, 0 failed, 0 skipped. Fresh log: work/wayfinding-focused-20261017T1200.log.
+- Build: Tools/run_unity.ps1 -Task Build exit 0; QA/build-report.json result Succeeded, errors 0, warnings 34, bytes 117097855, builtUtc 2026-10-17T10:58:42.7513770Z. Windows Player Builds/Windows/TYCOON2.exe SHA256 96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873.
+- Player smoke: Tools/run_world_features.ps1 -BuildPath Builds/Windows/TYCOON2.exe -OutputPath work/visual-wayfinding-20261017T1230Z exit 0; passed=true, interactions=32, screenshots=61, runtimeErrors=0, finishedUtc=2026-10-17T10:59:48.7062986Z.
+- Limits: no benchmark, GPU timing, soak, overnight campaign, run_completion All or long campaign. Dedicated close range board and signal crops remain open, as does the broader legacy low-texture asset review.
+- Handoff timestamp: 2026-10-17T11:03:00Z.
