@@ -808,3 +808,14 @@ Chưa khởi chạy các lệnh Player này trong lượt chốt hiện tại.
 - `git lfs status` and tracked-file audit were run. Secret scan returned no matching secret pattern (`git grep` exit 1 means no match). Large raw downloads, QA history, logs, Library, work outputs and unknown `.meta` files remain preserved and excluded from the allowlist.
 - GPU/OceanV13 timing was not run; on D3D11 it remains diagnostic unavailable and is not treated as a release blocker.
 - SHA256, final allowlisted staging, commit and push are still pending at the time of this handoff append. Do not claim release complete until those operations and their post-push checks succeed.
+
+## Final delivery release evidence — 2026-10-17T01:01:34Z
+- status: PASS for focused Stage 4R/6/7/9/10 checks, full EditMode, required Windows build, bounded Player Stage67 smoke and release push.
+- focused: Stage4RRouteCarryTests exit 0 with 4/4; full EditMode exit 0 with 1066/1066 passed, 0 failed, 0 skipped; no runtime error was reported by the final Player report.
+- build: `D:\GAME\TYCOON2\Builds\Windows\TYCOON2.exe`, QA/build-report.json result Succeeded, errors 0, warnings 32, bytes 117077295; SHA256 `96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873`.
+- Player: `Tools/run_player.ps1 -Task Stage67` exit 0; `work/stage06-07/player-stage67-20261017T005009173Z/stage67-report.json` passed true, interactions 1165; evidence includes farm-livestock-sale.png, qa-save-v2.json, presentation-audit.json, navigation-route.txt and graphics-device.json. The bounded route covered farm, feedmill, industrial production, customer queue/order/payment, carry and storage reserve/release, SaveV2/v3 state, and world presentation checks.
+- source scope: visual water/material, coast/shore, vegetation, vehicle/traffic signal, map/label, route/access, cutaway/boarding/carry and SaveV2 compatibility changes plus their focused tests are in commit `f9d4b705080e4083178abbda0aa123151a7abf1d`.
+- commit/push: `Complete world redesign visual and access contracts`; `git push origin main` exit 0; `HEAD` equals `origin/main`, ahead/behind 0/0. This documentation update is the follow-up release record.
+- cleanup: no path was deleted. Evidence was retained. The remaining dirty/untracked AGENTS.md, model `.meta` files, ASSET/Downloaded, QA historical captures, saves and work artifacts were preserved because ownership was not proven or they are required evidence.
+- warnings/limits: build warnings 32; historical GPU timing remains diagnostic unavailable on D3D11 and was not rerun; no benchmark, soak, overnight campaign, GPU timing or `run_completion -Case All` was run; staged allowlist diff-check exited 0 while preserved unrelated working-tree paths remain dirty.
+- next: post-release review only; do not start another redesign stage automatically.
