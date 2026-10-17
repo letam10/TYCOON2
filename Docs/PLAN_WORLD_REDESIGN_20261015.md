@@ -903,3 +903,15 @@ stage runs; no row is acceptance evidence before its commands and artifacts exis
 - Build SHA256: 96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873 for Builds/Windows/TYCOON2.exe.
 - Open issues: imported legacy signs and a dedicated signal closeup remain open. No benchmark, GPU timing, soak, overnight campaign or long campaign was run.
 - Next stage: preserve unrelated dirty and untracked files and continue a separate focused legacy material or closeup tranche.
+
+## Pedestrian traffic signal lens follow up — 2026-10-17T11:10:00Z
+- Status: SOURCE, focused signal/wayfinding tests, Windows build and bounded Player smoke PASS.
+- Assumptions and pass criteria: preserve CityTrafficSignalSystem phase timing, vehicle lamp count, pole/arm counts, zero-collider contract, stable intersection positions and pedestrian logic. Add only visual pedestrian lens/housing geometry.
+- Source: Assets/_Game/Scripts/Runtime/CityTrafficSignalVisual.cs. Added a small pedestrian signal housing and red Stop/green Walk emissive lenses per definition. The new lenses have no Light component, so existing Light count and LampCount remain three vehicle lamps per definition. `RefreshVisuals` uses `PhaseAt(position, true)` for synchronization.
+- Focused commands: Tools/run_unity.ps1 -Task Tests -TestFilter Tycoon.Tests.CityPedestrianSignalTests exit 0; Stage7MapWayfindingTests exit 0; Stage9MapWayfindingTests exit 0. Fresh logs: work/signal-focused-CityPedestrianSignalTests-20261017T1300.log, work/signal-focused-Stage7MapWayfindingTests-20261017T1300.log, work/signal-focused-Stage9MapWayfindingTests-20261017T1300.log. Final Stage9 XML reports 4 total, 4 passed, 0 failed, 0 skipped.
+- Build command: Tools/run_unity.ps1 -Task Build; exit 0; QA/build-report.json result Succeeded, errors 0, warnings 34, bytes 117098879, builtUtc 2026-10-17T11:07:26.1844465Z.
+- Player command: Tools/run_world_features.ps1 -BuildPath Builds/Windows/TYCOON2.exe -OutputPath work/visual-signal-pedestrian-20261017T1340Z; exit 0; passed=true, interactions=29, screenshots=61, runtimeErrors=0, finishedUtc=2026-10-17T11:08:29.3812608Z.
+- Visual evidence: fresh map, expansion and traffic-related runtime captures generated without blank or magenta frame or runtime error marker. Dedicated close signal crop remains open.
+- Build SHA256: 96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873 for Builds/Windows/TYCOON2.exe.
+- Open issues: imported legacy traffic assets and dedicated signal closeup remain open. No benchmark, GPU timing, soak, overnight campaign or long campaign was run.
+- Next stage: preserve unrelated dirty and untracked files and continue a separate closeup or legacy material tranche.

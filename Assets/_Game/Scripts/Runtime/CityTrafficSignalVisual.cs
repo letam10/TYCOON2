@@ -21,6 +21,8 @@ namespace Tycoon
         }
 
         readonly List<SignalGroup> groups = new();
+        readonly List<Lamp> pedestrianStops = new();
+        readonly List<Lamp> pedestrianWalks = new();
         readonly List<GameObject> poles = new();
         readonly List<GameObject> arms = new();
         readonly List<Material> materials = new();
@@ -65,6 +67,7 @@ namespace Tycoon
                     Green = AddLamp(index, "Green", head + Vector3.down * .88f,
                         new Color(.18f, 1f, .35f))
                 });
+                AddPedestrianSignal(index, definition, staticSignalOffset);
             }
             RefreshVisuals();
         }
@@ -153,6 +156,41 @@ namespace Tycoon
             return new Lamp { Root = root, Renderer = renderer, Light = light };
         }
 
+        void AddPedestrianSignal(int signalIndex, CityTrafficSignalDefinition definition, float offset)
+        {
+            Vector3 head = definition.Position + new Vector3(offset, 1.72f, -.62f);
+            GameObject housing = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            housing.name = "PedestrianSignalHousing_" + signalIndex;
+            housing.transform.SetParent(transform, false);
+            housing.transform.localPosition = head;
+            housing.transform.localScale = new Vector3(.3f, .62f, .16f);
+            ConfigureStructure(housing, new Color(.045f, .055f, .06f));
+            pedestrianStops.Add(AddPedestrianLamp(signalIndex, "Stop", head + Vector3.up * .13f,
+                new Color(1f, .12f, .08f)));
+            pedestrianWalks.Add(AddPedestrianLamp(signalIndex, "Walk", head + Vector3.down * .13f,
+                new Color(.18f, 1f, .35f)));
+        }
+
+        Lamp AddPedestrianLamp(int signalIndex, string state, Vector3 position, Color color)
+        {
+            GameObject root = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            root.name = "PedestrianSignalLamp_" + signalIndex + "_" + state;
+            root.transform.SetParent(transform, false);
+            root.transform.localPosition = position + Vector3.forward * -.095f;
+            root.transform.localScale = new Vector3(.16f, .12f, .025f);
+            Collider collider = root.GetComponent<Collider>();
+            if (collider)
+            {
+                if (Application.isPlaying) Destroy(collider);
+                else DestroyImmediate(collider);
+            }
+            Renderer renderer = root.GetComponent<Renderer>();
+            Material material = CreateMaterial(color, true);
+            if (renderer && material)
+                renderer.sharedMaterial = material;
+            return new Lamp { Root = root, Renderer = renderer };
+        }
+
         Material CreateMaterial(Color color, bool emissive)
         {
             Shader shader = Shader.Find("Universal Render Pipeline/Lit");
@@ -195,6 +233,10 @@ namespace Tycoon
                 SetActive(groups[index].Red, phase is CitySignalPhase.Red or CitySignalPhase.Walk);
                 SetActive(groups[index].Amber, phase == CitySignalPhase.Amber);
                 SetActive(groups[index].Green, phase == CitySignalPhase.Green);
+                CitySignalPhase pedestrian = signals.PhaseAt(
+                    CityTrafficSignalSystem.Definitions[index].Position, true);
+                SetActive(pedestrianStops[index], pedestrian != CitySignalPhase.Walk);
+                SetActive(pedestrianWalks[index], pedestrian == CitySignalPhase.Walk);
             }
         }
 

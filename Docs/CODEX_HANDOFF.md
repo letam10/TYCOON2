@@ -914,3 +914,11 @@ Chưa khởi chạy các lệnh Player này trong lượt chốt hiện tại.
 - Player smoke: Tools/run_world_features.ps1 -BuildPath Builds/Windows/TYCOON2.exe -OutputPath work/visual-wayfinding-20261017T1230Z exit 0; passed=true, interactions=32, screenshots=61, runtimeErrors=0, finishedUtc=2026-10-17T10:59:48.7062986Z.
 - Limits: no benchmark, GPU timing, soak, overnight campaign, run_completion All or long campaign. Dedicated close range board and signal crops remain open, as does the broader legacy low-texture asset review.
 - Handoff timestamp: 2026-10-17T11:03:00Z.
+
+## Pedestrian traffic signal lens follow up — 2026-10-17T11:11:00Z
+- Source: Assets/_Game/Scripts/Runtime/CityTrafficSignalVisual.cs. Each definition now has a small pedestrian housing with red Stop and green Walk emissive lenses. The lenses do not add Light components, so existing vehicle lamp count and three Light per definition contract remain unchanged. RefreshVisuals reads PhaseAt(position, true). No stable IDs, timing, pole/arm counts, collider, route or SaveV2 behavior changed.
+- Focused verification: CityPedestrianSignalTests exit 0; Stage7MapWayfindingTests exit 0; Stage9MapWayfindingTests exit 0. Fresh logs: work/signal-focused-CityPedestrianSignalTests-20261017T1300.log, work/signal-focused-Stage7MapWayfindingTests-20261017T1300.log, work/signal-focused-Stage9MapWayfindingTests-20261017T1300.log. Final Stage9 XML reports 4 total, 4 passed, 0 failed, 0 skipped.
+- Build: Tools/run_unity.ps1 -Task Build exit 0; QA/build-report.json result Succeeded, errors 0, warnings 34, bytes 117098879, builtUtc 2026-10-17T11:07:26.1844465Z. Windows Player Builds/Windows/TYCOON2.exe SHA256 96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873.
+- Player smoke: Tools/run_world_features.ps1 -BuildPath Builds/Windows/TYCOON2.exe -OutputPath work/visual-signal-pedestrian-20261017T1340Z exit 0; passed=true, interactions=29, screenshots=61, runtimeErrors=0, finishedUtc=2026-10-17T11:08:29.3812608Z.
+- Limits: no benchmark, GPU timing, soak, overnight campaign, run_completion All or long campaign. Dedicated traffic signal closeup and imported legacy traffic asset review remain open.
+- Handoff timestamp: 2026-10-17T11:11:00Z.
