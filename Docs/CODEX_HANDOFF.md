@@ -855,3 +855,12 @@ Chưa khởi chạy các lệnh Player này trong lượt chốt hiện tại.
 - Player: work/visual-expansion-service-20261017T140000Z/world-features-report.json passed true with 31 interactions, 61 screenshots and 0 runtime errors. SouthHighway rendererCount 129, colliderCount 4 and modelChildCount 120. The fresh highway image shows both service canopies outside the lane.
 - limits: no benchmark, GPU timing, soak, overnight campaign or run_completion All. Unrelated dirty and untracked files remain preserved and unstaged.
 
+
+## Traffic signal visual followup 2026-10-17 06:34:51 UTC
+- source commit: 4fd2694dbef0d8bdde85a73226ac4d905bbb8465 Refine traffic signal visual details.
+- files: Assets/_Game/Scripts/Runtime/CityTrafficSignalVisual.cs and matching plan evidence.
+- tests: CityTrafficSignalModelTests exit 0 with 1 total and 1 passed; Stage9MapWayfindingTests exit 0 with 4 total and 4 passed.
+- build: Windows Player build exit 0, result Succeeded, errors 0, warnings 34, bytes 117089775, executable D:\GAME\TYCOON2\Builds\Windows\TYCOON2.exe, SHA256 96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873.
+- Player: work/visual-signal-20261017T150000Z/world-features-report.json passed true with 31 interactions, 61 screenshots and 0 runtime errors. Map 1920 capture was inspected and labels remained readable. Dedicated signal closeup remains open.
+- limits: no benchmark, GPU timing, soak, overnight campaign or run_completion All. Unrelated dirty and untracked files remain preserved and unstaged.
+
