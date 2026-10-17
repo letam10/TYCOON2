@@ -827,3 +827,16 @@ stage runs; no row is acceptance evidence before its commands and artifacts exis
 - open issues: other low texture source assets and some legacy district art still need later focused visual passes; this slice deliberately stays within the existing procedural expansion builder.
 - next stage: continue with a separate vehicle or materials visual tranche only after reviewing this commit, preserving all unrelated dirty and untracked paths.
 
+
+## Traffic signal visual pass 2026-10-17 06:32:44 UTC
+- status: SOURCE, focused signal tests, Windows build and bounded Player smoke PASS. Phase/support contract remains green; a dedicated closeup signal screenshot is still open.
+- assumptions and pass criteria: preserve CityTrafficSignalSystem phase logic, stable intersection positions, pole and arm counts, zero collider contract, D3D11 target and all vehicle or pedestrian route behavior. Visual changes must remain presentation-only.
+- changed file: Assets/_Game/Scripts/Runtime/CityTrafficSignalVisual.cs.
+- visual changes: each signal now has a grounded base collar, reflective pole band, arm end cap, enlarged black backplate, gold reflective housing edges and deeper visor hoods. Existing red amber green lamps and phase visibility remain unchanged.
+- focused verification: powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\run_unity.ps1 -Task Tests -TestFilter Tycoon.Tests.CityTrafficSignalModelTests exit 0 with 1 total and 1 passed; Stage9MapWayfindingTests exit 0 with 4 total and 4 passed.
+- build verification: powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\run_unity.ps1 -Task Build exit 0; QA/build-report.json result Succeeded, errors 0, warnings 34, bytes 117089775, builtUtc 2026-10-17T06:29:12.9580899Z. Required executable D:\GAME\TYCOON2\Builds\Windows\TYCOON2.exe SHA256 96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873.
+- Player verification: work/visual-signal-20261017T150000Z/world-features-report.json passed=true, interactions=31, screenshots=61 and runtimeErrors=0 at 2026-10-17T06:29:53.4375002Z. The smoke output contained WORLD-FEATURES_QA PASS. New map-1920.png was inspected and labels/routes remained readable.
+- warnings and limits: no benchmark, GPU timing, OceanV13 timing, soak, overnight campaign or run_completion All was run. The bounded world-features capture has no dedicated traffic signal closeup, so final close-range lens readability remains a visual followup.
+- open issues: vehicle body closeups and a dedicated signal closeup are still needed for full art acceptance; no stable IDs, economy, save schema, route, or interaction collider changed.
+- next stage: build a short vehicle and signal presentation capture only after this commit, keeping the same focused test boundary.
+

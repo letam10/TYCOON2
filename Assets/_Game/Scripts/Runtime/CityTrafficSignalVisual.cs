@@ -80,6 +80,20 @@ namespace Tycoon
             ConfigureStructure(pole, new Color(.12f, .14f, .14f));
             poles.Add(pole);
 
+            GameObject poleBase = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            poleBase.name = "SignalPoleBase_" + signalIndex;
+            poleBase.transform.SetParent(transform, false);
+            poleBase.transform.localPosition = definition.Position + new Vector3(offset, .08f, 0);
+            poleBase.transform.localScale = new Vector3(.38f, .08f, .38f);
+            ConfigureStructure(poleBase, new Color(.08f, .1f, .1f));
+
+            GameObject reflectiveBand = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            reflectiveBand.name = "SignalPoleReflectiveBand_" + signalIndex;
+            reflectiveBand.transform.SetParent(transform, false);
+            reflectiveBand.transform.localPosition = definition.Position + new Vector3(offset, 1.55f, 0);
+            reflectiveBand.transform.localScale = new Vector3(.205f, .11f, .205f);
+            ConfigureStructure(reflectiveBand, new Color(.78f, .63f, .23f));
+
             Vector3 armPosition = definition.Position + new Vector3(offset * .5f, 4f, 0);
             GameObject arm = GameObject.CreatePrimitive(PrimitiveType.Cube);
             arm.name = "SignalArm_" + signalIndex;
@@ -88,6 +102,13 @@ namespace Tycoon
             arm.transform.localScale = new Vector3(Mathf.Abs(offset), .12f, .12f);
             ConfigureStructure(arm, new Color(.12f, .14f, .14f));
             arms.Add(arm);
+
+            GameObject armCap = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            armCap.name = "SignalArmCap_" + signalIndex;
+            armCap.transform.SetParent(transform, false);
+            armCap.transform.localPosition = definition.Position + new Vector3(offset, 4f, 0);
+            armCap.transform.localScale = new Vector3(.19f, .08f, .19f);
+            ConfigureStructure(armCap, new Color(.08f, .1f, .1f));
         }
 
         void ConfigureStructure(GameObject root, Color color)
@@ -185,13 +206,31 @@ namespace Tycoon
             housing.transform.localPosition = head + Vector3.forward * .06f;
             housing.transform.localScale = new Vector3(.36f, 1.45f, .22f);
             ConfigureStructure(housing, new Color(.045f, .055f, .06f));
+            GameObject backplate = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            backplate.name = "SignalHeadBackplate_" + signalIndex;
+            backplate.transform.SetParent(transform, false);
+            backplate.transform.localPosition = head + Vector3.forward * .16f;
+            backplate.transform.localScale = new Vector3(.5f, 1.62f, .07f);
+            ConfigureStructure(backplate, new Color(.08f, .1f, .1f));
+            GameObject upperReflector = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            upperReflector.name = "SignalHeadReflector_" + signalIndex + "_Upper";
+            upperReflector.transform.SetParent(transform, false);
+            upperReflector.transform.localPosition = head + Vector3.up * .84f + Vector3.forward * .105f;
+            upperReflector.transform.localScale = new Vector3(.42f, .06f, .08f);
+            ConfigureStructure(upperReflector, new Color(.82f, .67f, .25f));
+            GameObject lowerReflector = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            lowerReflector.name = "SignalHeadReflector_" + signalIndex + "_Lower";
+            lowerReflector.transform.SetParent(transform, false);
+            lowerReflector.transform.localPosition = head + Vector3.down * .84f + Vector3.forward * .105f;
+            lowerReflector.transform.localScale = new Vector3(.42f, .06f, .08f);
+            ConfigureStructure(lowerReflector, new Color(.82f, .67f, .25f));
             for (int lamp = 0; lamp < 3; lamp++)
             {
                 GameObject visor = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 visor.name = "SignalVisor_" + signalIndex + "_" + lamp;
                 visor.transform.SetParent(transform, false);
                 visor.transform.localPosition = head + Vector3.down * (.1f + lamp * .44f) + Vector3.forward * -.09f;
-                visor.transform.localScale = new Vector3(.43f, .10f, .16f);
+                visor.transform.localScale = new Vector3(.46f, .12f, .2f);
                 ConfigureStructure(visor, new Color(.025f, .03f, .035f));
             }
         }
