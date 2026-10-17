@@ -867,3 +867,15 @@ stage runs; no row is acceptance evidence before its commands and artifacts exis
 - Build SHA256: $sha for Builds/Windows/TYCOON2.exe.
 - Open issues: water remains procedural/stylized and requires a future art pass if photoreal fidelity is required; no GPU timing claim; no full campaign/soak.
 - Next stage: preserve unrelated dirty/untracked files; final delivery may stage only this shader and the documented handoff/plan paths.
+
+## Vehicle car surface detail follow up — 2026-10-17T10:33:58Z
+- Status: SOURCE, focused vehicle model tests, Windows build and bounded Player smoke PASS.
+- Assumptions and pass criteria: preserve vehicle collider dimensions, wheel and door animation, boarding anchors, route behavior, stable IDs, economy and SaveV2. Add only body presentation details using existing materials.
+- Source: Assets/_Game/Scripts/Runtime/CityVehicleGeometryCars.cs. Added two short chrome side trims outside the door span and a front side marker; the existing door handle remains owned by CarDoor. No collider or boarding field changed.
+- Focused command: Tools/run_unity.ps1 -Task Tests -TestFilter Tycoon.Tests.VehicleModelV8Tests; exit 0; QA/editmode-results.xml reports 15 total, 15 passed, 0 failed, 0 skipped. Fresh log: work/vehicle-cars-focused-20261017T0810.log.
+- Build command: Tools/run_unity.ps1 -Task Build; exit 0; QA/build-report.json result Succeeded, errors 0, warnings 34, bytes 117097343, builtUtc 2026-10-17T10:29:30.3917801Z.
+- Player command: Tools/run_world_features.ps1 -BuildPath Builds/Windows/TYCOON2.exe -OutputPath work/visual-vehicle-cars-20261017T0830Z; exit 0; passed=true, interactions=32, screenshots=61, runtimeErrors=0, finishedUtc=2026-10-17T10:31:29.0135778Z.
+- Build SHA256: 96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873 for Builds/Windows/TYCOON2.exe.
+- Visual evidence: the bounded output contains clear water, beach, marina, expansion and map captures; no runtime error marker or blank or magenta frame was reported. A dedicated closeup of each car kind remains open.
+- Open issues: the broad low texture and legacy asset review is not complete; no benchmark, GPU timing, soak, overnight campaign or long campaign was run.
+- Next stage: inspect the fresh car angles or continue one separate legacy material tranche while preserving all unrelated dirty and untracked paths.

@@ -45,6 +45,12 @@ namespace Tycoon
                     new(.32f, .12f, .05f));
                 g.Box(CityVehicleSurface.Chrome, new(x * .76f, .31f, -length * .5f - .012f),
                     new(.15f, .085f, .1f));
+                g.Box(CityVehicleSurface.Chrome, new(x * .965f, .56f, .56f),
+                    new(.045f, .035f, .35f), .012f);
+                g.Box(CityVehicleSurface.Chrome, new(x * .965f, .56f, -1.14f),
+                    new(.045f, .035f, .35f), .012f);
+                g.Box(CityVehicleSurface.Light, new(x * .982f, belt - .14f, length * .36f),
+                    new(.045f, .06f, .14f), .012f);
                 foreach (float z in new[] { -.72f, .4f })
                     CityVehicleParts.Seat(g, new(side * .43f, .3f, z), luxury, .54f);
             }

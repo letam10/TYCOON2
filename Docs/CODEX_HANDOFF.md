@@ -890,3 +890,11 @@ Chưa khởi chạy các lệnh Player này trong lượt chốt hiện tại.
 - Player smoke: Tools/run_world_features.ps1 -BuildPath Builds/Windows/TYCOON2.exe -OutputPath work/visual-water-20261017T1720Z; exit 0, passed=true, interactions 29, screenshots 61, runtimeErrors 0. New evidence: clear-water-a.png, clear-water-b.png, each-context.png, xpansion-east_marina.png.
 - Visual result: depth gradient, shoreline foam and broken ripples visible; no blank or magenta output in reviewed images. D3D11 GPU timing diagnostic unavailable and intentionally not run. Water is still procedural/stylized; future photoreal art pass remains open.
 - Handoff timestamp: $utc.
+
+## Vehicle car surface detail follow up — 2026-10-17T10:35:15Z
+- Source: Assets/_Game/Scripts/Runtime/CityVehicleGeometryCars.cs. Two chrome side trims now sit outside the door span and each car gets a front side marker. Existing CarDoor owns the handle; no collider, wheel, door anchor, route, economy or SaveV2 field changed.
+- Focused verification: Tools/run_unity.ps1 -Task Tests -TestFilter Tycoon.Tests.VehicleModelV8Tests exit 0; QA/editmode-results.xml reports 15 total, 15 passed, 0 failed, 0 skipped. Fresh log: work/vehicle-cars-focused-20261017T0810.log.
+- Build: Tools/run_unity.ps1 -Task Build exit 0; QA/build-report.json result Succeeded, errors 0, warnings 34, bytes 117097343, builtUtc 2026-10-17T10:29:30.3917801Z. Windows Player path Builds/Windows/TYCOON2.exe SHA256 96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873.
+- Player smoke: Tools/run_world_features.ps1 -BuildPath Builds/Windows/TYCOON2.exe -OutputPath work/visual-vehicle-cars-20261017T0830Z exit 0; passed=true, interactions=32, screenshots=61, runtimeErrors=0, finishedUtc=2026-10-17T10:31:29.0135778Z.
+- Limits: no benchmark, GPU timing, soak, overnight campaign, run_completion All or long campaign. Dedicated sedan/taxi/luxury/sports closeups remain open, as does the broader legacy low-texture asset review.
+- Handoff timestamp: 2026-10-17T10:35:15Z.
