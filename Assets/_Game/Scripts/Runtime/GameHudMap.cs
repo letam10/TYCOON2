@@ -47,8 +47,11 @@ namespace Tycoon
                 var point = CityMapLocations.Points[i];
                 var button = Button(board.transform, point.label, () => MapTravel(index));
                 button.name = "MapTravel_" + point.id;
-                float top = .94f - i * .06f;
-                Rect((RectTransform)button.transform, new(.755f, top - .06f), new(.97f, top), Vector2.zero, Vector2.zero);
+                float rowHeight = Mathf.Min(.06f,
+                    .88f / Mathf.Max(1, CityMapLocations.Points.Length));
+                float top = .96f - i * rowHeight;
+                Rect((RectTransform)button.transform, new(.755f, top - rowHeight),
+                    new(.97f, top), Vector2.zero, Vector2.zero);
                 var pin = Button(worldMap.transform, CityMapGraphic.PoiGlyph(point.id),
                     () => MapTravel(index), true);
                 pin.name = "MapPin_" + point.id;

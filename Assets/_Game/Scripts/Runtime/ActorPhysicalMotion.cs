@@ -56,6 +56,12 @@ namespace Tycoon
         {
             using var updateProbe = QaFrameProbe.Measure("ActorPhysicalMotion.1.Update");
 
+            if (!isActiveAndEnabled || !gameObject.activeInHierarchy)
+            {
+                Speed = 0;
+                previous = transform.position;
+                return;
+            }
             if (!Agent || !Body) return;
             if (!Agent.enabled)
             {
@@ -93,7 +99,7 @@ namespace Tycoon
         public void ApplyStep(Vector3 requested, float delta)
         {
             using var stepProbe = QaFrameProbe.Measure("ActorPhysicalMotion.2.ApplyStep");
-            if (!Body || !Body.enabled || delta <= 0) return;
+            if (!isActiveAndEnabled || !gameObject.activeInHierarchy || !Body || !Body.enabled || delta <= 0) return;
             Vector3 before = transform.position;
             bool idleGravity = requested.x == 0 && requested.z == 0
                 && requested.y <= 0 && requested.y >= -2 * delta;

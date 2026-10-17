@@ -89,7 +89,11 @@ namespace Tycoon
                 "Đã tới " + poi.Label + ". Hãy đi theo tuyến được đánh dấu.", action,
                 approach, 6f);
             if (boat)
+            {
                 area.CarrierSource = boat;
+                area.SetApproachPoint(
+                    WorldInteractionArea.ComputeCarrierApproach(boat, area.Radius));
+            }
         }
 
         static void AddExpansionCutaway(Transform root, Vector3 footprint)

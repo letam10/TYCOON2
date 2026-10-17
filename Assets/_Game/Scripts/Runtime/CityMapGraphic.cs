@@ -26,6 +26,9 @@ namespace Tycoon
                 "industrial_yard" => "industrial",
                 "north_village" => "village",
                 "south_highway" => "highway",
+                "residential" => "residential",
+                "apartment" => "apartment",
+                "commercial" => "commercial",
                 _ => "poi"
             };
         }
@@ -45,6 +48,9 @@ namespace Tycoon
                 "industrial" => "I",
                 "village" => "V",
                 "highway" => "H",
+                "residential" => "N",
+                "apartment" => "A",
+                "commercial" => "K",
                 _ => "•"
             };
         }
@@ -64,6 +70,9 @@ namespace Tycoon
                 "industrial" => new Color32(228, 155, 103, 255),
                 "village" => new Color32(230, 210, 164, 255),
                 "highway" => new Color32(241, 236, 224, 255),
+                "residential" => new Color32(202, 170, 132, 255),
+                "apartment" => new Color32(183, 155, 215, 255),
+                "commercial" => new Color32(244, 184, 94, 255),
                 _ => new Color32(240, 222, 118, 255)
             };
         }
@@ -114,6 +123,16 @@ namespace Tycoon
                 for (int index = 1; index < corridor.Nodes.Count - 1; index++)
                     CurvedRoute(mesh, corridor.Nodes[index - 1], corridor.Nodes[index],
                         corridor.Nodes[index + 1], corridor.Width * .84f, RouteColor(corridor.Kind));
+            }
+            foreach (WorldPublicApproach approach in WorldRouteCatalog.BuildPublicApproaches())
+            {
+                for (int index = 1; index < approach.Nodes.Count; index++)
+                    RouteSegment(mesh, approach.Nodes[index - 1], approach.Nodes[index],
+                        approach.Width, RouteColor(RouteKind.Sidewalk));
+                for (int index = 1; index < approach.Nodes.Count - 1; index++)
+                    CurvedRoute(mesh, approach.Nodes[index - 1], approach.Nodes[index],
+                        approach.Nodes[index + 1], approach.Width * .84f,
+                        RouteColor(RouteKind.Sidewalk));
             }
             foreach (var district in districts) Quad(mesh, district, new Color32(211, 178, 116, 255));
             foreach (var landmark in landmarks) Quad(mesh, landmark, new Color32(126, 156, 165, 255));
@@ -261,6 +280,22 @@ namespace Tycoon
                 case "village":
                     PixelPolygon(mesh, center, tint, new(-3, -3), new(0, 2), new(3, -3),
                         new(3, -4), new(-3, -4));
+                    break;
+                case "residential":
+                    PixelPolygon(mesh, center, tint, new(-3, -1), new(0, 3), new(3, -1),
+                        new(3, -4), new(-3, -4));
+                    break;
+                case "apartment":
+                    PixelPolygon(mesh, center, tint, new(-2, -4), new(2, -4), new(2, 4),
+                        new(-2, 4));
+                    PixelPolygon(mesh, center + Vector2.up * 1.5f, edge,
+                        new(-1, -1), new(1, -1), new(1, 1), new(-1, 1));
+                    break;
+                case "commercial":
+                    PixelPolygon(mesh, center, tint, new(-4, -2), new(4, -2), new(3, 3),
+                        new(-3, 3));
+                    PixelPolygon(mesh, center + Vector2.down * 1.5f, edge,
+                        new(-2, -1), new(2, -1), new(2, 1), new(-2, 1));
                     break;
                 case "highway":
                     PixelPolygon(mesh, center, tint, new(-4, -2), new(4, -2), new(4, 2),

@@ -23,6 +23,19 @@ namespace Tycoon
     }
 
     [Serializable]
+    public sealed class PlayerRideSave
+    {
+        public int version = 1;
+        public bool active;
+        public int phase;
+        public string interactionId;
+        public float remainingSeconds;
+        public float exitX, exitY, exitZ;
+        public bool originalParentWasNull = true;
+        public string originalParentId;
+    }
+
+    [Serializable]
     public sealed class SaveData
     {
         public TransactionState transactionState;
@@ -38,6 +51,7 @@ namespace Tycoon
         public string savedAt;
         public float playerX;
         public float playerZ;
+        public PlayerRideSave playerRide;
         public List<string> unlocked = new();
         public List<InventorySave> inventories = new();
         public List<ProductionSave> production = new();
@@ -142,6 +156,16 @@ namespace Tycoon
             if(data.transactionVersion>0&&data.transactionState==null)throw new InvalidDataException("Save v2 thiếu transaction state.");
             if (data.transactionVersion>0) TransactionCore.Validate(data.transactionState);
             if(data.cashInHand<0||data.cashInSafe<0)throw new InvalidDataException("Tiền không hợp lệ.");
+            if(data.playerRide!=null&&data.playerRide.active)
+            {
+                var ride=data.playerRide;
+                if(ride.version!=1||!ride.active||ride.phase!=1||string.IsNullOrEmpty(ride.interactionId)||
+                    ride.remainingSeconds<0||float.IsNaN(ride.remainingSeconds)||float.IsInfinity(ride.remainingSeconds)||
+                    float.IsNaN(ride.exitX)||float.IsInfinity(ride.exitX)||
+                    float.IsNaN(ride.exitY)||float.IsInfinity(ride.exitY)||
+                    float.IsNaN(ride.exitZ)||float.IsInfinity(ride.exitZ))
+                    throw new InvalidDataException("Player ride save không hợp lệ.");
+            }
         }
     }
 }

@@ -208,6 +208,17 @@ namespace Tycoon
                 return;
             g.Cylinder(local + Vector3.up * 6.4f, 5.5f, 12.8f, "metal", "#9BA6A0");
             g.Cone(local + Vector3.up * 13.5f, 5.9f, 2.2f, "metal", "#5A7070");
+            for (int ring = 0; ring < 4; ring++)
+                g.Cylinder(local + Vector3.up * (2.4f + ring * 2.7f), 5.7f, .14f,
+                    "metal", "#5F6D69");
+            for (int side = -1; side <= 1; side += 2)
+                g.Box(local + new Vector3(-2.2f + side * .58f, 6.1f, -5.57f),
+                    new Vector3(.1f, 10.8f, .1f), "metal", "#667A75");
+            for (int rung = 0; rung < 9; rung++)
+                g.Box(local + new Vector3(-2.2f, 1.4f + rung * 1.15f, -5.57f),
+                    new Vector3(1.25f, .1f, .1f), "metal", "#667A75");
+            g.Cylinder(local + Vector3.up * 15.1f, .5f, 1.1f, "metal", "#667A75");
+            g.Cone(local + Vector3.up * 15.8f, .68f, .35f, "metal", "#536562");
             g.Collider("IndustrialSilo", local + Vector3.up * 6.4f,
                 new Vector3(11f, 12.8f, 11f));
         }
@@ -369,6 +380,10 @@ namespace Tycoon
             if (!CanPlace(root, local, poi.Footprint, 1f))
                 return;
             g.Cylinder(local + Vector3.up * .6f, .3f, 1.2f, "metal", "#4B5856");
+            g.Cylinder(local + Vector3.up * 1.25f, .38f, .12f, "metal", "#71817B");
+            g.Beam(local + new Vector3(-.38f, .88f, 0),
+                local + new Vector3(.38f, .88f, 0), .08f, "metal", "#4B5856");
+            g.Cylinder(local + Vector3.up * 1.36f, .08f, .12f, "glass", "#C76E4D");
         }
         static void Highway(CityStaticGeometry g, Transform root, WorldExpansionPoi poi)
         {

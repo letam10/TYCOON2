@@ -12,7 +12,7 @@ namespace Tycoon.Tests
         {
             "tycoon", "park", "station", "beach", "harbor", "marina", "bank",
             "restaurant", "forest", "forest_reserve", "industrial_yard", "north_village",
-            "east_marina", "south_highway"
+            "east_marina", "south_highway", "residential", "apartment", "commercial"
         };
 
         static readonly Vector2Int[] CaptionResolutions =
@@ -173,8 +173,17 @@ namespace Tycoon.Tests
             Assert.That(signals, Is.Not.Null);
             Assert.That(visual, Is.Not.Null);
             Assert.That(visual.LampCount, Is.EqualTo(CityTrafficSignalSystem.Definitions.Count * 3));
+            Assert.That(visual.PoleCount, Is.EqualTo(CityTrafficSignalSystem.Definitions.Count));
+            Assert.That(visual.ArmCount, Is.EqualTo(CityTrafficSignalSystem.Definitions.Count));
             Assert.That(signalRoot.GetComponentsInChildren<Light>(true).Length, Is.EqualTo(visual.LampCount));
             Assert.That(signalRoot.GetComponentsInChildren<Renderer>(true).Length, Is.GreaterThanOrEqualTo(visual.LampCount));
+            Assert.That(signalRoot.GetComponentsInChildren<Collider>(true).Length, Is.EqualTo(0));
+            string phaseLog = signals.DescribePhases();
+            foreach (CityTrafficSignalDefinition definition in CityTrafficSignalSystem.Definitions)
+            {
+                Assert.That(phaseLog, Does.Contain(definition.Id + " vehicle="));
+                Assert.That(phaseLog, Does.Contain("pedestrian="));
+            }
             MethodInfo update = typeof(CityTrafficSignalVisual).GetMethod(
                 "Update", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.That(update, Is.Not.Null);

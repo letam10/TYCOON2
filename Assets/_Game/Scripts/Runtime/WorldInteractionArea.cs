@@ -28,6 +28,8 @@ namespace Tycoon
         public float Radius = 2.4f;
         public float Cooldown = .8f;
         public Vector3 LocalCenter;
+        public Vector3 LocalApproachPoint;
+        public bool UseLocalApproachPoint;
         public string StableGroup = "landmark";
         public Vector3 LocalExitPoint;
         public Component CarrierSource;
@@ -38,7 +40,9 @@ namespace Tycoon
 
         public InteractionKind Kind => InteractionKind.Operate;
         public Vector3 Center => transform.TransformPoint(LocalCenter);
-        public Vector3 ApproachPoint => Center;
+        public Vector3 ApproachPoint => UseLocalApproachPoint
+            ? transform.TransformPoint(LocalApproachPoint)
+            : Center;
         public Vector3 ExitPoint => LocalExitPoint == Vector3.zero
             ? Center
             : transform.TransformPoint(LocalExitPoint);
@@ -65,6 +69,8 @@ namespace Tycoon
             area.Message = message;
             area.Action = action;
             area.LocalCenter = localCenter;
+            area.LocalApproachPoint = localCenter;
+            area.UseLocalApproachPoint = true;
             area.Radius = radius;
             area.StableGroup = action switch
             {
@@ -78,6 +84,29 @@ namespace Tycoon
                 _ => area.StableGroup
             };
             return area;
+        }
+
+        public void SetApproachPoint(Vector3 worldPoint)
+        {
+            LocalApproachPoint = transform.InverseTransformPoint(worldPoint);
+            UseLocalApproachPoint = true;
+        }
+
+        public static Vector3 ComputeCarrierApproach(
+            ICityPassengerCarrier carrier,
+            float radius)
+        {
+            if (carrier == null || !carrier.Hull)
+                return Vector3.zero;
+            Vector3 door = carrier.DoorOutside;
+            Vector3 outward = door - carrier.Hull.position;
+            outward.y = 0;
+            if (outward.sqrMagnitude < .01f)
+                outward = carrier.Hull.forward;
+            if (outward.sqrMagnitude < .01f)
+                outward = Vector3.forward;
+            float clearance = Mathf.Min(.8f, Mathf.Max(.1f, radius * .45f));
+            return door + outward.normalized * clearance;
         }
 
         public bool Contains(Vector3 point)
@@ -152,7 +181,8 @@ namespace Tycoon
                 WorldInteractionAction.CallTaxi => "Đã lên xe; phương tiện sẽ đưa bạn tới điểm tiếp theo.",
                 _ => "Đã lên thuyền; chuyến tham quan bến nước đang bắt đầu."
             };
-            if (!WorldPlayerRide.TryBoard(player, carrier, transform, RideSeconds, reason, out string failure))
+            if (!WorldPlayerRide.TryBoard(player, carrier, transform, RideSeconds, reason,
+                StableId, out string failure))
                 return InteractionResult.Reject(failure);
             return InteractionResult.Success;
         }
@@ -196,6 +226,11 @@ namespace Tycoon
         Vector3 exitPoint;
         float endsAt;
         bool activeRide;
+        string interactionId;
+
+        public bool ActiveRide => activeRide;
+        public string InteractionId => interactionId ?? string.Empty;
+        public float RemainingSeconds => activeRide ? Mathf.Max(0, endsAt - Time.time) : 0;
 
         public static bool TryBoard(
             PlayerController target,
@@ -203,6 +238,18 @@ namespace Tycoon
             Transform fallback,
             float seconds,
             string message,
+            out string failure)
+        {
+            return TryBoard(target, passengerCarrier, fallback, seconds, message, null, out failure);
+        }
+
+        public static bool TryBoard(
+            PlayerController target,
+            ICityPassengerCarrier passengerCarrier,
+            Transform fallback,
+            float seconds,
+            string message,
+            string stableInteractionId,
             out string failure)
         {
             failure = "";
@@ -229,8 +276,76 @@ namespace Tycoon
                 failure = "Bạn đang ở trên một phương tiện khác.";
                 return false;
             }
-            ride.Begin(target, passengerCarrier, fallback, seconds, message);
+            ride.Begin(target, passengerCarrier, fallback, seconds, message, stableInteractionId);
             return true;
+        }
+
+        public static bool TryCapture(PlayerController target, out PlayerRideSave save)
+        {
+            save = null;
+            WorldPlayerRide ride = target ? target.GetComponent<WorldPlayerRide>() : null;
+            if (!ride || !ride.activeRide) return false;
+            Vector3 safeExit = ride.exitPoint;
+            if (!Finite(safeExit)) safeExit = ride.player ? ride.player.transform.position : Vector3.zero;
+            Transform parent = ride.originalParent;
+            WorldInteractionArea parentArea = parent
+                ? parent.GetComponentInParent<WorldInteractionArea>()
+                : null;
+            save = new PlayerRideSave
+            {
+                version = 1,
+                active = true,
+                phase = 1,
+                interactionId = ride.InteractionId,
+                remainingSeconds = ride.RemainingSeconds,
+                exitX = safeExit.x,
+                exitY = safeExit.y,
+                exitZ = safeExit.z,
+                originalParentWasNull = parent == null,
+                originalParentId = parentArea ? parentArea.StableId : string.Empty
+            };
+            return !string.IsNullOrEmpty(save.interactionId);
+        }
+
+        public static bool TryRestore(
+            PlayerController target,
+            PlayerRideSave save,
+            Transform worldRoot,
+            out string failure)
+        {
+            failure = string.Empty;
+            if (save == null || !save.active) return false;
+            if (!target || !target.Controller)
+            {
+                failure = "Người chơi chưa sẵn sàng khôi phục chuyến đi.";
+                return false;
+            }
+            WorldInteractionArea area = worldRoot
+                ? worldRoot.GetComponentInChildren<WorldInteractionRegistry>(true)?.Resolve(save.interactionId)
+                : null;
+            ICityPassengerCarrier passengerCarrier = area?.CarrierSource as ICityPassengerCarrier;
+            Transform hull = passengerCarrier != null ? passengerCarrier.Hull : area?.transform;
+            if (!hull)
+            {
+                RestoreAtSafeExit(target, save, worldRoot, area, out failure);
+                return false;
+            }
+            WorldPlayerRide ride = target.GetComponent<WorldPlayerRide>();
+            if (!ride) ride = target.gameObject.AddComponent<WorldPlayerRide>();
+            if (ride.activeRide)
+            {
+                failure = "Bạn đang ở trên một phương tiện khác.";
+                return false;
+            }
+            ride.Restore(target, passengerCarrier, area ? area.transform : hull,
+                save, ResolveParent(worldRoot, save), hull);
+            return true;
+        }
+
+        public static void CancelForLoad(PlayerController target)
+        {
+            WorldPlayerRide ride = target ? target.GetComponent<WorldPlayerRide>() : null;
+            ride?.ClearForLoad();
         }
 
         void Begin(
@@ -238,11 +353,15 @@ namespace Tycoon
             ICityPassengerCarrier passengerCarrier,
             Transform fallback,
             float seconds,
-            string message)
+            string message,
+            string stableInteractionId)
         {
             player = target;
             carrier = passengerCarrier;
             fallbackHull = fallback;
+            interactionId = string.IsNullOrEmpty(stableInteractionId)
+                ? StableCarrierId(passengerCarrier, fallback)
+                : stableInteractionId;
             originalParent = player.transform.parent;
             Transform hull = carrier != null ? carrier.Hull : fallbackHull;
             if (!hull) return;
@@ -267,6 +386,39 @@ namespace Tycoon
             activeRide = true;
             carrier?.RecordBoarding();
             GameSession.Instance?.Say(message);
+        }
+
+        void Restore(
+            PlayerController target,
+            ICityPassengerCarrier passengerCarrier,
+            Transform fallback,
+            PlayerRideSave save,
+            Transform parent,
+            Transform hull)
+        {
+            player = target;
+            carrier = passengerCarrier;
+            fallbackHull = fallback;
+            interactionId = save.interactionId;
+            originalParent = parent;
+            exitPoint = new Vector3(save.exitX, save.exitY, save.exitZ);
+            player.Controller.enabled = false;
+            player.CanControl = false;
+            if (carrier != null)
+            {
+                player.transform.SetParent(hull, true);
+                player.transform.localPosition = carrier.DoorInsideLocal;
+                player.transform.localRotation = Quaternion.identity;
+            }
+            else
+            {
+                player.transform.position = hull.position + Vector3.up * 1.1f;
+                player.transform.rotation = hull.rotation;
+            }
+            endsAt = Time.time + Mathf.Max(0, save.remainingSeconds);
+            activeRide = true;
+            carrier?.RecordBoarding();
+            GameSession.Instance?.Say("Đã khôi phục vị trí trên phương tiện.");
         }
 
         void Update()
@@ -295,12 +447,91 @@ namespace Tycoon
             activeRide = false;
             carrier = null;
             fallbackHull = null;
+            interactionId = null;
+            originalParent = null;
+            player = null;
             GameSession.Instance?.Say("Đã xuống phương tiện tại điểm an toàn.");
+        }
+
+        void ClearForLoad()
+        {
+            if (!activeRide) return;
+            carrier?.RecordAlighting();
+            if (player)
+            {
+                player.transform.SetParent(originalParent, true);
+                if (player.Controller) player.Controller.enabled = true;
+            }
+            activeRide = false;
+            player = null;
+            carrier = null;
+            fallbackHull = null;
+            interactionId = null;
+            originalParent = null;
+        }
+
+        static Transform ResolveParent(Transform worldRoot, PlayerRideSave save)
+        {
+            if (save == null || save.originalParentWasNull || worldRoot == null
+                || string.IsNullOrEmpty(save.originalParentId)) return null;
+            return worldRoot.GetComponentInChildren<WorldInteractionRegistry>(true)
+                ?.Resolve(save.originalParentId)?.transform;
+        }
+
+        static void RestoreAtSafeExit(
+            PlayerController target,
+            PlayerRideSave save,
+            Transform worldRoot,
+            WorldInteractionArea area,
+            out string failure)
+        {
+            Vector3 safe = new Vector3(save.exitX, save.exitY, save.exitZ);
+            if (!Finite(safe)) safe = area ? area.ExitPoint : target.transform.position;
+            Transform parent = ResolveParent(worldRoot, save);
+            target.transform.SetParent(parent, true);
+            if (NavMesh.SamplePosition(safe, out NavMeshHit hit, 2.5f, NavMesh.AllAreas))
+                safe = hit.position + Vector3.up * .05f;
+            target.transform.position = safe;
+            target.Controller.enabled = true;
+            target.CanControl = true;
+            target.StopInteraction();
+            failure = "Phương tiện đã biến mất; bạn được đưa tới điểm an toàn.";
+        }
+
+        static string StableCarrierId(ICityPassengerCarrier passengerCarrier, Transform fallback)
+        {
+            Component component = passengerCarrier as Component;
+            WorldInteractionArea area = component
+                ? component.GetComponent<WorldInteractionArea>()
+                    ?? component.GetComponentInParent<WorldInteractionArea>()
+                : null;
+            if (area && !string.IsNullOrEmpty(area.StableId)) return area.StableId;
+            string name = component ? component.name : fallback ? fallback.name : "ride";
+            return "carrier_" + name.Replace("(Clone)", string.Empty).Trim();
+        }
+
+        static bool Finite(Vector3 value)
+        {
+            return !float.IsNaN(value.x) && !float.IsInfinity(value.x)
+                && !float.IsNaN(value.y) && !float.IsInfinity(value.y)
+                && !float.IsNaN(value.z) && !float.IsInfinity(value.z);
         }
 
         void OnDisable()
         {
-            if (activeRide && player) EndRide();
+            if (!activeRide || !player) return;
+            Transform hull = carrier?.Hull;
+            if (!player.gameObject.activeInHierarchy || hull && !hull.gameObject.activeInHierarchy)
+            {
+                activeRide = false;
+                player = null;
+                carrier = null;
+                fallbackHull = null;
+                interactionId = null;
+                originalParent = null;
+                return;
+            }
+            EndRide();
         }
     }
 
@@ -397,7 +628,11 @@ namespace Tycoon
                     3.2f);
                 area.StableGroup = StableLandmarkGroup(landmark.Id, action);
                 if (boat && action == WorldInteractionAction.BoardVessel)
+                {
                     area.CarrierSource = boat;
+                    area.SetApproachPoint(
+                        WorldInteractionArea.ComputeCarrierApproach(boat, area.Radius));
+                }
             }
             AddDistrict("restaurant", "Nhà hàng", "Bạn có thể vào nhà hàng để phục vụ và dùng bữa.",
                 WorldInteractionAction.Dine, CityDistricts.Center("restaurant") + Vector3.back * 3);
@@ -452,6 +687,8 @@ namespace Tycoon
             area.StableGroup = prefix;
             area.CarrierSource = carrier;
             area.RideSeconds = action == WorldInteractionAction.BoardTrain ? 7f : 4f;
+            area.SetApproachPoint(
+                WorldInteractionArea.ComputeCarrierApproach(carrierInterface, area.Radius));
             dynamicAreas.Add(area);
         }
 

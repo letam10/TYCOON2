@@ -66,7 +66,7 @@ namespace Tycoon
                 placed.Add(Box(best, 2.18f, 2.18f));
                 pad.transform.position = best;
                 pad.InteractionPoint = best;
-                pad.InteractionRadius = 1;
+                pad.InteractionRadius = 1.35f;
                 foreach (var label in pad.GetComponentsInChildren<TextMesh>())
                 {
                     if (label == pad.StatusLabel) continue;

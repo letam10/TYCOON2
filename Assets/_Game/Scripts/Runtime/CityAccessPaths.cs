@@ -166,6 +166,16 @@ namespace Tycoon
                 }
                 Sign(signs, corridor.Nodes[0], SignText(corridor.Id));
             }
+            foreach (WorldPublicApproach approach in WorldRouteCatalog.BuildPublicApproaches())
+            {
+                IReadOnlyList<Vector3> points = approach.Nodes.Count >= 3
+                    ? CreateSmoothPath(approach.Nodes, 3)
+                    : approach.Nodes;
+                for (int point = 1; point < points.Count; point++)
+                    Segment(g, points[point - 1], points[point], approach.Width,
+                        "paving", "#B8B0A0");
+                Sign(signs, approach.Nodes[0], SignText(approach.Id));
+            }
         }
 
         static void Segment(
@@ -194,8 +204,14 @@ namespace Tycoon
             root.localPosition = position;
             Art.Cylinder("SignPost", Vector3.up * 1.15f, new(.08f, 1.15f, .08f),
                 "#526C6C", root);
+            Art.Cylinder("SignFoot", Vector3.up * .08f, new(.24f, .08f, .24f),
+                "#35494A", root);
             Art.Box("SignBoard", Vector3.up * 2.25f, new(2.8f, .62f, .08f),
                 "#3D7165", root);
+            Art.Box("SignHeader", Vector3.up * 2.53f, new(2.8f, .07f, .1f),
+                "#D7B96C", root);
+            Art.Box("SignLowerTrim", Vector3.up * 1.97f, new(2.8f, .06f, .1f),
+                "#284D48", root);
             if (Art.Catalog)
                 Art.Label(text, Vector3.up * 2.25f + Vector3.back * .06f, root,
                     .16f, "#F2E8C7", true);
@@ -218,6 +234,10 @@ namespace Tycoon
                 "expansion-village-road" => "ĐƯỜNG LÀNG PHÍA BẮC",
                 "expansion-marina-dock" => "CẦU CẢNG BẾN THUYỀN",
                 "expansion-south-highway" => "ĐƯỜNG CAO TỐC PHÍA NAM",
+                "industrial-sidewalk-approach" => "VỈA HÈ VÀO KHU CÔNG NGHIỆP",
+                "village-sidewalk-approach" => "LỐI ĐI BỘ VÀO LÀNG",
+                "marina-sidewalk-approach" => "LỐI ĐI BỘ RA BẾN THUYỀN",
+                "south-service-sidewalk" => "LỐI ĐI BỘ KHU DỪNG",
                 _ => id
             };
         }

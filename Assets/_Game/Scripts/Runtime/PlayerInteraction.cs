@@ -56,7 +56,7 @@ namespace Tycoon
                 {
                     var offset=position-area.Center;offset.y=0;
                     float square=area is ProximityTarget target?Mathf.Pow(target.Distance(position),2):offset.sqrMagnitude;
-                    int rank = area is SafeInteractionArea or CargoPlayerArea or PurchasePad ? 0 : 1;
+                    int rank = area is StationZone ? 0 : area is SafeInteractionArea or CargoPlayerArea or PurchasePad ? 1 : 2;
                     if(rank < priority || rank == priority && square < distance)
                     {priority=rank;distance=square;nearest=area;}
                 }

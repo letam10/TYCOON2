@@ -102,6 +102,22 @@ namespace Tycoon
                 distance <= DetectionRadius && !CanCross(point);
         }
 
+        public string DescribePhases()
+        {
+            var lines = new List<string>(Defaults.Length);
+            for (int index = 0; index < Defaults.Length; index++)
+            {
+                CityTrafficSignalDefinition definition = Defaults[index];
+                CitySignalPhase vehicle = PhaseAt(definition.Position, false);
+                CitySignalPhase pedestrian = PhaseAt(definition.Position, true);
+                lines.Add(definition.Id + " vehicle=" + vehicle
+                    + " pedestrian=" + pedestrian
+                    + " stopVehicle=" + (vehicle != CitySignalPhase.Green)
+                    + " canWalk=" + (pedestrian == CitySignalPhase.Walk));
+            }
+            return string.Join("\n", lines);
+        }
+
         public bool TryNearest(Vector3 point, out CityTrafficSignalDefinition signal, out float distance)
         {
             signal = default;

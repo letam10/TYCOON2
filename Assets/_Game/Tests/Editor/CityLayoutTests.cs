@@ -10,7 +10,7 @@ namespace Tycoon.Tests
         public void ExpandedGroundHasFourTimesPriorCityAreaAndDistrictsAreSeparated()
         {
             Assert.That(CityDistricts.GroundWidth * CityDistricts.GroundDepth,
-                Is.EqualTo(200 * 136 * 2 * 4).Within(.1));
+                Is.EqualTo(200 * 136 * 2 * 16).Within(.1));
             Assert.That(CityDistricts.Footprint("farm").Intersects(CityDistricts.Footprint("restaurant")), Is.False);
             Assert.That(CityDistricts.Footprint("processing").Intersects(CityDistricts.Footprint("supermarket")), Is.False);
             Assert.That(CityDistricts.WorldBounds.Contains(CityDistricts.PlayerSpawn), Is.True);

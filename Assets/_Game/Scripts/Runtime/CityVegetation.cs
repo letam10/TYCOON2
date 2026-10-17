@@ -35,11 +35,18 @@ namespace Tycoon
                 Vector3 end = new(Mathf.Cos(angle) * reach, y, Mathf.Sin(angle) * reach);
                 g.Beam(p + Vector3.up * (y - .7f) * scale, p + end * scale, .14f * scale, "wood", bark);
                 Vector3 size = tall ? new(1.65f, 2.5f, 1.55f) : new(2.15f, 1.7f, 1.9f);
-                string leaves = branch % 3 == 0 ? "#77904E" : branch % 3 == 1 ? "#527747" : "#65874A";
+                float variation = Mathf.Abs(Mathf.Sin((p.x + p.z) * .17f + branch * 1.31f));
+                string leaves = variation > .72f ? "#789B59" : variation > .36f ? "#5F884C" : "#4C7547";
                 g.Crown(p + (end + Vector3.up * .5f) * scale, size * scale, leaves);
+                if (branch == 0 || branch == branches - 1)
+                    g.Crown(p + (end * .72f + Vector3.up * .82f) * scale,
+                        size * (tall ? .58f : .64f) * scale, tall ? "#86A563" : "#729650");
             }
             g.Crown(p + Vector3.up * (tall ? 5 : 4.2f) * scale,
                 new Vector3(tall ? 1.5f : 2.2f, tall ? 2 : 1.8f, tall ? 1.5f : 2) * scale, "#65874A");
+            g.Crown(p + Vector3.up * (tall ? 4.45f : 3.65f) * scale,
+                new Vector3(tall ? 1.05f : 1.48f, tall ? 1.15f : 1.28f, tall ? 1.08f : 1.42f) * scale,
+                tall ? "#789B59" : "#527747");
         }
 
         static void Pine(CityStaticGeometry g, Vector3 p, float scale)
@@ -51,6 +58,8 @@ namespace Tycoon
                 g.Cone(center, radius * scale, (2.2f - tier * .18f) * scale,
                     "grass", tier % 2 == 0 ? "#48735A" : "#5A8260");
             }
+            g.Cone(p + Vector3.up * 5.2f * scale, .38f * scale, .72f * scale,
+                "grass", "#6A9366");
         }
 
     }

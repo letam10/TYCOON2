@@ -7,6 +7,10 @@ Shader "TYCOON/Town Water"
         _Metallic ("Metallic", Range(0,1)) = 0
         _Detail ("Filtered ripple and shore foam", Range(0,1)) = 1
         _Shoreline ("Shore normal, distance, width", Vector) = (0,0,0,0)
+        _WaveSeed ("Wave seed", Float) = 20261015
+        _WaveAmplitude ("Wave amplitude", Range(0,2)) = 1
+        _DepthScale ("Depth scale", Range(0,2)) = 1
+        _FoamWidth ("Foam width", Range(.1,10)) = 2.5
     }
     SubShader
     {
@@ -21,6 +25,10 @@ Shader "TYCOON/Town Water"
             half _Metallic;
             half _Detail;
             float4 _Shoreline;
+            float _WaveSeed;
+            half _WaveAmplitude;
+            half _DepthScale;
+            half _FoamWidth;
         CBUFFER_END
         float WaterShoreDistance(float3 position)
         {
@@ -45,10 +53,11 @@ Shader "TYCOON/Town Water"
             output.positionWS = TransformObjectToWorld(input.positionOS.xyz);
             // Sóng nhiều tầng cao tối đa khoảng 6 cm; mọi pass dùng cùng phép dịch để depth khớp.
             float calm = _Shoreline.w > 0 ? smoothstep(0, _Shoreline.w, WaterShoreDistance(output.positionWS)) : 1;
-            float swell = sin(dot(output.positionWS.xz, float2(.07, .11)) + _Time.y * .19) * .025;
-            output.positionWS.y += (sin(dot(output.positionWS.xz, float2(.37, .21)) + _Time.y * .55) * .02
+            float seed = _WaveSeed * .0007;
+            float swell = sin(dot(output.positionWS.xz, float2(.07, .11)) + _Time.y * .19 + seed) * .025;
+            output.positionWS.y += (sin(dot(output.positionWS.xz, float2(.37, .21)) + _Time.y * .55 + seed) * .02
                 + sin(dot(output.positionWS.xz, float2(-.15, .49)) - _Time.y * .37) * .01
-                + swell) * calm;
+                + swell) * calm * _WaveAmplitude;
             output.positionCS = TransformWorldToHClip(output.positionWS);
             return output;
         }
@@ -68,10 +77,11 @@ Shader "TYCOON/Town Water"
         }
         float2 WaterPhases(float3 position)
         {
-            float drift = (WaterNoise(position.xz * .085 + _Time.y * .013) - .5) * 5;
-            float crossWarp = (WaterNoise(position.xz * .11 + 71.3 - _Time.y * .009) - .5) * 4;
-            float a = dot(position.xz, float2(.37, .21)) + drift + _Time.y * .55;
-            float b = dot(position.xz, float2(-.15, .49)) + crossWarp - _Time.y * .37;
+            float seed = _WaveSeed * .0007;
+            float drift = (WaterNoise(position.xz * .085 + _Time.y * .013 + seed) - .5) * 5;
+            float crossWarp = (WaterNoise(position.xz * .11 + 71.3 - _Time.y * .009 + seed) - .5) * 4;
+            float a = dot(position.xz, float2(.37, .21)) + drift + _Time.y * .55 + seed;
+            float b = dot(position.xz, float2(-.15, .49)) + crossWarp - _Time.y * .37 - seed;
             return float2(a, b);
         }
         float2 RipplePhases(float3 position)
@@ -101,7 +111,7 @@ Shader "TYCOON/Town Water"
         {
             float shore = step(.01, _Shoreline.w);
             float distanceToShore = WaterShoreDistance(position);
-            float depth = lerp(4.5, .18 + distanceToShore * .23, shore);
+            float depth = lerp(4.5, .18 + distanceToShore * .23, shore) * _DepthScale;
             // Beer-Lambert: đỏ bị hấp thụ mạnh hơn xanh; thấy cát và caustic ở vùng nông.
             half3 transmission = exp(-half3(.8, .30, .18) * depth);
             float2 p = position.xz;
@@ -155,7 +165,7 @@ Shader "TYCOON/Town Water"
             float2 ripple = RipplePhases(input.positionWS);
             half detail = RippleWeight(input.positionWS, ripple);
             color.rgb += (sin(ripple.x) * .006 + sin(ripple.y) * .004) * detail;
-            half foam = 1 - smoothstep(.08, .32,
+            half foam = 1 - smoothstep(.08, max(.09, _FoamWidth * .13),
                 abs(sin(shoreDistance * 2.1 - _Time.y * .8 + crossWave * .32)));
             foam *= shore * _Detail * smoothstep(-.55, .8, wave);
             color.rgb = lerp(color.rgb, half3(.85, .96, .97), foam * .65);

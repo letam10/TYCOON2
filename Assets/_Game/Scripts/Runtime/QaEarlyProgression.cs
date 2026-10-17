@@ -70,12 +70,14 @@ namespace Tycoon
             Check(game.Progression.Evaluate(Definitions.Upgrade("farm_speed2")).State==PurchaseState.Available,"unlocked purchase is available");
 
             foreach(var crop in crops)yield return HarvestStarterCrop(crop);
-            Check(game.Player.Carry.Total==3&&game.Player.Carry.Count("carrot")==3,"three harvested carrots belong to player carry");
+            int starterYield = crops[0].HarvestQuantity;
+            int starterTotal = starterYield * crops.Count;
+            Check(game.Player.Carry.Total==starterTotal&&game.Player.Carry.Count("carrot")==starterTotal,"three harvested carrot batches belong to player carry");
             var counter=game.Checkouts.Find(x=>x.Id=="checkout_farm");
             Check(counter.Inventory!=null&&counter.AcceptsItem("carrot"),"farm counter owns a carrot stock location");
             yield return DepositAtCounter(counter);
             int conserved=game.Transactions.Snapshot().stacks.Where(x=>x.item=="carrot").Sum(x=>x.quantity);
-            Check(game.Player.Carry.Total==0&&conserved==3,"walking through serve and dropping at counter conserves every carrot owner");
+            Check(game.Player.Carry.Total==0&&conserved==starterTotal,"walking through serve and dropping at counter conserves every carrot owner");
             Check(counter.Cash>0&&game.Economy.Money==0,"direct customer delivery leaves payment at counter until collection");
             long openingMoney=game.Economy.Money;
             yield return ServeAndCollect(counter);
@@ -109,10 +111,22 @@ namespace Tycoon
 
         IEnumerator HarvestStarterCrop(ProductionStation crop)
         {
-            int before=game.Player.Carry.Count("carrot");
+            string item=crop.ItemId;
+            int before=game.Player.Carry.Count(item);
+            int expected= crop.HarvestQuantity;
             var operate=game.Stations.Find(x=>x is StationZone z&&z.Target==crop&&z.Kind==InteractionKind.Operate) as StationZone;
             var pickup=game.Stations.Find(x=>x is StationZone z&&z.Target==crop&&z.Kind==InteractionKind.Pickup) as StationZone;
             Check(operate&&pickup,"crop has distinct work and harvest zones");
+            if(game.Economy.CashInHand>0)
+            {
+                Check(game.Player.Carry.Total==0,"QA deposits cash only with empty hands");
+                var safe=game.Stations.Find(x=>x is SafeStation) as SafeStation;
+                Check(safe&&safe.Deposit!=null,"starter safe has a deposit zone before harvesting");
+                yield return Travel(safe.Deposit.Center);
+                float depositDeadline=Time.realtimeSinceStartup+6;
+                while(game.Economy.CashInHand>0&&Time.realtimeSinceStartup<depositDeadline)yield return null;
+                Check(game.Economy.CashInHand==0,"QA deposits wallet cash before harvesting");
+            }
             if(crop.Phase!=3)
             {
                 yield return Travel(operate.InteractionPoint);
@@ -123,7 +137,7 @@ namespace Tycoon
             yield return Travel(pickup.InteractionPoint);
             float harvested=Time.realtimeSinceStartup+8;
             while(game.Player.Carry.Count("carrot")==before&&Time.realtimeSinceStartup<harvested)yield return null;
-            Check(game.Player.Carry.Count("carrot")==before+1,"Pickup zone transfers one grown carrot to player");
+            Check(game.Player.Carry.Count(item)==before+expected,"Pickup zone transfers the complete grown "+item+" batch to player");
         }
 
         IEnumerator DepositAtCounter(CheckoutStation counter)

@@ -20,7 +20,10 @@ namespace Tycoon
             ("industrial_yard", "Bãi công nghiệp", new(465, .05f, 330)),
             ("north_village", "Làng phía Bắc", new(0, .05f, 330)),
             ("east_marina", "Bến du thuyền phía Đông", new(370, .05f, -135)),
-            ("south_highway", "Xa lộ phía Nam", new(0, .05f, -300))
+            ("south_highway", "Xa lộ phía Nam", new(0, .05f, -300)),
+            ("residential", "Khu dân cư", new(128, .05f, 50)),
+            ("apartment", "Chung cư", new(128, .05f, 70)),
+            ("commercial", "Khu thương mại", new(70, .05f, 39))
         };
 
         public static Vector2 CaptionOffset(string id) => id switch
@@ -30,24 +33,35 @@ namespace Tycoon
             "station" => new(-180, -24),
             "beach" => new(12, 16),
             "harbor" => new(12, -24),
-            "marina" => new(-180, -24),
+            "marina" => new(-180, -52),
             "bank" => new(-180, 16),
             "restaurant" => new(-180, 16),
             "forest" => new(12, 16),
             "forest_reserve" => new(12, 16),
             "industrial_yard" => new(-205, 16),
             "north_village" => new(-180, 16),
-            "east_marina" => new(-220, -24),
+            "east_marina" => new(-220, -46),
             "south_highway" => new(12, 16),
+            "residential" => new(12, 16),
+            "apartment" => new(12, 50),
+            "commercial" => new(-188, -24),
             _ => new(12, 16)
         };
 
         public static float CaptionWidth(string id) => id switch
         {
             "east_marina" or "industrial_yard" or "forest_reserve" => 200f,
+            "apartment" or "commercial" => 180f,
+            "residential" => 160f,
             "north_village" or "south_highway" => 180f,
             _ => 160f
         };
+
+        public static bool IsExpansionPoint(string id)
+        {
+            return id is "forest_reserve" or "industrial_yard" or "north_village"
+                or "east_marina" or "south_highway";
+        }
 
         public static bool Teleport(GameSession game, int index, out string reason)
         {
@@ -57,7 +71,7 @@ namespace Tycoon
             var player = game.Player;
             var body = player.Controller;
             // Chỉ đặt người lên nền đi được, đủ chỗ cho capsule; giữ nguyên hàng và tiền đang cầm.
-            bool expansion = index >= 9;
+            bool expansion = IsExpansionPoint(Points[index].id);
             bool sampled = NavMesh.SamplePosition(Points[index].position, out var hit, 3, NavMesh.AllAreas);
             if (!sampled && !expansion)
             { reason = "Điểm dịch chuyển đang bị chặn."; return false; }

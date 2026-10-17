@@ -33,13 +33,18 @@ namespace Tycoon
             var arguments = Environment.GetCommandLineArgs();
             bool load = Array.Exists(arguments,x=>x=="--qa-load"), full = Array.Exists(arguments,x=>x=="--qa-progression");
             bool stage45=Array.Exists(arguments,x=>x=="--qa-stage45");bool stage67=Array.Exists(arguments,x=>x=="--qa-stage67");
+            bool stage6Routes = Array.Exists(arguments, x => x == "--qa-stage6-routes");
+            bool stage7PoiAccess = Array.Exists(arguments, x => x == "--qa-stage7-poi-access");
+            bool stage9Map = Array.Exists(arguments, x => x == "--qa-stage9-map");
+            bool stage10RideSave = Array.Exists(arguments, x => x == "--qa-stage10-ride-save");
+            bool stage10RideLoad = Array.Exists(arguments, x => x == "--qa-stage10-ride-load");
             bool art = Array.Exists(arguments,x=>x=="--qa-art");
             bool redesign=Array.Exists(arguments,x=>x=="--qa-v2");
             bool stage14=Array.Exists(arguments,x=>x=="--qa-stage14"),layout14=Array.Exists(arguments,x=>x=="--qa-stage14-layout"),visual14=Array.Exists(arguments,x=>x=="--qa-stage14-visual");
             bool milestones14=Array.Exists(arguments,x=>x=="--qa-stage14-milestones");
             bool assets=Array.Exists(arguments,x=>x=="--qa-assets");
             bool town=Array.Exists(arguments,x=>x=="--qa-town"),townLayout=Array.Exists(arguments,x=>x=="--qa-town-layout"),townLoad=Array.Exists(arguments,x=>x=="--qa-town-load");
-            string mode = redesign ? "redesign" : art ? "visual" : load ? "load" : stage67?"stage67":stage45?"stage45":full ? "progression" : game.Milestone == 0 ? "foundation" : "vertical";
+            string mode = stage10RideLoad ? "stage10-ride-load" : stage10RideSave ? "stage10-ride-save" : stage9Map ? "stage9-map" : stage7PoiAccess ? "stage7-poi-access" : stage6Routes ? "stage6-routes" : redesign ? "redesign" : art ? "visual" : load ? "load" : stage67?"stage67":stage45?"stage45":full ? "progression" : game.Milestone == 0 ? "foundation" : "vertical";
             bool resume = Array.Exists(arguments,x=>x=="--qa-resume");
             if(stage14||layout14||visual14)mode=stage14?"stage14-progression":layout14?"stage14-layout":"stage14-visual";
             if(milestones14)mode="stage14-milestones";
@@ -59,6 +64,19 @@ namespace Tycoon
             {
                 mode = "ocean-v13";
                 routines.Push(OceanV13Acceptance());
+            }
+            else if (stage10RideSave)
+            {
+                routines.Push(Stage10RideSave());
+            }
+            else if (stage10RideLoad)
+            {
+                routines.Push(Stage10RideLoad());
+            }
+            else if (stage9Map)
+            {
+                mode = "stage9-map";
+                routines.Push(Stage9MapAcceptance());
             }
             else if (Array.Exists(arguments, argument => argument == "--qa-city-models-v11"))
             {
@@ -125,6 +143,8 @@ namespace Tycoon
                     : redesign ? Redesign()
                     : art ? VisualInspection()
                     : load ? LoadCheck()
+                    : stage7PoiAccess ? Stage7PoiAccessAcceptance()
+                    : stage6Routes ? Stage6RouteAcceptance()
                     : stage67 ? LivestockAndCrew()
                     : stage45 ? FarmStarterAndPurchase()
                     : game.Milestone == 0 ? Foundation()

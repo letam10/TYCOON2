@@ -20,6 +20,7 @@ namespace Tycoon
                 recoveryLease = GameplayTransactionStore.AcquireLease(SavePath);
                 var data = SaveStore.Read(SavePath);
                 if (data == null) return;
+                WorldPlayerRide.CancelForLoad(Player);
                 IsRestoring=Application.isPlaying;Player.CanControl=false;
                 bool worldChanged = PhysicalCashMigration.Upgrade(data);
                 worldChanged |= TownLayout.Migrate(data);
@@ -62,6 +63,9 @@ namespace Tycoon
                 if(Player.Controller)Player.Controller.enabled = false;
                 Player.transform.position = new Vector3(data.playerX, .05f, data.playerZ);
                 if(Player.Controller)Player.Controller.enabled = true;
+                pendingPlayerRideRestore = data.playerRide != null && data.playerRide.active
+                    ? data.playerRide
+                    : null;
                 ApplyProgression();
                 SaveBlocked=false;Player.CanControl=false;
                 if (data.transactionState != null)

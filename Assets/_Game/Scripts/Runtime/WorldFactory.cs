@@ -106,6 +106,7 @@ namespace Tycoon
             CityPublicTransport.Build(game, world);
             CityRailService.Build(game, world);
             WorldInteractionRegistry.Build(world);
+            WorldPoiAccessBuilder.Build(world);
             TownSurfaceMaterials.Apply(world);
             world.gameObject.AddComponent<NavigationWorld>();
         }
@@ -243,8 +244,36 @@ namespace Tycoon
         }
         public static void Zone(GameSession game, Transform parent, Station target, string mode, Vector3 point)
         {
-            // Điểm work của NPC được giữ; player tương tác với vật thể, không sinh ô hành động.
-            if(target is CheckoutStation && mode=="cash")
+            string label = mode switch
+            {
+                "withdraw" => "LẤY HÀNG",
+                "deposit" => "ĐẶT HÀNG",
+                "operate" => "VẬN HÀNH",
+                "serve" => "GIAO HÀNG",
+                "cash" => "THU TIỀN",
+                _ => mode
+            };
+            var zone = Register<StationZone>(game, parent, target.Id + "_" + mode, label, point);
+            zone.Target = target;
+            zone.Mode = mode;
+            zone.AreaId = target.AreaId;
+            zone.Requirement = target.Requirement;
+            zone.InteractionPoint = point;
+            target.PlayerUsesZones = true;
+            zone.InteractionRadius = .85f;
+            if (target is CheckoutStation checkout && mode == "cash")
+                checkout.CashZone = zone;
+            string color = mode switch
+            {
+                "serve" => "#73CF4F",
+                "withdraw" => "#39A4D8",
+                "deposit" => "#F5AB3D",
+                "operate" => "#9A72D8",
+                _ => "#FFD63E"
+            };
+            Art.Box("InteractionZone", new Vector3(0, .035f, 0), new Vector3(1.8f, .07f, 1.8f), color, zone.transform);
+            Locked(zone);
+            if (target is CheckoutStation && mode == "cash")
                 CheckoutCashModels.Stand(target.transform);
         }
         public static MachineStation Machine(GameSession game, Transform parent, string key, Vector3 point, string requirement)

@@ -147,6 +147,9 @@ namespace Tycoon
                 Vector3 lens = p + new Vector3(0, 4.05f - lamp * .44f, -.365f);
                 g.Box(lens, new(.27f, .18f, .055f), "glass", tint);
                 g.Box(lens, new(.18f, .27f, .055f), "glass", tint);
+                // Visor mỏng tạo bóng thật và viền tương phản cho lens khi nhìn xa.
+                g.Box(p + new Vector3(0, 4.17f - lamp * .44f, -.405f), new(.42f, .06f, .12f),
+                    "metal", "#1F292B");
                 g.Box(p + new Vector3(0, 4.23f - lamp * .44f, -.39f), new(.4f, .05f, .2f),
                     "metal", "#35474B");
                 for (int side = -1; side <= 1; side += 2)

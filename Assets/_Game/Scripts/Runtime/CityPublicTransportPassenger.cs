@@ -7,6 +7,7 @@ namespace Tycoon
 
     public sealed class CityPublicTransportPassenger : MonoBehaviour
     {
+        const float TransitMoveTimeout = 8f;
         NavMeshAgent agent;
         ActorPhysicalMotion motion;
         ActorView view;
@@ -22,6 +23,7 @@ namespace Tycoon
         Vector3 releaseDoorLocal;
         Vector3 releaseExitLocal;
         Transform carrierHull;
+        float transitSeconds;
         readonly RaycastHit[] movementHits = new RaycastHit[16];
         readonly Collider[] exitHits = new Collider[24];
         float walkingSpeed;
@@ -49,6 +51,7 @@ namespace Tycoon
             carrierHull = carrier.Hull;
             rode = false;
             seat = seatPosition;
+            transitSeconds = 0;
             Phase = CityPassengerPhase.Approaching;
             if (Navigation.Go(agent, carrier.DoorOutside)) return true;
             CancelApproach();
@@ -62,6 +65,7 @@ namespace Tycoon
             if (agent) agent.GetComponent<CityPedestrianRoute>()?.Clear();
             Phase = CityPassengerPhase.Walking;
             vehicle = null;
+            transitSeconds = 0;
             cooldown = Time.time + 8;
         }
 
@@ -85,6 +89,15 @@ namespace Tycoon
                 }
                 transform.SetParent(originalParent, true);
                 detachPending = false;
+            }
+            if (Phase is CityPassengerPhase.Boarding or CityPassengerPhase.Disembarking)
+            {
+                transitSeconds += delta;
+                if (transitSeconds > TransitMoveTimeout)
+                {
+                    EmergencyRestore();
+                    return;
+                }
             }
             if (Phase == CityPassengerPhase.Approaching)
             {
@@ -114,6 +127,7 @@ namespace Tycoon
                 }
                 Phase = CityPassengerPhase.Seated;
                 rode = true;
+                transitSeconds = 0;
                 if (HasCarrier) vehicle.RecordBoarding();
                 transform.localRotation = Quaternion.identity;
                 if (view) view.Play("Sit");
@@ -148,7 +162,9 @@ namespace Tycoon
                 for (int i = 0; i < count; i++)
                 {
                     var hit = movementHits[i].collider.transform;
-                    if (hit.IsChildOf(transform) || carrierHull && hit.IsChildOf(carrierHull)) continue;
+                    if (hit == transform || hit.IsChildOf(transform)
+                        || carrierHull && (hit == carrierHull || hit.IsChildOf(carrierHull)))
+                        continue;
                     walkingSpeed = 0;
                     if (view) view.SetMotion(0, false);
                     return false;
@@ -171,6 +187,7 @@ namespace Tycoon
             doorPosition = vehicle.Hull.TransformPoint(vehicle.DoorInsideLocal);
             throughDoor = false;
             walkingSpeed = 0;
+            transitSeconds = 0;
             Phase = CityPassengerPhase.Disembarking;
         }
 
@@ -182,7 +199,9 @@ namespace Tycoon
                 point + Vector3.up * 1.48f, .32f, exitHits, ~0, QueryTriggerInteraction.Ignore);
             if (count == exitHits.Length) return false;
             for (int i = 0; i < count; i++)
-                if (!exitHits[i].transform.IsChildOf(transform)) return false;
+                if (exitHits[i].transform != transform
+                    && !exitHits[i].transform.IsChildOf(transform))
+                    return false;
             return true;
         }
 
@@ -227,7 +246,50 @@ namespace Tycoon
             vehicle = null;
             carrierHull = null;
             Phase = CityPassengerPhase.Walking;
+            transitSeconds = 0;
             cooldown = Time.time + 35;
+            if (view) view.SetMotion(0, false);
+        }
+
+        void EmergencyRestore()
+        {
+            ICityPassengerCarrier completedCarrier = vehicle;
+            Vector3 target = completedCarrier != null && completedCarrier.Hull
+                ? completedCarrier.DoorOutside
+                : exit;
+            if (target == Vector3.zero && carrierHull)
+                target = carrierHull.TransformPoint(releaseExitLocal);
+            transform.SetParent(originalParent, true);
+            if (NavMesh.SamplePosition(target, out var hit, 2.5f, NavMesh.AllAreas))
+                target = hit.position + Vector3.up * .05f;
+            transform.position = target;
+            if (agent)
+            {
+                agent.enabled = true;
+                if (!agent.isOnNavMesh)
+                    agent.enabled = false;
+                else
+                {
+                    agent.nextPosition = transform.position;
+                    agent.ResetPath();
+                    agent.isStopped = false;
+                }
+            }
+            if (motion && motion.Body) motion.Body.enabled = true;
+            if (rode)
+            {
+                CompletedRides++;
+                completedCarrier?.RecordAlighting();
+            }
+            vehicle = null;
+            carrierHull = null;
+            detachPending = false;
+            throughDoor = false;
+            walkingSpeed = 0;
+            rode = false;
+            Phase = CityPassengerPhase.Walking;
+            transitSeconds = 0;
+            cooldown = Time.time + 8;
             if (view) view.SetMotion(0, false);
         }
 
@@ -253,6 +315,7 @@ namespace Tycoon
             detachPending = true;
             Phase = CityPassengerPhase.Disembarking;
             throughDoor = false;
+            transitSeconds = 0;
             vehicle = null;
         }
 

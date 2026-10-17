@@ -55,6 +55,7 @@ namespace Tycoon
             using var updateProbe = QaFrameProbe.Measure("PlayerController.1.Update");
 
             if (!CanControl || Move == null || GameSession.Instance == null || !GameSession.Instance.CanSimulate) { ResetMotion(); StopInteraction(); return; }
+            if (!Controller || !Controller.enabled || !isActiveAndEnabled || !gameObject.activeInHierarchy) { ResetMotion(); StopInteraction(); return; }
             var game = GameSession.Instance;
             if (Cycle.WasPressedThisFrame()) { game.SelectedItem = (game.SelectedItem + 1) % Definitions.Items.Length; StopInteraction(); }
             if (Save.WasPressedThisFrame()) game.SaveGame();

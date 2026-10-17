@@ -787,3 +787,24 @@ Chưa khởi chạy các lệnh Player này trong lượt chốt hiện tại.
 - Lịch sử không sửa nội dung: History/HANDOFF_01_05.md, History/HANDOFF_06_14.md, History/HANDOFF_TOWN.md.
 - Các nhận định cũ như thiếu remote, worker chưa có ca kiểm tra hoặc logger chưa có mutex
   không đại diện trạng thái mới; logger hiện có mutex; kiểm tra hai tiến trình ghi đồng thời 50 bản ghi đã đạt.
+
+## Final delivery evidence — 2026-10-17T00:55:59Z
+
+### Current result
+
+- Full EditMode suite: `Tools/run_unity.ps1 -Task Tests`, Unity PID 19944, exit code 0.
+- Fresh XML: `QA/editmode-results.xml`, start `2026-10-17T00:55:26Z`, end `2026-10-17T00:55:59Z`, top level `1066/1066 passed`, `0 failed`, `0 inconclusive`, `0 skipped`.
+- Windows build: `Tools/run_unity.ps1 -Task Build`, Unity PID 10788, report `QA/build-report.json`, `result=Succeeded`, `errors=0`, `warnings=32`, `bytes=117077295`, `builtUtc=2026-10-17T00:49:31Z`.
+- Required build location: `D:\GAME\TYCOON2\Builds\Windows\TYCOON2.exe`.
+- Player smoke: `Tools/run_player.ps1 -Task Stage67`, report `D:\GAME\TYCOON2\work\stage06-07\player-stage67-20261017T005009173Z\stage67-report.json`, `passed=true`, started `2026-10-17T00:50:16.2629066Z`, finished `2026-10-17T00:54:13.7082244Z`, NVIDIA GeForce RTX 4060 Laptop GPU, `interactions=1165`, no failure. Evidence includes `farm-livestock-sale.png`, `qa-save-v2.json`, `presentation-audit.json`, `navigation-route.txt` and `graphics-device.json`.
+
+### Latest QA/runtime scope
+
+`Assets/_Game/Scripts/Runtime/QaRedesign.cs` was corrected to follow the runtime contract without changing economy, stable IDs or persistence writers: canonical `animal_feed`, feed delta rather than timing-sensitive exact count, deterministic beef order through `CustomerSave`, animal-feed storage reserve, and acceptance of transaction schema 2 or 3. The Player smoke reached crop harvest, feedmill input/output, beef feeding and harvest, customer beef order and payment, storage reservation/release and transaction SaveV2/v3 state.
+
+### Release checks and limits
+
+- `git diff --check` reports trailing whitespace and line-ending warnings in pre-existing dirty model `.meta` files; they were not edited, cleaned or staged.
+- `git lfs status` and tracked-file audit were run. Secret scan returned no matching secret pattern (`git grep` exit 1 means no match). Large raw downloads, QA history, logs, Library, work outputs and unknown `.meta` files remain preserved and excluded from the allowlist.
+- GPU/OceanV13 timing was not run; on D3D11 it remains diagnostic unavailable and is not treated as a release blocker.
+- SHA256, final allowlisted staging, commit and push are still pending at the time of this handoff append. Do not claim release complete until those operations and their post-push checks succeed.

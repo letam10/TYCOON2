@@ -44,6 +44,7 @@ namespace Tycoon
         public List<string> RuntimeErrors = new();
         public RuntimeTransactions Transactions { get; private set; }
         public bool IsRestoring {get;private set;}
+        PlayerRideSave pendingPlayerRideRestore;
         public bool CanRestore=>!SaveBlocked;
         public bool CanSimulate => !SaveBlocked && !IsRestoring && (!Hud || !Hud.SettingsOpen);
 
@@ -142,6 +143,14 @@ namespace Tycoon
             using var frameProbe = QaFrameProbe.Measure("GameSession.Update");
             if (!Player || !NavigationReady || SaveBlocked) return;
             SyncWorkers();
+            if (pendingPlayerRideRestore != null)
+            {
+                var rideSave = pendingPlayerRideRestore;
+                pendingPlayerRideRestore = null;
+                if (!WorldPlayerRide.TryRestore(Player, rideSave, transform, out string rideFailure) &&
+                    !string.IsNullOrEmpty(rideFailure))
+                    Debug.LogWarning(rideFailure);
+            }
             if(IsRestoring)
             {
                 if(PendingCustomers.Count+PendingDiners.Count+PendingWorkers.Count>0 || !WorkersReady)return;
@@ -165,7 +174,7 @@ namespace Tycoon
                 if(worldArea && worldArea.Available)yield return worldArea;
             foreach (var station in Stations)
             {
-                if(!station || station is StationZone or ConveyorStation)continue;
+                if(!station || station is ConveyorStation)continue;
                 if(station is SafeStation safe){yield return safe.Deposit;yield return safe.Withdraw;continue;}
                 if(station is IPlayerInteractionArea area){yield return area;continue;}
                 if(!proximity.TryGetValue(station,out var target)){target=new ProximityTarget(station);proximity.Add(station,target);}
@@ -219,6 +228,8 @@ namespace Tycoon
                 pendingCash = Economy.PendingCash, businessStage = BusinessStage, bakerySales = BakerySales, restaurantMeals = RestaurantMeals,
                 playerX = Player.transform.position.x, playerZ = Player.transform.position.z
             };
+            if (WorldPlayerRide.TryCapture(Player, out PlayerRideSave rideSave))
+                data.playerRide = rideSave;
             data.unlocked.AddRange(Economy.Unlocked);
             data.purchases.AddRange(Purchases); data.crews.AddRange(CrewStates); data.events=Events;
             data.receipts.AddRange(Economy.ReceiptIds); data.losses.AddRange(Economy.Losses);

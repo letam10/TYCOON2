@@ -56,7 +56,7 @@ namespace Tycoon
         public InteractionKind Kind => deposit ? InteractionKind.DepositCash : InteractionKind.WithdrawCash;
         public Vector3 Center => station.transform.TransformPoint(offset);
         public bool Available => station && station.isActiveAndEnabled && GameSession.Instance.CanSimulate;
-        public bool Contains(Vector3 point) => Vector3.ProjectOnPlane(point - Center, Vector3.up).sqrMagnitude < .49f;
+        public bool Contains(Vector3 point) => Vector3.ProjectOnPlane(point - Center, Vector3.up).sqrMagnitude < .25f;
         public string Hint => deposit ? "Gửi tiền vào két" : "Rút tiền lên tay";
 
         public InteractionResult Perform(InteractionContext context, float delta)

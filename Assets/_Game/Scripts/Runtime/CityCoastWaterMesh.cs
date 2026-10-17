@@ -52,9 +52,9 @@ namespace Tycoon
         public static float LayeredDisplacement(float x, float z)
         {
             float seed = SurfaceSeed * .001f;
-            float longWave = Mathf.Sin((x + seed) * .063f + z * .041f) * .018f;
-            float crossWave = Mathf.Sin(x * -.097f + (z - seed) * .073f) * .011f;
-            float shortWave = Mathf.Sin((x + z) * .19f + seed * .7f) * .004f;
+            float longWave = Mathf.Sin((x + seed) * .063f + z * .041f) * .022f;
+            float crossWave = Mathf.Sin(x * -.097f + (z - seed) * .073f) * .014f;
+            float shortWave = Mathf.Sin((x + z) * .19f + seed * .7f) * .006f;
             return longWave + crossWave + shortWave;
         }
     }

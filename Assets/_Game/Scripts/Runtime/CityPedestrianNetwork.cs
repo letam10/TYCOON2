@@ -93,7 +93,9 @@ namespace Tycoon
                         " enters the farm outside a designated sidewalk";
                     return false;
                 }
-                if (!sidewalkCrossing && TryGetReservedCorridor(point, capsuleRadius,
+                bool networkEndpoint = IsPedestrianNode(point)
+                    && (index == 0 || index == route.Count - 1);
+                if (!sidewalkCrossing && !networkEndpoint && TryGetReservedCorridor(point, capsuleRadius,
                     out WorldRouteCorridor corridor))
                 {
                     if (corridor.Kind == RouteKind.FarmPath && !farmLocalTrip &&
@@ -117,13 +119,15 @@ namespace Tycoon
                 Vector3 first = route[index - 1];
                 Vector3 second = route[index];
                 bool sidewalkCrossing = IsSidewalkPoint(first) || IsSidewalkPoint(second);
+                bool endpointTransition = (index == 1 && IsPedestrianNode(first))
+                    || (index == route.Count - 1 && IsPedestrianNode(second));
                 if (!farmLocalTrip && SegmentIntersectsFarm(first, second) && !sidewalkCrossing)
                 {
                     failure = "public route segment " + (index - 1) +
                         " enters the farm outside a designated sidewalk";
                     return false;
                 }
-                if (sidewalkCrossing || !TryGetIntersectedCorridor(
+                if (sidewalkCrossing || endpointTransition || !TryGetIntersectedCorridor(
                     first, second, capsuleRadius, out WorldRouteCorridor corridor))
                     continue;
                 if (IsRestrictedCorridor(corridor.Kind))
@@ -191,11 +195,23 @@ namespace Tycoon
                 failure = "pedestrian graph returned an empty route";
                 return false;
             }
-            if (route.Count == 2 && Vector3.Distance(from, destination) > LocalTrip &&
-                (!publicTrip || !SegmentIntersectsFarm(from, destination)))
+            for (int index = route.Count - 1; index > 0; index--)
+                if ((route[index] - route[index - 1]).sqrMagnitude <= .0001f)
+                    route.RemoveAt(index);
+            if (route.Count == 2 && Vector3.Distance(from, destination) > LocalTrip)
             {
-                // Giữ một waypoint giữa đoạn dài để agent không bỏ qua hành lang đã chọn.
-                route.Insert(1, Vector3.Lerp(from, destination, .5f));
+                bool fromFarm = IsFarmPoint(from);
+                bool destinationFarm = IsFarmPoint(destination);
+                float amount = .5f;
+                if (SegmentIntersectsFarm(from, destination) && fromFarm != destinationFarm)
+                {
+                    amount = fromFarm ? .75f : .25f;
+                    for (int attempt = 0; attempt < 4 && IsFarmPoint(
+                        Vector3.Lerp(from, destination, amount)); attempt++)
+                        amount = fromFarm ? (amount + 1f) * .5f : amount * .5f;
+                }
+                // Giữ một waypoint hợp lệ để agent không bỏ qua hành lang đã chọn.
+                route.Insert(1, Vector3.Lerp(from, destination, amount));
             }
             route[0] = from;
             route[^1] = destination;
@@ -261,7 +277,21 @@ namespace Tycoon
             {
                 foreach (var corridor in WorldRouteCatalog.BuildDefault())
                 {
-                    if (corridor.Kind != RouteKind.Sidewalk && corridor.Kind != RouteKind.FarmPath)
+                    bool internalFarmPath = corridor.Kind == RouteKind.FarmPath
+                        && corridor.Nodes.Count > 0;
+                    if (internalFarmPath)
+                    {
+                        for (int node = 0; node < corridor.Nodes.Count; node++)
+                        {
+                            if (!IsFarmPoint(corridor.Nodes[node]))
+                            {
+                                internalFarmPath = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (corridor.Kind != RouteKind.Sidewalk
+                        && (corridor.Kind != RouteKind.FarmPath || avoidFarm && internalFarmPath))
                         continue;
                     int first = Points.Count;
                     for (int index = 0; index < corridor.Nodes.Count; index++)
@@ -270,6 +300,30 @@ namespace Tycoon
                         AddLink(index - 1, index);
                     ConnectCorridorEnd(first);
                     ConnectCorridorEnd(Points.Count - 1);
+                }
+                foreach (WorldPublicApproach approach in WorldRouteCatalog.BuildPublicApproaches())
+                {
+                    int first = Points.Count;
+                    for (int index = 0; index < approach.Nodes.Count; index++)
+                        Points.Add(approach.Nodes[index]);
+                    for (int index = first + 1; index < Points.Count; index++)
+                        AddLink(index - 1, index);
+                    ConnectCorridorEnd(first);
+                    ConnectCorridorEnd(Points.Count - 1);
+                }
+                ConnectCoincidentPoints();
+            }
+
+            void ConnectCoincidentPoints()
+            {
+                for (int first = Nodes.Length; first < Points.Count; first++)
+                {
+                    for (int second = 0; second < first; second++)
+                    {
+                        if ((Points[first] - Points[second]).sqrMagnitude > .0001f)
+                            continue;
+                        AddLink(first, second);
+                    }
                 }
             }
 
@@ -351,6 +405,8 @@ namespace Tycoon
 
         static bool IsSidewalkPoint(Vector3 point)
         {
+            if (WorldRouteCatalog.IsPublicApproachPoint(point))
+                return true;
             IReadOnlyList<WorldRouteCorridor> routes = WorldRouteCatalog.BuildDefault();
             for (int routeIndex = 0; routeIndex < routes.Count; routeIndex++)
             {
@@ -359,7 +415,32 @@ namespace Tycoon
                 for (int index = 0; index < corridor.Nodes.Count; index++)
                     if ((corridor.Nodes[index] - point).sqrMagnitude < .0001f) return true;
             }
-            return false;
+            return IsDesignatedRoadCrossing(point, routes);
+        }
+
+        static bool IsDesignatedRoadCrossing(
+            Vector3 point,
+            IReadOnlyList<WorldRouteCorridor> routes)
+        {
+            bool farmPathNode = false;
+            for (int routeIndex = 0; routeIndex < routes.Count && !farmPathNode; routeIndex++)
+            {
+                WorldRouteCorridor corridor = routes[routeIndex];
+                if (corridor.Kind != RouteKind.FarmPath) continue;
+                for (int nodeIndex = 0; nodeIndex < corridor.Nodes.Count; nodeIndex++)
+                {
+                    if ((corridor.Nodes[nodeIndex] - point).sqrMagnitude < .0001f)
+                    {
+                        farmPathNode = true;
+                        break;
+                    }
+                }
+            }
+            if (!farmPathNode || !WorldRouteCatalog.IsReserved(point, .01f, out string routeId))
+                return false;
+            if (!WorldRouteCatalog.TryGet(routeId, out WorldRouteCorridor restricted))
+                return false;
+            return IsRestrictedCorridor(restricted.Kind);
         }
 
         static bool IsFarmEdge(Vector3 first, Vector3 second)
@@ -374,6 +455,14 @@ namespace Tycoon
         static bool IsPublicPedestrianPoint(Vector3 point)
         {
             return !IsFarmPoint(point) || IsSidewalkPoint(point);
+        }
+
+        static bool IsPedestrianNode(Vector3 point)
+        {
+            for (int index = 0; index < Nodes.Length; index++)
+                if ((Nodes[index] - point).sqrMagnitude < .0001f)
+                    return true;
+            return false;
         }
 
         public static bool SegmentIntersectsFarm(Vector3 first, Vector3 second)

@@ -38,7 +38,10 @@ namespace Tycoon
                 build(geometry);
                 geometry.Finish();
                 if (id == "Harbor" || id == "Marina")
-                    WorldExpansionBoat.Build(root, new Vector3(10, 0, 18));
+                {
+                    float boatZ = id == "Marina" ? 12f : 18f;
+                    WorldExpansionBoat.Build(root, new Vector3(10, 0, boatZ));
+                }
                 if (id is "Beach" or "Harbor" or "Marina") CityCoastModels.BlockWater(root, id);
             }
         }

@@ -68,13 +68,92 @@ namespace Tycoon
         }
     }
 
+    [Serializable]
+    public sealed class WorldPublicApproach
+    {
+        [SerializeField]
+        readonly string id;
+
+        [SerializeField]
+        readonly Vector3[] nodeValues;
+
+        [SerializeField]
+        readonly float width;
+
+        readonly IReadOnlyList<Vector3> readOnlyNodes;
+
+        public string Id => id;
+
+        public IReadOnlyList<Vector3> Nodes => readOnlyNodes;
+
+        public float Width => width;
+
+        public WorldPublicApproach(
+            string id,
+            IReadOnlyList<Vector3> nodes,
+            float width)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+                throw new ArgumentException("Approach id is required.", nameof(id));
+            if (nodes == null || nodes.Count < 2)
+                throw new ArgumentException("An approach needs at least two nodes.", nameof(nodes));
+            if (width <= 0f || float.IsNaN(width) || float.IsInfinity(width))
+                throw new ArgumentOutOfRangeException(nameof(width));
+
+            this.id = id;
+            this.width = width;
+            nodeValues = new Vector3[nodes.Count];
+            for (int index = 0; index < nodes.Count; index++)
+                nodeValues[index] = nodes[index];
+            readOnlyNodes = Array.AsReadOnly(nodeValues);
+        }
+    }
+
     public static class WorldRouteCatalog
     {
         static readonly IReadOnlyList<WorldRouteCorridor> defaultRoutes = BuildRoutes();
+        static readonly IReadOnlyList<WorldPublicApproach> publicApproaches =
+            CreatePublicApproaches();
 
         public static IReadOnlyList<WorldRouteCorridor> BuildDefault()
         {
             return defaultRoutes;
+        }
+
+        public static IReadOnlyList<WorldPublicApproach> BuildPublicApproaches()
+        {
+            return publicApproaches;
+        }
+
+        public static bool IsPublicApproachPoint(Vector3 point)
+        {
+            for (int approachIndex = 0; approachIndex < publicApproaches.Count; approachIndex++)
+            {
+                WorldPublicApproach approach = publicApproaches[approachIndex];
+                for (int nodeIndex = 0; nodeIndex < approach.Nodes.Count; nodeIndex++)
+                    if ((approach.Nodes[nodeIndex] - point).sqrMagnitude < .0001f)
+                        return true;
+            }
+            return false;
+        }
+
+        public static bool IsReservedByPublicApproach(
+            Vector3 point,
+            float radius,
+            out string approachId)
+        {
+            approachId = null;
+            float safeRadius = Mathf.Max(0f, radius);
+            for (int approachIndex = 0; approachIndex < publicApproaches.Count; approachIndex++)
+            {
+                WorldPublicApproach approach = publicApproaches[approachIndex];
+                float clearance = safeRadius + approach.Width * .5f;
+                if (DistanceSquaredToRoute(point, approach.Nodes) > clearance * clearance)
+                    continue;
+                approachId = approach.Id;
+                return true;
+            }
+            return false;
         }
 
         public static bool TryGet(string id, out WorldRouteCorridor corridor)
@@ -367,6 +446,7 @@ namespace Tycoon
                         new Vector3(-150, 0, 190),
                         new Vector3(-108, 0, 176),
                         new Vector3(-70, 0, 165),
+                        new Vector3(-38.75f, 0, 155),
                         new Vector3(30, 0, 133)
                     },
                     4.5f,
@@ -428,6 +508,75 @@ namespace Tycoon
                     true)
             };
             return new System.Collections.ObjectModel.ReadOnlyCollection<WorldRouteCorridor>(routes);
+        }
+
+        static IReadOnlyList<WorldPublicApproach> CreatePublicApproaches()
+        {
+            var approaches = new List<WorldPublicApproach>
+            {
+                new WorldPublicApproach(
+                    "industrial-sidewalk-approach",
+                    new[]
+                    {
+                        new Vector3(185.1f, 0, 150.1f),
+                        new Vector3(190, 0, 164),
+                        new Vector3(220, 0, 187),
+                        new Vector3(250, 0, 208),
+                        new Vector3(285, 0, 232),
+                        new Vector3(323, 0, 255),
+                        new Vector3(330, 0, 250),
+                        new Vector3(360, 0, 285),
+                        new Vector3(399, 0, 310),
+                        new Vector3(435, 0, 330),
+                        new Vector3(465, 0, 330)
+                    },
+                    3f),
+                new WorldPublicApproach(
+                    "village-sidewalk-approach",
+                    new[]
+                    {
+                        new Vector3(12.4f, 0, 87.1f),
+                        new Vector3(12, 0, 120),
+                        new Vector3(0, 0, 155),
+                        new Vector3(-20, 0, 210),
+                        new Vector3(-55, 0, 320),
+                        new Vector3(0, 0, 330),
+                        new Vector3(55, 0, 345)
+                    },
+                    3f),
+                new WorldPublicApproach(
+                    "marina-sidewalk-approach",
+                    new[]
+                    {
+                        new Vector3(185.1f, 0, -107.1f),
+                        new Vector3(190, 0, -90),
+                        new Vector3(205, 0, -60),
+                        new Vector3(230, 0, -40),
+                        new Vector3(285, 0, -70),
+                        new Vector3(335, 0, -110),
+                        new Vector3(370, 0, -135),
+                        new Vector3(420, 0, -120),
+                        new Vector3(440, 0, -152),
+                        new Vector3(470, 0, -105)
+                    },
+                    3f),
+                new WorldPublicApproach(
+                    "south-service-sidewalk",
+                    new[]
+                    {
+                        new Vector3(185.1f, 0, -107.1f),
+                        new Vector3(190, 0, -140),
+                        new Vector3(205, 0, -180),
+                        new Vector3(218, 0, -205),
+                        new Vector3(205, 0, -255),
+                        new Vector3(190, 0, -300),
+                        new Vector3(0, 0, -300),
+                        new Vector3(-190, 0, -300)
+                    },
+                    3f)
+            };
+            return new System.Collections.ObjectModel.ReadOnlyCollection<WorldPublicApproach>(
+                approaches);
         }
     }
 }
