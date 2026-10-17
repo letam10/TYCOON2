@@ -26,6 +26,8 @@ namespace Tycoon
             CityVehicleParts.Windshield(g, 1.12f, 1.08f, 1.24f, roof - .3f, 4.23f, 3.94f);
             CityVehicleParts.Windshield(g, -1.1f, -1.07f, 1.7f, roof - .24f, -4.23f, -4.12f);
             CityVehicleParts.Front(g, 2.45f, 4.305f, .87f);
+            g.Box(CityVehicleSurface.Chrome, new(0, 1.52f, -4.31f), new(1.05f, .09f, .035f));
+            g.Box(CityVehicleSurface.Stripe, new(0, 1.54f, 4.305f), new(1.2f, .08f, .035f));
             g.Box(CityVehicleSurface.Dark, new(0, roof - .17f, 4.07f), new(1.92f, .21f, .06f));
             for (int letter = 0; letter < 8; letter++)
                 g.Box(CityVehicleSurface.Stripe, new(-.55f + letter * .16f, roof - .17f, 4.105f),
@@ -33,6 +35,9 @@ namespace Tycoon
             for (int side = -1; side <= 1; side += 2)
             {
                 Side(g, paint, side, roof, coach);
+                g.Beam(CityVehicleSurface.Stripe,
+                    new(side * 1.235f, coach ? 1.48f : 1.36f, -3.55f),
+                    new(side * 1.235f, coach ? 1.48f : 1.36f, 2.85f), .045f);
                 CityVehicleParts.Mirror(g, side * 1.32f, roof - .62f, 3.75f);
                 g.Box(CityVehicleSurface.Red, new(side * .92f, .93f, -4.315f), new(.18f, .36f, .035f));
                 for (int row = 0; row < (coach ? 5 : 4); row++)

@@ -840,3 +840,16 @@ stage runs; no row is acceptance evidence before its commands and artifacts exis
 - open issues: vehicle body closeups and a dedicated signal closeup are still needed for full art acceptance; no stable IDs, economy, save schema, route, or interaction collider changed.
 - next stage: build a short vehicle and signal presentation capture only after this commit, keeping the same focused test boundary.
 
+
+## Vehicle visual detail pass 2026-10-17 06:51:45 UTC
+- status: SOURCE, focused vehicle tests, Windows build and bounded Player smoke PASS. Closeup presentation evidence for individual vehicles remains open.
+- assumptions and pass criteria: preserve CityVehicleRig wheel and door animation, passenger footprints, NavMeshObstacle carving, boarding anchors, stable IDs, SaveV2 and D3D11 target. Add only mesh detail using existing material contracts without changing collider sizes or vehicle dimensions.
+- changed files: Assets/_Game/Scripts/Runtime/CityVehicleGeometryTrucks.cs and Assets/_Game/Scripts/Runtime/CityPublicTransportModel.cs.
+- visual changes: trucks now have a darker grille bar, chrome plate bar, door handles, side marker lights and clearer cab trim. Bus and coach now have rear service trim, destination bezel and a continuous side route stripe. Existing wheel spokes, doors, windows and cargo or coach interiors remain intact.
+- focused verification: VehicleModelV8Tests exit 0; CityPublicTransportTests exit 0. These checks cover bounds, independent wheel rotation, door animation, passenger footprint, door anchors, colliders and NavMesh carving.
+- build verification: powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\run_unity.ps1 -Task Build exit 0; QA/build-report.json result Succeeded, errors 0, warnings 34, bytes 117090287, builtUtc 2026-10-17T06:48:31.1079453Z. Required executable D:\GAME\TYCOON2\Builds\Windows\TYCOON2.exe SHA256 96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873.
+- Player verification: work/visual-vehicle-20261017T160000Z/world-features-report.json passed=true, interactions=30, screenshots=61 and runtimeErrors=0 at 2026-10-17T06:49:11.4333843Z. Harness output completed WORLD-FEATURES_QA PASS.
+- warnings and limits: no benchmark, GPU timing, OceanV13 timing, soak, overnight campaign, run_completion All or long campaign was run. The bounded world-features capture has no dedicated closeup for every vehicle kind, so final visual inspection of sedan, truck, bus, coach and train remains a later presentation gate.
+- open issues: imported low texture vehicle source assets and train or boat hero closeups still need a separate visual tranche; this pass only improves procedural road and public transport meshes.
+- next stage: create one short vehicle presentation capture or inspect existing vehicle angle QA, then continue materials or water only after preserving the current stable contracts.
+

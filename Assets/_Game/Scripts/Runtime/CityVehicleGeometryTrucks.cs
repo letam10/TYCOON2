@@ -22,6 +22,10 @@ namespace Tycoon
             Cab(g, paint, width, roof, front);
             g.Box(CityVehicleSurface.Chrome, new(0, .42f, front - .06f), new(width * .95f, .18f, .21f));
             CityVehicleParts.Front(g, width, front + .015f, 1.02f);
+            g.Box(CityVehicleSurface.Dark, new(0, 1.18f, front + .045f),
+                new(width * .72f, .12f, .035f));
+            g.Box(CityVehicleSurface.Chrome, new(0, .72f, front + .04f),
+                new(width * .38f, .08f, .035f));
             g.Box(CityVehicleSurface.Dark, new(0, roof - 1.11f, front - .54f), new(width * .87f, .22f, .34f));
             if (tank) Tank(g, width, bodyLength, bodyZ);
             else Cargo(g, width, bodyLength, bodyZ, small, openBed);
@@ -31,6 +35,10 @@ namespace Tycoon
                 g.Arch(paint, x, cab, radius, radius + .06f, .11f);
                 g.Box(CityVehicleSurface.Dark, new(x * .98f, radius * .58f, cab - .57f), new(.14f, .25f, .13f));
                 g.Box(CityVehicleSurface.Chrome, new(x * .9f, .63f, cab - .58f), new(.24f, .1f, .52f));
+                g.Box(CityVehicleSurface.Chrome, new(x * .99f, 1.22f, cab - .55f),
+                    new(.055f, .045f, .18f));
+                g.Box(CityVehicleSurface.Light, new(x * .99f, .92f, cab + .02f),
+                    new(.055f, .09f, .12f));
                 CityVehicleParts.Mirror(g, x + side * .13f, roof - .65f, front - .36f);
                 CityVehicleParts.Seat(g, new(side * width * .23f, .92f, cab - .28f), false, .57f);
                 g.Box(CityVehicleSurface.Red, new(x * .8f, .72f, -front - .015f), new(.28f, .17f, .04f));
