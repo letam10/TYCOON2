@@ -879,3 +879,15 @@ stage runs; no row is acceptance evidence before its commands and artifacts exis
 - Visual evidence: the bounded output contains clear water, beach, marina, expansion and map captures; no runtime error marker or blank or magenta frame was reported. A dedicated closeup of each car kind remains open.
 - Open issues: the broad low texture and legacy asset review is not complete; no benchmark, GPU timing, soak, overnight campaign or long campaign was run.
 - Next stage: inspect the fresh car angles or continue one separate legacy material tranche while preserving all unrelated dirty and untracked paths.
+
+## Vegetation crown silhouette follow up — 2026-10-17T10:50:00Z
+- Status: SOURCE, focused vegetation tests, Windows build and bounded Player smoke PASS.
+- Assumptions and pass criteria: preserve CityVegetation tree bounds, trunk/root colliders, shared Town Surface material, route clearance and stable vegetation profiles. Make crowns less symmetric without changing collision or placement bounds.
+- Source: Assets/_Game/Scripts/Runtime/CityStaticGeometryMeshes.cs. Crown mesh changed from a symmetric 9 by 5 ellipsoid to a 12 by 6 mesh with bounded radial wobble; every vertex remains within the original half unit bounds.
+- Focused commands: Tools/run_unity.ps1 -Task Tests -TestFilter Tycoon.Tests.CityVegetationTests exit 0; Tools/run_unity.ps1 -Task Tests -TestFilter Tycoon.Tests.Stage6VegetationEzTreeTests exit 0; Tools/run_unity.ps1 -Task Tests -TestFilter Tycoon.Tests.WorldAssetBudgetAuditTests exit 0. Fresh logs are under work/vegetation-focused-*20261017T1100.log; final XML for Stage6VegetationEzTreeTests is 4 total, 4 passed, 0 failed, 0 skipped.
+- Build command: Tools/run_unity.ps1 -Task Build exit 0; QA/build-report.json result Succeeded, errors 0, warnings 34, bytes 117097343, builtUtc 2026-10-17T10:46:43.0759925Z.
+- Player command: Tools/run_world_features.ps1 -BuildPath Builds/Windows/TYCOON2.exe -OutputPath work/visual-vegetation-20261017T1130Z exit 0; passed=true, interactions=30, screenshots=61, runtimeErrors=0, finishedUtc=2026-10-17T10:48:57.1418466Z.
+- Visual evidence: expansion-forest_reserve.png and expansion-center-forest_reserve.png show mixed deciduous and conifer silhouettes, dense understory and a visible dirt corridor; no blank or magenta frame was observed.
+- Build SHA256: 96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873 for Builds/Windows/TYCOON2.exe.
+- Open issues: tree geometry remains procedural and low texture by design; imported legacy vegetation and dedicated closeups remain open. No benchmark, GPU timing, soak, overnight campaign or long campaign was run.
+- Next stage: continue with a separate legacy material or closeup tranche while preserving unrelated dirty and untracked paths.

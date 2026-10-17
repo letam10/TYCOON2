@@ -56,16 +56,20 @@ namespace Tycoon
         {
             var vertices = new List<Vector3>();
             var triangles = new List<int>();
-            const int sides = 9;
-            const int rings = 5;
+            const int sides = 12;
+            const int rings = 6;
             for (int ring = 0; ring <= rings; ring++)
             {
                 float angle = ring * Mathf.PI / rings;
                 for (int i = 0; i <= sides; i++)
                 {
                     float a = i * Mathf.PI * 2 / sides;
-                    vertices.Add(new Vector3(Mathf.Sin(angle) * Mathf.Cos(a), Mathf.Cos(angle),
-                        Mathf.Sin(angle) * Mathf.Sin(a)) * .5f);
+                    // Silhouette bất đối xứng nhẹ, nhưng giữ bán kính tối đa .5 để bounds và placement ổn định.
+                    float wobble = .9f + .06f * Mathf.Sin(a * 3f + ring * 1.17f)
+                        + .04f * Mathf.Cos(a * 5f - ring * .83f);
+                    float radial = Mathf.Sin(angle) * Mathf.Min(1f, wobble);
+                    vertices.Add(new Vector3(radial * Mathf.Cos(a), Mathf.Cos(angle),
+                        radial * Mathf.Sin(a)) * .5f);
                 }
             }
             for (int ring = 0; ring < rings; ring++)

@@ -898,3 +898,11 @@ Chưa khởi chạy các lệnh Player này trong lượt chốt hiện tại.
 - Player smoke: Tools/run_world_features.ps1 -BuildPath Builds/Windows/TYCOON2.exe -OutputPath work/visual-vehicle-cars-20261017T0830Z exit 0; passed=true, interactions=32, screenshots=61, runtimeErrors=0, finishedUtc=2026-10-17T10:31:29.0135778Z.
 - Limits: no benchmark, GPU timing, soak, overnight campaign, run_completion All or long campaign. Dedicated sedan/taxi/luxury/sports closeups remain open, as does the broader legacy low-texture asset review.
 - Handoff timestamp: 2026-10-17T10:35:15Z.
+
+## Vegetation crown silhouette follow up — 2026-10-17T10:52:00Z
+- Source: Assets/_Game/Scripts/Runtime/CityStaticGeometryMeshes.cs. Crown now uses a 12 by 6 bounded irregular mesh instead of the symmetric 9 by 5 ellipsoid. The radial wobble never exceeds the previous half unit bounds. No tree collider, route profile, stable ID, material contract or SaveV2 state changed.
+- Focused verification: CityVegetationTests exit 0; Stage6VegetationEzTreeTests exit 0; WorldAssetBudgetAuditTests exit 0. Fresh logs: work/vegetation-focused-CityVegetationTests-20261017T1100.log, work/vegetation-focused-Stage6VegetationEzTreeTests-20261017T1100.log, work/vegetation-focused-WorldAssetBudgetAuditTests-20261017T1100.log. Final Stage6 XML reports 4 total, 4 passed, 0 failed, 0 skipped.
+- Build: Tools/run_unity.ps1 -Task Build exit 0; QA/build-report.json result Succeeded, errors 0, warnings 34, bytes 117097343, builtUtc 2026-10-17T10:46:43.0759925Z. Windows Player Builds/Windows/TYCOON2.exe SHA256 96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873.
+- Player smoke: Tools/run_world_features.ps1 -BuildPath Builds/Windows/TYCOON2.exe -OutputPath work/visual-vegetation-20261017T1130Z exit 0; passed=true, interactions=30, screenshots=61, runtimeErrors=0, finishedUtc=2026-10-17T10:48:57.1418466Z. Fresh forest evidence was inspected.
+- Limits: procedural foliage remains intentionally lightweight; legacy imported vegetation, dedicated closeups and photoreal texture replacement remain open. No benchmark, GPU timing, soak, overnight campaign, run_completion All or long campaign.
+- Handoff timestamp: 2026-10-17T10:52:00Z.
