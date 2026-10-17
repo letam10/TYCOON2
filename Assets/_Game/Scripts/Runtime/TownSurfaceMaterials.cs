@@ -57,7 +57,7 @@ namespace Tycoon
                 material.SetTexture("_SurfaceMap", TownSurfaceTexture.Get(surface));
                 material.SetFloat("_WorldScale", WorldScale(surface));
                 material.SetFloat("_BumpScale", surface is "metal" or "glass" ? 0 : .018f);
-                material.SetFloat("_IrregularDetail", surface is "wood" or "brick" or "roof" ? 0 : 1);
+                material.SetFloat("_IrregularDetail", surface is "metal" or "glass" ? 0 : 1);
                 material.SetFloat("_SurfaceKind", surface switch
                 {
                     "grass" => 1,

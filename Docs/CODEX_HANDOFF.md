@@ -922,3 +922,11 @@ Chưa khởi chạy các lệnh Player này trong lượt chốt hiện tại.
 - Player smoke: Tools/run_world_features.ps1 -BuildPath Builds/Windows/TYCOON2.exe -OutputPath work/visual-signal-pedestrian-20261017T1340Z exit 0; passed=true, interactions=29, screenshots=61, runtimeErrors=0, finishedUtc=2026-10-17T11:08:29.3812608Z.
 - Limits: no benchmark, GPU timing, soak, overnight campaign, run_completion All or long campaign. Dedicated traffic signal closeup and imported legacy traffic asset review remain open.
 - Handoff timestamp: 2026-10-17T11:11:00Z.
+
+## Building surface irregular detail follow up — 2026-10-17T11:19:00Z
+- Source: Assets/_Game/Scripts/Runtime/TownSurfaceMaterials.cs. Town Surface materials now use the existing rotated projection for nonmetal non glass surfaces while metal and glass remain clean. This improves plaster, wood, brick and roof breakup without changing surface IDs, meshes, colliders, routes, economy or SaveV2.
+- Focused verification: Tools/run_unity.ps1 -Task Tests -TestFilter Tycoon.Tests.VisualMaterialTests exit 0; QA/editmode-results.xml reports 23 total, 23 passed, 0 failed, 0 skipped. Fresh log: work/surface-material-focused-20261017T1400.log.
+- Build: Tools/run_unity.ps1 -Task Build exit 0; QA/build-report.json result Succeeded, errors 0, warnings 34, bytes 117098879, builtUtc 2026-10-17T11:14:37.5530893Z. Windows Player Builds/Windows/TYCOON2.exe SHA256 96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873.
+- Player smoke: Tools/run_world_features.ps1 -BuildPath Builds/Windows/TYCOON2.exe -OutputPath work/visual-surface-material-20261017T1440Z exit 0; passed=true, interactions=30, screenshots=61, runtimeErrors=0, finishedUtc=2026-10-17T11:16:22.0082343Z.
+- Limits: no benchmark, GPU timing, soak, overnight campaign, run_completion All or long campaign. Dedicated facade closeups and imported legacy low texture mesh review remain open.
+- Handoff timestamp: 2026-10-17T11:19:00Z.

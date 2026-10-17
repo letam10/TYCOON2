@@ -915,3 +915,15 @@ stage runs; no row is acceptance evidence before its commands and artifacts exis
 - Build SHA256: 96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873 for Builds/Windows/TYCOON2.exe.
 - Open issues: imported legacy traffic assets and dedicated signal closeup remain open. No benchmark, GPU timing, soak, overnight campaign or long campaign was run.
 - Next stage: preserve unrelated dirty and untracked files and continue a separate closeup or legacy material tranche.
+
+## Building surface irregular detail follow up — 2026-10-17T11:18:00Z
+- Status: SOURCE, focused material tests, Windows build and bounded Player smoke PASS.
+- Assumptions and pass criteria: preserve TownSurface shader contract, surface IDs, stable geometry, colliders, routes, economy and SaveV2. Enable existing rotated texture projection only for nonphysical facade and prop surfaces; keep metal and glass clean.
+- Source: Assets/_Game/Scripts/Runtime/TownSurfaceMaterials.cs. `_IrregularDetail` now remains 0 for metal/glass and is 1 for other Town Surface materials, including plaster, wood, brick and roof, so building and POI surfaces receive a second rotated texture projection that breaks tiling without changing mesh or material identity.
+- Focused command: Tools/run_unity.ps1 -Task Tests -TestFilter Tycoon.Tests.VisualMaterialTests; exit 0; QA/editmode-results.xml reports 23 total, 23 passed, 0 failed, 0 skipped. Fresh log: work/surface-material-focused-20261017T1400.log.
+- Build command: Tools/run_unity.ps1 -Task Build; exit 0; QA/build-report.json result Succeeded, errors 0, warnings 34, bytes 117098879, builtUtc 2026-10-17T11:14:37.5530893Z.
+- Player command: Tools/run_world_features.ps1 -BuildPath Builds/Windows/TYCOON2.exe -OutputPath work/visual-surface-material-20261017T1440Z; exit 0; passed=true, interactions=30, screenshots=61, runtimeErrors=0, finishedUtc=2026-10-17T11:16:22.0082343Z.
+- Visual evidence: fresh expansion, residential, industrial, beach and map captures generated without blank or magenta frame or runtime error marker. A dedicated building material closeup remains open.
+- Build SHA256: 96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873 for Builds/Windows/TYCOON2.exe.
+- Open issues: imported legacy low texture meshes and photoreal hero closeups remain open. No benchmark, GPU timing, soak, overnight campaign or long campaign was run.
+- Next stage: preserve unrelated dirty and untracked paths and continue a dedicated POI or hero asset closeup tranche.
