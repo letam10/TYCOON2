@@ -71,6 +71,27 @@ namespace Tycoon
                 AddRock(g, root, poi, rocks[index], 1.25f + index % 2 * .45f);
             AddBench(g, root, poi, new Vector3(-8, 0, 27), 0f);
             AddBench(g, root, poi, new Vector3(52, 0, -6), 90f);
+            for (int row = -5; row <= 5; row++)
+            {
+                for (int column = -7; column <= 7; column++)
+                {
+                    if ((row * 5 + column * 3) % 5 == 0)
+                        continue;
+                    Vector3 local = new Vector3(column * 12f + ((row & 1) * 3f), 0, row * 12f);
+                    AddTree(g, root, poi, local, 3.8f + ((row + column) & 1) * .65f,
+                        ((row - column) & 1) == 0);
+                }
+            }
+            for (int row = -4; row <= 4; row++)
+            {
+                for (int column = -6; column <= 6; column++)
+                {
+                    if ((row + column * 2) % 4 == 0)
+                        continue;
+                    Vector3 local = new Vector3(column * 9.5f + ((row & 1) * 2f), 0, row * 9.5f);
+                    AddForestShrub(g, root, poi, local, .9f + ((row + column) & 1) * .25f);
+                }
+            }
         }
 
         static void AddGrass(
@@ -85,6 +106,23 @@ namespace Tycoon
             string color = ((Mathf.RoundToInt(local.x) + Mathf.RoundToInt(local.z)) & 1) == 0
                 ? "#4E824A" : "#6B9954";
             g.Cone(local + Vector3.up * height * .5f, .55f, height, "grass", color);
+        }
+
+        static void AddForestShrub(
+            CityStaticGeometry g,
+            Transform root,
+            WorldExpansionPoi poi,
+            Vector3 local,
+            float height)
+        {
+            if (!CanPlace(root, local, poi.Footprint, 1.1f))
+                return;
+            string color = ((Mathf.RoundToInt(local.x) + Mathf.RoundToInt(local.z)) & 1) == 0
+                ? "#3F7448" : "#5A8A50";
+            g.Crown(local + Vector3.up * (height * .65f),
+                new Vector3(1.7f, height, 1.7f), color);
+            g.Cone(local + Vector3.up * (height * .45f), .7f, height * .9f,
+                "grass", color);
         }
         static void AddTree(
             CityStaticGeometry g,
@@ -299,6 +337,15 @@ namespace Tycoon
                 }
             }
             AddWell(g, root, poi, new Vector3(0, 0, 30));
+            AddTree(g, root, poi, new Vector3(-28, 0, -34), 4.2f, false);
+            AddTree(g, root, poi, new Vector3(28, 0, -34), 4.7f, false);
+            AddTree(g, root, poi, new Vector3(-28, 0, 37), 4.5f, true);
+            AddTree(g, root, poi, new Vector3(28, 0, 37), 4.1f, false);
+            AddLamp(g, root, poi, new Vector3(-18, 0, -40));
+            AddLamp(g, root, poi, new Vector3(18, 0, 40));
+            AddVillageFence(g, root, poi, new Vector3(-70, 0, 39), new Vector3(-38, 0, 39));
+            AddVillageFence(g, root, poi, new Vector3(38, 0, -39), new Vector3(70, 0, -39));
+            AddBench(g, root, poi, new Vector3(0, 0, -38), 0f);
         }
         static void AddCabin(
             CityStaticGeometry g,
@@ -378,6 +425,27 @@ namespace Tycoon
                 "roof", "#7B5C4D");
             g.Collider("VillageWell", local + Vector3.up * .45f, new Vector3(4.2f, .9f, 4.2f));
         }
+
+        static void AddVillageFence(
+            CityStaticGeometry g,
+            Transform root,
+            WorldExpansionPoi poi,
+            Vector3 start,
+            Vector3 end)
+        {
+            Vector3 midpoint = (start + end) * .5f;
+            if (!CanPlace(root, midpoint, poi.Footprint, 1.3f))
+                return;
+            g.Beam(start + Vector3.up * 1.15f, end + Vector3.up * 1.15f,
+                .12f, "wood", "#806449");
+            g.Beam(start + Vector3.up * .58f, end + Vector3.up * .58f,
+                .1f, "wood", "#9A7856");
+            for (int post = 0; post <= 2; post++)
+            {
+                Vector3 point = Vector3.Lerp(start, end, post / 2f);
+                g.Cylinder(point + Vector3.up * .6f, .12f, 1.2f, "wood", "#604633");
+            }
+        }
         static void Marina(CityStaticGeometry g, Transform root, WorldExpansionPoi poi)
         {
             g.Box(new Vector3(30, .02f, 0), new Vector3(84f, .04f, 70f),
@@ -406,6 +474,14 @@ namespace Tycoon
             AddPier(g, root, poi, 27f);
             AddMooring(g, root, poi, new Vector3(-58, 0, 27));
             AddMooring(g, root, poi, new Vector3(58, 0, 27));
+            AddMarinaKiosk(g, root, poi, new Vector3(-12, 0, -46));
+            AddDockCrane(g, root, poi, new Vector3(60, 0, 36));
+            AddDockLight(g, root, poi, new Vector3(-42, 0, -32));
+            AddDockLight(g, root, poi, new Vector3(42, 0, -32));
+            AddDockLight(g, root, poi, new Vector3(-42, 0, 27));
+            AddDockLight(g, root, poi, new Vector3(42, 0, 27));
+            AddBuoy(g, root, poi, new Vector3(30, 0, 20), "#D77B52");
+            AddBuoy(g, root, poi, new Vector3(50, 0, -18), "#E0C56E");
         }
         static void AddPier(
             CityStaticGeometry g,
@@ -456,6 +532,69 @@ namespace Tycoon
                 local + new Vector3(.38f, .88f, 0), .08f, "metal", "#4B5856");
             g.Cylinder(local + Vector3.up * 1.36f, .08f, .12f, "glass", "#C76E4D");
         }
+
+        static void AddMarinaKiosk(
+            CityStaticGeometry g,
+            Transform root,
+            WorldExpansionPoi poi,
+            Vector3 local)
+        {
+            if (!CanPlace(root, local, poi.Footprint, 4.5f))
+                return;
+            g.Box(local + Vector3.up * 1.65f, new Vector3(9f, 3.3f, 5.4f),
+                "wood", "#826349");
+            g.RotatedBox(local + Vector3.up * 3.45f, new Vector3(9.8f, .22f, 6f),
+                Quaternion.Euler(0, 0, 0), "roof", "#3E5F60");
+            g.Box(local + new Vector3(0, 1.8f, -2.76f), new Vector3(4.8f, 2.4f, .1f),
+                "glass", "#7EA4A3");
+            g.Box(local + new Vector3(0, 3.2f, -2.86f), new Vector3(6.6f, .65f, .12f),
+                "metal", "#D6C77E");
+            g.Collider("MarinaKiosk", local + Vector3.up * 1.65f, new Vector3(9f, 3.3f, 5.4f));
+        }
+
+        static void AddDockCrane(
+            CityStaticGeometry g,
+            Transform root,
+            WorldExpansionPoi poi,
+            Vector3 local)
+        {
+            if (!CanPlace(root, local, poi.Footprint, 3.2f))
+                return;
+            g.Cylinder(local + Vector3.up * 3.1f, .24f, 6.2f, "metal", "#526C6C");
+            g.Beam(local + Vector3.up * 6.1f,
+                local + Vector3.up * 6.1f + Vector3.left * 5.2f,
+                .18f, "metal", "#526C6C");
+            g.Cylinder(local + Vector3.left * 4.8f + Vector3.up * 4.2f,
+                .12f, 3.8f, "rope", "#7E6B55");
+            g.Box(local + Vector3.left * 4.8f + Vector3.up * 2.1f,
+                new Vector3(1.5f, .18f, 1.5f), "metal", "#C17D54");
+        }
+
+        static void AddDockLight(
+            CityStaticGeometry g,
+            Transform root,
+            WorldExpansionPoi poi,
+            Vector3 local)
+        {
+            if (!CanPlace(root, local, poi.Footprint, .8f))
+                return;
+            g.Cylinder(local + Vector3.up * 1.35f, .09f, 2.7f, "metal", "#526C6C");
+            g.Box(local + Vector3.up * 2.75f, new Vector3(.48f, .22f, .48f),
+                "glass", "#E0C56E");
+        }
+
+        static void AddBuoy(
+            CityStaticGeometry g,
+            Transform root,
+            WorldExpansionPoi poi,
+            Vector3 local,
+            string tint)
+        {
+            if (!CanPlace(root, local, poi.Footprint, .8f))
+                return;
+            g.Cylinder(local + Vector3.up * .55f, .42f, 1.1f, "metal", tint);
+            g.Cone(local + Vector3.up * 1.25f, .52f, .5f, "metal", tint);
+        }
         static void Highway(CityStaticGeometry g, Transform root, WorldExpansionPoi poi)
         {
             g.Box(Vector3.up * .04f, new Vector3(420f, .08f, 13f),
@@ -472,6 +611,9 @@ namespace Tycoon
                 AddGuardrail(g, root, poi, new Vector3(x, 0, -8f));
                 AddGuardrail(g, root, poi, new Vector3(x, 0, 8f));
             }
+            AddHighwayServiceArea(g, root, poi, new Vector3(0, 0, 18));
+            AddHighwayServiceArea(g, root, poi, new Vector3(-92, 0, 20));
+            AddHighwayServiceArea(g, root, poi, new Vector3(92, 0, -20));
         }
         static void AddLamp(
             CityStaticGeometry g,
@@ -500,6 +642,35 @@ namespace Tycoon
             g.Beam(local + Vector3.up * 1.05f + Vector3.left * 12f,
                 local + Vector3.up * 1.05f + Vector3.right * 12f,
                 .14f, "metal", "#65716F");
+        }
+
+        static void AddHighwayServiceArea(
+            CityStaticGeometry g,
+            Transform root,
+            WorldExpansionPoi poi,
+            Vector3 local)
+        {
+            if (!CanPlace(root, local, poi.Footprint, 4.5f))
+                return;
+            g.Box(local + Vector3.up * .08f, new Vector3(42f, .16f, 18f),
+                "paving", "#777C78");
+            g.Box(local + Vector3.up * 3.5f, new Vector3(17f, .22f, 8f),
+                "metal", "#556B6C");
+            for (int side = -1; side <= 1; side += 2)
+            {
+                g.Cylinder(local + new Vector3(side * 7.3f, 1.75f, -3.1f),
+                    .16f, 3.5f, "metal", "#526C6C");
+                g.Cylinder(local + new Vector3(side * 7.3f, 1.75f, 3.1f),
+                    .16f, 3.5f, "metal", "#526C6C");
+            }
+            g.Box(local + new Vector3(0, 1.2f, -4.25f), new Vector3(7.5f, 2.4f, .16f),
+                "glass", "#7EA4A3");
+            g.Box(local + new Vector3(0, 4.35f, 0), new Vector3(7.8f, .65f, .16f),
+                "metal", "#E0C56E");
+            g.Box(local + new Vector3(-12, .55f, 0), new Vector3(2.2f, 1.1f, 1.8f),
+                "metal", "#BD704A");
+            g.Collider("HighwayServiceArea", local + Vector3.up * 1.75f,
+                new Vector3(17f, 3.5f, 8f));
         }
     }
 }
