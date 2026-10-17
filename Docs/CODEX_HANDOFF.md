@@ -864,3 +864,21 @@ Chưa khởi chạy các lệnh Player này trong lượt chốt hiện tại.
 - Player: work/visual-signal-20261017T150000Z/world-features-report.json passed true with 31 interactions, 61 screenshots and 0 runtime errors. Map 1920 capture was inspected and labels remained readable. Dedicated signal closeup remains open.
 - limits: no benchmark, GPU timing, soak, overnight campaign or run_completion All. Unrelated dirty and untracked files remain preserved and unstaged.
 
+
+## Vehicle visual detail followup 2026-10-17 06:52:52 UTC
+- source commit: 9cc8efdddc8d8306f2aae66ec594749467ff38f9 Refine procedural vehicle visual details.
+- files: Assets/_Game/Scripts/Runtime/CityVehicleGeometryTrucks.cs, Assets/_Game/Scripts/Runtime/CityPublicTransportModel.cs and matching plan evidence.
+- tests: VehicleModelV8Tests exit 0 and CityPublicTransportTests exit 0. Bounds, wheel rotation, door anchors, passenger footprint, colliders and NavMesh carving remain valid.
+- build: Windows Player build exit 0, result Succeeded, errors 0, warnings 34, bytes 117090287, executable D:\GAME\TYCOON2\Builds\Windows\TYCOON2.exe, SHA256 96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873.
+- Player: work/visual-vehicle-20261017T160000Z/world-features-report.json passed true with 30 interactions, 61 screenshots and 0 runtime errors. The bounded harness completed WORLD-FEATURES_QA PASS.
+- limits: no benchmark, GPU timing, soak, overnight campaign or run_completion All. Dedicated closeup for every vehicle kind remains open. Unrelated dirty and untracked files remain preserved and unstaged.
+
+
+## Vehicle visual detail followup 2026-10-17 06:54:35 UTC
+- source commit: 9cc8efdddc8d8306f2aae66ec594749467ff38f9 Refine procedural vehicle visual details.
+- files: Assets/_Game/Scripts/Runtime/CityVehicleGeometryTrucks.cs, Assets/_Game/Scripts/Runtime/CityPublicTransportModel.cs and matching plan evidence.
+- tests: VehicleModelV8Tests exit 0 and CityPublicTransportTests exit 0. Bounds, wheel rotation, door anchors, passenger footprint, colliders and NavMesh carving remain valid.
+- build: Windows Player build exit 0, result Succeeded, errors 0, warnings 34, bytes 117090287, executable D:\GAME\TYCOON2\Builds\Windows\TYCOON2.exe, SHA256 96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873.
+- Player: work/visual-vehicle-20261017T160000Z/world-features-report.json passed true with 30 interactions, 61 screenshots and 0 runtime errors. The bounded harness completed WORLD-FEATURES_QA PASS.
+- limits: no benchmark, GPU timing, soak, overnight campaign or run_completion All. Dedicated closeup for every vehicle kind remains open. Unrelated dirty and untracked files remain preserved and unstaged.
+
