@@ -95,19 +95,87 @@ namespace Tycoon
             Transform originalTarget = game.CameraRig.Target;
             float originalYaw = game.CameraRig.Yaw;
             float originalDistance = game.CameraRig.Distance;
+            Vector3 originalPlayerPosition = game.Player.transform.position;
+            CharacterController playerController = game.Player.Controller;
+            bool controllerEnabled = playerController && playerController.enabled;
             var focus = new GameObject("QaExpansionFocus");
-            focus.transform.position = poi.Center + Vector3.up * .5f;
-            game.CameraRig.Target = focus.transform;
-            game.CameraRig.Yaw = 45;
-            game.CameraRig.Distance = 125;
-            game.CameraRig.Snap();
-            yield return new WaitForSecondsRealtime(.25f);
-            yield return Capture("expansion-center-" + id + ".png");
-            game.CameraRig.Target = originalTarget;
-            game.CameraRig.Yaw = originalYaw;
-            game.CameraRig.Distance = originalDistance;
-            game.CameraRig.Snap();
-            Destroy(focus);
+            try
+            {
+                // Đưa player ra khỏi chiều cao footprint để Director không ẩn shell trong ảnh POI.
+                if (playerController) playerController.enabled = false;
+                game.Player.transform.position = originalPlayerPosition + Vector3.up * 9.5f;
+                foreach (WorldCutawayVolume volume in game.GetComponentsInChildren<WorldCutawayVolume>(true))
+                    if (volume && volume.name is "ExpansionCutaway" or "VillageCutaway")
+                        volume.SetPlayerInside(false);
+                focus.transform.position = poi.Center + Vector3.up * .5f;
+                game.CameraRig.Target = focus.transform;
+                game.CameraRig.Yaw = 45;
+                game.CameraRig.Distance = 125;
+                game.CameraRig.Snap();
+                yield return null;
+                yield return new WaitForEndOfFrame();
+                Vector3 cameraPosition = Camera.main ? Camera.main.transform.position : Vector3.zero;
+                Vector3 targetPosition = game.CameraRig.Target
+                    ? game.CameraRig.Target.position
+                    : Vector3.zero;
+                string diagnostic = string.Join("\n", new[]
+                {
+                    "expectedId=" + id,
+                    "poiId=" + poi.Id,
+                    "poiCenter=" + poi.Center,
+                    "focus=" + focus.transform.position,
+                    "target=" + (game.CameraRig.Target ? game.CameraRig.Target.name : "null"),
+                    "targetPosition=" + targetPosition,
+                    "cameraPosition=" + cameraPosition,
+                    "yaw=" + game.CameraRig.Yaw,
+                    "distance=" + game.CameraRig.Distance,
+                    "playerPosition=" + game.Player.transform.position
+                });
+                Transform poiRoot = FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                    .FirstOrDefault(candidate => candidate && candidate.name == "Expansion_" + poi.Id);
+                if (poiRoot)
+                {
+                    Renderer[] renderers = poiRoot.GetComponentsInChildren<Renderer>(true);
+                    Collider[] colliders = poiRoot.GetComponentsInChildren<Collider>(true);
+                    Bounds bounds = renderers.Length > 0 ? renderers[0].bounds : new Bounds(poiRoot.position, Vector3.zero);
+                    for (int index = 1; index < renderers.Length; index++)
+                        bounds.Encapsulate(renderers[index].bounds);
+                    string[] materials = renderers
+                        .SelectMany(renderer => renderer.sharedMaterials ?? System.Array.Empty<Material>())
+                        .Where(material => material)
+                        .Select(material => material.name)
+                        .Distinct()
+                        .OrderBy(name => name)
+                        .ToArray();
+                    diagnostic += "\nroot=" + poiRoot.name
+                        + "\nrootPosition=" + poiRoot.position
+                        + "\nrendererCount=" + renderers.Length
+                        + "\ncolliderCount=" + colliders.Length
+                        + "\nrenderBounds=" + bounds
+                        + "\nmaterials=" + string.Join(",", materials);
+                    Transform models = poiRoot.Find("ExpansionModels");
+                    diagnostic += "\nmodelRoot=" + (models ? models.name : "null")
+                        + "\nmodelChildCount=" + (models ? models.childCount.ToString() : "0");
+                }
+                else
+                {
+                    diagnostic += "\nroot=null";
+                }
+                System.IO.File.WriteAllText(
+                    System.IO.Path.Combine(game.QaDirectory, "expansion-center-" + id + ".camera.txt"),
+                    diagnostic);
+                yield return Capture("expansion-center-" + id + ".png");
+            }
+            finally
+            {
+                game.Player.transform.position = originalPlayerPosition;
+                if (playerController) playerController.enabled = controllerEnabled;
+                game.CameraRig.Target = originalTarget;
+                game.CameraRig.Yaw = originalYaw;
+                game.CameraRig.Distance = originalDistance;
+                game.CameraRig.Snap();
+                Destroy(focus);
+            }
         }
 
         void CheckExpansionNavigation()

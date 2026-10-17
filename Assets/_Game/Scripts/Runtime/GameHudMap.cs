@@ -47,6 +47,13 @@ namespace Tycoon
                 var point = CityMapLocations.Points[i];
                 var button = Button(board.transform, point.label, () => MapTravel(index));
                 button.name = "MapTravel_" + point.id;
+                var buttonLabel = button.GetComponentInChildren<Text>();
+                if (buttonLabel)
+                {
+                    // Hàng map thấp; 18 px giữ đủ chiều cao sau Inset(10) ở 720p.
+                    buttonLabel.fontSize = 18;
+                    buttonLabel.verticalOverflow = VerticalWrapMode.Overflow;
+                }
                 float rowHeight = Mathf.Min(.06f,
                     .88f / Mathf.Max(1, CityMapLocations.Points.Length));
                 float top = .96f - i * rowHeight;

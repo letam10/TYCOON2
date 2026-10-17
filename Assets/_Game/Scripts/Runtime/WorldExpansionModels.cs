@@ -153,6 +153,8 @@ namespace Tycoon
             AddPipeRun(g, root, poi, new Vector3(70, 0, 49), new Vector3(30, 0, 49));
             AddPipeRun(g, root, poi, new Vector3(70, 0, 23), new Vector3(70, 0, -8));
             AddStackBoundary(g, root, poi, new Vector3(24, 0, 53));
+            AddWarehouse(g, root, poi, new Vector3(-62, 0, 56), false);
+            AddWarehouse(g, root, poi, new Vector3(6, 0, 56), true);
         }
 
         // Ống chỉ tạo khi cả hai đầu và điểm giữa còn cách route đủ xa.
@@ -237,6 +239,54 @@ namespace Tycoon
             g.Cylinder(start + Vector3.up * 1.1f, .16f, 2.2f, "metal", "#566967");
             g.Cylinder(end + Vector3.up * 1.1f, .16f, 2.2f, "metal", "#566967");
         }
+
+        static void AddWarehouse(
+            CityStaticGeometry g,
+            Transform root,
+            WorldExpansionPoi poi,
+            Vector3 local,
+            bool cool)
+        {
+            const float width = 28f;
+            const float depth = 17f;
+            const float wallHeight = 6.6f;
+            if (!CanPlace(root, local, poi.Footprint, 12f))
+                return;
+
+            string wall = cool ? "#63777A" : "#8B7562";
+            string roof = cool ? "#3F5559" : "#5C4E49";
+            g.Box(local + Vector3.up * (wallHeight * .5f),
+                new Vector3(width, wallHeight, depth), "metal", wall);
+            g.RotatedBox(local + Vector3.up * 6.85f,
+                new Vector3(width + 1.4f, .24f, depth + 1.2f),
+                Quaternion.Euler(0, 0, 0), "roof", roof);
+            g.Box(local + new Vector3(0, 3.1f, -8.58f),
+                new Vector3(10.5f, 5.5f, .14f), "metal", "#334A4E");
+            for (int rib = -2; rib <= 2; rib++)
+                g.Box(local + new Vector3(rib * 2.1f, 3.1f, -8.72f),
+                    new Vector3(.14f, 5.15f, .08f), "metal", "#A8B4AE");
+            for (int level = 0; level < 3; level++)
+                g.Box(local + new Vector3(0, 1.35f + level * 1.35f, -8.78f),
+                    new Vector3(10.2f, .08f, .08f), "metal", "#A8B4AE");
+            for (int side = -1; side <= 1; side += 2)
+            {
+                g.Box(local + new Vector3(side * 9.2f, 3.1f, -8.7f),
+                    new Vector3(3.2f, 5.2f, .16f), "glass", "#6E8E92");
+                g.Box(local + new Vector3(side * 9.2f, 3.1f, -8.84f),
+                    new Vector3(2.82f, 4.82f, .07f), "glass", "#8BAEB0");
+            }
+            for (int side = -1; side <= 1; side += 2)
+            {
+                Vector3 vent = local + new Vector3(side * 9.4f, 7.5f, 2.2f);
+                g.Box(vent, new Vector3(3.2f, .16f, 2.2f), "metal", "#B6B9AD");
+                for (int vane = -1; vane <= 1; vane++)
+                    g.RotatedBox(vent + Vector3.up * (vane * .42f),
+                        new Vector3(2.5f, .08f, .12f),
+                        Quaternion.Euler(0, 0, vane * 8f), "metal", "#566967");
+            }
+            g.Collider("IndustrialWarehouse", local + Vector3.up * (wallHeight * .5f),
+                new Vector3(width, wallHeight, depth));
+        }
         static void Village(CityStaticGeometry g, Transform root, WorldExpansionPoi poi)
         {
             for (int row = 0; row < 2; row++)
@@ -281,6 +331,27 @@ namespace Tycoon
                 Quaternion.Euler(0, 0, -28f), "roof", roof);
             g.RotatedBox(ridge + Vector3.right * 4.5f, new Vector3(9.4f, .22f, depth + 1f),
                 Quaternion.Euler(0, 0, 28f), "roof", roof);
+            g.Box(local + new Vector3(-5.8f, 2.35f, -7.08f),
+                new Vector3(3.2f, 2.4f, .14f), "wood", "#E1DFCC");
+            g.Box(local + new Vector3(-5.8f, 2.35f, -7.18f),
+                new Vector3(2.7f, 2.05f, .06f), "glass", "#6D9295");
+            g.Box(local + new Vector3(-5.8f, 2.35f, -7.25f),
+                new Vector3(.1f, 2.05f, .08f), "wood", "#E1DFCC");
+            g.Box(local + new Vector3(-5.8f, 2.35f, -7.25f),
+                new Vector3(2.7f, .1f, .08f), "wood", "#E1DFCC");
+            g.Box(local + new Vector3(5.8f, 1.65f, -7.08f),
+                new Vector3(2.15f, 3.3f, .14f), "wood", "#806449");
+            g.Box(local + new Vector3(5.8f, 1.45f, -7.2f),
+                new Vector3(1.62f, 2.85f, .06f), "glass", "#6D9295");
+            g.Box(local + new Vector3(0, .55f, -7.65f),
+                new Vector3(5.2f, .22f, 1.25f), "stone", "#AAA89A");
+            for (int side = -1; side <= 1; side += 2)
+                g.Box(local + new Vector3(side * 2.1f, 1.5f, -8.16f),
+                    new Vector3(.12f, 2.4f, .12f), "wood", "#E1DFCC");
+            g.Cylinder(local + new Vector3(5.3f, 7.75f, 2.6f), .44f, 1.55f,
+                "brick", warm ? "#8B6656" : "#5E6E68");
+            g.Cone(local + new Vector3(5.3f, 8.62f, 2.6f), .55f, .26f,
+                "roof", warm ? "#5D514C" : "#455A57");
             Vector3 table = local + new Vector3(-4.2f, 0, .4f);
             if (CanPlace(root, table, poi.Footprint, 1.1f))
             {
