@@ -846,3 +846,12 @@ Chưa khởi chạy các lệnh Player này trong lượt chốt hiện tại.
 - warnings and limits: five existing build warnings remain. Fresh images show improved industrial detail and forest density, while north village, east marina and south highway remain visually sparse or broad in the bounded capture. No benchmark, GPU timing, OceanV13 timing, soak, overnight campaign, run_completion All or long campaign was run. The world-features harness did not emit a Player.log file in its output folder; process output contained WORLD-FEATURES_QA PASS and no runtime error marker.
 - preserved paths: AGENTS.md, model metadata, ASSET/Downloaded, QA historical evidence, saves, work outputs and QA/build-report.json were left dirty or untracked and were not staged because ownership or release scope was not proven.
 - next stage: focus only on the remaining expansion POI presentation warning, keeping stable IDs, routes, colliders, economy and SaveV2 unchanged.
+
+## Expansion visual density followup 2026-10-17 06:19:10 UTC
+- source commit: 81ae0749d4aba84ab4fd0060f0e21a2d2d182a3a Increase expansion POI visual density.
+- files: Assets/_Game/Scripts/Runtime/WorldExpansionModels.cs and the matching plan evidence in Docs/PLAN_WORLD_REDESIGN_20261015.md.
+- tests: WorldExpansionModelsTests exit 0 with 7 total and 7 passed.
+- build: Windows Player build exit 0, result Succeeded, errors 0, warnings 34, bytes 117088751, executable D:\GAME\TYCOON2\Builds\Windows\TYCOON2.exe, SHA256 96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873.
+- Player: work/visual-expansion-service-20261017T140000Z/world-features-report.json passed true with 31 interactions, 61 screenshots and 0 runtime errors. SouthHighway rendererCount 129, colliderCount 4 and modelChildCount 120. The fresh highway image shows both service canopies outside the lane.
+- limits: no benchmark, GPU timing, soak, overnight campaign or run_completion All. Unrelated dirty and untracked files remain preserved and unstaged.
+
