@@ -47,6 +47,8 @@ namespace Tycoon
             g.RotatedBox(p + Vector3.down * 1.25f + r * Vector3.forward * .09f,
                 new(2.48f, .12f, .43f), r, "stone", Trim);
             g.RotatedBox(p + Vector3.up * 1.25f, new(2.48f, .12f, .24f), r, "stone", Trim);
+            g.RotatedBox(p + Vector3.up * 1.3f + r * Vector3.forward * .04f,
+                new(2.16f, .07f, .08f), r, "metal", Metal);
         }
 
         public static void ServiceDoor(CityStaticGeometry g, float depth)

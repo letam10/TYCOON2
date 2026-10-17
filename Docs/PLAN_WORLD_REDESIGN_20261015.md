@@ -927,3 +927,15 @@ stage runs; no row is acceptance evidence before its commands and artifacts exis
 - Build SHA256: 96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873 for Builds/Windows/TYCOON2.exe.
 - Open issues: imported legacy low texture meshes and photoreal hero closeups remain open. No benchmark, GPU timing, soak, overnight campaign or long campaign was run.
 - Next stage: preserve unrelated dirty and untracked paths and continue a dedicated POI or hero asset closeup tranche.
+
+## Civic window depth follow up — 2026-10-17T11:27:00Z
+- Status: SOURCE, focused civic/bounds/material tests, Windows build and bounded Player smoke PASS.
+- Assumptions and pass criteria: preserve civic POI footprints, BuildingShell and approach colliders, stable landmark IDs, routes, interaction areas, economy and SaveV2. Add a thin window drip edge inside the existing frame without changing bounds or collision.
+- Source: Assets/_Game/Scripts/Runtime/CityCivicDetails.cs. Civic windows now receive a thin metal drip edge above the existing trim, adding a small shadow/highlight break to police, fire, bar and arcade/community shells.
+- Focused commands: Tools/run_unity.ps1 -Task Tests -TestFilter Tycoon.Tests.CityOuterDistrictTests exit 0; final XML for that filter reports 3 total, 3 passed, 0 failed, 0 skipped. Tools/run_unity.ps1 -Task Tests -TestFilter Tycoon.Tests.VisualMaterialTests exit 0; final XML reports 23 total, 23 passed, 0 failed, 0 skipped. Fresh logs: work/civic-window-focused-CityOuterDistrictTests-20261017T1500.log and work/civic-window-focused-VisualMaterialTests-20261017T1500.log.
+- Build command: Tools/run_unity.ps1 -Task Build; exit 0; QA/build-report.json result Succeeded, errors 0, warnings 34, bytes 117098879, builtUtc 2026-10-17T11:24:51.4185282Z.
+- Player command: Tools/run_world_features.ps1 -BuildPath Builds/Windows/TYCOON2.exe -OutputPath work/visual-civic-window-20261017T1540Z; exit 0; passed=true, interactions=30, screenshots=61, runtimeErrors=0, finishedUtc=2026-10-17T11:25:54.5839911Z.
+- Visual evidence: fresh civic, expansion, beach and map captures generated without blank or magenta frame or runtime error marker. Dedicated civic facade crop remains open.
+- Build SHA256: 96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873 for Builds/Windows/TYCOON2.exe.
+- Open issues: imported legacy POI meshes and hero facade closeups remain open. No benchmark, GPU timing, soak, overnight campaign or long campaign was run.
+- Next stage: preserve unrelated dirty and untracked paths and continue a separate POI or hero asset closeup tranche.

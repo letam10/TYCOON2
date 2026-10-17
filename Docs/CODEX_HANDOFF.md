@@ -930,3 +930,11 @@ Chưa khởi chạy các lệnh Player này trong lượt chốt hiện tại.
 - Player smoke: Tools/run_world_features.ps1 -BuildPath Builds/Windows/TYCOON2.exe -OutputPath work/visual-surface-material-20261017T1440Z exit 0; passed=true, interactions=30, screenshots=61, runtimeErrors=0, finishedUtc=2026-10-17T11:16:22.0082343Z.
 - Limits: no benchmark, GPU timing, soak, overnight campaign, run_completion All or long campaign. Dedicated facade closeups and imported legacy low texture mesh review remain open.
 - Handoff timestamp: 2026-10-17T11:19:00Z.
+
+## Civic window depth follow up — 2026-10-17T11:28:00Z
+- Source: Assets/_Game/Scripts/Runtime/CityCivicDetails.cs. Civic windows now have a thin metal drip edge above the existing stone trim, adding depth and a small highlight break without changing window footprint, BuildingShell colliders, approach anchors, stable IDs or SaveV2.
+- Focused verification: CityOuterDistrictTests exit 0 with 3 total, 3 passed, 0 failed, 0 skipped; VisualMaterialTests exit 0 with 23 total, 23 passed, 0 failed, 0 skipped. Fresh logs: work/civic-window-focused-CityOuterDistrictTests-20261017T1500.log and work/civic-window-focused-VisualMaterialTests-20261017T1500.log.
+- Build: Tools/run_unity.ps1 -Task Build exit 0; QA/build-report.json result Succeeded, errors 0, warnings 34, bytes 117098879, builtUtc 2026-10-17T11:24:51.4185282Z. Windows Player Builds/Windows/TYCOON2.exe SHA256 96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873.
+- Player smoke: Tools/run_world_features.ps1 -BuildPath Builds/Windows/TYCOON2.exe -OutputPath work/visual-civic-window-20261017T1540Z exit 0; passed=true, interactions=30, screenshots=61, runtimeErrors=0, finishedUtc=2026-10-17T11:25:54.5839911Z.
+- Limits: no benchmark, GPU timing, soak, overnight campaign, run_completion All or long campaign. Dedicated civic facade crops and imported legacy POI mesh review remain open.
+- Handoff timestamp: 2026-10-17T11:28:00Z.
