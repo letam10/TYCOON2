@@ -102,9 +102,13 @@ Shader "TYCOON/Town Water"
             half attenuation = rcp(1 + dot(fwidth(phase), float2(2, 2)));
             float2 ripple = RipplePhases(position);
             half detail = RippleWeight(position, ripple);
-            float2 slope = float2(cos(phase.x) * .065, cos(phase.y) * .045) * attenuation;
+            float2 slope = float2(cos(phase.x) * .045, cos(phase.y) * .031) * attenuation;
             slope += (float2(2.37, 1.13) * cos(ripple.x) * .003
                 + float2(-1.14, 3.07) * cos(ripple.y) * .002) * detail;
+            float2 breakup = float2(
+                WaterNoise(position.xz * .23 + _Time.y * .018 + 19.2),
+                WaterNoise(position.xz * .19 - _Time.y * .015 + 43.7)) - .5;
+            slope += breakup * .012 * attenuation;
             return normalize(float3(slope.x, 1, slope.y));
         }
         half3 ClearWaterBase(float3 position)
@@ -122,9 +126,10 @@ Shader "TYCOON/Town Water"
             p += float2(WaterNoise(p * .11), WaterNoise(p * .11 + 17.3)) * 2.5;
             float a = sin(dot(p, float2(1.7, .8)) + _Time.y * .6);
             float b = sin(dot(p, float2(-.7, 1.8)) - _Time.y * .47);
-            half caustic = pow(saturate(1 - abs(a + b) * .5), 12);
+            float causticWarp = (WaterNoise(p * .16 + _Time.y * .012 + 7.9) - .5) * .42;
+            half caustic = pow(saturate(1 - abs(a + b + causticWarp) * .5), 18);
             half3 sand = half3(.64, .60, .43) * (.94 + WaterNoise(p * .3) * .06);
-            sand += caustic * .10;
+            sand += caustic * .045;
             return sand * transmission + waterTint * (1 - transmission);
         }
         half4 Frag(Varyings input) : SV_Target

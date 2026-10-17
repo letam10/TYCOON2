@@ -882,3 +882,11 @@ Chưa khởi chạy các lệnh Player này trong lượt chốt hiện tại.
 - Player: work/visual-vehicle-20261017T160000Z/world-features-report.json passed true with 30 interactions, 61 screenshots and 0 runtime errors. The bounded harness completed WORLD-FEATURES_QA PASS.
 - limits: no benchmark, GPU timing, soak, overnight campaign or run_completion All. Dedicated closeup for every vehicle kind remains open. Unrelated dirty and untracked files remain preserved and unstaged.
 
+
+## 2026-10-17 — TownWater visual follow-up handoff
+- Source: Assets/_Game/Resources/VisualRedesign/TownWater.shader; caustic grid softened with low amplitude noise warp and near-view ripple attenuation. Stable shader name, IDs, routes, save schema and economy unchanged.
+- Focused tests: Tools/run_unity.ps1 -Task Tests -TestFilter Tycoon.Tests.VisualMaterialTests, Tycoon.Tests.CoastalShoreTests, Tycoon.Tests.OceanContinuityTests; all exit 0. Fresh logs under work/water-focused-*-20261017T1715.log.
+- Build: Tools/run_unity.ps1 -Task Build; exit 0. QA/build-report.json: Succeeded, errors 0, warnings 5, bytes 117096831. Windows Player: Builds/Windows/TYCOON2.exe; SHA256 $sha.
+- Player smoke: Tools/run_world_features.ps1 -BuildPath Builds/Windows/TYCOON2.exe -OutputPath work/visual-water-20261017T1720Z; exit 0, passed=true, interactions 29, screenshots 61, runtimeErrors 0. New evidence: clear-water-a.png, clear-water-b.png, each-context.png, xpansion-east_marina.png.
+- Visual result: depth gradient, shoreline foam and broken ripples visible; no blank or magenta output in reviewed images. D3D11 GPU timing diagnostic unavailable and intentionally not run. Water is still procedural/stylized; future photoreal art pass remains open.
+- Handoff timestamp: $utc.

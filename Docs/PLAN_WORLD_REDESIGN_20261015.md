@@ -853,3 +853,17 @@ stage runs; no row is acceptance evidence before its commands and artifacts exis
 - open issues: imported low texture vehicle source assets and train or boat hero closeups still need a separate visual tranche; this pass only improves procedural road and public transport meshes.
 - next stage: create one short vehicle presentation capture or inspect existing vehicle angle QA, then continue materials or water only after preserving the current stable contracts.
 
+
+## Stage 5R water visual follow-up — 2026-10-17T07:20:16Z
+- Status: PASS for focused shader/material and short Player visual acceptance; GPU timing remains diagnostic unavailable on D3D11 and was not run.
+- Assumptions/pass criteria: preserve TYCOON/Town Water, shoreline/depth/foam contracts and stable world data; soften repeating caustic grid without changing gameplay or IDs. Pass requires focused tests exit 0, build errors 0, smoke passed=true, no runtime errors, and fresh water/beach/marina images with visible depth and no blank/magenta output.
+- Files: Assets/_Game/Resources/VisualRedesign/TownWater.shader only source change. Reduced near ripple slope, added low amplitude breakup, and warped/attenuated caustic in ClearWaterBase.
+- Focused command: Tools/run_unity.ps1 -Task Tests -TestFilter Tycoon.Tests.VisualMaterialTests; exit 0; log work/water-focused-VisualMaterialTests-20261017T1715.log.
+- Focused command: Tools/run_unity.ps1 -Task Tests -TestFilter Tycoon.Tests.CoastalShoreTests; exit 0; log work/water-focused-CoastalShoreTests-20261017T1715.log.
+- Focused command: Tools/run_unity.ps1 -Task Tests -TestFilter Tycoon.Tests.OceanContinuityTests; exit 0; log work/water-focused-OceanContinuityTests-20261017T1715.log.
+- Build command: Tools/run_unity.ps1 -Task Build; exit 0; QA/build-report.json result Succeeded, errors 0, warnings 5, bytes 117096831, builtUtc 2026-10-17T07:13:13.7851561Z.
+- Player command: Tools/run_world_features.ps1 -BuildPath Builds/Windows/TYCOON2.exe -OutputPath work/visual-water-20261017T1720Z; exit 0; report passed=true, interactions 29, screenshots 61, runtimeErrors 0, finished 2026-10-17T07:14:48.5208967Z.
+- Visual evidence: work/visual-water-20261017T1720Z/clear-water-a.png, clear-water-b.png, each-context.png, xpansion-east_marina.png; water has depth gradient, softer broken ripples, shoreline foam and no blank/magenta pixels in reviewed views.
+- Build SHA256: $sha for Builds/Windows/TYCOON2.exe.
+- Open issues: water remains procedural/stylized and requires a future art pass if photoreal fidelity is required; no GPU timing claim; no full campaign/soak.
+- Next stage: preserve unrelated dirty/untracked files; final delivery may stage only this shader and the documented handoff/plan paths.
