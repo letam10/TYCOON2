@@ -1,0 +1,100 @@
+{
+  "phase": "1H",
+  "sourceBase": "231763d8e3368a0f34bf9efbab8cb6c1d4c033c1",
+  "phase1Complete": false,
+  "overallRedesignComplete": false,
+  "before": {
+    "total": 34,
+    "passed": 31,
+    "xml": "before.xml",
+    "failed": 3
+  },
+  "after": {
+    "total": 48,
+    "passed": 48,
+    "xml": "after-final.xml",
+    "failed": 0
+  },
+  "build": {
+    "result": "Succeeded",
+    "builtUtc": "2026-10-20T06:30:51.4762866Z",
+    "bytes": 117131839,
+    "seconds": 22.942135,
+    "errors": 0,
+    "warnings": 34
+  },
+  "player": {
+    "checks": 3815,
+    "interactions": 33,
+    "report": "world-features-final/world-features-report.json",
+    "screenshots": 66,
+    "finishedUtc": "2026-10-20T06:31:35.0667901Z",
+    "passed": true,
+    "startedUtc": "2026-10-20T06:31:02.8303389Z",
+    "runtimeErrors": 0
+  },
+  "surfaces": {
+    "routeIds": [
+      "street-main-south",
+      "street-main-north",
+      "street-west-connector",
+      "street-east-north",
+      "street-central-north",
+      "street-north-connector",
+      "street-park-spur",
+      "street-west-farm",
+      "street-west-farm-connector",
+      "street-processing-spur",
+      "street-market-spur",
+      "street-market-connector",
+      "street-processing-east",
+      "street-central-east",
+      "street-ring-west-south",
+      "street-ring-east-south",
+      "street-ring-west",
+      "street-ring-east",
+      "street-ring-north",
+      "street-ring-south",
+      "street-ring-west-connector",
+      "street-ring-east-connector"
+    ],
+    "pavementPieces": 37,
+    "sidewalkPieces": 61,
+    "pavementArea": 19290.5,
+    "sidewalkArea": 8768.888671875,
+    "colliderSamples": 98,
+    "captureCenters": [
+      {
+        "x": -116.0,
+        "y": 0.0,
+        "z": -45.0
+      },
+      {
+        "x": 46.0,
+        "y": 0.0,
+        "z": 29.0
+      },
+      {
+        "x": 102.0,
+        "y": 0.0,
+        "z": 29.0
+      }
+    ]
+  },
+  "runtimeDllSha256": "6AFE511F94AA1DCE099F0011FA122E5A0F6A03E178958F87A7450A1E23C010C1",
+  "openedCaptures": [
+    "street-surface-collinear.png",
+    "street-surface-tee.png",
+    "street-surface-cross.png"
+  ],
+  "visualVerdict": "Continuous sampled street union and clipped sidewalks; first Player exposed crossing lane dashes, final captures confirm the crossing dashes were removed",
+  "preexistingDirtyFiles": 101,
+  "preexistingDirtyHashChanges": 0,
+  "fpsAcceptance": false,
+  "remaining": [
+    "Shared sampled curves for every consumer",
+    "Rounded corner and complete rail highway dock visual acceptance",
+    "Phase 2 pedestrian NavMesh traffic implementation",
+    "Interiors camera assets interactive map save compatibility and short performance acceptance"
+  ]
+}

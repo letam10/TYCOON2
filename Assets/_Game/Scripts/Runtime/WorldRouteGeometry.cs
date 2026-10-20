@@ -153,6 +153,9 @@ namespace Tycoon
                 {
                     WorldRouteSegment first = segments[firstIndex];
                     WorldRouteSegment second = segments[secondIndex];
+                    // Hai đoạn thẳng hàng nối tiếp không tạo giao lộ hay khoảng cắt vỉa hè.
+                    if (Mathf.Abs(Vector3.Dot(first.Forward, second.Forward)) > .99999f)
+                        continue;
                     if (!TryIntersect(first, second, out Vector3 point))
                         continue;
                     IncludeJunction(

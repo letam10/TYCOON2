@@ -18,6 +18,7 @@ namespace Tycoon
                 "Traffic signals expose dynamic red amber green lamps");
             Check(Vector3.Distance(game.Player.transform.position, CityDistricts.PlayerSpawn) < .4f,
                 "New game starts directly in front of the starter TYCOON counter");
+            yield return StreetSurfaceAcceptance();
             yield return FeatureUiAcceptance();
             yield return MapClippingAcceptance();
             yield return Capture("minimap-1920.png");

@@ -104,7 +104,7 @@ namespace Tycoon.Tests
         [Test]
         public void SidewalkSegmentTrimsAtSharedStreetEndpoints()
         {
-            WorldRouteCorridor route = WorldRouteCatalog.BuildStreetNetwork()[0];
+            WorldRouteCorridor route = WorldRouteCatalog.BuildStreetNetwork()[2];
             WorldRouteSegment segment = First(WorldRouteGeometry.Segments(route));
             IReadOnlyList<WorldRouteJunction> junctions =
                 WorldRouteGeometry.FindJunctions(WorldRouteCatalog.BuildStreetNetwork());

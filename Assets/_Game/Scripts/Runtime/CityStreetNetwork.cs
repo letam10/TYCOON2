@@ -32,73 +32,78 @@ namespace Tycoon
         {
             var root = new GameObject("CityStreets").transform;
             root.SetParent(world, false);
-            IReadOnlyList<WorldRouteJunction> junctions =
-                WorldRouteGeometry.FindJunctions(WorldRouteCatalog.BuildStreetNetwork());
-            foreach (WorldRouteCorridor corridor in WorldRouteCatalog.BuildStreetNetwork())
+            var owner = root.gameObject.AddComponent<WorldStreetMeshOwner>();
+            IReadOnlyList<WorldRouteCorridor> routes = WorldRouteCatalog.BuildStreetNetwork();
+            WorldStreetLayout layout = WorldStreetGeometry.Build(routes);
+            BuildSurfaces(root, owner, layout.Pavements, false);
+            BuildSurfaces(root, owner, layout.Sidewalks, true);
+            IReadOnlyList<WorldRouteJunction> junctions = WorldRouteGeometry.FindJunctions(routes);
+            foreach (WorldRouteCorridor corridor in routes)
             {
-                int segmentIndex = 0;
                 foreach (WorldRouteSegment segment in WorldRouteGeometry.Segments(corridor))
-                {
-                    BuildSegment(root, corridor.Id, segmentIndex, segment, junctions);
-                    segmentIndex++;
-                }
+                    BuildLaneMarks(root, segment, junctions);
             }
-            for (int index = 0; index < junctions.Count; index++)
-            {
-                WorldRouteJunction junction = junctions[index];
-                float patchSize = Mathf.Max(2f, junction.Width + 1.8f);
-                TownModelParts.Box(
-                    "StreetJunctionPatch_" + index,
-                    junction.Point + Vector3.up * .05f,
-                    new(patchSize, .03f, patchSize),
-                    "stone",
-                    "#666C6C",
-                    root);
-            }
-            StaticBatchingUtility.Combine(root.gameObject);
         }
 
-        static void BuildSegment(
+        static void BuildSurfaces(
             Transform root,
-            string routeId,
-            int segmentIndex,
-            WorldRouteSegment segment,
+            WorldStreetMeshOwner owner,
+            IReadOnlyList<WorldStreetSurface> surfaces,
+            bool sidewalk)
+        {
+            if (surfaces.Count == 0)
+                return;
+            var pieces = new List<CombineInstance>(surfaces.Count);
+            int vertices = 0;
+            foreach (WorldStreetSurface surface in surfaces)
+            {
+                Mesh piece = WorldStreetMesh.CreatePrism(surface,
+                    sidewalk ? .045f : .030f, sidewalk ? .085f : .058f);
+                vertices += piece.vertexCount;
+                pieces.Add(new CombineInstance { mesh = piece, transform = Matrix4x4.identity });
+            }
+
+            // Gộp theo vật liệu, rồi dùng cùng mesh cho hình ảnh và va chạm.
+            var combined = new Mesh { name = sidewalk ? "StreetSidewalkUnion" : "StreetPavementUnion" };
+            if (vertices > 65535)
+                combined.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+            combined.CombineMeshes(pieces.ToArray(), true, true);
+            combined.RecalculateBounds();
+            foreach (CombineInstance piece in pieces)
+            {
+                if (Application.isPlaying)
+                    Object.Destroy(piece.mesh);
+                else
+                    Object.DestroyImmediate(piece.mesh);
+            }
+            owner.Register(combined);
+            var part = new GameObject(sidewalk ? "CitySidewalk_Surface" : "RoadPavement_Surface");
+            part.transform.SetParent(root, false);
+            part.AddComponent<MeshFilter>().sharedMesh = combined;
+            part.AddComponent<MeshRenderer>().sharedMaterial = TownSurfaceMaterials.Get(
+                sidewalk ? "paving" : "stone", sidewalk ? "#BEB7A4" : "#666C6C");
+            part.AddComponent<MeshCollider>().sharedMesh = combined;
+        }
+
+        static void BuildLaneMarks(Transform root, WorldRouteSegment segment,
             IReadOnlyList<WorldRouteJunction> junctions)
         {
-            float yaw = segment.Rotation.eulerAngles.y;
             float length = segment.Length;
-            float width = segment.Width;
-            TownModelParts.Box(
-                "RoadPavement_" + routeId + "_" + segmentIndex,
-                segment.Center + Vector3.up * .044f,
-                new(width, .028f, length),
-                "stone",
-                "#666C6C",
-                root,
-                yaw);
-            for (int side = -1; side <= 1; side += 2)
-            {
-                WorldRouteSegment sidewalk = WorldRouteGeometry.TrimAtJunctions(
-                    segment,
-                    junctions,
-                    .9f);
-                if (sidewalk.Length <= .0001f)
-                    continue;
-                Vector3 offset = WorldRouteGeometry.Offset(
-                    sidewalk,
-                    side * (width * .5f + .9f));
-                TownModelParts.Box(
-                    "CitySidewalk_" + routeId + "_" + segmentIndex + "_" + side,
-                    sidewalk.Center + offset + Vector3.up * .065f,
-                    new(1.8f, .04f, sidewalk.Length),
-                    "paving",
-                    "#BEB7A4",
-                    root,
-                    sidewalk.Rotation.eulerAngles.y);
-            }
             for (float at = -length * .5f + 2; at < length * .5f - 1; at += 6)
             {
                 Vector3 offset = segment.Forward * at;
+                Vector3 center = segment.Center + offset;
+                bool crossesJunction = false;
+                foreach (WorldRouteJunction junction in junctions)
+                {
+                    float clearance = junction.Width * .5f + 1.4f;
+                    if ((center - junction.Point).sqrMagnitude > clearance * clearance)
+                        continue;
+                    crossesJunction = true;
+                    break;
+                }
+                if (crossesJunction)
+                    continue;
                 GameObject mark = Art.Box(
                     "CityLaneMark",
                     segment.Center + offset + Vector3.up * .069f,
