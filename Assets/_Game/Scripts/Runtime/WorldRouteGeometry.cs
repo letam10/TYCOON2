@@ -212,6 +212,58 @@ namespace Tycoon
             }
         }
 
+        public static WorldRouteSegment TrimAtJunctions(
+            WorldRouteSegment segment,
+            IReadOnlyList<WorldRouteJunction> junctions,
+            float trimDistance)
+        {
+            float safeTrim = Mathf.Max(0f, trimDistance);
+            float maximumTrim = segment.Length * .45f;
+            float startTrim = IsJunctionPoint(segment.Start, junctions)
+                ? Mathf.Min(safeTrim, maximumTrim)
+                : 0f;
+            float endTrim = IsJunctionPoint(segment.End, junctions)
+                ? Mathf.Min(safeTrim, maximumTrim)
+                : 0f;
+            return new WorldRouteSegment(
+                segment.Start + segment.Forward * startTrim,
+                segment.End - segment.Forward * endTrim,
+                segment.Width);
+        }
+
+        public static bool ValidateNoUnexpectedSelfIntersections(
+            WorldRouteCorridor route,
+            out string failure)
+        {
+            failure = null;
+            if (route == null)
+            {
+                failure = "route is null";
+                return false;
+            }
+
+            var segments = new List<WorldRouteSegment>();
+            foreach (WorldRouteSegment segment in Segments(route))
+                segments.Add(segment);
+            for (int firstIndex = 0; firstIndex < segments.Count; firstIndex++)
+            {
+                for (int secondIndex = firstIndex + 1; secondIndex < segments.Count; secondIndex++)
+                {
+                    if (secondIndex == firstIndex + 1
+                        || firstIndex == 0 && secondIndex == segments.Count - 1)
+                        continue;
+                    if (!TryIntersect(segments[firstIndex], segments[secondIndex], out _))
+                        continue;
+                    if (TrySharedEndpoint(segments[firstIndex], segments[secondIndex], out _))
+                        continue;
+                    failure = route.Id + " has an unexpected self-intersection between segments "
+                        + firstIndex + " and " + secondIndex;
+                    return false;
+                }
+            }
+            return true;
+        }
+
         public static Vector3 Offset(WorldRouteSegment segment, float lateralDistance)
         {
             return segment.Rotation * (Vector3.right * lateralDistance);
@@ -301,6 +353,18 @@ namespace Tycoon
                 return;
             }
             junctions.Add(new WorldRouteJunction(point, width));
+        }
+
+        static bool IsJunctionPoint(
+            Vector3 point,
+            IReadOnlyList<WorldRouteJunction> junctions)
+        {
+            if (junctions == null)
+                return false;
+            for (int index = 0; index < junctions.Count; index++)
+                if ((junctions[index].Point - point).sqrMagnitude <= .0025f)
+                    return true;
+            return false;
         }
 
         static Vector3 ClampToEndpointBounds(

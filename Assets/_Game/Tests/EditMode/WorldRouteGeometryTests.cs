@@ -101,6 +101,39 @@ namespace Tycoon.Tests
             Assert.That(foundMainWestIntersection, Is.True);
         }
 
+        [Test]
+        public void SidewalkSegmentTrimsAtSharedStreetEndpoints()
+        {
+            WorldRouteCorridor route = WorldRouteCatalog.BuildStreetNetwork()[0];
+            WorldRouteSegment segment = First(WorldRouteGeometry.Segments(route));
+            IReadOnlyList<WorldRouteJunction> junctions =
+                WorldRouteGeometry.FindJunctions(WorldRouteCatalog.BuildStreetNetwork());
+            WorldRouteSegment trimmed = WorldRouteGeometry.TrimAtJunctions(
+                segment,
+                junctions,
+                .9f);
+
+            Assert.That(trimmed.Width, Is.EqualTo(segment.Width));
+            Assert.That(trimmed.Length, Is.LessThan(segment.Length));
+            Assert.That(trimmed.Start, Is.Not.EqualTo(segment.Start));
+            Assert.That(trimmed.End, Is.Not.EqualTo(segment.End));
+        }
+
+        [Test]
+        public void DefaultRoutesHaveNoUnexpectedSelfIntersections()
+        {
+            IReadOnlyList<WorldRouteCorridor> routes = WorldRouteCatalog.BuildDefault();
+            for (int index = 0; index < routes.Count; index++)
+            {
+                Assert.That(
+                    WorldRouteGeometry.ValidateNoUnexpectedSelfIntersections(
+                        routes[index],
+                        out string failure),
+                    Is.True,
+                    failure);
+            }
+        }
+
         static WorldRouteSegment First(IEnumerable<WorldRouteSegment> segments)
         {
             foreach (WorldRouteSegment segment in segments)

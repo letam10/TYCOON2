@@ -32,17 +32,17 @@ namespace Tycoon
         {
             var root = new GameObject("CityStreets").transform;
             root.SetParent(world, false);
+            IReadOnlyList<WorldRouteJunction> junctions =
+                WorldRouteGeometry.FindJunctions(WorldRouteCatalog.BuildStreetNetwork());
             foreach (WorldRouteCorridor corridor in WorldRouteCatalog.BuildStreetNetwork())
             {
                 int segmentIndex = 0;
                 foreach (WorldRouteSegment segment in WorldRouteGeometry.Segments(corridor))
                 {
-                    BuildSegment(root, corridor.Id, segmentIndex, segment);
+                    BuildSegment(root, corridor.Id, segmentIndex, segment, junctions);
                     segmentIndex++;
                 }
             }
-            IReadOnlyList<WorldRouteJunction> junctions =
-                WorldRouteGeometry.FindJunctions(WorldRouteCatalog.BuildStreetNetwork());
             for (int index = 0; index < junctions.Count; index++)
             {
                 WorldRouteJunction junction = junctions[index];
@@ -62,7 +62,8 @@ namespace Tycoon
             Transform root,
             string routeId,
             int segmentIndex,
-            WorldRouteSegment segment)
+            WorldRouteSegment segment,
+            IReadOnlyList<WorldRouteJunction> junctions)
         {
             float yaw = segment.Rotation.eulerAngles.y;
             float length = segment.Length;
@@ -77,17 +78,23 @@ namespace Tycoon
                 yaw);
             for (int side = -1; side <= 1; side += 2)
             {
-                Vector3 offset = WorldRouteGeometry.Offset(
+                WorldRouteSegment sidewalk = WorldRouteGeometry.TrimAtJunctions(
                     segment,
+                    junctions,
+                    .9f);
+                if (sidewalk.Length <= .0001f)
+                    continue;
+                Vector3 offset = WorldRouteGeometry.Offset(
+                    sidewalk,
                     side * (width * .5f + .9f));
                 TownModelParts.Box(
                     "CitySidewalk_" + routeId + "_" + segmentIndex + "_" + side,
-                    segment.Center + offset + Vector3.up * .065f,
-                    new(1.8f, .04f, length),
+                    sidewalk.Center + offset + Vector3.up * .065f,
+                    new(1.8f, .04f, sidewalk.Length),
                     "paving",
                     "#BEB7A4",
                     root,
-                    yaw);
+                    sidewalk.Rotation.eulerAngles.y);
             }
             for (float at = -length * .5f + 2; at < length * .5f - 1; at += 6)
             {
