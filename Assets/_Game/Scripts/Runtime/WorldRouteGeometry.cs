@@ -249,8 +249,7 @@ namespace Tycoon
             {
                 for (int secondIndex = firstIndex + 1; secondIndex < segments.Count; secondIndex++)
                 {
-                    if (secondIndex == firstIndex + 1
-                        || firstIndex == 0 && secondIndex == segments.Count - 1)
+                    if (secondIndex == firstIndex + 1)
                         continue;
                     if (!TryIntersect(segments[firstIndex], segments[secondIndex], out _))
                         continue;
@@ -287,7 +286,7 @@ namespace Tycoon
             return new Bounds((minimum + maximum) * .5f, maximum - minimum);
         }
 
-        static bool TryIntersect(
+        internal static bool TryIntersect(
             WorldRouteSegment first,
             WorldRouteSegment second,
             out Vector3 point)

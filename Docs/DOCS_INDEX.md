@@ -1,11 +1,19 @@
 # TYCOON2 Docs index
 
-Updated: 2026-10-14
+Updated: 2026-10-20
 
 Đây là chỉ mục đọc nhanh cho chat sau. Tài liệu hiện hành được ưu tiên theo thứ tự
 dưới đây; tài liệu lịch sử không được dùng để ghi đè trạng thái mới nhất.
 
 ## Ưu tiên 1 — nguồn sự thật của dự án
+
+0. `Docs/HANDOFF_TYCOON2_WORLD_STAGE1F_VALIDATOR_REPAIR_20261020.md` —
+   checkpoint redesign hiện tại: sửa validator đã qua 36 test và Player smoke;
+   visual gate còn lỗi vệt tràn minimap, Phase 1 và mục tiêu tổng thể chưa xong.
+   `work/tycoon2-plan-20261020/objective-recovered.md` giữ nguyên mục tiêu gốc
+   được khôi phục từ lần đọc attachment thành công trong chính chat này.
+   Evidence mới nằm ở `work/tycoon2-plan-20261020/phase1f/`.
+   V21 bên dưới vẫn mô tả bản bàn giao cũ, không đại diện nghiệm thu redesign.
 
 1. `Docs/CODEX_HANDOFF.md` — mục V21: bản đồ, đổi phím, slot lưu, hồi quy nhanh và bàn giao Windows.
    `QA/current-delivery-20261014.json` ghi lệnh, kết quả, thời gian, hash của đợt bàn giao.

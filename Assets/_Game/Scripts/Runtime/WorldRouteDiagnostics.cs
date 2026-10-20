@@ -201,7 +201,15 @@ namespace Tycoon
 
                             WorldRouteOverlapKind kind;
                             Vector3 point;
-                            if (TrySharedEndpoint(
+                            // Chung đầu mút vẫn có thể đè cả một phần chiều dài.
+                            if (AreParallel(firstSegment, secondSegment)
+                                && HasProjectionOverlap(
+                                    firstSegment, secondSegment, safeTolerance))
+                            {
+                                kind = WorldRouteOverlapKind.ParallelClearance;
+                                point = (firstSegment.Center + secondSegment.Center) * .5f;
+                            }
+                            else if (TrySharedEndpoint(
                                 firstSegment,
                                 secondSegment,
                                 safeTolerance,
@@ -210,14 +218,12 @@ namespace Tycoon
                                 kind = WorldRouteOverlapKind.SharedEndpoint;
                             }
                             else if (!AreParallel(firstSegment, secondSegment)
-                                && SegmentsIntersectXZ(
-                                    firstSegment.Start,
-                                    firstSegment.End,
-                                    secondSegment.Start,
-                                    secondSegment.End))
+                                && WorldRouteGeometry.TryIntersect(
+                                    firstSegment,
+                                    secondSegment,
+                                    out point))
                             {
                                 kind = WorldRouteOverlapKind.Crossing;
-                                point = (firstSegment.Center + secondSegment.Center) * .5f;
                             }
                             else
                             {
@@ -455,6 +461,29 @@ namespace Tycoon
                 : kind == WorldRouteOverlapKind.Crossing
                     ? 2
                     : 1;
+        }
+
+        static bool HasProjectionOverlap(
+            WorldRouteSegment first,
+            WorldRouteSegment second,
+            float tolerance)
+        {
+            Vector2 direction = new Vector2(
+                first.End.x - first.Start.x,
+                first.End.z - first.Start.z);
+            float length = direction.magnitude;
+            if (length <= .0001f)
+                return false;
+            direction /= length;
+            float start = Vector2.Dot(new Vector2(
+                second.Start.x - first.Start.x,
+                second.Start.z - first.Start.z), direction);
+            float end = Vector2.Dot(new Vector2(
+                second.End.x - first.Start.x,
+                second.End.z - first.Start.z), direction);
+            float overlap = Mathf.Min(length, Mathf.Max(start, end))
+                - Mathf.Max(0f, Mathf.Min(start, end));
+            return overlap > tolerance;
         }
 
         static bool AreParallel(

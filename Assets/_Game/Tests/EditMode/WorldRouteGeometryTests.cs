@@ -227,6 +227,82 @@ namespace Tycoon.Tests
                 failure);
         }
 
+        [Test]
+        public void OpenRouteRejectsIntersectionBetweenFirstAndLastSegments()
+        {
+            var route = new WorldRouteCorridor(
+                "open-crossing",
+                RouteKind.Highway,
+                new[]
+                {
+                    new Vector3(-10, 0, -10),
+                    new Vector3(10, 0, 10),
+                    new Vector3(-10, 0, 10),
+                    new Vector3(10, 0, -10)
+                },
+                2,
+                true);
+
+            Assert.That(
+                WorldRouteGeometry.ValidateNoUnexpectedSelfIntersections(
+                    route,
+                    out string failure),
+                Is.False,
+                "The open route crosses itself between its first and last edges.");
+            Assert.That(failure, Does.Contain("open-crossing"));
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void CollinearOverlapIsRejectedEvenWithSharedEndpoint(bool reverse)
+        {
+            Vector3[] secondPoints =
+            {
+                new Vector3(0, 0, 0),
+                new Vector3(10, 0, 0)
+            };
+            if (reverse)
+                System.Array.Reverse(secondPoints);
+            var routes = new[]
+            {
+                new WorldRouteCorridor("long-edge", RouteKind.Highway,
+                    new[] { Vector3.zero, new Vector3(20, 0, 0) }, 2, true),
+                new WorldRouteCorridor("short-edge", RouteKind.Rail,
+                    secondPoints, 2, true)
+            };
+
+            IReadOnlyList<WorldRouteOverlap> overlaps =
+                WorldRouteDiagnostics.FindCrossRouteOverlaps(routes);
+
+            Assert.That(overlaps, Has.Count.EqualTo(1));
+            Assert.That(overlaps[0].Kind,
+                Is.EqualTo(WorldRouteOverlapKind.ParallelClearance));
+            Assert.That(WorldRouteDiagnostics.ValidateRouteKindBoundaries(
+                routes, out _), Is.False);
+        }
+
+        [Test]
+        public void CrossingDiagnosticReportsTheActualIntersection()
+        {
+            var routes = new[]
+            {
+                new WorldRouteCorridor("horizontal", RouteKind.Highway,
+                    new[] { new Vector3(-10, 0, -2), new Vector3(30, 0, -2) },
+                    2, true),
+                new WorldRouteCorridor("vertical", RouteKind.Highway,
+                    new[] { new Vector3(0, 0, -10), new Vector3(0, 0, 5) },
+                    2, true)
+            };
+
+            IReadOnlyList<WorldRouteOverlap> overlaps =
+                WorldRouteDiagnostics.FindCrossRouteOverlaps(routes);
+
+            Assert.That(overlaps, Has.Count.EqualTo(1));
+            Assert.That(overlaps[0].Kind, Is.EqualTo(WorldRouteOverlapKind.Crossing));
+            Assert.That(Vector3.Distance(overlaps[0].Point, new Vector3(0, 0, -2)),
+                Is.LessThan(.0001f));
+        }
+
         static WorldRouteSegment First(IEnumerable<WorldRouteSegment> segments)
         {
             foreach (WorldRouteSegment segment in segments)
