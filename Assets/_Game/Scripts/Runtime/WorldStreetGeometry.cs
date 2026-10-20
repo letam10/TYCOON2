@@ -27,17 +27,20 @@ namespace Tycoon
             public readonly int SegmentIndex;
             public readonly WorldRouteSegment Source;
             public readonly List<Point> Outline;
+            public readonly bool IsJoin;
 
             public Footprint(
                 string routeId,
                 int segmentIndex,
                 WorldRouteSegment source,
-                List<Point> outline)
+                List<Point> outline,
+                bool isJoin = false)
             {
                 RouteId = routeId;
                 SegmentIndex = segmentIndex;
                 Source = source;
                 Outline = outline;
+                IsJoin = isJoin;
             }
         }
 
@@ -63,25 +66,15 @@ namespace Tycoon
                 throw new ArgumentOutOfRangeException(nameof(sidewalkWidth));
 
             var roads = CreateFootprints(routes);
-            var pavements = new List<WorldStreetSurface>();
+            var pavements = UnionPavements(roads);
             var sidewalks = new List<WorldStreetSurface>();
             var acceptedSidewalks = new List<AcceptedPolygon>();
-            for (int roadIndex = 0; roadIndex < roads.Count; roadIndex++)
-            {
-                Footprint road = roads[roadIndex];
-                var pieces = new List<List<Point>> { road.Outline };
-                for (int previousIndex = 0; previousIndex < roadIndex && pieces.Count > 0; previousIndex++)
-                {
-                    Footprint previous = roads[previousIndex];
-                    if (road.Source.Start.y == previous.Source.Start.y)
-                        pieces = Subtract(pieces, previous.Outline);
-                }
-                AppendSurfaces(pavements, road, 0, pieces);
-            }
 
             for (int roadIndex = 0; roadIndex < roads.Count; roadIndex++)
             {
                 Footprint road = roads[roadIndex];
+                if (road.IsJoin)
+                    continue;
                 for (int side = -1; side <= 1; side += 2)
                 {
                     double offset = side * ((double)road.Source.Width + sidewalkWidth) * .5;
@@ -117,24 +110,77 @@ namespace Tycoon
                 WorldRouteCorridor route = routes[routeIndex];
                 if (route == null)
                     throw new ArgumentException("Street routes cannot contain null entries.", nameof(routes));
-                for (int nodeIndex = 1; nodeIndex < route.Nodes.Count; nodeIndex++)
-                {
-                    var source = new WorldRouteSegment(
-                        route.Nodes[nodeIndex - 1],
-                        route.Nodes[nodeIndex],
-                        route.Width);
-                    if (!source.IsFinite || source.Length <= .0001f)
-                        throw new ArgumentException(route.Id + " has an invalid street segment.", nameof(routes));
-                    if (source.Start.y != source.End.y)
-                        throw new ArgumentException(route.Id + " requires flat street surface segments.", nameof(routes));
-                    footprints.Add(new Footprint(
-                        route.Id,
-                        nodeIndex - 1,
-                        source,
-                        Rectangle(source, source.Width, 0d)));
-                }
+                AddFootprints(footprints, route.Id, route.SampledNodes, route.Width);
             }
             return footprints;
+        }
+
+        public static IReadOnlyList<WorldStreetSurface> BuildPavement(
+            string id, IReadOnlyList<Vector3> points, float width)
+        {
+            if (points == null || points.Count < 2)
+                throw new ArgumentException("Pavement requires at least two sampled points.", nameof(points));
+            var footprints = new List<Footprint>();
+            AddFootprints(footprints, id, points, width);
+            return UnionPavements(footprints).AsReadOnly();
+        }
+
+        static List<WorldStreetSurface> UnionPavements(List<Footprint> footprints)
+        {
+            var result = new List<WorldStreetSurface>();
+            for (int index = 0; index < footprints.Count; index++)
+            {
+                Footprint current = footprints[index];
+                var pieces = new List<List<Point>> { current.Outline };
+                for (int previous = 0; previous < index && pieces.Count > 0; previous++)
+                    if (current.Source.Start.y == footprints[previous].Source.Start.y)
+                        pieces = Subtract(pieces, footprints[previous].Outline);
+                AppendSurfaces(result, current, 0, pieces);
+            }
+            return result;
+        }
+
+        static void AddFootprints(List<Footprint> footprints,
+            string id, IReadOnlyList<Vector3> points, float width)
+        {
+            var segments = new List<WorldRouteSegment>();
+            for (int index = 1; index < points.Count; index++)
+            {
+                var segment = new WorldRouteSegment(points[index - 1], points[index], width);
+                if (!segment.IsFinite || segment.Length <= .0001f || width <= 0)
+                    throw new ArgumentException(id + " has an invalid street segment.", nameof(points));
+                if (segment.Start.y != segment.End.y)
+                    throw new ArgumentException(id + " requires flat street surface segments.", nameof(points));
+                segments.Add(segment);
+                footprints.Add(new Footprint(id, index - 1, segment, Rectangle(segment, width, 0d)));
+            }
+            for (int index = 1; index < segments.Count; index++)
+                AddJoin(footprints, id, segments.Count + index * 2,
+                    segments[index - 1], segments[index]);
+            if (points[0] == points[^1] && segments.Count > 1)
+                AddJoin(footprints, id, segments.Count, segments[^1], segments[0]);
+        }
+
+        static void AddJoin(List<Footprint> footprints, string id, int index,
+            WorldRouteSegment incoming, WorldRouteSegment outgoing)
+        {
+            Vector3 center = incoming.End;
+            for (int side = -1; side <= 1; side += 2)
+            {
+                Vector3 first = center + WorldRouteGeometry.Offset(incoming, incoming.Width * .5f * side);
+                Vector3 second = center + WorldRouteGeometry.Offset(outgoing, outgoing.Width * .5f * side);
+                // Nối vát nằm trong tam giác hai mép, không kéo dài góc nhọn thành spike.
+                var outline = new List<Point>
+                {
+                    new Point(center.x, center.z),
+                    new Point(first.x, first.z),
+                    new Point(second.x, second.z)
+                };
+                Clean(outline);
+                if (outline.Count >= 3)
+                    footprints.Add(new Footprint(id, index + (side > 0 ? 1 : 0),
+                        incoming, outline, true));
+            }
         }
 
         static List<Point> Rectangle(WorldRouteSegment source, double width, double offset)

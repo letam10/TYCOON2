@@ -70,6 +70,8 @@ namespace Tycoon
 
     public static class WorldRouteGeometry
     {
+        public const int RouteSubdivisionsPerSpan = 4;
+
         public static IReadOnlyList<Vector3> CreateSmoothPath(
             IReadOnlyList<Vector3> anchors,
             int subdivisionsPerSpan)
@@ -172,11 +174,11 @@ namespace Tycoon
         {
             if (corridor == null)
                 yield break;
-            for (int index = 1; index < corridor.Nodes.Count; index++)
+            for (int index = 1; index < corridor.SampledNodes.Count; index++)
             {
                 WorldRouteSegment segment = new WorldRouteSegment(
-                    corridor.Nodes[index - 1],
-                    corridor.Nodes[index],
+                    corridor.SampledNodes[index - 1],
+                    corridor.SampledNodes[index],
                     corridor.Width);
                 if (segment.Length > .0001f)
                     yield return segment;
@@ -187,11 +189,11 @@ namespace Tycoon
         {
             if (approach == null)
                 yield break;
-            for (int index = 1; index < approach.Nodes.Count; index++)
+            for (int index = 1; index < approach.SampledNodes.Count; index++)
             {
                 WorldRouteSegment segment = new WorldRouteSegment(
-                    approach.Nodes[index - 1],
-                    approach.Nodes[index],
+                    approach.SampledNodes[index - 1],
+                    approach.SampledNodes[index],
                     approach.Width);
                 if (segment.Length > .0001f)
                     yield return segment;

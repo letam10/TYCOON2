@@ -117,22 +117,15 @@ namespace Tycoon
             foreach (var road in roads) Quad(mesh, road, new Color32(185, 185, 159, 255));
             foreach (var corridor in WorldRouteCatalog.BuildDefault())
             {
-                for (int index = 1; index < corridor.Nodes.Count; index++)
-                    RouteSegment(mesh, corridor.Nodes[index - 1], corridor.Nodes[index],
+                for (int index = 1; index < corridor.SampledNodes.Count; index++)
+                    RouteSegment(mesh, corridor.SampledNodes[index - 1], corridor.SampledNodes[index],
                         corridor.Width, RouteColor(corridor.Kind));
-                for (int index = 1; index < corridor.Nodes.Count - 1; index++)
-                    CurvedRoute(mesh, corridor.Nodes[index - 1], corridor.Nodes[index],
-                        corridor.Nodes[index + 1], corridor.Width * .84f, RouteColor(corridor.Kind));
             }
             foreach (WorldPublicApproach approach in WorldRouteCatalog.BuildPublicApproaches())
             {
-                for (int index = 1; index < approach.Nodes.Count; index++)
-                    RouteSegment(mesh, approach.Nodes[index - 1], approach.Nodes[index],
+                for (int index = 1; index < approach.SampledNodes.Count; index++)
+                    RouteSegment(mesh, approach.SampledNodes[index - 1], approach.SampledNodes[index],
                         approach.Width, RouteColor(RouteKind.Sidewalk));
-                for (int index = 1; index < approach.Nodes.Count - 1; index++)
-                    CurvedRoute(mesh, approach.Nodes[index - 1], approach.Nodes[index],
-                        approach.Nodes[index + 1], approach.Width * .84f,
-                        RouteColor(RouteKind.Sidewalk));
             }
             foreach (var district in districts) Quad(mesh, district, new Color32(211, 178, 116, 255));
             foreach (var landmark in landmarks) Quad(mesh, landmark, new Color32(126, 156, 165, 255));
@@ -221,21 +214,6 @@ namespace Tycoon
                 Position(start + side), Position(start - side),
                 Position(end - side), Position(end + side)
             }, tint);
-        }
-
-        void CurvedRoute(VertexHelper mesh, Vector3 start, Vector3 control, Vector3 end, float width, Color tint)
-        {
-            const int steps = 5;
-            Vector3 previous = start;
-            for (int step = 1; step <= steps; step++)
-            {
-                float amount = (float)step / steps;
-                float inverse = 1 - amount;
-                Vector3 current = inverse * inverse * start + 2 * inverse * amount * control
-                    + amount * amount * end;
-                RouteSegment(mesh, previous, current, width, tint);
-                previous = current;
-            }
         }
 
         void PoiIcon(VertexHelper mesh, string id, Vector2 center, float scale)

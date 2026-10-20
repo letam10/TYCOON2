@@ -1,0 +1,54 @@
+{
+  "phase": "1I",
+  "status": "checkpoint_verified_full_phase_open",
+  "sourceBase": "633482c82a3fb022873e1bea1e3a7637dbbe15a0",
+  "objective": "../objective-recovered.md",
+  "handoff": "Docs/HANDOFF_TYCOON2_WORLD_STAGE1I_CANONICAL_PATHS_20261020.md",
+  "tests": {
+    "initial": { "file": "after.xml", "total": 86, "passed": 84, "failed": 2, "exitCode": 2 },
+    "beforeVisualRepair": { "file": "after-final.xml", "passed": 91, "failed": 0, "exitCode": 0 },
+    "final": {
+      "file": "after-mesh.xml", "total": 93, "passed": 93, "failed": 0, "skipped": 0,
+      "exitCode": 0, "startedUtc": "2026-10-20T07:00:36Z", "finishedUtc": "2026-10-20T07:00:37Z"
+    }
+  },
+  "build": {
+    "file": "PlayerFinal/build-report.json", "result": "Succeeded", "exitCode": 0,
+    "builtUtc": "2026-10-20T07:01:53.9284592Z", "bytes": 117137471,
+    "seconds": 29.2922049, "errors": 0, "warnings": 34,
+    "runtimeDllSha256": "80325053D2C4A82F5169948B07490361A0A7CD6438C5EE2BFE3DAC14752F5393"
+  },
+  "player": {
+    "file": "world-features-final/world-features-report.json", "passed": true, "exitCode": 0,
+    "startedUtc": "2026-10-20T07:02:37.4809135Z", "finishedUtc": "2026-10-20T07:03:12.0420561Z",
+    "checks": 4159, "interactions": 34, "screenshots": 69, "runtimeErrors": 0,
+    "logErrorMatches": 0, "graphicsDevice": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "backend": "D3D11", "fpsClaim": false
+  },
+  "sampleManifest": {
+    "file": "world-features-final/sampled-routes.json", "routesAndApproaches": 17,
+    "authoredAnchors": 104, "sampledNodes": 362, "matchedColliders": 337,
+    "liveColliders": 337, "publicVillageTripPoints": 25,
+    "railVisualExcludedFromTriggerCount": true
+  },
+  "openedImages": [
+    "world-features/sampled-route-farm.png", "world-features/sampled-route-industrial.png",
+    "world-features/sampled-route-marina.png", "world-features/map-1920.png",
+    "world-features-final/sampled-route-farm.png", "world-features-final/sampled-route-industrial.png",
+    "world-features-final/sampled-route-marina.png", "world-features-final/map-2560.png",
+    "world-features-final/minimap-clipped-2560.png"
+  ],
+  "preservation": {
+    "baseline": "../phase1g/dirty-before.json", "trackedFiles": 101, "hashMismatches": 0,
+    "timeManagerRestored": true, "unityPlayerProcessesRemaining": 0
+  },
+  "remaining": [
+    "true bounded round corners and full capsule traversal",
+    "cross-category material overlap and industrial boundary notches",
+    "authoritative catalog identity for bespoke landmark approaches",
+    "physical track and traffic geometry shared with final sampled source",
+    "full rail highway dock and grade-separated topology acceptance",
+    "Phase 2 NavMesh exclusions pedestrian traffic and interaction visuals",
+    "later interiors camera licensed assets environment interactive map HUD save compatibility and performance"
+  ]
+}

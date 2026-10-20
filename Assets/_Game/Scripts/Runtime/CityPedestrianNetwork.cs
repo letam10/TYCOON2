@@ -294,8 +294,8 @@ namespace Tycoon
                         && (corridor.Kind != RouteKind.FarmPath || avoidFarm && internalFarmPath))
                         continue;
                     int first = Points.Count;
-                    for (int index = 0; index < corridor.Nodes.Count; index++)
-                        Points.Add(corridor.Nodes[index]);
+                    for (int index = 0; index < corridor.SampledNodes.Count; index++)
+                        Points.Add(corridor.SampledNodes[index]);
                     for (int index = first + 1; index < Points.Count; index++)
                         AddLink(index - 1, index);
                     ConnectCorridorEnd(first);
@@ -304,8 +304,8 @@ namespace Tycoon
                 foreach (WorldPublicApproach approach in WorldRouteCatalog.BuildPublicApproaches())
                 {
                     int first = Points.Count;
-                    for (int index = 0; index < approach.Nodes.Count; index++)
-                        Points.Add(approach.Nodes[index]);
+                    for (int index = 0; index < approach.SampledNodes.Count; index++)
+                        Points.Add(approach.SampledNodes[index]);
                     for (int index = first + 1; index < Points.Count; index++)
                         AddLink(index - 1, index);
                     ConnectCorridorEnd(first);
@@ -412,8 +412,8 @@ namespace Tycoon
             {
                 WorldRouteCorridor corridor = routes[routeIndex];
                 if (corridor.Kind != RouteKind.Sidewalk) continue;
-                for (int index = 0; index < corridor.Nodes.Count; index++)
-                    if ((corridor.Nodes[index] - point).sqrMagnitude < .0001f) return true;
+                for (int index = 0; index < corridor.SampledNodes.Count; index++)
+                    if ((corridor.SampledNodes[index] - point).sqrMagnitude < .0001f) return true;
             }
             return IsDesignatedRoadCrossing(point, routes);
         }
@@ -427,9 +427,9 @@ namespace Tycoon
             {
                 WorldRouteCorridor corridor = routes[routeIndex];
                 if (corridor.Kind != RouteKind.FarmPath) continue;
-                for (int nodeIndex = 0; nodeIndex < corridor.Nodes.Count; nodeIndex++)
+                for (int nodeIndex = 0; nodeIndex < corridor.SampledNodes.Count; nodeIndex++)
                 {
-                    if ((corridor.Nodes[nodeIndex] - point).sqrMagnitude < .0001f)
+                    if ((corridor.SampledNodes[nodeIndex] - point).sqrMagnitude < .0001f)
                     {
                         farmPathNode = true;
                         break;
@@ -515,7 +515,7 @@ namespace Tycoon
             {
                 if (!corridor.ReservesPlacement) continue;
                 float clearance = capsuleRadius + corridor.Width * .5f;
-                if (DistanceSquaredToRoute(point, corridor.Nodes) > clearance * clearance)
+                if (DistanceSquaredToRoute(point, corridor.SampledNodes) > clearance * clearance)
                     continue;
                 if (IsRestrictedCorridor(corridor.Kind))
                 {
@@ -541,10 +541,10 @@ namespace Tycoon
             {
                 if (!corridor.ReservesPlacement) continue;
                 float clearance = capsuleRadius + corridor.Width * .5f;
-                for (int index = 1; index < corridor.Nodes.Count; index++)
+                for (int index = 1; index < corridor.SampledNodes.Count; index++)
                 {
-                    if (!SegmentsNear(first, second, corridor.Nodes[index - 1],
-                        corridor.Nodes[index], clearance)) continue;
+                    if (!SegmentsNear(first, second, corridor.SampledNodes[index - 1],
+                        corridor.SampledNodes[index], clearance)) continue;
                     if (IsRestrictedCorridor(corridor.Kind))
                     {
                         intersected = corridor;

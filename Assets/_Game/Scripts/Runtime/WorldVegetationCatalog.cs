@@ -151,10 +151,10 @@ namespace Tycoon
                 if (!IsFinite(radius) || radius < 0f)
                     continue;
                 float radiusSquared = radius * radius;
-                for (int nodeIndex = 1; nodeIndex < corridor.Nodes.Count; nodeIndex++)
+                for (int nodeIndex = 1; nodeIndex < corridor.SampledNodes.Count; nodeIndex++)
                 {
-                    Vector3 start = corridor.Nodes[nodeIndex - 1];
-                    Vector3 end = corridor.Nodes[nodeIndex];
+                    Vector3 start = corridor.SampledNodes[nodeIndex - 1];
+                    Vector3 end = corridor.SampledNodes[nodeIndex];
                     if (!IsFinite(start) || !IsFinite(end))
                         continue;
                     if (DistanceSquaredToSegmentXZ(position, start, end) <= radiusSquared)

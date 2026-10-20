@@ -7,15 +7,16 @@ dưới đây; tài liệu lịch sử không được dùng để ghi đè tr�
 
 ## Ưu tiên 1 — nguồn sự thật của dự án
 
-0. `Docs/HANDOFF_TYCOON2_WORLD_STAGE1H_STREET_SURFACES_20261020.md` —
-   checkpoint hiện tại: mặt đường/vỉa hè dùng phép hợp/cắt đa giác và collider
-   chung mesh; 48 test đạt, Player 3815 checks/0 lỗi runtime, 98 mẫu collider.
-   Đã xem ảnh nối thẳng/T/X sau sửa vạch tim đường. Phase 1 và mục tiêu tổng
-   thể chưa xong; tiếp tục sampled curves, rounded corners và các consumer.
+0. `Docs/HANDOFF_TYCOON2_WORLD_STAGE1I_CANONICAL_PATHS_20261020.md` —
+   checkpoint hiện tại: đường catalog, graph, clearance và bản đồ cùng đọc
+   SampledNodes; sửa khe giữa các mảnh lối đi bằng hợp/cắt đa giác và nối vát.
+   93 test đạt; Player 4159 checks/0 lỗi runtime; 337/337 trigger khớp cạnh mẫu.
+   Đã xem ảnh mới sau sửa. Phase 1 và mục tiêu tổng thể chưa xong; tiếp tục
+   round corners, nút nối khác loại tuyến, rail/traffic và capsule traversal.
    `work/tycoon2-plan-20261020/objective-recovered.md` giữ nguyên mục tiêu gốc
    được khôi phục từ lần đọc attachment thành công trong chính chat này.
-   Evidence mới và acceptance summary nằm ở `work/tycoon2-plan-20261020/phase1h/`.
-   Handoff Phase 1F/1G giữ lịch sử validator, clipping minimap và ảnh trước sửa.
+   Evidence mới và acceptance summary nằm ở `work/tycoon2-plan-20261020/phase1i/`.
+   Handoff Phase 1F/1G/1H giữ lịch sử validator, minimap và street surface trước đó.
    V21 bên dưới vẫn mô tả bản bàn giao cũ, không đại diện nghiệm thu redesign.
 
 1. `Docs/CODEX_HANDOFF.md` — mục V21: bản đồ, đổi phím, slot lưu, hồi quy nhanh và bàn giao Windows.

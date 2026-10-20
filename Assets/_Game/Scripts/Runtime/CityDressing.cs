@@ -60,10 +60,10 @@ namespace Tycoon
             foreach (var corridor in WorldRouteCatalog.BuildDefault())
             {
                 if (!corridor.ReservesPlacement) continue;
-                for (int node = 1; node < corridor.Nodes.Count; node++)
+                for (int node = 1; node < corridor.SampledNodes.Count; node++)
                 {
-                    Vector3 start = corridor.Nodes[node - 1];
-                    Vector3 end = corridor.Nodes[node];
+                    Vector3 start = corridor.SampledNodes[node - 1];
+                    Vector3 end = corridor.SampledNodes[node];
                     Vector3 delta = end - start;
                     var bounds = new Bounds((start + end) * .5f,
                         new Vector3(Mathf.Abs(delta.x) + corridor.Width, 10,

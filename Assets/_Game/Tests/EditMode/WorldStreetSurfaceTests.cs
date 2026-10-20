@@ -10,6 +10,35 @@ namespace Tycoon.Tests
         const float AreaTolerance = .005f;
 
         [Test]
+        public void BeveledPavementFillsOuterCornerWithoutOverlapOrSpike()
+        {
+            Vector3[] samples = { new(-10, 0, 0), Vector3.zero, new(0, 0, 10) };
+            IReadOnlyList<WorldStreetSurface> surfaces =
+                WorldStreetGeometry.BuildPavement("bevel", samples, 4);
+
+            // Hai dải 40 m2 trừ 4 m2 chồng trong, cộng tam giác ngoài 2 m2.
+            Assert.That(TotalArea(surfaces), Is.EqualTo(78).Within(AreaTolerance));
+            Assert.That(CoverCount(surfaces, new(.7f, 0, -.7f)), Is.EqualTo(1));
+            Assert.That(CoverCount(surfaces, new(-.7f, 0, .7f)), Is.EqualTo(1));
+            Assert.That(CoverCount(surfaces, new(1.6f, 0, -1.6f)), Is.EqualTo(0));
+        }
+
+        [Test]
+        public void ClosedPavementAlsoJoinsItsLastEdgeToTheFirst()
+        {
+            Vector3[] samples =
+            {
+                Vector3.zero, new(10, 0, 0), new(10, 0, 10), new(0, 0, 10), Vector3.zero
+            };
+            IReadOnlyList<WorldStreetSurface> surfaces =
+                WorldStreetGeometry.BuildPavement("closed-bevel", samples, 2);
+
+            Assert.That(TotalArea(surfaces), Is.EqualTo(78).Within(AreaTolerance));
+            Assert.That(CoverCount(surfaces, new(-.2f, 0, -.2f)), Is.EqualTo(1));
+            Assert.That(CoverCount(surfaces, new(-.8f, 0, -.8f)), Is.EqualTo(0));
+        }
+
+        [Test]
         public void StraightStreetPreservesExactPavementAndSidewalkAreas()
         {
             var routes = new[] { Route("straight", new(-10, 0, 0), new(10, 0, 0)) };

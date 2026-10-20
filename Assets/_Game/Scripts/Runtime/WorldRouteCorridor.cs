@@ -33,11 +33,15 @@ namespace Tycoon
 
         readonly IReadOnlyList<Vector3> readOnlyNodes;
 
+        readonly IReadOnlyList<Vector3> sampledNodes;
+
         public string Id => id;
 
         public RouteKind Kind => kind;
 
         public IReadOnlyList<Vector3> Nodes => readOnlyNodes;
+
+        public IReadOnlyList<Vector3> SampledNodes => sampledNodes;
 
         public float Width => width;
 
@@ -65,6 +69,10 @@ namespace Tycoon
             for (int index = 0; index < nodes.Count; index++)
                 nodeValues[index] = nodes[index];
             readOnlyNodes = Array.AsReadOnly(nodeValues);
+            sampledNodes = nodes.Count < 3
+                ? readOnlyNodes
+                : WorldRouteGeometry.CreateSmoothPath(
+                    readOnlyNodes, WorldRouteGeometry.RouteSubdivisionsPerSpan);
         }
     }
 
@@ -82,9 +90,13 @@ namespace Tycoon
 
         readonly IReadOnlyList<Vector3> readOnlyNodes;
 
+        readonly IReadOnlyList<Vector3> sampledNodes;
+
         public string Id => id;
 
         public IReadOnlyList<Vector3> Nodes => readOnlyNodes;
+
+        public IReadOnlyList<Vector3> SampledNodes => sampledNodes;
 
         public float Width => width;
 
@@ -106,6 +118,10 @@ namespace Tycoon
             for (int index = 0; index < nodes.Count; index++)
                 nodeValues[index] = nodes[index];
             readOnlyNodes = Array.AsReadOnly(nodeValues);
+            sampledNodes = nodes.Count < 3
+                ? readOnlyNodes
+                : WorldRouteGeometry.CreateSmoothPath(
+                    readOnlyNodes, WorldRouteGeometry.RouteSubdivisionsPerSpan);
         }
     }
 
@@ -137,8 +153,8 @@ namespace Tycoon
             for (int approachIndex = 0; approachIndex < publicApproaches.Count; approachIndex++)
             {
                 WorldPublicApproach approach = publicApproaches[approachIndex];
-                for (int nodeIndex = 0; nodeIndex < approach.Nodes.Count; nodeIndex++)
-                    if ((approach.Nodes[nodeIndex] - point).sqrMagnitude < .0001f)
+                for (int nodeIndex = 0; nodeIndex < approach.SampledNodes.Count; nodeIndex++)
+                    if ((approach.SampledNodes[nodeIndex] - point).sqrMagnitude < .0001f)
                         return true;
             }
             return false;
@@ -155,7 +171,7 @@ namespace Tycoon
             {
                 WorldPublicApproach approach = publicApproaches[approachIndex];
                 float clearance = safeRadius + approach.Width * .5f;
-                if (DistanceSquaredToRoute(point, approach.Nodes) > clearance * clearance)
+                if (DistanceSquaredToRoute(point, approach.SampledNodes) > clearance * clearance)
                     continue;
                 approachId = approach.Id;
                 return true;
@@ -214,7 +230,7 @@ namespace Tycoon
                     continue;
 
                 float clearance = radius + corridor.Width * .5f;
-                if (DistanceSquaredToRoute(point, corridor.Nodes) <= clearance * clearance)
+                if (DistanceSquaredToRoute(point, corridor.SampledNodes) <= clearance * clearance)
                 {
                     corridorId = corridor.Id;
                     return true;
@@ -234,7 +250,7 @@ namespace Tycoon
             distance = float.PositiveInfinity;
             if (!TryGet(id, out WorldRouteCorridor corridor) || !IsFinite(point))
                 return false;
-            float squared = DistanceSquaredToRoute(point, corridor.Nodes, out Vector3 candidate);
+            float squared = DistanceSquaredToRoute(point, corridor.SampledNodes, out Vector3 candidate);
             if (!IsFinite(squared)) return false;
             distance = Mathf.Sqrt(squared);
             if (maxDistance >= 0f && distance > maxDistance) return false;

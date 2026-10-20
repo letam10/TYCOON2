@@ -50,7 +50,7 @@ namespace Tycoon
             distance = float.PositiveInfinity;
             if (!WorldRouteCatalog.TryGet(routeId, out WorldRouteCorridor corridor) || !IsFinite(point) || float.IsNaN(maxDistance) || maxDistance < 0f)
                 return false;
-            IReadOnlyList<Vector3> nodes = corridor.Nodes;
+            IReadOnlyList<Vector3> nodes = corridor.SampledNodes;
             if (nodes == null || nodes.Count < 2)
                 return false;
             float closest = float.PositiveInfinity;
@@ -97,7 +97,7 @@ namespace Tycoon
                 WorldRouteCorridor corridor = routes[index];
                 if (corridor == null || !corridor.ReservesPlacement || corridor.Kind != kind)
                     continue;
-                if (IsPointNearRoute(point, corridor.Nodes, safeRadius + corridor.Width * .5f))
+                if (IsPointNearRoute(point, corridor.SampledNodes, safeRadius + corridor.Width * .5f))
                 {
                     routeId = corridor.Id;
                     return true;
@@ -181,6 +181,7 @@ namespace Tycoon
                         continue;
                     WorldRouteOverlap pairBest = default;
                     bool pairFound = false;
+                    var neighborhoods = CrossingNeighborhoods(firstRoute, secondRoute, safeTolerance);
                     foreach (WorldRouteSegment firstSegment in
                         WorldRouteGeometry.Segments(firstRoute))
                     {
@@ -229,6 +230,19 @@ namespace Tycoon
                             {
                                 kind = WorldRouteOverlapKind.ParallelClearance;
                                 point = (firstSegment.Center + secondSegment.Center) * .5f;
+                                // Các mảnh mẫu sát cùng nút giao vẫn thuộc vùng nối đó.
+                                foreach (var neighborhood in neighborhoods)
+                                {
+                                    float squaredRadius = neighborhood.radius * neighborhood.radius;
+                                    if (DistanceSquaredToSegment(neighborhood.point,
+                                        firstSegment.Start, firstSegment.End, out _) > squaredRadius
+                                        || DistanceSquaredToSegment(neighborhood.point,
+                                            secondSegment.Start, secondSegment.End, out _) > squaredRadius)
+                                        continue;
+                                    kind = neighborhood.kind;
+                                    point = neighborhood.point;
+                                    break;
+                                }
                             }
 
                             var candidate = new WorldRouteOverlap(
@@ -254,6 +268,33 @@ namespace Tycoon
                 }
             }
             return overlaps.AsReadOnly();
+        }
+
+        static List<(Vector3 point, float radius, WorldRouteOverlapKind kind)> CrossingNeighborhoods(
+            WorldRouteCorridor firstRoute, WorldRouteCorridor secondRoute, float tolerance)
+        {
+            var result = new List<(Vector3 point, float radius, WorldRouteOverlapKind kind)>();
+            float clearance = (firstRoute.Width + secondRoute.Width) * .5f + tolerance;
+            foreach (WorldRouteSegment first in WorldRouteGeometry.Segments(firstRoute))
+            {
+                foreach (WorldRouteSegment second in WorldRouteGeometry.Segments(secondRoute))
+                {
+                    bool parallel = AreParallel(first, second);
+                    if (parallel && HasProjectionOverlap(first, second, tolerance))
+                        continue;
+                    if (TrySharedEndpoint(first, second, tolerance, out Vector3 shared))
+                        result.Add((shared, clearance, WorldRouteOverlapKind.SharedEndpoint));
+                    else if (!parallel && WorldRouteGeometry.TryIntersect(first, second, out Vector3 crossing))
+                    {
+                        // Chiều dài vùng giao trên tim đường bằng tổng nửa rộng / sin(góc giao).
+                        float sine = Mathf.Abs(first.Forward.x * second.Forward.z
+                            - first.Forward.z * second.Forward.x);
+                        result.Add((crossing, clearance / Mathf.Max(.0001f, sine),
+                            WorldRouteOverlapKind.Crossing));
+                    }
+                }
+            }
+            return result;
         }
 
         public static bool ValidateCrossRouteOverlaps(
@@ -369,7 +410,7 @@ namespace Tycoon
                     WorldRouteCorridor corridor = routes[routeIndex];
                     if (corridor == null || !corridor.ReservesPlacement || IsAllowed(corridor.Kind, localFarmRoute))
                         continue;
-                    if (IsPointNearRoute(points[pointIndex], corridor.Nodes, corridor.Width * .5f + clearance))
+                    if (IsPointNearRoute(points[pointIndex], corridor.SampledNodes, corridor.Width * .5f + clearance))
                     {
                         failure = "leg point " + pointIndex + " enters " + corridor.Id;
                         return false;
@@ -383,7 +424,7 @@ namespace Tycoon
                     WorldRouteCorridor corridor = routes[routeIndex];
                     if (corridor == null || !corridor.ReservesPlacement || IsAllowed(corridor.Kind, localFarmRoute))
                         continue;
-                    if (IsSegmentNearRoute(points[edgeIndex - 1], points[edgeIndex], corridor.Nodes, corridor.Width * .5f + clearance))
+                    if (IsSegmentNearRoute(points[edgeIndex - 1], points[edgeIndex], corridor.SampledNodes, corridor.Width * .5f + clearance))
                     {
                         failure = "leg edge " + (edgeIndex - 1) + " enters " + corridor.Id;
                         return false;
@@ -403,7 +444,7 @@ namespace Tycoon
                     WorldRouteCorridor corridor = routes[routeIndex];
                     if (corridor == null || !corridor.ReservesPlacement || corridor.Kind != RouteKind.FarmPath)
                         continue;
-                    if (IsPointNearRoute(points[pointIndex], corridor.Nodes, corridor.Width * .5f + clearance))
+                    if (IsPointNearRoute(points[pointIndex], corridor.SampledNodes, corridor.Width * .5f + clearance))
                     {
                         pointRouteId = corridor.Id;
                         break;

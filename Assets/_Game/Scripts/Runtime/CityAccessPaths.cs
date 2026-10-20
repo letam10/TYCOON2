@@ -68,17 +68,13 @@ namespace Tycoon
                 float bend = Mathf.Clamp(delta.magnitude * .16f, 3f, 12f);
                 Vector3 control = (a + b) * .5f + lateral * bend;
                 IReadOnlyList<Vector3> points = CreateCurvedPath(a, b, control, 4);
+                Pavement(g, "landmark-footpath", points, width, surface, tint, 0, .05f);
                 foreach (WorldRouteSegment segment in WorldRouteGeometry.Segments(points, width))
                     PaveSegment(segment, surface, tint);
             }
 
             void PaveSegment(WorldRouteSegment segment, string surface, string tint)
             {
-                g.Box(segment.Center + Vector3.up * .025f,
-                    new(segment.Width, .05f, segment.Length),
-                    surface,
-                    tint,
-                    segment.Rotation.eulerAngles.y);
                 // Lối lát là vùng đi bộ, không phải tường; trigger giữ vùng định vị mà không chặn capsule.
                 g.Collider("PedestrianLink", segment.Center + Vector3.up * .01f,
                     new(segment.Width, .08f, segment.Length + .05f),
@@ -114,9 +110,8 @@ namespace Tycoon
                 }
                 if (drawCorridor)
                 {
-                    IReadOnlyList<Vector3> points = corridor.Nodes.Count >= 3
-                        ? CreateSmoothPath(corridor.Nodes, 4)
-                        : corridor.Nodes;
+                    IReadOnlyList<Vector3> points = corridor.SampledNodes;
+                    Pavement(g, corridor.Id, points, width, surface, tint, .0005f, .0555f);
                     for (int point = 1; point < points.Count; point++)
                         Segment(g, points[point - 1], points[point], width, surface, tint);
                 }
@@ -124,9 +119,8 @@ namespace Tycoon
             }
             foreach (WorldPublicApproach approach in WorldRouteCatalog.BuildPublicApproaches())
             {
-                IReadOnlyList<Vector3> points = approach.Nodes.Count >= 3
-                    ? CreateSmoothPath(approach.Nodes, 3)
-                    : approach.Nodes;
+                IReadOnlyList<Vector3> points = approach.SampledNodes;
+                Pavement(g, approach.Id, points, approach.Width, "paving", "#B8B0A0", .0005f, .0555f);
                 for (int point = 1; point < points.Count; point++)
                     Segment(g, points[point - 1], points[point], approach.Width,
                         "paving", "#B8B0A0");
@@ -146,16 +140,20 @@ namespace Tycoon
                 new[] { start, end },
                 width))
             {
-                g.Box(segment.Center + Vector3.up * .028f,
-                    new(segment.Width, .055f, segment.Length),
-                    surface,
-                    tint,
-                    segment.Rotation.eulerAngles.y);
                 g.Collider("RouteCorridor", segment.Center + Vector3.up * .01f,
                     new(segment.Width, .08f, segment.Length + .05f),
                     segment.Rotation,
                     true);
             }
+        }
+
+        static void Pavement(CityStaticGeometry geometry, string id,
+            IReadOnlyList<Vector3> points, float width, string surface, string tint,
+            float bottom, float top)
+        {
+            foreach (WorldStreetSurface polygon in WorldStreetGeometry.BuildPavement(id, points, width))
+                geometry.Sculpt(WorldStreetMesh.CreatePrism(polygon, bottom, top),
+                    Vector3.zero, surface, tint);
         }
 
         static void Sign(Transform parent, Vector3 position, string text)

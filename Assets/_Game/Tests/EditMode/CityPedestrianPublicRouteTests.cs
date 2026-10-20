@@ -97,8 +97,8 @@ namespace Tycoon.Tests
             {
                 WorldRouteCorridor corridor = routes[routeIndex];
                 if (corridor.Kind != RouteKind.Sidewalk) continue;
-                for (int index = 0; index < corridor.Nodes.Count; index++)
-                    if (Vector3.Distance(point, corridor.Nodes[index]) <= .001f)
+                for (int index = 0; index < corridor.SampledNodes.Count; index++)
+                    if (Vector3.Distance(point, corridor.SampledNodes[index]) <= .001f)
                         return true;
             }
             return false;
