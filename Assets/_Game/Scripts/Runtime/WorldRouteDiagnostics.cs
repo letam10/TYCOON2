@@ -3,6 +3,45 @@ using System.Collections.Generic;
 using UnityEngine;
 namespace Tycoon
 {
+    public enum WorldRouteOverlapKind
+    {
+        SharedEndpoint,
+        Crossing,
+        ParallelClearance
+    }
+
+    public struct WorldRouteOverlap
+    {
+        public string FirstRouteId { get; }
+        public string SecondRouteId { get; }
+        public RouteKind FirstKind { get; }
+        public RouteKind SecondKind { get; }
+        public WorldRouteOverlapKind Kind { get; }
+        public Vector3 Point { get; }
+        public float Distance { get; }
+        public float Clearance { get; }
+
+        public WorldRouteOverlap(
+            string firstRouteId,
+            string secondRouteId,
+            RouteKind firstKind,
+            RouteKind secondKind,
+            WorldRouteOverlapKind kind,
+            Vector3 point,
+            float distance,
+            float clearance)
+        {
+            FirstRouteId = firstRouteId;
+            SecondRouteId = secondRouteId;
+            FirstKind = firstKind;
+            SecondKind = secondKind;
+            Kind = kind;
+            Point = point;
+            Distance = distance;
+            Clearance = clearance;
+        }
+    }
+
     public static class WorldRouteDiagnostics
     {
         public static bool TryFindNearest(string routeId, Vector3 point, float maxDistance, out Vector3 nearest, out float distance)
@@ -113,6 +152,166 @@ namespace Tycoon
                         return false;
                     }
                 }
+            }
+            return true;
+        }
+
+        public static IReadOnlyList<WorldRouteOverlap> FindCrossRouteOverlaps(
+            IReadOnlyList<WorldRouteCorridor> routes,
+            float tolerance = .05f)
+        {
+            var overlaps = new List<WorldRouteOverlap>();
+            if (routes == null)
+                return overlaps.AsReadOnly();
+
+            float safeTolerance = Mathf.Max(.0001f, tolerance);
+            for (int firstRouteIndex = 0;
+                firstRouteIndex < routes.Count;
+                firstRouteIndex++)
+            {
+                WorldRouteCorridor firstRoute = routes[firstRouteIndex];
+                if (firstRoute == null)
+                    continue;
+                for (int secondRouteIndex = firstRouteIndex + 1;
+                    secondRouteIndex < routes.Count;
+                    secondRouteIndex++)
+                {
+                    WorldRouteCorridor secondRoute = routes[secondRouteIndex];
+                    if (secondRoute == null)
+                        continue;
+                    WorldRouteOverlap pairBest = default;
+                    bool pairFound = false;
+                    foreach (WorldRouteSegment firstSegment in
+                        WorldRouteGeometry.Segments(firstRoute))
+                    {
+                        foreach (WorldRouteSegment secondSegment in
+                            WorldRouteGeometry.Segments(secondRoute))
+                        {
+                            float distance = Mathf.Sqrt(
+                                DistanceSquaredBetweenSegments(
+                                    firstSegment.Start,
+                                    firstSegment.End,
+                                    secondSegment.Start,
+                                    secondSegment.End));
+                            float clearance = firstRoute.Width * .5f
+                                + secondRoute.Width * .5f
+                                + safeTolerance;
+                            if (!IsFinite(distance) || distance > clearance)
+                                continue;
+
+                            WorldRouteOverlapKind kind;
+                            Vector3 point;
+                            if (TrySharedEndpoint(
+                                firstSegment,
+                                secondSegment,
+                                safeTolerance,
+                                out point))
+                            {
+                                kind = WorldRouteOverlapKind.SharedEndpoint;
+                            }
+                            else if (!AreParallel(firstSegment, secondSegment)
+                                && SegmentsIntersectXZ(
+                                    firstSegment.Start,
+                                    firstSegment.End,
+                                    secondSegment.Start,
+                                    secondSegment.End))
+                            {
+                                kind = WorldRouteOverlapKind.Crossing;
+                                point = (firstSegment.Center + secondSegment.Center) * .5f;
+                            }
+                            else
+                            {
+                                kind = WorldRouteOverlapKind.ParallelClearance;
+                                point = (firstSegment.Center + secondSegment.Center) * .5f;
+                            }
+
+                            var candidate = new WorldRouteOverlap(
+                                firstRoute.Id,
+                                secondRoute.Id,
+                                firstRoute.Kind,
+                                secondRoute.Kind,
+                                kind,
+                                point,
+                                distance,
+                                clearance);
+                            if (!pairFound
+                                || OverlapSeverity(candidate.Kind)
+                                    > OverlapSeverity(pairBest.Kind))
+                            {
+                                pairBest = candidate;
+                                pairFound = true;
+                            }
+                        }
+                    }
+                    if (pairFound)
+                        overlaps.Add(pairBest);
+                }
+            }
+            return overlaps.AsReadOnly();
+        }
+
+        public static bool ValidateCrossRouteOverlaps(
+            IReadOnlyList<WorldRouteCorridor> routes,
+            out string failure,
+            float tolerance = .05f)
+        {
+            failure = null;
+            if (routes == null)
+            {
+                failure = "route list is null";
+                return false;
+            }
+            IReadOnlyList<WorldRouteOverlap> overlaps =
+                FindCrossRouteOverlaps(routes, tolerance);
+            for (int index = 0; index < overlaps.Count; index++)
+            {
+                WorldRouteOverlap overlap = overlaps[index];
+                if (overlap.Kind != WorldRouteOverlapKind.ParallelClearance)
+                    continue;
+                failure = overlap.FirstRouteId + " and " + overlap.SecondRouteId
+                    + " overlap within " + overlap.Clearance.ToString("0.###")
+                    + " units at " + overlap.Point;
+                return false;
+            }
+            return true;
+        }
+
+        public static bool ValidateRouteKindBoundaries(
+            IReadOnlyList<WorldRouteCorridor> routes,
+            out string failure,
+            float tolerance = .05f)
+        {
+            failure = null;
+            if (routes == null)
+            {
+                failure = "route list is null";
+                return false;
+            }
+            for (int index = 0; index < routes.Count; index++)
+            {
+                WorldRouteCorridor route = routes[index];
+                if (route == null)
+                    continue;
+                if (!IsBoundaryKind(route.Kind))
+                    continue;
+                if (!WorldRouteGeometry.ValidateNoUnexpectedSelfIntersections(
+                    route,
+                    out failure))
+                    return false;
+            }
+            IReadOnlyList<WorldRouteOverlap> overlaps =
+                FindCrossRouteOverlaps(routes, tolerance);
+            for (int index = 0; index < overlaps.Count; index++)
+            {
+                WorldRouteOverlap overlap = overlaps[index];
+                if (overlap.Kind != WorldRouteOverlapKind.ParallelClearance)
+                    continue;
+                if (!IsBoundaryKind(overlap.FirstKind)
+                    && !IsBoundaryKind(overlap.SecondKind))
+                    continue;
+                failure = "boundary overlap between " + overlap.FirstRouteId
+                    + " and " + overlap.SecondRouteId;
+                return false;
             }
             return true;
         }
@@ -239,6 +438,55 @@ namespace Tycoon
                 if (DistanceSquaredBetweenSegments(start, end, nodes[index - 1], nodes[index]) <= limitSquared)
                     return true;
             }
+            return false;
+        }
+
+        static bool IsBoundaryKind(RouteKind kind)
+        {
+            return kind == RouteKind.Highway
+                || kind == RouteKind.Rail
+                || kind == RouteKind.Dock;
+        }
+
+        static int OverlapSeverity(WorldRouteOverlapKind kind)
+        {
+            return kind == WorldRouteOverlapKind.ParallelClearance
+                ? 3
+                : kind == WorldRouteOverlapKind.Crossing
+                    ? 2
+                    : 1;
+        }
+
+        static bool AreParallel(
+            WorldRouteSegment first,
+            WorldRouteSegment second)
+        {
+            float cross = first.Forward.x * second.Forward.z
+                - first.Forward.z * second.Forward.x;
+            return Mathf.Abs(cross) <= .0001f;
+        }
+
+        static bool TrySharedEndpoint(
+            WorldRouteSegment first,
+            WorldRouteSegment second,
+            float tolerance,
+            out Vector3 point)
+        {
+            Vector3[] firstPoints = { first.Start, first.End };
+            Vector3[] secondPoints = { second.Start, second.End };
+            float squaredTolerance = tolerance * tolerance;
+            for (int firstIndex = 0; firstIndex < firstPoints.Length; firstIndex++)
+            {
+                for (int secondIndex = 0; secondIndex < secondPoints.Length; secondIndex++)
+                {
+                    if ((firstPoints[firstIndex] - secondPoints[secondIndex]).sqrMagnitude
+                        > squaredTolerance)
+                        continue;
+                    point = (firstPoints[firstIndex] + secondPoints[secondIndex]) * .5f;
+                    return true;
+                }
+            }
+            point = default;
             return false;
         }
         static float DistanceSquaredToSegment(Vector3 point, Vector3 start, Vector3 end, out Vector3 nearest)

@@ -134,6 +134,99 @@ namespace Tycoon.Tests
             }
         }
 
+        [Test]
+        public void CrossRouteDiagnosticsClassifyARealCrossing()
+        {
+            var routes = new[]
+            {
+                new WorldRouteCorridor(
+                    "crossing-a",
+                    RouteKind.Highway,
+                    new[]
+                    {
+                        new Vector3(-10, 0, -10),
+                        new Vector3(10, 0, 10)
+                    },
+                    2,
+                    true),
+                new WorldRouteCorridor(
+                    "crossing-b",
+                    RouteKind.Highway,
+                    new[]
+                    {
+                        new Vector3(-10, 0, 10),
+                        new Vector3(10, 0, -10)
+                    },
+                    2,
+                    true)
+            };
+
+            IReadOnlyList<WorldRouteOverlap> overlaps =
+                WorldRouteDiagnostics.FindCrossRouteOverlaps(routes);
+
+            Assert.That(overlaps, Has.Count.EqualTo(1));
+            Assert.That(overlaps[0].Kind, Is.EqualTo(WorldRouteOverlapKind.Crossing));
+            Assert.That(
+                WorldRouteDiagnostics.ValidateCrossRouteOverlaps(
+                    routes,
+                    out string failure),
+                Is.True,
+                failure);
+        }
+
+        [Test]
+        public void CrossRouteDiagnosticsRejectParallelClearanceOverlap()
+        {
+            var routes = new[]
+            {
+                new WorldRouteCorridor(
+                    "parallel-a",
+                    RouteKind.Highway,
+                    new[]
+                    {
+                        new Vector3(0, 0, 0),
+                        new Vector3(20, 0, 0)
+                    },
+                    4,
+                    true),
+                new WorldRouteCorridor(
+                    "parallel-b",
+                    RouteKind.Rail,
+                    new[]
+                    {
+                        new Vector3(0, 0, 3),
+                        new Vector3(20, 0, 3)
+                    },
+                    4,
+                    true)
+            };
+
+            IReadOnlyList<WorldRouteOverlap> overlaps =
+                WorldRouteDiagnostics.FindCrossRouteOverlaps(routes);
+
+            Assert.That(overlaps, Has.Count.EqualTo(1));
+            Assert.That(
+                overlaps[0].Kind,
+                Is.EqualTo(WorldRouteOverlapKind.ParallelClearance));
+            Assert.That(
+                WorldRouteDiagnostics.ValidateCrossRouteOverlaps(
+                    routes,
+                    out string failure),
+                Is.False);
+            Assert.That(failure, Does.Contain("parallel-a"));
+        }
+
+        [Test]
+        public void DefaultRouteKindBoundariesRemainValid()
+        {
+            Assert.That(
+                WorldRouteDiagnostics.ValidateRouteKindBoundaries(
+                    WorldRouteCatalog.BuildDefault(),
+                    out string failure),
+                Is.True,
+                failure);
+        }
+
         static WorldRouteSegment First(IEnumerable<WorldRouteSegment> segments)
         {
             foreach (WorldRouteSegment segment in segments)
