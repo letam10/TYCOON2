@@ -29,61 +29,7 @@ namespace Tycoon
             IReadOnlyList<Vector3> anchors,
             int subdivisionsPerSpan)
         {
-            if (anchors == null || anchors.Count == 0)
-                return new List<Vector3>().AsReadOnly();
-
-            if (anchors.Count == 1)
-                return new List<Vector3> { anchors[0] }.AsReadOnly();
-
-            int subdivisions = Mathf.Max(1, subdivisionsPerSpan);
-            var points = new List<Vector3>((anchors.Count - 1) * subdivisions + 1);
-            points.Add(anchors[0]);
-            for (int span = 0; span < anchors.Count - 1; span++)
-            {
-                Vector3 previous = span > 0 ? anchors[span - 1] : anchors[span];
-                Vector3 start = anchors[span];
-                Vector3 end = anchors[span + 1];
-                Vector3 next = span + 2 < anchors.Count ? anchors[span + 2] : end;
-                Vector3 startTangent = (end - previous) * .5f;
-                Vector3 endTangent = (next - start) * .5f;
-                for (int sample = 1; sample <= subdivisions; sample++)
-                {
-                    float t = sample / (float)subdivisions;
-                    float tSquared = t * t;
-                    float tCubed = tSquared * t;
-                    float startWeight = 2f * tCubed - 3f * tSquared + 1f;
-                    float startTangentWeight = tCubed - 2f * tSquared + t;
-                    float endWeight = -2f * tCubed + 3f * tSquared;
-                    float endTangentWeight = tCubed - tSquared;
-                    Vector3 point = startWeight * start
-                        + startTangentWeight * startTangent
-                        + endWeight * end
-                        + endTangentWeight * endTangent;
-                    if (sample == subdivisions)
-                        point = end;
-                    if (!IsFinite(point))
-                        point = sample == subdivisions ? end : start;
-                    point = ClampToEndpointBounds(point, start, end);
-                    points.Add(point);
-                }
-            }
-            return points.AsReadOnly();
-        }
-
-        // Giữ spline trong hộp của từng span để đường không vượt anchor kế tiếp.
-        static Vector3 ClampToEndpointBounds(Vector3 point, Vector3 start, Vector3 end)
-        {
-            return new Vector3(
-                Mathf.Clamp(point.x, Mathf.Min(start.x, end.x), Mathf.Max(start.x, end.x)),
-                Mathf.Clamp(point.y, Mathf.Min(start.y, end.y), Mathf.Max(start.y, end.y)),
-                Mathf.Clamp(point.z, Mathf.Min(start.z, end.z), Mathf.Max(start.z, end.z)));
-        }
-
-        static bool IsFinite(Vector3 value)
-        {
-            return !float.IsNaN(value.x) && !float.IsInfinity(value.x)
-                && !float.IsNaN(value.y) && !float.IsInfinity(value.y)
-                && !float.IsNaN(value.z) && !float.IsInfinity(value.z);
+            return WorldRouteGeometry.CreateSmoothPath(anchors, subdivisionsPerSpan);
         }
 
         public static void Build(Transform world)
@@ -122,22 +68,22 @@ namespace Tycoon
                 float bend = Mathf.Clamp(delta.magnitude * .16f, 3f, 12f);
                 Vector3 control = (a + b) * .5f + lateral * bend;
                 IReadOnlyList<Vector3> points = CreateCurvedPath(a, b, control, 4);
-                for (int index = 1; index < points.Count; index++)
-                    PaveSegment(points[index - 1], points[index], width, surface, tint);
+                foreach (WorldRouteSegment segment in WorldRouteGeometry.Segments(points, width))
+                    PaveSegment(segment, surface, tint);
             }
 
-            void PaveSegment(Vector3 start, Vector3 end, float width, string surface, string tint)
+            void PaveSegment(WorldRouteSegment segment, string surface, string tint)
             {
-                Vector3 delta = end - start;
-                float length = delta.magnitude;
-                if (length < .001f) return;
-                Vector3 center = (start + end) * .5f;
-                Quaternion rotation = Quaternion.LookRotation(delta);
-                g.Box(center + Vector3.up * .025f, new(width, .05f, length), surface, tint,
-                    rotation.eulerAngles.y);
+                g.Box(segment.Center + Vector3.up * .025f,
+                    new(segment.Width, .05f, segment.Length),
+                    surface,
+                    tint,
+                    segment.Rotation.eulerAngles.y);
                 // Lối lát là vùng đi bộ, không phải tường; trigger giữ vùng định vị mà không chặn capsule.
-                g.Collider("PedestrianLink", center + Vector3.up * .01f,
-                    new(width, .08f, length + .05f), rotation, true);
+                g.Collider("PedestrianLink", segment.Center + Vector3.up * .01f,
+                    new(segment.Width, .08f, segment.Length + .05f),
+                    segment.Rotation,
+                    true);
             }
         }
 
@@ -196,15 +142,20 @@ namespace Tycoon
             string surface,
             string tint)
         {
-            Vector3 delta = end - start;
-            if (delta.sqrMagnitude < .001f) return;
-            Vector3 center = (start + end) * .5f;
-            float length = delta.magnitude;
-            Quaternion rotation = Quaternion.LookRotation(delta);
-            g.Box(center + Vector3.up * .028f, new(width, .055f, length), surface, tint,
-                rotation.eulerAngles.y);
-            g.Collider("RouteCorridor", center + Vector3.up * .01f,
-                new(width, .08f, length + .05f), rotation, true);
+            foreach (WorldRouteSegment segment in WorldRouteGeometry.Segments(
+                new[] { start, end },
+                width))
+            {
+                g.Box(segment.Center + Vector3.up * .028f,
+                    new(segment.Width, .055f, segment.Length),
+                    surface,
+                    tint,
+                    segment.Rotation.eulerAngles.y);
+                g.Collider("RouteCorridor", segment.Center + Vector3.up * .01f,
+                    new(segment.Width, .08f, segment.Length + .05f),
+                    segment.Rotation,
+                    true);
+            }
         }
 
         static void Sign(Transform parent, Vector3 position, string text)

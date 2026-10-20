@@ -70,6 +70,49 @@ namespace Tycoon
 
     public static class WorldRouteGeometry
     {
+        public static IReadOnlyList<Vector3> CreateSmoothPath(
+            IReadOnlyList<Vector3> anchors,
+            int subdivisionsPerSpan)
+        {
+            if (anchors == null || anchors.Count == 0)
+                return new List<Vector3>().AsReadOnly();
+            if (anchors.Count == 1)
+                return new List<Vector3> { anchors[0] }.AsReadOnly();
+
+            int subdivisions = Mathf.Max(1, subdivisionsPerSpan);
+            var points = new List<Vector3>((anchors.Count - 1) * subdivisions + 1);
+            points.Add(anchors[0]);
+            for (int span = 0; span < anchors.Count - 1; span++)
+            {
+                Vector3 previous = span > 0 ? anchors[span - 1] : anchors[span];
+                Vector3 start = anchors[span];
+                Vector3 end = anchors[span + 1];
+                Vector3 next = span + 2 < anchors.Count ? anchors[span + 2] : end;
+                Vector3 startTangent = (end - previous) * .5f;
+                Vector3 endTangent = (next - start) * .5f;
+                for (int sample = 1; sample <= subdivisions; sample++)
+                {
+                    float t = sample / (float)subdivisions;
+                    float tSquared = t * t;
+                    float tCubed = tSquared * t;
+                    float startWeight = 2f * tCubed - 3f * tSquared + 1f;
+                    float startTangentWeight = tCubed - 2f * tSquared + t;
+                    float endWeight = -2f * tCubed + 3f * tSquared;
+                    float endTangentWeight = tCubed - tSquared;
+                    Vector3 point = startWeight * start
+                        + startTangentWeight * startTangent
+                        + endWeight * end
+                        + endTangentWeight * endTangent;
+                    if (sample == subdivisions)
+                        point = end;
+                    if (!IsFinitePoint(point))
+                        point = sample == subdivisions ? end : start;
+                    points.Add(ClampToEndpointBounds(point, start, end));
+                }
+            }
+            return points.AsReadOnly();
+        }
+
         public static IReadOnlyList<WorldRouteJunction> FindJunctions(
             IReadOnlyList<WorldRouteCorridor> routes,
             float tolerance = .05f)
@@ -147,6 +190,23 @@ namespace Tycoon
                     approach.Nodes[index - 1],
                     approach.Nodes[index],
                     approach.Width);
+                if (segment.Length > .0001f)
+                    yield return segment;
+            }
+        }
+
+        public static IEnumerable<WorldRouteSegment> Segments(
+            IReadOnlyList<Vector3> points,
+            float width)
+        {
+            if (points == null)
+                yield break;
+            for (int index = 1; index < points.Count; index++)
+            {
+                WorldRouteSegment segment = new WorldRouteSegment(
+                    points[index - 1],
+                    points[index],
+                    width);
                 if (segment.Length > .0001f)
                     yield return segment;
             }
@@ -241,6 +301,29 @@ namespace Tycoon
                 return;
             }
             junctions.Add(new WorldRouteJunction(point, width));
+        }
+
+        static Vector3 ClampToEndpointBounds(
+            Vector3 point,
+            Vector3 start,
+            Vector3 end)
+        {
+            return new Vector3(
+                Mathf.Clamp(point.x, Mathf.Min(start.x, end.x), Mathf.Max(start.x, end.x)),
+                Mathf.Clamp(point.y, Mathf.Min(start.y, end.y), Mathf.Max(start.y, end.y)),
+                Mathf.Clamp(point.z, Mathf.Min(start.z, end.z), Mathf.Max(start.z, end.z)));
+        }
+
+        static bool IsFinitePoint(Vector3 value)
+        {
+            return IsFiniteValue(value.x)
+                && IsFiniteValue(value.y)
+                && IsFiniteValue(value.z);
+        }
+
+        static bool IsFiniteValue(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
         }
     }
 }
