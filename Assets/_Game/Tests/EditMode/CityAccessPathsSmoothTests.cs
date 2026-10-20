@@ -104,6 +104,37 @@ namespace Tycoon
             }
         }
 
+        [Test]
+        public void SamplesStayInsideEachAnchorSpanBounds()
+        {
+            var anchors = new List<Vector3>
+            {
+                new(0f, 0f, 0f),
+                new(1f, 0f, 0f),
+                new(1f, 0f, 1f)
+            };
+
+            IReadOnlyList<Vector3> path = CityAccessPaths.CreateSmoothPath(anchors, 8);
+
+            for (int span = 0; span < anchors.Count - 1; span++)
+            {
+                Vector3 start = anchors[span];
+                Vector3 end = anchors[span + 1];
+                int first = span * 8;
+                int last = first + 8;
+                for (int index = first; index <= last; index++)
+                {
+                    Vector3 point = path[index];
+                    Assert.That(point.x, Is.InRange(Mathf.Min(start.x, end.x),
+                        Mathf.Max(start.x, end.x)));
+                    Assert.That(point.y, Is.InRange(Mathf.Min(start.y, end.y),
+                        Mathf.Max(start.y, end.y)));
+                    Assert.That(point.z, Is.InRange(Mathf.Min(start.z, end.z),
+                        Mathf.Max(start.z, end.z)));
+                }
+            }
+        }
+
         static void AssertAllPointsFinite(IReadOnlyList<Vector3> path)
         {
             for (int index = 0; index < path.Count; index++)

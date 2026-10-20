@@ -87,9 +87,20 @@ namespace Tycoon
 
         public void Collider(string name, Vector3 p, Vector3 size, bool trigger = false)
         {
+            Collider(name, p, size, Quaternion.identity, trigger);
+        }
+
+        public void Collider(
+            string name,
+            Vector3 p,
+            Vector3 size,
+            Quaternion rotation,
+            bool trigger = false)
+        {
             var go = new GameObject(name + "Collision");
             go.transform.SetParent(root, false);
             go.transform.localPosition = p;
+            go.transform.localRotation = rotation;
             var collider = go.AddComponent<BoxCollider>();
             collider.size = size;
             collider.isTrigger = trigger;

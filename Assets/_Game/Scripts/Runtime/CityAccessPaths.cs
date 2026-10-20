@@ -63,10 +63,20 @@ namespace Tycoon
                         point = end;
                     if (!IsFinite(point))
                         point = sample == subdivisions ? end : start;
+                    point = ClampToEndpointBounds(point, start, end);
                     points.Add(point);
                 }
             }
             return points.AsReadOnly();
+        }
+
+        // Giữ spline trong hộp của từng span để đường không vượt anchor kế tiếp.
+        static Vector3 ClampToEndpointBounds(Vector3 point, Vector3 start, Vector3 end)
+        {
+            return new Vector3(
+                Mathf.Clamp(point.x, Mathf.Min(start.x, end.x), Mathf.Max(start.x, end.x)),
+                Mathf.Clamp(point.y, Mathf.Min(start.y, end.y), Mathf.Max(start.y, end.y)),
+                Mathf.Clamp(point.z, Mathf.Min(start.z, end.z), Mathf.Max(start.z, end.z)));
         }
 
         static bool IsFinite(Vector3 value)
@@ -122,12 +132,12 @@ namespace Tycoon
                 float length = delta.magnitude;
                 if (length < .001f) return;
                 Vector3 center = (start + end) * .5f;
+                Quaternion rotation = Quaternion.LookRotation(delta);
                 g.Box(center + Vector3.up * .025f, new(width, .05f, length), surface, tint,
-                    Quaternion.LookRotation(delta).eulerAngles.y);
-                Vector3 size = Mathf.Abs(delta.x) > Mathf.Abs(delta.z)
-                    ? new(length + .05f, .08f, width) : new(width, .08f, length + .05f);
+                    rotation.eulerAngles.y);
                 // Lối lát là vùng đi bộ, không phải tường; trigger giữ vùng định vị mà không chặn capsule.
-                g.Collider("PedestrianLink", center + Vector3.up * .01f, size, true);
+                g.Collider("PedestrianLink", center + Vector3.up * .01f,
+                    new(width, .08f, length + .05f), rotation, true);
             }
         }
 
@@ -190,11 +200,11 @@ namespace Tycoon
             if (delta.sqrMagnitude < .001f) return;
             Vector3 center = (start + end) * .5f;
             float length = delta.magnitude;
+            Quaternion rotation = Quaternion.LookRotation(delta);
             g.Box(center + Vector3.up * .028f, new(width, .055f, length), surface, tint,
-                Quaternion.LookRotation(delta).eulerAngles.y);
-            Vector3 triggerSize = Mathf.Abs(delta.x) > Mathf.Abs(delta.z)
-                ? new(length + width, .08f, width) : new(width, .08f, length + width);
-            g.Collider("RouteCorridor", center + Vector3.up * .01f, triggerSize, true);
+                rotation.eulerAngles.y);
+            g.Collider("RouteCorridor", center + Vector3.up * .01f,
+                new(width, .08f, length + .05f), rotation, true);
         }
 
         static void Sign(Transform parent, Vector3 position, string text)
