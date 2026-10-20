@@ -53,6 +53,6 @@ Scoped source checks:
 
 ## Commit and push
 
-The exact source commit is recorded after the scoped commit is created. Only the files listed
+The scoped source commit is `cd79d3d`. Only the files listed
 in this handoff are eligible for that commit; unrelated dirty and untracked paths remain out
 of scope.
