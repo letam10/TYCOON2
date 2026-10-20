@@ -1,0 +1,72 @@
+{
+  "phase": "1K",
+  "status": "passed",
+  "sourceBase": "1872c1cd61b90eb11ddc1c11e810569a42e969fb",
+  "objective": "work/tycoon2-plan-20261020/objective-recovered.md",
+  "editMode": {
+    "results": "after-area-filter.xml",
+    "total": 137,
+    "passed": 137,
+    "failed": 0,
+    "skipped": 0,
+    "unityExit": 0,
+    "startedUtc": "2026-10-20T10:02:47Z",
+    "finishedUtc": "2026-10-20T10:02:51Z"
+  },
+  "colliderRegression": {
+    "results": "collider-repro-after-area.xml",
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "unityExit": 0
+  },
+  "build": {
+    "report": "Player/build-report.json",
+    "result": "Succeeded",
+    "bytes": 117169759,
+    "seconds": 20.3673146,
+    "errors": 0,
+    "warnings": 34,
+    "builtUtc": "2026-10-20T10:07:19.2769184Z"
+  },
+  "player": {
+    "report": "world-features-after-area-filter/world-features-report.json",
+    "passed": true,
+    "checks": 5928,
+    "interactions": 1,
+    "runtimeErrors": 0,
+    "pngs": 78,
+    "startedUtc": "2026-10-20T10:08:41.2740614Z",
+    "finishedUtc": "2026-10-20T10:09:16.3026984Z",
+    "worldFeaturesMarker": "WORLD-FEATURES_QA PASS"
+  },
+  "roundedGeometry": {
+    "logicalCorners": 62,
+    "arcEdges": 270,
+    "maximumRadiusErrorMeters": 0.00003528595,
+    "maximumChordErrorMeters": 0.0194773674,
+    "liveSupportSamples": 108,
+    "routeColliderMatches": 355,
+    "routeLiveColliders": 355,
+    "streetColliderSamples": 508,
+    "pathColliderSamples": 854,
+    "maximumPathOverlapSquareMeters": 0.0008839662,
+    "maximumStreetOverlapSquareMeters": 0.0000049942
+  },
+  "preservation": {
+    "originalDirtyManifest": "phase1g/dirty-before.json",
+    "originalTrackedFilesChanged": 0,
+    "timeManagerDiffRestored": true,
+    "unityProcessesClosed": true,
+    "remoteMainBeforeCommit": "1872c1cd61b90eb11ddc1c11e810569a42e969fb"
+  },
+  "openScope": [
+    "Phase 2 NavMesh exclusions and connectivity",
+    "traffic and capsule traversal across every seam",
+    "hero interiors, cutaways and camera occlusion",
+    "licensed PBR assets, biome seed, LOD and water shoreline",
+    "interactive map and HUD redesign",
+    "additive save migration",
+    "1080p/1440p performance and Steam acceptance"
+  ]
+}

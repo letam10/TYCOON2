@@ -107,7 +107,8 @@ namespace Tycoon
                     }
                     if (IsRestrictedCorridor(corridor.Kind))
                     {
-                        failure = "route waypoint " + index + " intersects reserved corridor '" +
+                        failure = "route waypoint " + index + "/" + route.Count + " at " + point
+                            + " intersects reserved corridor '" +
                             corridor.Id + "' without a sidewalk crossing";
                         return false;
                     }

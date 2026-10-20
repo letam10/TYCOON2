@@ -7,13 +7,13 @@ dưới đây; tài liệu lịch sử không được dùng để ghi đè tr�
 
 ## Ưu tiên 1 — nguồn sự thật của dự án
 
-0. `Docs/HANDOFF_TYCOON2_WORLD_STAGE1J_PATH_OWNERSHIP_20261020.md` —
-   checkpoint hiện tại: chia phần giao giữa các loại mặt đường theo ưu tiên,
-   mesh/collider dùng chung và map đọc cùng layout. 109 test đạt; Player 4987
-   checks/0 lỗi runtime; 789/789 polygon có collider, 337/337 trigger khớp mẫu.
-   Đã xem tám ảnh mới. Sai số giao float được đo và ghi rõ, không nhận là zero.
-   Phase 1 và mục tiêu tổng thể chưa xong; còn round corners, khoảng cách
-   highway/sidewalk, rail/dock, traffic và capsule traversal toàn tuyến.
+0. `Docs/HANDOFF_TYCOON2_WORLD_STAGE1K_ROUNDED_COLLIDERS_20261020.md` —
+   checkpoint hiện tại: circular route fillets, shared ring sections, bounded
+   street joins and cooked collider coverage. 137 focused EditMode tests pass;
+   the Windows build succeeds; Player reports 5928 checks, 0 runtime errors,
+   78 PNGs and WORLD-FEATURES_QA PASS. 62 logical corners and 108 live arc
+   support samples are covered. Phase 1K passes; the full redesign remains open
+   for NavMesh, interiors, assets, map/HUD, save migration and performance.
    `work/tycoon2-plan-20261020/objective-recovered.md` giữ nguyên mục tiêu gốc
    được khôi phục từ lần đọc attachment thành công trong chính chat này.
    Evidence mới và acceptance summary nằm ở `work/tycoon2-plan-20261020/phase1j/`.

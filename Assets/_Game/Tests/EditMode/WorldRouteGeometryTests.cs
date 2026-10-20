@@ -102,6 +102,52 @@ namespace Tycoon.Tests
         }
 
         [Test]
+        public void RoundedBendCreatesOneLogicalJunctionOnItsActualCircularMidpoint()
+        {
+            var route = new WorldRouteCorridor("rounded-junction", RouteKind.Highway,
+                new[] { new Vector3(-10, 0, 0), Vector3.zero, new Vector3(0, 0, 10) }, 4, true);
+            IReadOnlyList<WorldRouteJunction> junctions = WorldRouteGeometry.FindJunctions(new[] { route });
+            float diagonal = Mathf.Sqrt(8);
+            Vector3 expected = new(-4 + diagonal, 0, 4 - diagonal);
+
+            Assert.That(junctions, Has.Count.EqualTo(1));
+            Assert.That(Vector3.Distance(junctions[0].Point, expected), Is.LessThan(.0001f));
+            Assert.That(junctions[0].Width, Is.EqualTo(4));
+            Assert.That(Vector3.Distance(junctions[0].Point, Vector3.zero), Is.GreaterThan(1));
+        }
+
+        [Test]
+        public void IntersectionAtACircularSampleAggregatesWithItsLogicalBend()
+        {
+            float diagonal = Mathf.Sqrt(8);
+            Vector3 expected = new(-4 + diagonal, 0, 4 - diagonal);
+            var routes = new[]
+            {
+                new WorldRouteCorridor("rounded-crossing", RouteKind.Highway,
+                    new[] { new Vector3(-10, 0, 0), Vector3.zero, new Vector3(0, 0, 10) }, 4, true),
+                new WorldRouteCorridor("arc-probe", RouteKind.Highway,
+                    new[] { expected - Vector3.forward * .3f, expected + Vector3.forward * .3f }, .25f, true)
+            };
+            IReadOnlyList<WorldRouteJunction> junctions = WorldRouteGeometry.FindJunctions(routes);
+
+            Assert.That(junctions, Has.Count.EqualTo(1));
+            Assert.That(Vector3.Distance(junctions[0].Point, expected), Is.LessThan(.0001f));
+        }
+
+        [Test]
+        public void GradeSeparatedCrossingCreatesNoGroundLevelJunction()
+        {
+            var routes = new[]
+            {
+                new WorldRouteCorridor("junction-ground", RouteKind.Highway,
+                    new[] { new Vector3(-10, 0, 0), new Vector3(10, 0, 0) }, 4, true),
+                new WorldRouteCorridor("junction-bridge", RouteKind.Highway,
+                    new[] { new Vector3(0, 5, -10), new Vector3(0, 5, 10) }, 4, true)
+            };
+            Assert.That(WorldRouteGeometry.FindJunctions(routes), Is.Empty);
+        }
+
+        [Test]
         public void SidewalkSegmentTrimsAtSharedStreetEndpoints()
         {
             WorldRouteCorridor route = WorldRouteCatalog.BuildStreetNetwork()[2];

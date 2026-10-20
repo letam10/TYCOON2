@@ -53,6 +53,17 @@ namespace Tycoon
             IReadOnlyList<Vector3> nodes,
             float width,
             bool reservesPlacement)
+            : this(id, kind, nodes, width, reservesPlacement, null)
+        {
+        }
+
+        internal WorldRouteCorridor(
+            string id,
+            RouteKind kind,
+            IReadOnlyList<Vector3> nodes,
+            float width,
+            bool reservesPlacement,
+            IReadOnlyList<Vector3> canonicalSamples)
         {
             if (string.IsNullOrWhiteSpace(id))
                 throw new ArgumentException("Route id is required.", nameof(id));
@@ -69,10 +80,21 @@ namespace Tycoon
             for (int index = 0; index < nodes.Count; index++)
                 nodeValues[index] = nodes[index];
             readOnlyNodes = Array.AsReadOnly(nodeValues);
-            sampledNodes = nodes.Count < 3
-                ? readOnlyNodes
-                : WorldRouteGeometry.CreateSmoothPath(
-                    readOnlyNodes, WorldRouteGeometry.RouteSubdivisionsPerSpan);
+            if (canonicalSamples != null)
+            {
+                if (canonicalSamples.Count < 2)
+                    throw new ArgumentException("A sampled route needs at least two nodes.", nameof(canonicalSamples));
+                var sampleValues = new Vector3[canonicalSamples.Count];
+                for (int index = 0; index < sampleValues.Length; index++)
+                    sampleValues[index] = canonicalSamples[index];
+                sampledNodes = Array.AsReadOnly(sampleValues);
+            }
+            else
+            {
+                sampledNodes = nodes.Count < 3
+                    ? readOnlyNodes
+                    : WorldRouteRounding.Sample(readOnlyNodes, width);
+            }
         }
     }
 
@@ -120,8 +142,7 @@ namespace Tycoon
             readOnlyNodes = Array.AsReadOnly(nodeValues);
             sampledNodes = nodes.Count < 3
                 ? readOnlyNodes
-                : WorldRouteGeometry.CreateSmoothPath(
-                    readOnlyNodes, WorldRouteGeometry.RouteSubdivisionsPerSpan);
+                : WorldRouteRounding.Sample(readOnlyNodes, width);
         }
     }
 
@@ -150,12 +171,16 @@ namespace Tycoon
 
         public static bool IsPublicApproachPoint(Vector3 point)
         {
+            if (!IsFinite(point))
+                return false;
             for (int approachIndex = 0; approachIndex < publicApproaches.Count; approachIndex++)
             {
                 WorldPublicApproach approach = publicApproaches[approachIndex];
-                for (int nodeIndex = 0; nodeIndex < approach.SampledNodes.Count; nodeIndex++)
-                    if ((approach.SampledNodes[nodeIndex] - point).sqrMagnitude < .0001f)
-                        return true;
+                if (Mathf.Abs(point.y - approach.Nodes[0].y) > .001f)
+                    continue;
+                float halfWidth = approach.Width * .5f;
+                if (DistanceSquaredToRoute(point, approach.SampledNodes) <= halfWidth * halfWidth)
+                    return true;
             }
             return false;
         }
@@ -564,6 +589,10 @@ namespace Tycoon
 
         static IReadOnlyList<WorldRouteCorridor> BuildStreetNetworkRoutes()
         {
+            WorldRouteCorridor ring = null;
+            for (int index = 0; index < defaultRoutes.Count; index++)
+                if (defaultRoutes[index].Id == "highway-ring")
+                    ring = defaultRoutes[index];
             var routes = new List<WorldRouteCorridor>
             {
                 Street("street-main-south", new(-116, 0, -45), new(145, 0, -45), 8),
@@ -591,14 +620,48 @@ namespace Tycoon
             };
             return new System.Collections.ObjectModel.ReadOnlyCollection<WorldRouteCorridor>(routes);
 
-            static WorldRouteCorridor Street(string id, Vector3 start, Vector3 end, float width)
+            WorldRouteCorridor Street(string id, Vector3 start, Vector3 end, float width)
             {
+                IReadOnlyList<Vector3> canonicalSamples = null;
+                int fromCorner = -1;
+                bool reverse = false;
+                switch (id)
+                {
+                    case "street-ring-west":
+                        fromCorner = 0;
+                        break;
+                    case "street-ring-north":
+                        fromCorner = 1;
+                        break;
+                    case "street-ring-east":
+                        fromCorner = 2;
+                        reverse = true;
+                        break;
+                    case "street-ring-south":
+                        fromCorner = 3;
+                        reverse = true;
+                        break;
+                }
+                if (fromCorner >= 0)
+                {
+                    // Bốn ID giữ nguyên nhưng chia cùng một vòng cong, tránh lớp đường vuông phủ lại.
+                    canonicalSamples = WorldRouteRounding.Section(
+                        ring.Nodes, ring.Width, fromCorner, (fromCorner + 1) % 4);
+                    if (reverse)
+                    {
+                        var reversed = new Vector3[canonicalSamples.Count];
+                        for (int index = 0; index < reversed.Length; index++)
+                            reversed[index] = canonicalSamples[reversed.Length - 1 - index];
+                        canonicalSamples = Array.AsReadOnly(reversed);
+                    }
+                }
                 return new WorldRouteCorridor(
                     id,
                     RouteKind.Highway,
                     new[] { start, end },
                     width,
-                    true);
+                    true,
+                    canonicalSamples);
             }
         }
 

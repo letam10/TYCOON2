@@ -69,12 +69,24 @@ namespace Tycoon.Tests
         }
 
         [Test]
-        public void EveryCatalogRouteKeepsExactAnchorsAndFiniteSamplesInsideEachSpan()
+        public void EveryCatalogRouteHasFiniteNonzeroSamplesInsideItsAuthoredLocalHull()
         {
             foreach (WorldRouteCorridor route in WorldRouteCatalog.BuildDefault())
                 AssertBoundedSamples(route.Id, route.Nodes, route.SampledNodes);
             foreach (WorldRouteCorridor route in WorldRouteCatalog.BuildStreetNetwork())
-                AssertBoundedSamples(route.Id, route.Nodes, route.SampledNodes);
+            {
+                bool ringSection = route.Id == "street-ring-west" || route.Id == "street-ring-east"
+                    || route.Id == "street-ring-north" || route.Id == "street-ring-south";
+                if (ringSection)
+                {
+                    Assert.That(WorldRouteCatalog.TryGet("highway-ring", out WorldRouteCorridor ring), Is.True);
+                    AssertBoundedSamples(route.Id, ring.Nodes, route.SampledNodes, false);
+                }
+                else
+                {
+                    AssertBoundedSamples(route.Id, route.Nodes, route.SampledNodes);
+                }
+            }
             foreach (WorldPublicApproach route in WorldRouteCatalog.BuildPublicApproaches())
                 AssertBoundedSamples(route.Id, route.Nodes, route.SampledNodes);
         }
@@ -137,11 +149,11 @@ namespace Tycoon.Tests
         [Test]
         public void CatalogNearestPointUsesCurvedMarinaSampleRatherThanRawChord()
         {
-            // Trung điểm đã tính độc lập: lệch hơn 2 m khỏi dây nối hai anchor.
-            Vector3 expected = new Vector3(393.75f, 0, -125.5f);
+            // Tâm (417.782195854, -125.885494498), R=5, góc quay -1.303653806 rad.
+            Vector3 expected = new Vector3(419.545298816f, 0, -121.206662599f);
             Assert.That(WorldRouteCatalog.TryGet(
                 "expansion-marina-dock", out WorldRouteCorridor route), Is.True);
-            Assert.That(DistanceToPolyline(expected, route.Nodes), Is.GreaterThan(2));
+            Assert.That(DistanceToPolyline(expected, route.Nodes), Is.GreaterThan(.8f));
 
             bool found = WorldRouteCatalog.TryGetNearestPoint(
                 route.Id, expected + Vector3.up * 19, .001f,
@@ -157,7 +169,8 @@ namespace Tycoon.Tests
         {
             Assert.That(WorldRouteCatalog.TryGet(
                 "expansion-marina-dock", out WorldRouteCorridor route), Is.True);
-            Vector3 point = new Vector3(393.45f, 0, -124.5f);
+            // Trung điểm cung cộng 2.35 m về tâm; cách cả hai dây raw khoảng 2.8935 m.
+            Vector3 point = new Vector3(418.716640424f, 0, -123.405713592f);
             Assert.That(DistanceToPolyline(point, route.Nodes), Is.GreaterThan(route.Width * .5f),
                 "This regression point must lie outside the former straight-strip reservation.");
 
@@ -306,30 +319,54 @@ namespace Tycoon.Tests
         static void AssertBoundedSamples(
             string id,
             IReadOnlyList<Vector3> anchors,
-            IReadOnlyList<Vector3> samples)
+            IReadOnlyList<Vector3> samples,
+            bool preserveEndpoints = true)
         {
-            int subdivisions = anchors.Count == 2 ? 1 : 4;
-            Assert.That(samples.Count, Is.EqualTo((anchors.Count - 1) * subdivisions + 1), id);
+            Assert.That(samples.Count, Is.GreaterThanOrEqualTo(2), id);
+            bool closed = anchors[0].Equals(anchors[^1]);
+            if (preserveEndpoints)
+            {
+                if (closed)
+                    Assert.That(samples[^1], Is.EqualTo(samples[0]), id);
+                else
+                {
+                    Assert.That(samples[0], Is.EqualTo(anchors[0]), id);
+                    Assert.That(samples[^1], Is.EqualTo(anchors[^1]), id);
+                }
+            }
             for (int index = 1; index < samples.Count; index++)
                 Assert.That(Vector3.Distance(samples[index - 1], samples[index]),
                     Is.GreaterThan(.0001f), id + " has duplicate consecutive samples");
-            for (int anchor = 0; anchor < anchors.Count; anchor++)
-                Assert.That(samples[anchor * subdivisions], Is.EqualTo(anchors[anchor]), id);
-            for (int span = 0; span < anchors.Count - 1; span++)
+            int uniqueCount = closed ? anchors.Count - 1 : anchors.Count;
+            foreach (Vector3 point in samples)
             {
-                for (int sample = 0; sample <= subdivisions; sample++)
-                {
-                    Vector3 point = samples[span * subdivisions + sample];
-                    for (int axis = 0; axis < 3; axis++)
-                    {
-                        Assert.That(float.IsNaN(point[axis]) || float.IsInfinity(point[axis]),
-                            Is.False, id);
-                        Assert.That(point[axis], Is.InRange(
-                            Mathf.Min(anchors[span][axis], anchors[span + 1][axis]),
-                            Mathf.Max(anchors[span][axis], anchors[span + 1][axis])), id);
-                    }
-                }
+                for (int axis = 0; axis < 3; axis++)
+                    Assert.That(float.IsNaN(point[axis]) || float.IsInfinity(point[axis]), Is.False, id);
+                Assert.That(point.y, Is.EqualTo(anchors[0].y), id);
+                bool bounded = DistanceToPolyline(point, anchors) < .0001f;
+                for (int corner = closed ? 0 : 1; corner < (closed ? uniqueCount : uniqueCount - 1); corner++)
+                    bounded |= InsideTriangle(point, anchors[(corner + uniqueCount - 1) % uniqueCount],
+                        anchors[corner], anchors[(corner + 1) % uniqueCount]);
+                Assert.That(bounded, Is.True, id + " sample escaped its local anchor hull: " + point);
             }
+        }
+
+        static bool InsideTriangle(Vector3 point, Vector3 a, Vector3 b, Vector3 c)
+        {
+            double area = Cross(b - a, c - a);
+            if (Math.Abs(area) < .000001)
+                return false;
+            double first = Cross(b - a, point - a);
+            double second = Cross(c - b, point - b);
+            double third = Cross(a - c, point - c);
+            return area > 0
+                ? first >= -.001 && second >= -.001 && third >= -.001
+                : first <= .001 && second <= .001 && third <= .001;
+        }
+
+        static double Cross(Vector3 a, Vector3 b)
+        {
+            return (double)a.x * b.z - (double)a.z * b.x;
         }
 
         static void AssertVector(Vector3 actual, Vector3 expected)

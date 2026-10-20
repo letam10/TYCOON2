@@ -34,15 +34,41 @@ namespace Tycoon
         public const float RedSeconds = 8f;
         public const float DetectionRadius = 13f;
 
-        static readonly CityTrafficSignalDefinition[] Defaults =
+        static readonly CityTrafficSignalDefinition[] Defaults = BuildDefinitions();
+
+        static CityTrafficSignalDefinition[] BuildDefinitions()
         {
+            var definitions = new CityTrafficSignalDefinition[]
+            {
             new("west_south", new(-188.8f, 0, -105.8f), 0),
             new("west_mid", new(-188.8f, 0, 35.2f), 4),
             new("west_north", new(-188.8f, 0, 161.2f), 8),
             new("east_south", new(196.2f, 0, -105.8f), 4),
             new("east_mid", new(196.2f, 0, 35.2f), 8),
             new("east_north", new(196.2f, 0, 161.2f), 0)
-        };
+            };
+            for (int index = 0; index < definitions.Length; index++)
+            {
+                CityTrafficSignalDefinition definition = definitions[index];
+                if (WorldRouteCatalog.TryGetNearestPoint("highway-ring", definition.Position,
+                    -1, out Vector3 nearest, out _))
+                {
+                    // Giữ khoảng lùi 6,2 m từ tim đường: nửa đường 4 m + lề tín hiệu 2,2 m.
+                    Vector3 outward = (definition.Position - nearest).normalized;
+                    definition.Position = nearest + outward * 6.2f;
+                    if (WorldRouteCatalog.TryGetNearestPoint("highway-ring", definition.Position,
+                        -1, out Vector3 support, out float distance) && distance > 0f)
+                    {
+                        // Góc lõm có thể đổi cạnh gần nhất; tính bù đúng theo pháp tuyến cạnh đó.
+                        float normalAmount = Vector3.Dot((definition.Position - support).normalized, outward);
+                        if (normalAmount > 0f)
+                            definition.Position += outward * ((6.2f - distance) / normalAmount);
+                    }
+                    definitions[index] = definition;
+                }
+            }
+            return definitions;
+        }
 
         public static CityTrafficSignalSystem Instance { get; private set; }
         public static IReadOnlyList<CityTrafficSignalDefinition> Definitions => Defaults;

@@ -72,6 +72,25 @@ namespace Tycoon
     {
         public const int RouteSubdivisionsPerSpan = 4;
 
+        readonly struct IndexedSegment
+        {
+            public readonly WorldRouteSegment Segment;
+            public readonly int RouteIndex;
+            public readonly int EdgeIndex;
+            public readonly int EdgeCount;
+            public readonly bool Closed;
+
+            public IndexedSegment(WorldRouteSegment segment, int routeIndex,
+                int edgeIndex, int edgeCount, bool closed)
+            {
+                Segment = segment;
+                RouteIndex = routeIndex;
+                EdgeIndex = edgeIndex;
+                EdgeCount = edgeCount;
+                Closed = closed;
+            }
+        }
+
         public static IReadOnlyList<Vector3> CreateSmoothPath(
             IReadOnlyList<Vector3> anchors,
             int subdivisionsPerSpan)
@@ -123,38 +142,40 @@ namespace Tycoon
             if (routes == null)
                 return junctions.AsReadOnly();
 
-            var segments = new List<WorldRouteSegment>();
+            var segments = new List<IndexedSegment>();
             for (int routeIndex = 0; routeIndex < routes.Count; routeIndex++)
             {
                 WorldRouteCorridor route = routes[routeIndex];
                 if (route == null)
                     continue;
-                for (int nodeIndex = 1; nodeIndex < route.Nodes.Count; nodeIndex++)
+                IReadOnlyList<Vector3> points = route.SampledNodes;
+                bool closed = points.Count > 2 && points[0] == points[^1];
+                for (int nodeIndex = 1; nodeIndex < points.Count; nodeIndex++)
                 {
                     WorldRouteSegment segment = new WorldRouteSegment(
-                        route.Nodes[nodeIndex - 1],
-                        route.Nodes[nodeIndex],
+                        points[nodeIndex - 1],
+                        points[nodeIndex],
                         route.Width);
                     if (segment.Length > .0001f)
-                        segments.Add(segment);
+                        segments.Add(new IndexedSegment(segment, routeIndex,
+                            nodeIndex - 1, points.Count - 1, closed));
                 }
-                for (int nodeIndex = 1; nodeIndex < route.Nodes.Count - 1; nodeIndex++)
-                {
-                    Vector3 incoming = route.Nodes[nodeIndex] - route.Nodes[nodeIndex - 1];
-                    Vector3 outgoing = route.Nodes[nodeIndex + 1] - route.Nodes[nodeIndex];
-                    if (incoming.sqrMagnitude <= .0001f || outgoing.sqrMagnitude <= .0001f)
-                        continue;
-                    if (Vector3.Dot(incoming.normalized, outgoing.normalized) < .999f)
-                        IncludeJunction(junctions, route.Nodes[nodeIndex], route.Width, tolerance);
-                }
+                IncludeRouteBends(junctions, route, tolerance);
             }
 
             for (int firstIndex = 0; firstIndex < segments.Count; firstIndex++)
             {
                 for (int secondIndex = firstIndex + 1; secondIndex < segments.Count; secondIndex++)
                 {
-                    WorldRouteSegment first = segments[firstIndex];
-                    WorldRouteSegment second = segments[secondIndex];
+                    IndexedSegment firstEntry = segments[firstIndex];
+                    IndexedSegment secondEntry = segments[secondIndex];
+                    if (firstEntry.RouteIndex == secondEntry.RouteIndex
+                        && (secondEntry.EdgeIndex == firstEntry.EdgeIndex + 1
+                            || (firstEntry.Closed && firstEntry.EdgeIndex == 0
+                                && secondEntry.EdgeIndex == firstEntry.EdgeCount - 1)))
+                        continue;
+                    WorldRouteSegment first = firstEntry.Segment;
+                    WorldRouteSegment second = secondEntry.Segment;
                     // Hai đoạn thẳng hàng nối tiếp không tạo giao lộ hay khoảng cắt vỉa hè.
                     if (Mathf.Abs(Vector3.Dot(first.Forward, second.Forward)) > .99999f)
                         continue;
@@ -168,6 +189,35 @@ namespace Tycoon
                 }
             }
             return junctions.AsReadOnly();
+        }
+
+        static void IncludeRouteBends(List<WorldRouteJunction> junctions,
+            WorldRouteCorridor route, float tolerance)
+        {
+            IReadOnlyList<WorldRouteCorner> corners = WorldRouteRounding.Corners(route.Nodes, route.Width);
+            var roundedIndices = new HashSet<int>();
+            for (int index = 0; index < corners.Count; index++)
+            {
+                WorldRouteCorner corner = corners[index];
+                roundedIndices.Add(corner.AnchorIndex);
+                // Một góc logic nằm trên cung thật, không tạo giao lộ cho từng dây cung nhỏ.
+                IncludeJunction(junctions, corner.Evaluate(.5f), route.Width, tolerance);
+            }
+            bool closed = route.Nodes.Count > 2 && route.Nodes[0] == route.Nodes[^1];
+            int uniqueCount = closed ? route.Nodes.Count - 1 : route.Nodes.Count;
+            int first = closed ? 0 : 1;
+            int last = closed ? uniqueCount : uniqueCount - 1;
+            for (int index = first; index < last; index++)
+            {
+                if (roundedIndices.Contains(index))
+                    continue;
+                Vector3 incoming = route.Nodes[index] - route.Nodes[(index + uniqueCount - 1) % uniqueCount];
+                Vector3 outgoing = route.Nodes[(index + 1) % uniqueCount] - route.Nodes[index];
+                if (incoming.sqrMagnitude <= .0001f || outgoing.sqrMagnitude <= .0001f)
+                    continue;
+                if (Vector3.Dot(incoming.normalized, outgoing.normalized) < .999f)
+                    IncludeJunction(junctions, route.Nodes[index], route.Width, tolerance);
+            }
         }
 
         public static IEnumerable<WorldRouteSegment> Segments(WorldRouteCorridor corridor)
@@ -316,6 +366,12 @@ namespace Tycoon
                 || secondAmount < -.0001f || secondAmount > 1.0001f)
                 return false;
             point = Vector3.Lerp(first.Start, first.End, Mathf.Clamp01(firstAmount));
+            Vector3 otherPoint = Vector3.Lerp(second.Start, second.End, Mathf.Clamp01(secondAmount));
+            if (point.y != otherPoint.y)
+            {
+                point = default;
+                return false;
+            }
             return true;
         }
 
@@ -330,7 +386,8 @@ namespace Tycoon
             {
                 for (int secondIndex = 0; secondIndex < secondPoints.Length; secondIndex++)
                 {
-                    if ((firstPoints[firstIndex] - secondPoints[secondIndex]).sqrMagnitude > .0025f)
+                    if (firstPoints[firstIndex].y != secondPoints[secondIndex].y
+                        || (firstPoints[firstIndex] - secondPoints[secondIndex]).sqrMagnitude > .0025f)
                         continue;
                     point = (firstPoints[firstIndex] + secondPoints[secondIndex]) * .5f;
                     return true;
@@ -349,7 +406,8 @@ namespace Tycoon
             float squaredTolerance = Mathf.Max(.0001f, tolerance * tolerance);
             for (int index = 0; index < junctions.Count; index++)
             {
-                if ((junctions[index].Point - point).sqrMagnitude > squaredTolerance)
+                if (junctions[index].Point.y != point.y
+                    || (junctions[index].Point - point).sqrMagnitude > squaredTolerance)
                     continue;
                 WorldRouteJunction existing = junctions[index];
                 existing.IncludeWidth(width);
@@ -366,7 +424,8 @@ namespace Tycoon
             if (junctions == null)
                 return false;
             for (int index = 0; index < junctions.Count; index++)
-                if ((junctions[index].Point - point).sqrMagnitude <= .0025f)
+                if (junctions[index].Point.y == point.y
+                    && (junctions[index].Point - point).sqrMagnitude <= .0025f)
                     return true;
             return false;
         }

@@ -7,6 +7,8 @@ namespace Tycoon
     public static class WorldStreetGeometry
     {
         const double PointTolerance = .000001;
+        const double QuantizedPointTolerance = .0001;
+        const double QuantizedMinimumArea = .00001;
         // Mảnh dưới 1 mm² suy biến khi đổi sang mesh/collider số thực Unity.
         const double MinimumArea = .000001;
 
@@ -29,19 +31,25 @@ namespace Tycoon
             public readonly WorldRouteSegment Source;
             public readonly List<Point> Outline;
             public readonly bool IsJoin;
+            public readonly WorldRouteSegment JoinOutgoing;
+            public readonly int JoinSide;
 
             public Footprint(
                 string routeId,
                 int segmentIndex,
                 WorldRouteSegment source,
                 List<Point> outline,
-                bool isJoin = false)
+                bool isJoin = false,
+                WorldRouteSegment joinOutgoing = default,
+                int joinSide = 0)
             {
                 RouteId = routeId;
                 SegmentIndex = segmentIndex;
                 Source = source;
                 Outline = outline;
                 IsJoin = isJoin;
+                JoinOutgoing = joinOutgoing;
+                JoinSide = joinSide;
             }
         }
 
@@ -74,14 +82,16 @@ namespace Tycoon
             for (int roadIndex = 0; roadIndex < roads.Count; roadIndex++)
             {
                 Footprint road = roads[roadIndex];
-                if (road.IsJoin)
-                    continue;
                 for (int side = -1; side <= 1; side += 2)
                 {
+                    if (road.IsJoin && side != road.JoinSide)
+                        continue;
                     double offset = side * ((double)road.Source.Width + sidewalkWidth) * .5;
                     var pieces = new List<List<Point>>
                     {
-                        Rectangle(road.Source, sidewalkWidth, offset)
+                        road.IsJoin
+                            ? JoinOutline(road.Source, road.JoinOutgoing, side, sidewalkWidth)
+                            : Rectangle(road.Source, sidewalkWidth, offset)
                     };
                     for (int blockerIndex = 0; blockerIndex < roads.Count && pieces.Count > 0; blockerIndex++)
                     {
@@ -106,12 +116,39 @@ namespace Tycoon
         static List<Footprint> CreateFootprints(IReadOnlyList<WorldRouteCorridor> routes)
         {
             var footprints = new List<Footprint>();
+            var endpoints = new List<(string Id, WorldRouteSegment Incoming)>();
+            var nextJoinIndices = new Dictionary<string, int>(StringComparer.Ordinal);
             for (int routeIndex = 0; routeIndex < routes.Count; routeIndex++)
             {
                 WorldRouteCorridor route = routes[routeIndex];
                 if (route == null)
                     throw new ArgumentException("Street routes cannot contain null entries.", nameof(routes));
                 AddFootprints(footprints, route.Id, route.SampledNodes, route.Width);
+                IReadOnlyList<Vector3> points = route.SampledNodes;
+                nextJoinIndices[route.Id] = points.Count * 3;
+                if (points[0] == points[^1])
+                    continue;
+                endpoints.Add((route.Id, new WorldRouteSegment(points[1], points[0], route.Width)));
+                endpoints.Add((route.Id, new WorldRouteSegment(points[^2], points[^1], route.Width)));
+            }
+            // Nối cả khi một góc bị chia thành nhiều ID; cùng độ cao mới dùng chung mặt.
+            for (int firstIndex = 0; firstIndex < endpoints.Count; firstIndex++)
+            {
+                var first = endpoints[firstIndex];
+                for (int secondIndex = firstIndex + 1; secondIndex < endpoints.Count; secondIndex++)
+                {
+                    var second = endpoints[secondIndex];
+                    if (first.Id == second.Id
+                        || first.Incoming.End.y != second.Incoming.End.y
+                        || Math.Abs((double)first.Incoming.End.x - second.Incoming.End.x) > PointTolerance
+                        || Math.Abs((double)first.Incoming.End.z - second.Incoming.End.z) > PointTolerance)
+                        continue;
+                    int index = nextJoinIndices[first.Id];
+                    nextJoinIndices[first.Id] = index + 2;
+                    AddJoin(footprints, first.Id, index, first.Incoming,
+                        new WorldRouteSegment(second.Incoming.End, second.Incoming.Start,
+                            second.Incoming.Width));
+                }
             }
             return footprints;
         }
@@ -234,23 +271,39 @@ namespace Tycoon
         static void AddJoin(List<Footprint> footprints, string id, int index,
             WorldRouteSegment incoming, WorldRouteSegment outgoing)
         {
-            Vector3 center = incoming.End;
             for (int side = -1; side <= 1; side += 2)
             {
-                Vector3 first = center + WorldRouteGeometry.Offset(incoming, incoming.Width * .5f * side);
-                Vector3 second = center + WorldRouteGeometry.Offset(outgoing, outgoing.Width * .5f * side);
-                // Nối vát nằm trong tam giác hai mép, không kéo dài góc nhọn thành spike.
-                var outline = new List<Point>
-                {
-                    new Point(center.x, center.z),
-                    new Point(first.x, first.z),
-                    new Point(second.x, second.z)
-                };
-                Clean(outline);
+                List<Point> outline = JoinOutline(incoming, outgoing, side, 0d);
                 if (outline.Count >= 3)
                     footprints.Add(new Footprint(id, index + (side > 0 ? 1 : 0),
-                        incoming, outline, true));
+                        incoming, outline, true, outgoing, side));
             }
+        }
+
+        static List<Point> JoinOutline(WorldRouteSegment incoming,
+            WorldRouteSegment outgoing, int side, double expansion)
+        {
+            Vector3 center = incoming.End;
+            Point first = JoinOffset(incoming, center, side * (incoming.Width * .5d + expansion));
+            Point second = JoinOffset(outgoing, center, side * (outgoing.Width * .5d + expansion));
+            // Bao vát hữu hạn cho cả đường và vỉa hè, không kéo dài giao tuyến thành spike.
+            var outline = new List<Point>
+            {
+                new Point(center.x, center.z),
+                first,
+                second
+            };
+            Clean(outline);
+            return outline;
+        }
+
+        static Point JoinOffset(WorldRouteSegment source, Vector3 center, double offset)
+        {
+            double deltaX = (double)source.End.x - source.Start.x;
+            double deltaZ = (double)source.End.z - source.Start.z;
+            double length = Math.Sqrt(deltaX * deltaX + deltaZ * deltaZ);
+            return new Point(center.x + deltaZ / length * offset,
+                center.z - deltaX / length * offset);
         }
 
         static List<Point> Rectangle(WorldRouteSegment source, double width, double offset)
@@ -432,6 +485,9 @@ namespace Tycoon
 
         static List<Point> QuantizedConvexHull(List<Point> points)
         {
+            CollapseNearQuantizedPoints(points);
+            if (points.Count < 3)
+                return new List<Point>();
             points.Sort((first, second) =>
             {
                 int x = first.X.CompareTo(second.X);
@@ -459,6 +515,23 @@ namespace Tycoon
                 hull.RemoveAt(hull.Count - 1);
             Clean(hull);
             return hull;
+        }
+
+        static void CollapseNearQuantizedPoints(List<Point> points)
+        {
+            double squaredTolerance = QuantizedPointTolerance * QuantizedPointTolerance;
+            for (int first = points.Count - 1; first >= 0; first--)
+            {
+                for (int second = first - 1; second >= 0; second--)
+                {
+                    double deltaX = points[first].X - points[second].X;
+                    double deltaZ = points[first].Z - points[second].Z;
+                    if (deltaX * deltaX + deltaZ * deltaZ > squaredTolerance)
+                        continue;
+                    points.RemoveAt(first);
+                    break;
+                }
+            }
         }
 
         static void AppendSurfaces(
@@ -489,7 +562,7 @@ namespace Tycoon
                     rounded.Add(new Point((float)piece[pointIndex].X, (float)piece[pointIndex].Z));
                 // Phép cắt cho mảnh lồi; lượng tử float có thể tạo đỉnh lõm rất nhỏ.
                 rounded = QuantizedConvexHull(rounded);
-                if (rounded.Count < 3)
+                if (rounded.Count < 3 || Math.Abs(SignedArea(rounded)) <= QuantizedMinimumArea)
                     continue;
                 var outline = new List<Vector3>(rounded.Count);
                 for (int pointIndex = 0; pointIndex < rounded.Count; pointIndex++)

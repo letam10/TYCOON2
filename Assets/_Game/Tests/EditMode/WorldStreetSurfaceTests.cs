@@ -118,7 +118,7 @@ namespace Tycoon.Tests
             Assert.That(WorldRouteGeometry.FindJunctions(new[] { route }), Is.Empty);
         }
 
-        [TestCase("bend", 76f)]
+        [TestCase("bend", 78f)]
         [TestCase("tee", 112f)]
         [TestCase("cross", 144f)]
         public void NonCollinearJunctionsRemainAndTheirPavementIsContinuous(string kind, float area)
@@ -149,7 +149,61 @@ namespace Tycoon.Tests
             Assert.That(WorldRouteGeometry.FindJunctions(new[] { route }), Has.Count.EqualTo(1));
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void TwoRouteCornerHasAnalyticBevelAndCompleteOuterSidewalk(bool reverseSecond)
+        {
+            Vector3 end = new(0, 0, 10);
+            var routes = new[]
+            {
+                Route("corner-west", new(-10, 0, 0), Vector3.zero),
+                Route("corner-north", reverseSecond ? end : Vector3.zero,
+                    reverseSecond ? Vector3.zero : end)
+            };
+            WorldStreetLayout layout = WorldStreetGeometry.Build(routes, 2);
+
+            // Dải ngoài rộng 8 m có diện tích 160-16+8=152; trừ đường 80-4+2=78.
+            Assert.That(TotalArea(layout.Pavements), Is.EqualTo(78).Within(AreaTolerance));
+            Assert.That(TotalArea(layout.Sidewalks), Is.EqualTo(74).Within(AreaTolerance));
+            Assert.That(CoverCount(layout.Pavements, new(.7f, 0, -.7f)), Is.EqualTo(1));
+            Assert.That(CoverCount(layout.Sidewalks, new(1.4f, 0, -1.4f)), Is.EqualTo(1));
+            Assert.That(CoverCount(layout.Pavements, new(1.4f, 0, -1.4f)), Is.EqualTo(0));
+            Assert.That(CoverCount(layout.Sidewalks, new(2.3f, 0, -2.3f)), Is.EqualTo(0));
+            AssertValid(layout, routes);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void CurvedOuterSidewalkFillsEveryBoundedSampleJoin(bool reverse)
+        {
+            Vector3[] anchors = { new(-12, 0, 0), Vector3.zero, new(0, 0, 12) };
+            if (reverse)
+                Array.Reverse(anchors);
+            var route = new WorldRouteCorridor("curved-walk", RouteKind.Highway, anchors, 4, true);
+            WorldStreetLayout layout = WorldStreetGeometry.Build(new[] { route }, 2);
+            int checkedJoins = 0;
+            for (int index = 1; index < route.SampledNodes.Count - 1; index++)
+            {
+                Vector3 point = route.SampledNodes[index];
+                Vector3 incoming = (point - route.SampledNodes[index - 1]).normalized;
+                Vector3 outgoing = (route.SampledNodes[index + 1] - point).normalized;
+                double turn = Cross(incoming, outgoing);
+                if (Math.Abs(turn) < .00001)
+                    continue;
+                float side = turn > 0 ? -1 : 1;
+                Vector3 firstOffset = new Vector3(-incoming.z, 0, incoming.x) * (side * 4);
+                Vector3 secondOffset = new Vector3(-outgoing.z, 0, outgoing.x) * (side * 4);
+                Vector3 probe = point + (firstOffset + secondOffset) * .35f;
+                Assert.That(CoverCount(layout.Sidewalks, probe), Is.EqualTo(1), "Missing join " + index);
+                Assert.That(CoverCount(layout.Pavements, probe), Is.EqualTo(0), "Road invaded join " + index);
+                checkedJoins++;
+            }
+            Assert.That(checkedJoins, Is.GreaterThanOrEqualTo(2));
+            AssertValid(layout, new[] { route });
+        }
+
         [TestCase(0f, 80f, 72f)]
+        [TestCase(.00001f, 160f, 144f)]
         [TestCase(5f, 160f, 144f)]
         public void CoincidentRoadsUnionOnlyAtTheSameHeight(float secondHeight, float pavementArea, float sidewalkArea)
         {
@@ -191,15 +245,18 @@ namespace Tycoon.Tests
 
             foreach (WorldRouteCorridor route in routes)
             {
-                Vector3 start = route.Nodes[0];
-                Vector3 delta = route.Nodes[1] - start;
-                Vector3 normal = new Vector3(-delta.z, 0, delta.x).normalized;
-                foreach (float t in new[] { .0137f, .193f, .487f, .713f, .983f })
+                for (int index = 1; index < route.SampledNodes.Count; index++)
                 {
-                    Vector3 center = start + delta * t;
-                    AssertPointCoverage(layout, routes, center + normal * .137f);
-                    AssertPointCoverage(layout, routes, center + normal * (route.Width * .5f + .713f));
-                    AssertPointCoverage(layout, routes, center - normal * (route.Width * .5f + .713f));
+                    Vector3 start = route.SampledNodes[index - 1];
+                    Vector3 delta = route.SampledNodes[index] - start;
+                    Vector3 normal = new Vector3(-delta.z, 0, delta.x).normalized;
+                    foreach (float t in new[] { .0137f, .193f, .487f, .713f, .983f })
+                    {
+                        Vector3 center = start + delta * t;
+                        AssertPointCoverage(layout, routes, center + normal * .137f);
+                        AssertPointCoverage(layout, routes, center + normal * (route.Width * .5f + .713f));
+                        AssertPointCoverage(layout, routes, center - normal * (route.Width * .5f + .713f));
+                    }
                 }
             }
         }
@@ -314,7 +371,7 @@ namespace Tycoon.Tests
             {
                 for (int secondIndex = sameList ? firstIndex + 1 : 0; secondIndex < second.Count; secondIndex++)
                 {
-                    if (Math.Abs(first[firstIndex].Source.Start.y - second[secondIndex].Source.Start.y) > .001f)
+                    if (first[firstIndex].Source.Start.y != second[secondIndex].Source.Start.y)
                         continue;
                     double area = IntersectionArea(first[firstIndex].Outline, second[secondIndex].Outline);
                     Assert.That(area, Is.LessThan(AreaTolerance),
@@ -359,27 +416,88 @@ namespace Tycoon.Tests
 
         static void AssertPointCoverage(WorldStreetLayout layout, IReadOnlyList<WorldRouteCorridor> routes, Vector3 point)
         {
-            bool road = false;
-            bool walk = false;
+            bool road = InsideEnvelope(routes, point, 0);
+            bool walk = InsideEnvelope(routes, point, 1.8f);
+            Assert.That(CoverCount(layout.Pavements, point) > 0, Is.EqualTo(road), "Road at " + point);
+            Assert.That(CoverCount(layout.Sidewalks, point) > 0, Is.EqualTo(walk && !road), "Sidewalk at " + point);
+        }
+
+        // Oracle hình chữ nhật + tam giác nối lồi; không dùng kết quả Build/phép trừ để suy ra kỳ vọng.
+        static bool InsideEnvelope(IReadOnlyList<WorldRouteCorridor> routes, Vector3 point, float extraHalfWidth)
+        {
             foreach (WorldRouteCorridor route in routes)
             {
-                for (int index = 1; index < route.Nodes.Count; index++)
+                IReadOnlyList<Vector3> samples = route.SampledNodes;
+                for (int index = 1; index < samples.Count; index++)
                 {
-                    Vector3 start = route.Nodes[index - 1];
-                    Vector3 delta = route.Nodes[index] - start;
-                    if (Math.Abs(point.y - start.y) > .001f)
+                    Vector3 start = samples[index - 1];
+                    Vector3 delta = samples[index] - start;
+                    if (point.y != start.y)
                         continue;
                     double length = Math.Sqrt(delta.x * delta.x + delta.z * delta.z);
                     double along = ((point.x - start.x) * delta.x + (point.z - start.z) * delta.z) / length;
                     double across = Math.Abs(((point.x - start.x) * -delta.z + (point.z - start.z) * delta.x) / length);
-                    if (along < .0001 || along > length - .0001)
-                        continue;
-                    road |= across < route.Width * .5 - .0001;
-                    walk |= across > route.Width * .5 + .0001 && across < route.Width * .5 + 1.8 - .0001;
+                    if (along >= -.00001 && along <= length + .00001
+                        && across <= route.Width * .5 + extraHalfWidth + .00001)
+                        return true;
+                }
+                for (int index = 1; index < samples.Count - 1; index++)
+                    if (InsideJoin(point, samples[index], samples[index] - samples[index - 1],
+                        samples[index + 1] - samples[index], route.Width, route.Width, extraHalfWidth))
+                        return true;
+                if (samples[0].Equals(samples[^1]) && InsideJoin(point, samples[0],
+                    samples[0] - samples[^2], samples[1] - samples[0], route.Width, route.Width, extraHalfWidth))
+                    return true;
+            }
+            for (int first = 0; first < routes.Count; first++)
+            {
+                for (int second = first + 1; second < routes.Count; second++)
+                {
+                    IReadOnlyList<Vector3> a = routes[first].SampledNodes;
+                    IReadOnlyList<Vector3> b = routes[second].SampledNodes;
+                    foreach (int firstEnd in new[] { 0, a.Count - 1 })
+                    {
+                        foreach (int secondEnd in new[] { 0, b.Count - 1 })
+                        {
+                            Vector3 vertex = a[firstEnd];
+                            if (!vertex.Equals(b[secondEnd]))
+                                continue;
+                            Vector3 incoming = vertex - a[firstEnd == 0 ? 1 : a.Count - 2];
+                            Vector3 outgoing = b[secondEnd == 0 ? 1 : b.Count - 2] - vertex;
+                            if (InsideJoin(point, vertex, incoming, outgoing,
+                                routes[first].Width, routes[second].Width, extraHalfWidth))
+                                return true;
+                        }
+                    }
                 }
             }
-            Assert.That(CoverCount(layout.Pavements, point) > 0, Is.EqualTo(road), "Road at " + point);
-            Assert.That(CoverCount(layout.Sidewalks, point) > 0, Is.EqualTo(walk && !road), "Sidewalk at " + point);
+            return false;
+        }
+
+        static bool InsideJoin(Vector3 point, Vector3 vertex, Vector3 incoming, Vector3 outgoing,
+            float firstWidth, float secondWidth, float extraHalfWidth)
+        {
+            if (point.y != vertex.y)
+                return false;
+            incoming.Normalize();
+            outgoing.Normalize();
+            for (int side = -1; side <= 1; side += 2)
+            {
+                Vector3 first = vertex + new Vector3(-incoming.z, 0, incoming.x)
+                    * (side * (firstWidth * .5f + extraHalfWidth));
+                Vector3 second = vertex + new Vector3(-outgoing.z, 0, outgoing.x)
+                    * (side * (secondWidth * .5f + extraHalfWidth));
+                double area = Cross(first - vertex, second - vertex);
+                if (Math.Abs(area) < .000001)
+                    continue;
+                double a = Cross(first - vertex, point - vertex);
+                double b = Cross(second - first, point - first);
+                double c = Cross(vertex - second, point - second);
+                if (area > 0 ? a >= -.00001 && b >= -.00001 && c >= -.00001
+                    : a <= .00001 && b <= .00001 && c <= .00001)
+                    return true;
+            }
+            return false;
         }
 
         static int CoverCount(IReadOnlyList<WorldStreetSurface> surfaces, Vector3 point)
@@ -387,7 +505,7 @@ namespace Tycoon.Tests
             int count = 0;
             foreach (WorldStreetSurface surface in surfaces)
             {
-                if (Math.Abs(point.y - surface.Source.Start.y) > .001f)
+                if (point.y != surface.Source.Start.y)
                     continue;
                 bool inside = true;
                 for (int index = 0; index < surface.Outline.Count; index++)

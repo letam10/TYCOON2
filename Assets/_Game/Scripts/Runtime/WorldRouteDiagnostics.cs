@@ -275,6 +275,20 @@ namespace Tycoon
         {
             var result = new List<(Vector3 point, float radius, WorldRouteOverlapKind kind)>();
             float clearance = (firstRoute.Width + secondRoute.Width) * .5f + tolerance;
+            // Điểm nối thiết kế vẫn là junction khi cung bo cắt qua vùng rộng thực của nó.
+            foreach (Vector3 firstAnchor in firstRoute.Nodes)
+            {
+                foreach (Vector3 secondAnchor in secondRoute.Nodes)
+                {
+                    if (firstAnchor.y != secondAnchor.y
+                        || (firstAnchor - secondAnchor).sqrMagnitude > tolerance * tolerance)
+                        continue;
+                    Vector3 shared = (firstAnchor + secondAnchor) * .5f;
+                    if (IsPointNearRoute(shared, firstRoute.SampledNodes, clearance)
+                        && IsPointNearRoute(shared, secondRoute.SampledNodes, clearance))
+                        result.Add((shared, clearance, WorldRouteOverlapKind.SharedEndpoint));
+                }
+            }
             foreach (WorldRouteSegment first in WorldRouteGeometry.Segments(firstRoute))
             {
                 foreach (WorldRouteSegment second in WorldRouteGeometry.Segments(secondRoute))
