@@ -28,8 +28,8 @@ namespace Tycoon
                     // Nâng cát từ cao độ đất tới đúng cao độ nước tại bờ, khép khe đứng 2,5 cm.
                     float waveFade = coast && !sand ? Mathf.SmoothStep(0, 1, u) : 0;
                     float height = sand
-                        ? Mathf.Lerp(.0275f, .0525f, u)
-                        : .0525f + LayeredDisplacement((u - .5f) * width, worldZ + localZ)
+                        ? Mathf.Lerp(.0275f, CityWaterSurface.WaterBaseline, u)
+                        : CityWaterSurface.WaterBaseline + LayeredDisplacement((u - .5f) * width, worldZ + localZ)
                             * waveFade;
                     vertices[z * (columns + 1) + x] = new((u - .5f) * width
                         + offset * (sand ? u : 1 - u), height, localZ);

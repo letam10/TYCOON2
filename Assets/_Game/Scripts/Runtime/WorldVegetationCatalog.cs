@@ -49,6 +49,9 @@ namespace Tycoon
     public static class WorldVegetationCatalog
     {
         public const int Seed = 20261015;
+        public const string FarmBiomeId = CityBiomeVegetation.FarmBiomeId;
+        public const string ForestBiomeId = CityBiomeVegetation.ForestBiomeId;
+        public const string CoastalBiomeId = CityBiomeVegetation.CoastalBiomeId;
 
         const int FarmSeedOffset = 17;
         const int ForestSeedOffset = 43;
@@ -78,7 +81,7 @@ namespace Tycoon
             new ReadOnlyCollection<WorldVegetationProfile>(new[]
             {
                 new WorldVegetationProfile(
-                    "farm",
+                    FarmBiomeId,
                     Seed + FarmSeedOffset,
                     FarmNearLod,
                     FarmFarLod,
@@ -87,7 +90,7 @@ namespace Tycoon
                     FarmCorridorClearance,
                     FarmLodCount),
                 new WorldVegetationProfile(
-                    "forest",
+                    ForestBiomeId,
                     Seed + ForestSeedOffset,
                     ForestNearLod,
                     ForestFarLod,
@@ -96,7 +99,7 @@ namespace Tycoon
                     ForestCorridorClearance,
                     ForestLodCount),
                 new WorldVegetationProfile(
-                    "coastal",
+                    CoastalBiomeId,
                     Seed + CoastalSeedOffset,
                     CoastalNearLod,
                     CoastalFarLod,
