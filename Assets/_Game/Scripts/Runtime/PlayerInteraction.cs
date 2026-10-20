@@ -40,12 +40,18 @@ namespace Tycoon
         InteractionResult Perform(InteractionContext context,float delta);
         void Exit(EntityId actor);
     }
+    public interface ILogicalDwellInteractionArea
+    {
+    }
     // Chỉ vùng đang đứng được chạy; chuyển vùng hoặc mất điều khiển luôn nhả vùng cũ.
     public sealed class PlayerInteractionSession
     {
+        public const float LogicalDwellSeconds = .25f;
+        const float AreaLossGraceSeconds = .08f;
         public IPlayerInteractionArea Current {get;private set;}
         EntityId actor;
         float dwell;
+        float areaLossGrace;
         public InteractionResult Tick(IEnumerable<IPlayerInteractionArea> areas,InteractionContext context,Vector3 position,float delta)
         {
             if(delta<=0||float.IsNaN(delta)||float.IsInfinity(delta)){Stop();return InteractionResult.Waiting;}
@@ -60,13 +66,23 @@ namespace Tycoon
                     if(rank < priority || rank == priority && square < distance)
                     {priority=rank;distance=square;nearest=area;}
                 }
+            if(nearest==null&&Current!=null&&Current.Available&&actor==context.Actor)
+            {
+                areaLossGrace+=delta;
+                if(areaLossGrace<=AreaLossGraceSeconds)return InteractionResult.Waiting;
+            }
+            else areaLossGrace=0;
             if(nearest is ProximityTarget && Current is ProximityTarget &&
                 Current.Available && Current.Contains(position)) nearest=Current;
             if(!ReferenceEquals(Current,nearest)||actor!=context.Actor){Stop();Current=nearest;actor=context.Actor;}
-            if(Current is ProximityTarget or SafeInteractionArea or CargoPlayerArea){dwell+=delta;if(dwell<.25f)return InteractionResult.Waiting;}
+            if(Current is ILogicalDwellInteractionArea or SafeInteractionArea or CargoPlayerArea)
+            {
+                dwell+=delta;
+                if(dwell<LogicalDwellSeconds)return InteractionResult.Waiting;
+            }
             return Current==null?InteractionResult.Waiting:Current.Perform(context,delta);
         }
-        public void Stop(){var previous=Current;Current=null;dwell=0;previous?.Exit(actor);}
+        public void Stop(){var previous=Current;Current=null;dwell=0;areaLossGrace=0;previous?.Exit(actor);}
     }
     public static class StationPlayerActions
     {

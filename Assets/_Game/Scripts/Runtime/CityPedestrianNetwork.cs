@@ -161,12 +161,15 @@ namespace Tycoon
             }
             if (Vector3.Distance(from, destination) <= LocalTrip)
             {
-                route.Add(destination);
-                if (!ValidateRoute(route, .38f, out failure))
+                // Đoạn ngắn vẫn phải tránh corridor hạn chế; chỉ kiểm tra destination
+                // sẽ cho phép một đường thẳng cắt ngang highway, rail hoặc dock.
+                var direct = new List<Vector3> { from, destination };
+                if (!ValidateRoute(direct, .38f, out failure))
                 {
                     route.Clear();
                     return false;
                 }
+                route.Add(destination);
                 return true;
             }
 

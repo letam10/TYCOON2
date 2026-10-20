@@ -56,14 +56,12 @@ namespace Tycoon
             {
                 // Làn bên phải theo hướng xe chạy để cửa hành khách luôn hướng ra vỉa hè.
                 float side = i % 2 == 0 ? -1.55f : 1.55f;
-                Vector3[] route =
+                Vector3[] route = CityRoadRoute.CanonicalTrafficLoop(side);
+                if (route.Length == 0)
                 {
-                    new(-105 + side, 0, -45 + side), new(-22, 0, -45 + side), new(70, 0, -45 + side),
-                    new(102 - side, 0, -45 + side), new(102 - side, 0, 29 - side),
-                    new(70, 0, 29 - side), new(-22, 0, 29 - side), new(-105 + side, 0, 29 - side)
-                };
+                    route = LegacyTrafficLoop(side);
+                }
                 if (i % 2 == 1) System.Array.Reverse(route);
-                route = CityRoadRoute.Round(route);
                 var root = CityVehicleModel.Build(kinds[i], colors[i], transform);
                 root.position = CityRoadRoute.Spawn(route, (i / 2) / 3f, out int next);
                 root.rotation = Quaternion.LookRotation((route[next] - root.position).normalized);
@@ -76,6 +74,22 @@ namespace Tycoon
                     Rig = rig, Passengers = passengerService
                 });
             }
+        }
+
+        static Vector3[] LegacyTrafficLoop(float side)
+        {
+            Vector3[] corners =
+            {
+                new(-105 + side, 0, -45 + side),
+                new(-22, 0, -45 + side),
+                new(70, 0, -45 + side),
+                new(102 - side, 0, -45 + side),
+                new(102 - side, 0, 29 - side),
+                new(70, 0, 29 - side),
+                new(-22, 0, 29 - side),
+                new(-105 + side, 0, 29 - side)
+            };
+            return CityRoadRoute.Round(corners);
         }
 
         void Update()

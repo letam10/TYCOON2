@@ -19,7 +19,7 @@ namespace Tycoon
     }
 
     [DisallowMultipleComponent]
-    public sealed class WorldInteractionArea : MonoBehaviour, IPlayerInteractionArea
+    public sealed class WorldInteractionArea : MonoBehaviour, IPlayerInteractionArea, ILogicalDwellInteractionArea
     {
         public string Id;
         public string Label;

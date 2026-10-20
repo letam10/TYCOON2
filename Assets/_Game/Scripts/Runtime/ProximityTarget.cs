@@ -3,7 +3,7 @@ using UnityEngine;
 namespace Tycoon
 {
     // Vật thể chọn hành động theo state; hướng chuyển hàng được giữ suốt lần đứng gần.
-    public sealed class ProximityTarget : IPlayerInteractionArea
+    public sealed class ProximityTarget : IPlayerInteractionArea, ILogicalDwellInteractionArea
     {
         public readonly Station Target;
         public readonly bool Cash;
