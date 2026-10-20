@@ -37,28 +37,33 @@ namespace Tycoon
             var root = new GameObject("LandmarkFootpaths").transform;
             root.SetParent(world, false);
             var g = new CityStaticGeometry(root);
+            var requests = new List<WorldPathSurfaceRequest>(WorldPathSurfaceCatalog.BuildDefault());
             foreach (var landmark in world.GetComponentsInChildren<CityLandmark>())
             {
                 Vector3 a = world.InverseTransformPoint(landmark.Approach);
                 if (landmark.Id == "CoffeeHouse")
                 {
                     Vector3 b = new(-181, 0, a.z);
-                    Pave(a, b, 2.6f, "paving", "#C0B8A0");
-                    Pave(b, new(-181, 0, -120), 2.6f, "paving", "#C0B8A0");
+                    Pave(landmark.Id, 0, a, b, 2.6f);
+                    Pave(landmark.Id, 1, b, new(-181, 0, -120), 2.6f);
                 }
                 else if (landmark.Id is "PoliceStation" or "FireStation" or "Bank")
-                    Pave(a, new(-204, 0, a.z), 2.6f, "paving", "#C0B8A0");
+                    Pave(landmark.Id, 0, a, new(-204, 0, a.z), 2.6f);
                 else if (landmark.Id is "Harbor" or "Marina" or "Beach")
-                    Pave(a, new(199, 0, a.z), 2.6f, "paving", "#C0B8A0");
+                    Pave(landmark.Id, 0, a, new(199, 0, a.z), 2.6f);
                 else if (landmark.Id == "SeasideBar")
-                    Pave(a, new(181, 0, a.z), 2.6f, "paving", "#C0B8A0");
+                    Pave(landmark.Id, 0, a, new(181, 0, a.z), 2.6f);
                 else
-                    Pave(a, new(a.x, 0, 164), 2.6f, "paving", "#C0B8A0");
+                    Pave(landmark.Id, 0, a, new(a.x, 0, 164), 2.6f);
             }
             BuildCorridorRoutes(root, g);
+            WorldPathSurfaceLayout layout = WorldPathSurfaceGeometry.Build(requests,
+                WorldPathSurfaceCatalog.BuildStreetBlockers());
+            root.gameObject.AddComponent<WorldPathSurfaceState>().Initialize(layout);
+            WorldPathSurfaceMesh.Build(root, layout);
             g.Finish();
 
-            void Pave(Vector3 a, Vector3 b, float width, string surface, string tint)
+            void Pave(string landmarkId, int leg, Vector3 a, Vector3 b, float width)
             {
                 a.y = 0;
                 b.y = 0;
@@ -68,12 +73,12 @@ namespace Tycoon
                 float bend = Mathf.Clamp(delta.magnitude * .16f, 3f, 12f);
                 Vector3 control = (a + b) * .5f + lateral * bend;
                 IReadOnlyList<Vector3> points = CreateCurvedPath(a, b, control, 4);
-                Pavement(g, "landmark-footpath", points, width, surface, tint, 0, .05f);
+                requests.Add(WorldPathSurfaceCatalog.CreateLandmark(landmarkId, leg, points, width));
                 foreach (WorldRouteSegment segment in WorldRouteGeometry.Segments(points, width))
-                    PaveSegment(segment, surface, tint);
+                    PaveSegment(segment);
             }
 
-            void PaveSegment(WorldRouteSegment segment, string surface, string tint)
+            void PaveSegment(WorldRouteSegment segment)
             {
                 // Lối lát là vùng đi bộ, không phải tường; trigger giữ vùng định vị mà không chặn capsule.
                 g.Collider("PedestrianLink", segment.Center + Vector3.up * .01f,
@@ -89,41 +94,20 @@ namespace Tycoon
             signs.SetParent(root, false);
             foreach (var corridor in WorldRouteCatalog.BuildDefault())
             {
-                string surface = "paving";
-                string tint = "#C0B8A0";
-                float width = corridor.Width;
                 bool drawCorridor = corridor.Kind != RouteKind.Rail;
-                if (corridor.Kind == RouteKind.FarmPath)
-                {
-                    surface = "soil";
-                    tint = "#9A754C";
-                }
-                else if (corridor.Kind == RouteKind.Highway)
-                {
-                    surface = "stone";
-                    tint = "#596365";
-                }
-                else if (corridor.Kind == RouteKind.Dock)
-                {
-                    surface = "wood";
-                    tint = "#A18B68";
-                }
                 if (drawCorridor)
                 {
                     IReadOnlyList<Vector3> points = corridor.SampledNodes;
-                    Pavement(g, corridor.Id, points, width, surface, tint, .0005f, .0555f);
                     for (int point = 1; point < points.Count; point++)
-                        Segment(g, points[point - 1], points[point], width, surface, tint);
+                        Segment(g, points[point - 1], points[point], corridor.Width);
                 }
                 Sign(signs, corridor.Nodes[0], SignText(corridor.Id));
             }
             foreach (WorldPublicApproach approach in WorldRouteCatalog.BuildPublicApproaches())
             {
                 IReadOnlyList<Vector3> points = approach.SampledNodes;
-                Pavement(g, approach.Id, points, approach.Width, "paving", "#B8B0A0", .0005f, .0555f);
                 for (int point = 1; point < points.Count; point++)
-                    Segment(g, points[point - 1], points[point], approach.Width,
-                        "paving", "#B8B0A0");
+                    Segment(g, points[point - 1], points[point], approach.Width);
                 Sign(signs, approach.Nodes[0], SignText(approach.Id));
             }
         }
@@ -132,9 +116,7 @@ namespace Tycoon
             CityStaticGeometry g,
             Vector3 start,
             Vector3 end,
-            float width,
-            string surface,
-            string tint)
+            float width)
         {
             foreach (WorldRouteSegment segment in WorldRouteGeometry.Segments(
                 new[] { start, end },
@@ -145,15 +127,6 @@ namespace Tycoon
                     segment.Rotation,
                     true);
             }
-        }
-
-        static void Pavement(CityStaticGeometry geometry, string id,
-            IReadOnlyList<Vector3> points, float width, string surface, string tint,
-            float bottom, float top)
-        {
-            foreach (WorldStreetSurface polygon in WorldStreetGeometry.BuildPavement(id, points, width))
-                geometry.Sculpt(WorldStreetMesh.CreatePrism(polygon, bottom, top),
-                    Vector3.zero, surface, tint);
         }
 
         static void Sign(Transform parent, Vector3 position, string text)

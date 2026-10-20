@@ -20,6 +20,7 @@ namespace Tycoon
                 "New game starts directly in front of the starter TYCOON counter");
             yield return StreetSurfaceAcceptance();
             yield return SampledRouteAcceptance();
+            yield return PathSurfaceOwnershipAcceptance();
             yield return FeatureUiAcceptance();
             yield return MapClippingAcceptance();
             yield return Capture("minimap-1920.png");

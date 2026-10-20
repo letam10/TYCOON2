@@ -22,7 +22,8 @@ namespace Tycoon
 
         IEnumerator StreetSurfaceAcceptance()
         {
-            WorldStreetMeshOwner owner = game.GetComponentInChildren<WorldStreetMeshOwner>();
+            WorldStreetMeshOwner owner = game.GetComponentsInChildren<WorldStreetMeshOwner>(true)
+                .FirstOrDefault(candidate => candidate.name == "CityStreets");
             Check(owner, "Street surfaces own their generated meshes");
             WorldStreetLayout layout = WorldStreetGeometry.Build(WorldRouteCatalog.BuildStreetNetwork());
             var centers = new[]

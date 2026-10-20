@@ -90,6 +90,7 @@ namespace Tycoon
         }
     }
 
+    [ExecuteAlways]
     public sealed class WorldStreetMeshOwner : MonoBehaviour
     {
         readonly HashSet<Mesh> meshes = new HashSet<Mesh>();

@@ -7,7 +7,8 @@ namespace Tycoon
     public static class WorldStreetGeometry
     {
         const double PointTolerance = .000001;
-        const double MinimumArea = .0000001;
+        // Mảnh dưới 1 mm² suy biến khi đổi sang mesh/collider số thực Unity.
+        const double MinimumArea = .000001;
 
         readonly struct Point
         {
@@ -125,6 +126,75 @@ namespace Tycoon
             return UnionPavements(footprints).AsReadOnly();
         }
 
+        public static IReadOnlyList<WorldStreetSurface> SubtractSurfaces(
+            IReadOnlyList<WorldStreetSurface> subjects,
+            IReadOnlyList<WorldStreetSurface> blockers)
+        {
+            if (subjects == null)
+                throw new ArgumentNullException(nameof(subjects));
+            if (blockers == null)
+                throw new ArgumentNullException(nameof(blockers));
+
+            var blockerPolygons = new List<AcceptedPolygon>(blockers.Count);
+            for (int index = 0; index < blockers.Count; index++)
+            {
+                WorldStreetSurface blocker = blockers[index];
+                List<Point> polygon = SurfacePolygon(blocker, nameof(blockers));
+                blockerPolygons.Add(new AcceptedPolygon(blocker.Source.Start.y, polygon));
+            }
+
+            var result = new List<WorldStreetSurface>();
+            var nextPieceIndices = new Dictionary<(string, int, int), int>();
+            for (int index = 0; index < subjects.Count; index++)
+            {
+                WorldStreetSurface subject = subjects[index];
+                var pieces = new List<List<Point>> { SurfacePolygon(subject, nameof(subjects)) };
+                for (int blockerIndex = 0; blockerIndex < blockerPolygons.Count && pieces.Count > 0; blockerIndex++)
+                {
+                    AcceptedPolygon blocker = blockerPolygons[blockerIndex];
+                    if (subject.Source.Start.y == blocker.Height)
+                        pieces = Subtract(pieces, blocker.Outline);
+                }
+
+                var key = (subject.RouteId, subject.SegmentIndex, subject.Side);
+                nextPieceIndices.TryGetValue(key, out int pieceIndex);
+                AppendSurfaces(result, subject.RouteId, subject.SegmentIndex, subject.Side,
+                    subject.Source, pieces, ref pieceIndex);
+                nextPieceIndices[key] = pieceIndex;
+            }
+            return result.AsReadOnly();
+        }
+
+        static List<Point> SurfacePolygon(WorldStreetSurface surface, string parameterName)
+        {
+            if (surface == null || !surface.Source.IsFinite
+                || surface.Source.Start.y != surface.Source.End.y)
+                throw new ArgumentException("Surface clipping requires finite flat sources.", parameterName);
+
+            var polygon = new List<Point>(surface.Outline.Count);
+            for (int index = 0; index < surface.Outline.Count; index++)
+            {
+                Vector3 point = surface.Outline[index];
+                if (float.IsNaN(point.x) || float.IsInfinity(point.x)
+                    || float.IsNaN(point.z) || float.IsInfinity(point.z)
+                    || point.y != surface.Source.Start.y)
+                    throw new ArgumentException("Surface outlines must be finite and share their source height.", parameterName);
+                polygon.Add(new Point(point.x, point.z));
+            }
+            Clean(polygon);
+            if (polygon.Count < 3)
+                throw new ArgumentException("Surface clipping requires nondegenerate polygons.", parameterName);
+            for (int index = 0; index < polygon.Count; index++)
+                if (Cross(polygon[index], polygon[(index + 1) % polygon.Count],
+                    polygon[(index + 2) % polygon.Count]) < -MinimumArea)
+                    throw new ArgumentException("Surface clipping requires convex polygons: "
+                        + surface.RouteId + ":" + surface.SegmentIndex + ":" + surface.PieceIndex
+                        + " vertex=" + index + " cross="
+                        + Cross(polygon[index], polygon[(index + 1) % polygon.Count],
+                            polygon[(index + 2) % polygon.Count]), parameterName);
+            return polygon;
+        }
+
         static List<WorldStreetSurface> UnionPavements(List<Footprint> footprints)
         {
             var result = new List<WorldStreetSurface>();
@@ -230,6 +300,8 @@ namespace Tycoon
 
         static bool HasAreaIntersection(List<Point> subject, List<Point> blocker)
         {
+            if (!BoundsOverlap(subject, blocker))
+                return false;
             List<Point> intersection = subject;
             for (int edgeIndex = 0; edgeIndex < blocker.Count; edgeIndex++)
             {
@@ -245,6 +317,34 @@ namespace Tycoon
                 intersection = inside;
             }
             return true;
+        }
+
+        static bool BoundsOverlap(List<Point> subject, List<Point> blocker)
+        {
+            double subjectMinX = double.PositiveInfinity;
+            double subjectMaxX = double.NegativeInfinity;
+            double subjectMinZ = double.PositiveInfinity;
+            double subjectMaxZ = double.NegativeInfinity;
+            for (int index = 0; index < subject.Count; index++)
+            {
+                subjectMinX = Math.Min(subjectMinX, subject[index].X);
+                subjectMaxX = Math.Max(subjectMaxX, subject[index].X);
+                subjectMinZ = Math.Min(subjectMinZ, subject[index].Z);
+                subjectMaxZ = Math.Max(subjectMaxZ, subject[index].Z);
+            }
+            double blockerMinX = double.PositiveInfinity;
+            double blockerMaxX = double.NegativeInfinity;
+            double blockerMinZ = double.PositiveInfinity;
+            double blockerMaxZ = double.NegativeInfinity;
+            for (int index = 0; index < blocker.Count; index++)
+            {
+                blockerMinX = Math.Min(blockerMinX, blocker[index].X);
+                blockerMaxX = Math.Max(blockerMaxX, blocker[index].X);
+                blockerMinZ = Math.Min(blockerMinZ, blocker[index].Z);
+                blockerMaxZ = Math.Max(blockerMaxZ, blocker[index].Z);
+            }
+            return subjectMaxX > blockerMinX && blockerMaxX > subjectMinX
+                && subjectMaxZ > blockerMinZ && blockerMaxZ > subjectMinZ;
         }
 
         static void Split(
@@ -330,6 +430,37 @@ namespace Tycoon
             return twiceArea * .5;
         }
 
+        static List<Point> QuantizedConvexHull(List<Point> points)
+        {
+            points.Sort((first, second) =>
+            {
+                int x = first.X.CompareTo(second.X);
+                return x != 0 ? x : first.Z.CompareTo(second.Z);
+            });
+            var hull = new List<Point>(points.Count * 2);
+            for (int index = 0; index < points.Count; index++)
+            {
+                Point point = points[index];
+                while (hull.Count >= 2
+                    && Cross(hull[hull.Count - 2], hull[hull.Count - 1], point) <= 0d)
+                    hull.RemoveAt(hull.Count - 1);
+                hull.Add(point);
+            }
+            int lowerCount = hull.Count;
+            for (int index = points.Count - 2; index >= 0; index--)
+            {
+                Point point = points[index];
+                while (hull.Count > lowerCount
+                    && Cross(hull[hull.Count - 2], hull[hull.Count - 1], point) <= 0d)
+                    hull.RemoveAt(hull.Count - 1);
+                hull.Add(point);
+            }
+            if (hull.Count > 1)
+                hull.RemoveAt(hull.Count - 1);
+            Clean(hull);
+            return hull;
+        }
+
         static void AppendSurfaces(
             List<WorldStreetSurface> surfaces,
             Footprint road,
@@ -337,24 +468,38 @@ namespace Tycoon
             List<List<Point>> pieces)
         {
             int pieceIndex = 0;
+            AppendSurfaces(surfaces, road.RouteId, road.SegmentIndex, side,
+                road.Source, pieces, ref pieceIndex);
+        }
+
+        static void AppendSurfaces(
+            List<WorldStreetSurface> surfaces,
+            string routeId,
+            int segmentIndex,
+            int side,
+            WorldRouteSegment source,
+            List<List<Point>> pieces,
+            ref int pieceIndex)
+        {
             for (int index = 0; index < pieces.Count; index++)
             {
                 List<Point> piece = pieces[index];
                 var rounded = new List<Point>(piece.Count);
                 for (int pointIndex = 0; pointIndex < piece.Count; pointIndex++)
                     rounded.Add(new Point((float)piece[pointIndex].X, (float)piece[pointIndex].Z));
-                Clean(rounded);
+                // Phép cắt cho mảnh lồi; lượng tử float có thể tạo đỉnh lõm rất nhỏ.
+                rounded = QuantizedConvexHull(rounded);
                 if (rounded.Count < 3)
                     continue;
                 var outline = new List<Vector3>(rounded.Count);
                 for (int pointIndex = 0; pointIndex < rounded.Count; pointIndex++)
-                    outline.Add(new Vector3((float)rounded[pointIndex].X, road.Source.Start.y, (float)rounded[pointIndex].Z));
+                    outline.Add(new Vector3((float)rounded[pointIndex].X, source.Start.y, (float)rounded[pointIndex].Z));
                 surfaces.Add(new WorldStreetSurface(
-                    road.RouteId,
-                    road.SegmentIndex,
+                    routeId,
+                    segmentIndex,
                     side,
                     pieceIndex,
-                    road.Source,
+                    source,
                     outline));
                 pieceIndex++;
             }

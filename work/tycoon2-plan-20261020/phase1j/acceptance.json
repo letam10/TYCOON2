@@ -1,0 +1,89 @@
+{
+  "phase": "1J",
+  "status": "scoped ownership gates passed; overall Phase 1 and redesign OPEN",
+  "base": "e34125d46a747270b1798f5c377221449e37155a",
+  "createdUtc": "2026-10-20T07:50:07.1935886Z",
+  "objective": "Original attachment missing; full objective-recovered.md reread this turn; all later phases retained",
+  "tests": {
+    "total": 109,
+    "failed": 0,
+    "start": "2026-10-20 07:44:27Z",
+    "end": "2026-10-20 07:44:29Z",
+    "skipped": 0,
+    "result": "Passed",
+    "file": "after-degenerate.xml",
+    "passed": 109
+  },
+  "build": {
+    "result": "Succeeded",
+    "builtUtc": "2026-10-20T07:45:34.5903736Z",
+    "bytes": 117156623,
+    "seconds": 39.4503396,
+    "errors": 0,
+    "warnings": 34
+  },
+  "player": {
+    "passed": true,
+    "pngs": 72,
+    "checks": 4987,
+    "interactions": 35,
+    "start": "2026-10-20T07:46:10.3881817Z",
+    "runtimeErrors": 0,
+    "end": "2026-10-20T07:46:45.4592938Z"
+  },
+  "ownership": {
+    "maximumStreetOverlapSquareMetres": 0.0,
+    "meshBatches": 6,
+    "requests": 28,
+    "polygonPieces": 789,
+    "fullyOccluded": [
+      "sidewalk-crossings"
+    ],
+    "overlapToleranceSquareMetres": 0.005,
+    "colliderSamples": 789,
+    "maximumPathOverlapSquareMetres": 0.00025512068532407284
+  },
+  "routes": {
+    "count": 17,
+    "liveColliders": 337,
+    "matchedColliders": 337,
+    "publicTripPoints": 25
+  },
+  "runtimeDllSha256": "7E7A157DA090374F8D136DF6A6437D7BF79C4BAFECE40BAD89B9D00F1CDC63F3",
+  "openedImages": [
+    "path-owner-industrial.png",
+    "path-owner-marina.png",
+    "path-owner-ring.png",
+    "map-2560.png",
+    "sampled-route-farm.png",
+    "sampled-route-industrial.png",
+    "sampled-route-marina.png",
+    "minimap-clipped-2560.png"
+  ],
+  "repairs": [
+    "ExecuteAlways mesh owner cleanup in Editor",
+    "Quantized convex hull for generated float outlines",
+    "Reject generated pieces below 1 square millimetre; external concave input still rejected"
+  ],
+  "preservation": {
+    "timeManagerRestored": true,
+    "baselineTracked": 101,
+    "defaultBuildUntouched": true,
+    "changedTracked": 0
+  },
+  "remaining": [
+    "true bounded rounded corners",
+    "authored sidewalk to highway gaps and complete junction boundaries",
+    "marina rail and dock physical detailing",
+    "catalog traffic and rail alignment and global capsule traversal",
+    "Phase 2 navigation exclusions and signals and hidden interactions",
+    "interiors camera asset environment map HUD additive save and short 1080p 1440p performance acceptance"
+  ],
+  "limits": [
+    "No full regression or FPS benchmark",
+    "No full old-save matrix or Steam acceptance",
+    "Raycasts prove sampled surface collision not complete capsule traversal",
+    "Eight images reviewed not every district",
+    "Floating overlap maximum is measured not claimed exact zero"
+  ]
+}

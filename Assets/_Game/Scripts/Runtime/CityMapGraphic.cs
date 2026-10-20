@@ -9,6 +9,9 @@ namespace Tycoon
         public bool Local;
         GameSession game;
         Bounds[] roads, districts, landmarks;
+        WorldStreetLayout streetSurfaces;
+        WorldPathSurfaceLayout pathSurfaces;
+        public WorldPathSurfaceLayout PathSurfaces => pathSurfaces;
         static readonly string[] areas = { "farm", "farm_shop", "processing", "supermarket", "bakery", "restaurant" };
 
         public static string PoiKind(string id)
@@ -81,6 +84,9 @@ namespace Tycoon
         {
             game = session; Local = local; raycastTarget = false;
             roads = CityStreetNetwork.Bounds().ToArray();
+            streetSurfaces = WorldStreetGeometry.Build(WorldRouteCatalog.BuildStreetNetwork());
+            var pathState = game.GetComponentInChildren<WorldPathSurfaceState>(true);
+            pathSurfaces = pathState ? pathState.Layout : null;
             districts = areas.Select(CityDistricts.Footprint).ToArray();
             var existingLandmarks = game.GetComponentsInChildren<CityLandmark>()
                 .Select(x => new Bounds(x.transform.position, x.Footprint));
@@ -114,15 +120,36 @@ namespace Tycoon
             Quad(mesh, CoastalWaterBounds(), new Color32(57, 165, 181, 255));
             DrawCoastline(mesh);
             DrawRegionTints(mesh);
-            foreach (var road in roads) Quad(mesh, road, new Color32(185, 185, 159, 255));
+            foreach (WorldStreetSurface surface in streetSurfaces.Sidewalks)
+                SurfacePolygon(mesh, surface, new Color32(211, 204, 177, 255));
+            foreach (WorldStreetSurface surface in streetSurfaces.Pavements)
+                SurfacePolygon(mesh, surface, new Color32(185, 185, 159, 255));
+            if (pathSurfaces != null)
+            {
+                foreach (WorldPathSurfacePiece piece in pathSurfaces.Pieces)
+                {
+                    RouteKind kind = piece.Request.Surface switch
+                    {
+                        "wood" => RouteKind.Dock,
+                        "stone" => RouteKind.Highway,
+                        "soil" => RouteKind.FarmPath,
+                        _ => RouteKind.Sidewalk
+                    };
+                    SurfacePolygon(mesh, piece.Geometry, RouteColor(kind));
+                }
+            }
             foreach (var corridor in WorldRouteCatalog.BuildDefault())
             {
+                if (pathSurfaces != null && corridor.Kind != RouteKind.Rail)
+                    continue;
                 for (int index = 1; index < corridor.SampledNodes.Count; index++)
                     RouteSegment(mesh, corridor.SampledNodes[index - 1], corridor.SampledNodes[index],
                         corridor.Width, RouteColor(corridor.Kind));
             }
             foreach (WorldPublicApproach approach in WorldRouteCatalog.BuildPublicApproaches())
             {
+                if (pathSurfaces != null)
+                    break;
                 for (int index = 1; index < approach.SampledNodes.Count; index++)
                     RouteSegment(mesh, approach.SampledNodes[index - 1], approach.SampledNodes[index],
                         approach.Width, RouteColor(RouteKind.Sidewalk));
@@ -214,6 +241,14 @@ namespace Tycoon
                 Position(start + side), Position(start - side),
                 Position(end - side), Position(end + side)
             }, tint);
+        }
+
+        void SurfacePolygon(VertexHelper mesh, WorldStreetSurface surface, Color tint)
+        {
+            var points = new Vector2[surface.Outline.Count];
+            for (int index = 0; index < points.Length; index++)
+                points[index] = Position(surface.Outline[index]);
+            AddPolygon(mesh, points, tint);
         }
 
         void PoiIcon(VertexHelper mesh, string id, Vector2 center, float scale)
