@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -15,12 +16,20 @@ namespace Tycoon
         public Vector3 FocusOffset=new(.5f,.8f,1.3f);
         public bool Overview;
         public float Damping = .18f;
+        [Min(.05f)] public float CollisionRadius = .25f;
+        [Min(0f)] public float CollisionPadding = .25f;
+        [Min(.1f)] public float MinimumClearDistance = 1.5f;
+        public LayerMask CollisionMask = ~0;
+        public LayerMask OcclusionMask = ~0;
+        public bool HideOccluders = true;
         public const float MinimumDistance = 12, MaximumDistance = 27;
         Vector3 velocity, previousTargetPosition, lookAhead;
         Transform followedTarget;
         bool overviewLens;
         bool savedFog;
         float savedFar;
+        readonly Dictionary<Renderer, bool> occludedRenderers =
+            new Dictionary<Renderer, bool>();
 
         void UpdateOverviewLens()
         {
@@ -76,10 +85,15 @@ namespace Tycoon
             var rotation = Quaternion.Euler(Pitch, Yaw, 0);
             UpdateOverviewLens();
             var focus = Overview ? CityDistricts.WorldCenter : Target.position + FocusOffset + lookAhead;
-            float distance = Overview ? CityCameraFraming.OverviewDistance(GetComponent<Camera>(), rotation) : Distance;
+            float desiredDistance = Overview ? CityCameraFraming.OverviewDistance(GetComponent<Camera>(), rotation) : Distance;
+            float distance = ResolveDistance(focus, rotation, desiredDistance);
             var destination = focus - rotation * Vector3.forward * distance;
             transform.position = Vector3.SmoothDamp(transform.position, destination, ref velocity, Damping, Mathf.Infinity, delta);
             transform.rotation = rotation;
+            if (!Overview && HideOccluders)
+                UpdateOcclusion(focus, transform.position);
+            else
+                RestoreOccluders();
         }
         public void Snap()
         {
@@ -89,10 +103,91 @@ namespace Tycoon
             UpdateOverviewLens();
             transform.rotation = rotation;
             var focus = Overview ? CityDistricts.WorldCenter : Target.position + FocusOffset;
-            float distance = Overview ? CityCameraFraming.OverviewDistance(GetComponent<Camera>(), rotation) : Distance;
+            float desiredDistance = Overview ? CityCameraFraming.OverviewDistance(GetComponent<Camera>(), rotation) : Distance;
+            float distance = ResolveDistance(focus, rotation, desiredDistance);
             transform.position = focus - rotation * Vector3.forward * distance;
             GetComponent<Camera>().orthographic = false;
             velocity = Vector3.zero;
+            if (!Overview && HideOccluders)
+                UpdateOcclusion(focus, transform.position);
+            else
+                RestoreOccluders();
+        }
+
+        float ResolveDistance(Vector3 focus, Quaternion rotation, float desiredDistance)
+        {
+            if (Overview || !float.IsFinite(desiredDistance) || desiredDistance <= 0f)
+                return desiredDistance;
+
+            Vector3 direction = -(rotation * Vector3.forward);
+            RaycastHit[] hits = Physics.SphereCastAll(
+                focus,
+                Mathf.Max(.05f, CollisionRadius),
+                direction,
+                desiredDistance,
+                CollisionMask,
+                QueryTriggerInteraction.Ignore);
+            float nearest = desiredDistance;
+            foreach (RaycastHit hit in hits)
+            {
+                if (hit.collider == null || IsTargetCollider(hit.collider))
+                    continue;
+                if (hit.distance > .01f)
+                    nearest = Mathf.Min(nearest, hit.distance);
+            }
+
+            return CityCameraFraming.ResolveDistance(
+                desiredDistance,
+                nearest,
+                CollisionPadding,
+                MinimumClearDistance);
+        }
+
+        void UpdateOcclusion(Vector3 focus, Vector3 cameraPosition)
+        {
+            RestoreOccluders();
+            Vector3 offset = cameraPosition - focus;
+            float distance = offset.magnitude;
+            if (distance <= .01f)
+                return;
+
+            Vector3 direction = offset / distance;
+            RaycastHit[] hits = Physics.RaycastAll(
+                focus,
+                direction,
+                distance,
+                OcclusionMask,
+                QueryTriggerInteraction.Ignore);
+            foreach (RaycastHit hit in hits)
+            {
+                if (hit.collider == null || IsTargetCollider(hit.collider))
+                    continue;
+
+                Renderer renderer = hit.collider.GetComponentInParent<Renderer>();
+                if (renderer == null || occludedRenderers.ContainsKey(renderer))
+                    continue;
+
+                occludedRenderers.Add(renderer, renderer.enabled);
+                renderer.enabled = false;
+            }
+        }
+
+        void RestoreOccluders()
+        {
+            foreach (KeyValuePair<Renderer, bool> entry in occludedRenderers)
+            {
+                if (entry.Key != null)
+                    entry.Key.enabled = entry.Value;
+            }
+
+            occludedRenderers.Clear();
+        }
+
+        bool IsTargetCollider(Collider collider)
+        {
+            if (collider == null || !Target)
+                return false;
+            return collider.transform == Target || collider.transform.IsChildOf(Target);
         }
     }
 }

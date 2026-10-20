@@ -12,6 +12,9 @@ namespace Tycoon
         public List<Renderer> upperShellRenderers = new List<Renderer>();
         public List<GameObject> upperShellObjects = new List<GameObject>();
 
+        [Header("Interior coverage")]
+        public List<Renderer> interiorRenderers = new List<Renderer>();
+
         [Header("Player filter")]
         public string playerTag = "Player";
         public bool usePlayerLayer;
@@ -19,6 +22,8 @@ namespace Tycoon
 
         [Header("Director footprint")]
         public Vector3 localFootprint;
+        public float localMinHeight = -.5f;
+        public float localMaxHeight = 8f;
 
         [Header("Trigger and hysteresis")]
         public bool useTriggerCallbacks = true;
@@ -43,6 +48,37 @@ namespace Tycoon
         /// </summary>
         public bool IsRevealed { get; private set; }
 
+        /// <summary>
+        /// True when the latest director or trigger request says the player is inside.
+        /// </summary>
+        public bool DesiredPlayerInside => desiredPlayerInside;
+
+        /// <summary>
+        /// True when at least one explicit interior renderer is registered.
+        /// </summary>
+        public bool HasInteriorCoverage
+        {
+            get
+            {
+                return InteriorRendererCount > 0;
+            }
+        }
+
+        public int InteriorRendererCount
+        {
+            get
+            {
+                int count = 0;
+                foreach (Renderer renderer in interiorRenderers)
+                {
+                    if (renderer != null)
+                        count++;
+                }
+
+                return count;
+            }
+        }
+
         void Awake()
         {
             ConfigureOptionalTrigger();
@@ -59,12 +95,23 @@ namespace Tycoon
         {
             enterHysteresisSeconds = Mathf.Max(0f, enterHysteresisSeconds);
             exitHysteresisSeconds = Mathf.Max(0f, exitHysteresisSeconds);
+            localMinHeight = Mathf.Min(localMinHeight, localMaxHeight);
+            localMaxHeight = Mathf.Max(localMinHeight, localMaxHeight);
             ConfigureOptionalTrigger();
         }
 
         void Update()
         {
-            if (!transitionPending || Time.unscaledTime < transitionDeadline)
+            if (!transitionPending)
+                return;
+
+            if (pendingRevealState != desiredPlayerInside)
+            {
+                ScheduleTransition(desiredPlayerInside);
+                return;
+            }
+
+            if (Time.unscaledTime < transitionDeadline)
                 return;
 
             transitionPending = false;
@@ -78,20 +125,35 @@ namespace Tycoon
         {
             desiredPlayerInside = inside;
 
-            if (inside == IsRevealed && !transitionPending)
-                return;
-
-            float delay = inside ? enterHysteresisSeconds : exitHysteresisSeconds;
-            if (delay <= 0f)
+            if (inside == IsRevealed)
             {
                 transitionPending = false;
-                ApplyRevealState(inside);
                 return;
             }
 
-            pendingRevealState = inside;
-            transitionDeadline = Time.unscaledTime + delay;
-            transitionPending = true;
+            ScheduleTransition(inside);
+        }
+
+        /// <summary>
+        /// Returns whether a world point falls inside this volume's configured footprint.
+        /// </summary>
+        public bool ContainsWorldPoint(Vector3 worldPosition)
+        {
+            return ContainsLocalPoint(transform.InverseTransformPoint(worldPosition));
+        }
+
+        /// <summary>
+        /// Returns whether a local point falls inside the configured footprint and height.
+        /// </summary>
+        public bool ContainsLocalPoint(Vector3 localPosition)
+        {
+            if (localFootprint.x <= 0f || localFootprint.z <= 0f)
+                return false;
+
+            return Mathf.Abs(localPosition.x) <= localFootprint.x * .5f
+                && Mathf.Abs(localPosition.z) <= localFootprint.z * .5f
+                && localPosition.y >= localMinHeight
+                && localPosition.y <= localMaxHeight;
         }
 
         /// <summary>
@@ -101,6 +163,8 @@ namespace Tycoon
         {
             if (renderer == null)
                 return;
+
+            interiorRenderers.Remove(renderer);
 
             if (!upperShellRenderers.Contains(renderer))
                 upperShellRenderers.Add(renderer);
@@ -125,6 +189,29 @@ namespace Tycoon
 
             upperShellRenderers.Remove(renderer);
             initialRendererStates.Remove(renderer);
+        }
+
+        /// <summary>
+        /// Registers an interior renderer without changing its enabled state.
+        /// </summary>
+        public void RegisterInteriorRenderer(Renderer renderer)
+        {
+            if (renderer == null || upperShellRenderers.Contains(renderer))
+                return;
+
+            if (!interiorRenderers.Contains(renderer))
+                interiorRenderers.Add(renderer);
+        }
+
+        /// <summary>
+        /// Removes an interior renderer without changing its enabled state.
+        /// </summary>
+        public void UnregisterInteriorRenderer(Renderer renderer)
+        {
+            if (renderer == null)
+                return;
+
+            interiorRenderers.Remove(renderer);
         }
 
         void OnTriggerEnter(Collider other)
@@ -177,6 +264,21 @@ namespace Tycoon
             BoxCollider trigger = GetComponent<BoxCollider>();
             if (trigger != null)
                 trigger.isTrigger = true;
+        }
+
+        void ScheduleTransition(bool inside)
+        {
+            float delay = inside ? enterHysteresisSeconds : exitHysteresisSeconds;
+            if (delay <= 0f)
+            {
+                transitionPending = false;
+                ApplyRevealState(inside);
+                return;
+            }
+
+            pendingRevealState = inside;
+            transitionDeadline = Time.unscaledTime + delay;
+            transitionPending = true;
         }
 
         void CacheConfiguredStates()

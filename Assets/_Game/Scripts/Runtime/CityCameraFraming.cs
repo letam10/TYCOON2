@@ -4,6 +4,23 @@ namespace Tycoon
 {
     public static class CityCameraFraming
     {
+        public static float ResolveDistance(float desiredDistance, float blockingDistance,
+            float padding, float minimumDistance)
+        {
+            if (!float.IsFinite(desiredDistance) || desiredDistance <= 0f)
+                return Mathf.Max(0.1f, minimumDistance);
+
+            if (!float.IsFinite(blockingDistance) || blockingDistance >= desiredDistance)
+                return desiredDistance;
+
+            float safePadding = Mathf.Max(0f, float.IsFinite(padding) ? padding : 0f);
+            float safeMinimum = Mathf.Clamp(
+                float.IsFinite(minimumDistance) ? minimumDistance : .5f,
+                .1f,
+                desiredDistance);
+            return Mathf.Clamp(blockingDistance - safePadding, safeMinimum, desiredDistance);
+        }
+
         public static float OverviewDistance(Camera lens, Quaternion rotation)
         {
             var bounds = CityDistricts.WorldBounds;

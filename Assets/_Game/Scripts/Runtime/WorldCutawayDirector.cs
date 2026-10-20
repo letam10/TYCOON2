@@ -15,6 +15,8 @@ namespace Tycoon
         readonly List<Entry> entries = new();
         PlayerController player;
 
+        public int RegisteredVolumeCount => entries.Count;
+
         public static WorldCutawayDirector Build(GameSession game, Transform world)
         {
             if (!game || !world) return null;
@@ -30,6 +32,8 @@ namespace Tycoon
 
         void Configure(Transform world)
         {
+            entries.Clear();
+
             foreach (var landmark in world.GetComponentsInChildren<CityLandmark>(true))
             {
                 if (!landmark || landmark.Footprint.x <= 0 || landmark.Footprint.z <= 0)
@@ -43,17 +47,20 @@ namespace Tycoon
                 trigger.isTrigger = true;
                 trigger.center = Vector3.up * 4f;
                 trigger.size = new Vector3(landmark.Footprint.x, 8f, landmark.Footprint.z);
+                volume.localFootprint = landmark.Footprint;
+                volume.localMinHeight = -.5f;
+                volume.localMaxHeight = 8f;
                 foreach (var renderer in landmark.GetComponentsInChildren<Renderer>(true))
                 {
-                    if (!renderer || !IsUpperShell(renderer)) continue;
-                    volume.RegisterRenderer(renderer);
+                    if (!renderer)
+                        continue;
+
+                    if (IsUpperShell(renderer))
+                        volume.RegisterRenderer(renderer);
+                    else if (IsInteriorCandidate(renderer))
+                        volume.RegisterInteriorRenderer(renderer);
                 }
-                entries.Add(new Entry
-                {
-                    Root = landmark.transform,
-                    Footprint = landmark.Footprint,
-                    Volume = volume
-                });
+                AddEntry(landmark.transform, landmark.Footprint, volume);
             }
 
             foreach (var volume in world.GetComponentsInChildren<WorldCutawayVolume>(true))
@@ -61,13 +68,28 @@ namespace Tycoon
                 if (!volume || volume.GetComponent<CityLandmark>() || volume.localFootprint.x <= 0
                     || volume.localFootprint.z <= 0)
                     continue;
-                entries.Add(new Entry
-                {
-                    Root = volume.transform,
-                    Footprint = volume.localFootprint,
-                    Volume = volume
-                });
+                AddEntry(volume.transform, volume.localFootprint, volume);
             }
+        }
+
+        void AddEntry(Transform root, Vector3 footprint, WorldCutawayVolume volume)
+        {
+            if (!root || !volume || footprint.x <= 0f || footprint.z <= 0f)
+                return;
+
+            foreach (Entry entry in entries)
+            {
+                if (entry.Volume == volume)
+                    return;
+            }
+
+            volume.localFootprint = footprint;
+            entries.Add(new Entry
+            {
+                Root = root,
+                Footprint = footprint,
+                Volume = volume
+            });
         }
 
         void Update()
@@ -76,12 +98,24 @@ namespace Tycoon
             Vector3 playerPosition = player.transform.position;
             foreach (var entry in entries)
             {
-                Vector3 local = entry.Root.InverseTransformPoint(playerPosition);
-                bool inside = Mathf.Abs(local.x) <= entry.Footprint.x * .5f
-                    && Mathf.Abs(local.z) <= entry.Footprint.z * .5f
-                    && local.y >= -.5f && local.y <= 8f;
-                entry.Volume.SetPlayerInside(inside);
+                if (entry.Volume != null)
+                    entry.Volume.SetPlayerInside(entry.Volume.ContainsWorldPoint(playerPosition));
             }
+        }
+
+        public bool TryGetVolumeAt(Vector3 worldPosition, out WorldCutawayVolume volume)
+        {
+            foreach (Entry entry in entries)
+            {
+                if (entry.Volume != null && entry.Volume.ContainsWorldPoint(worldPosition))
+                {
+                    volume = entry.Volume;
+                    return true;
+                }
+            }
+
+            volume = null;
+            return false;
         }
 
         static bool IsUpperShell(Renderer renderer)
@@ -90,6 +124,11 @@ namespace Tycoon
             string material = renderer.sharedMaterial ? renderer.sharedMaterial.name.ToLowerInvariant() : "";
             return name.Contains("roof") || name.Contains("upper") || material.Contains("roof")
                 || renderer.bounds.center.y > 3.1f;
+        }
+
+        static bool IsInteriorCandidate(Renderer renderer)
+        {
+            return renderer.bounds.center.y <= 3.1f;
         }
     }
 }
