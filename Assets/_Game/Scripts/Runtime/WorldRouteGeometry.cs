@@ -3,6 +3,23 @@ using UnityEngine;
 
 namespace Tycoon
 {
+    public struct WorldRouteJunction
+    {
+        public Vector3 Point { get; }
+        public float Width { get; private set; }
+
+        public WorldRouteJunction(Vector3 point, float width)
+        {
+            Point = point;
+            Width = width;
+        }
+
+        public void IncludeWidth(float width)
+        {
+            Width = Mathf.Max(Width, width);
+        }
+    }
+
     public struct WorldRouteSegment
     {
         public Vector3 Start { get; }
@@ -53,6 +70,58 @@ namespace Tycoon
 
     public static class WorldRouteGeometry
     {
+        public static IReadOnlyList<WorldRouteJunction> FindJunctions(
+            IReadOnlyList<WorldRouteCorridor> routes,
+            float tolerance = .05f)
+        {
+            var junctions = new List<WorldRouteJunction>();
+            if (routes == null)
+                return junctions.AsReadOnly();
+
+            var segments = new List<WorldRouteSegment>();
+            for (int routeIndex = 0; routeIndex < routes.Count; routeIndex++)
+            {
+                WorldRouteCorridor route = routes[routeIndex];
+                if (route == null)
+                    continue;
+                for (int nodeIndex = 1; nodeIndex < route.Nodes.Count; nodeIndex++)
+                {
+                    WorldRouteSegment segment = new WorldRouteSegment(
+                        route.Nodes[nodeIndex - 1],
+                        route.Nodes[nodeIndex],
+                        route.Width);
+                    if (segment.Length > .0001f)
+                        segments.Add(segment);
+                }
+                for (int nodeIndex = 1; nodeIndex < route.Nodes.Count - 1; nodeIndex++)
+                {
+                    Vector3 incoming = route.Nodes[nodeIndex] - route.Nodes[nodeIndex - 1];
+                    Vector3 outgoing = route.Nodes[nodeIndex + 1] - route.Nodes[nodeIndex];
+                    if (incoming.sqrMagnitude <= .0001f || outgoing.sqrMagnitude <= .0001f)
+                        continue;
+                    if (Vector3.Dot(incoming.normalized, outgoing.normalized) < .999f)
+                        IncludeJunction(junctions, route.Nodes[nodeIndex], route.Width, tolerance);
+                }
+            }
+
+            for (int firstIndex = 0; firstIndex < segments.Count; firstIndex++)
+            {
+                for (int secondIndex = firstIndex + 1; secondIndex < segments.Count; secondIndex++)
+                {
+                    WorldRouteSegment first = segments[firstIndex];
+                    WorldRouteSegment second = segments[secondIndex];
+                    if (!TryIntersect(first, second, out Vector3 point))
+                        continue;
+                    IncludeJunction(
+                        junctions,
+                        point,
+                        Mathf.Max(first.Width, second.Width),
+                        tolerance);
+                }
+            }
+            return junctions.AsReadOnly();
+        }
+
         public static IEnumerable<WorldRouteSegment> Segments(WorldRouteCorridor corridor)
         {
             if (corridor == null)
@@ -104,6 +173,74 @@ namespace Tycoon
             Vector3 minimum = new Vector3(minX, minY, minZ);
             Vector3 maximum = new Vector3(maxX, maxY, maxZ);
             return new Bounds((minimum + maximum) * .5f, maximum - minimum);
+        }
+
+        static bool TryIntersect(
+            WorldRouteSegment first,
+            WorldRouteSegment second,
+            out Vector3 point)
+        {
+            point = default;
+            Vector2 start = new Vector2(first.Start.x, first.Start.z);
+            Vector2 firstEnd = new Vector2(first.End.x, first.End.z);
+            Vector2 otherStart = new Vector2(second.Start.x, second.Start.z);
+            Vector2 otherEnd = new Vector2(second.End.x, second.End.z);
+            Vector2 firstDelta = firstEnd - start;
+            Vector2 secondDelta = otherEnd - otherStart;
+            float determinant = firstDelta.x * secondDelta.y - firstDelta.y * secondDelta.x;
+            if (Mathf.Abs(determinant) <= .000001f)
+                return TrySharedEndpoint(first, second, out point);
+
+            Vector2 between = otherStart - start;
+            float firstAmount = (between.x * secondDelta.y - between.y * secondDelta.x)
+                / determinant;
+            float secondAmount = (between.x * firstDelta.y - between.y * firstDelta.x)
+                / determinant;
+            if (firstAmount < -.0001f || firstAmount > 1.0001f
+                || secondAmount < -.0001f || secondAmount > 1.0001f)
+                return false;
+            point = Vector3.Lerp(first.Start, first.End, Mathf.Clamp01(firstAmount));
+            return true;
+        }
+
+        static bool TrySharedEndpoint(
+            WorldRouteSegment first,
+            WorldRouteSegment second,
+            out Vector3 point)
+        {
+            Vector3[] firstPoints = { first.Start, first.End };
+            Vector3[] secondPoints = { second.Start, second.End };
+            for (int firstIndex = 0; firstIndex < firstPoints.Length; firstIndex++)
+            {
+                for (int secondIndex = 0; secondIndex < secondPoints.Length; secondIndex++)
+                {
+                    if ((firstPoints[firstIndex] - secondPoints[secondIndex]).sqrMagnitude > .0025f)
+                        continue;
+                    point = (firstPoints[firstIndex] + secondPoints[secondIndex]) * .5f;
+                    return true;
+                }
+            }
+            point = default;
+            return false;
+        }
+
+        static void IncludeJunction(
+            List<WorldRouteJunction> junctions,
+            Vector3 point,
+            float width,
+            float tolerance)
+        {
+            float squaredTolerance = Mathf.Max(.0001f, tolerance * tolerance);
+            for (int index = 0; index < junctions.Count; index++)
+            {
+                if ((junctions[index].Point - point).sqrMagnitude > squaredTolerance)
+                    continue;
+                WorldRouteJunction existing = junctions[index];
+                existing.IncludeWidth(width);
+                junctions[index] = existing;
+                return;
+            }
+            junctions.Add(new WorldRouteJunction(point, width));
         }
     }
 }

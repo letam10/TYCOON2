@@ -41,6 +41,20 @@ namespace Tycoon
                     segmentIndex++;
                 }
             }
+            IReadOnlyList<WorldRouteJunction> junctions =
+                WorldRouteGeometry.FindJunctions(WorldRouteCatalog.BuildStreetNetwork());
+            for (int index = 0; index < junctions.Count; index++)
+            {
+                WorldRouteJunction junction = junctions[index];
+                float patchSize = Mathf.Max(2f, junction.Width + 1.8f);
+                TownModelParts.Box(
+                    "StreetJunctionPatch_" + index,
+                    junction.Point + Vector3.up * .05f,
+                    new(patchSize, .03f, patchSize),
+                    "stone",
+                    "#666C6C",
+                    root);
+            }
             StaticBatchingUtility.Combine(root.gameObject);
         }
 

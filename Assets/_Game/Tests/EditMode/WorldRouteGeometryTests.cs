@@ -81,12 +81,42 @@ namespace Tycoon.Tests
             Assert.That(routeId, Is.EqualTo(route.Id));
         }
 
+        [Test]
+        public void StreetJunctionsCoverSharedEndpointsAndCrossings()
+        {
+            IReadOnlyList<WorldRouteJunction> junctions =
+                WorldRouteGeometry.FindJunctions(WorldRouteCatalog.BuildStreetNetwork());
+
+            Assert.That(junctions, Is.Not.Null);
+            Assert.That(junctions.Count, Is.GreaterThan(0));
+            bool foundMainWestIntersection = false;
+            for (int index = 0; index < junctions.Count; index++)
+            {
+                WorldRouteJunction junction = junctions[index];
+                Assert.That(junction.Width, Is.GreaterThan(0));
+                Assert.That(IsFinite(junction.Point), Is.True);
+                if ((junction.Point - new Vector3(-105, 0, 29)).sqrMagnitude < .01f)
+                    foundMainWestIntersection = true;
+            }
+            Assert.That(foundMainWestIntersection, Is.True);
+        }
+
         static WorldRouteSegment First(IEnumerable<WorldRouteSegment> segments)
         {
             foreach (WorldRouteSegment segment in segments)
                 return segment;
             Assert.Fail("Expected a route segment.");
             return default;
+        }
+
+        static bool IsFinite(Vector3 value)
+        {
+            return !float.IsNaN(value.x)
+                && !float.IsInfinity(value.x)
+                && !float.IsNaN(value.y)
+                && !float.IsInfinity(value.y)
+                && !float.IsNaN(value.z)
+                && !float.IsInfinity(value.z);
         }
     }
 }
