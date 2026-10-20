@@ -112,12 +112,19 @@ namespace Tycoon
     public static class WorldRouteCatalog
     {
         static readonly IReadOnlyList<WorldRouteCorridor> defaultRoutes = BuildRoutes();
+        static readonly IReadOnlyList<WorldRouteCorridor> streetNetworkRoutes =
+            BuildStreetNetworkRoutes();
         static readonly IReadOnlyList<WorldPublicApproach> publicApproaches =
             CreatePublicApproaches();
 
         public static IReadOnlyList<WorldRouteCorridor> BuildDefault()
         {
             return defaultRoutes;
+        }
+
+        public static IReadOnlyList<WorldRouteCorridor> BuildStreetNetwork()
+        {
+            return streetNetworkRoutes;
         }
 
         public static IReadOnlyList<WorldPublicApproach> BuildPublicApproaches()
@@ -178,13 +185,35 @@ namespace Tycoon
         {
             corridorId = null;
             float safeRadius = Mathf.Max(0f, radius);
-            for (int routeIndex = 0; routeIndex < defaultRoutes.Count; routeIndex++)
+            if (TryFindReserved(defaultRoutes, point, safeRadius, out corridorId))
+                return true;
+            return TryFindReserved(streetNetworkRoutes, point, safeRadius, out corridorId);
+        }
+
+        public static bool ValidateStreetNetwork(out string failure)
+        {
+            return ValidateRoutes(streetNetworkRoutes, out failure);
+        }
+
+        public static bool ValidateStreetNetwork()
+        {
+            return ValidateStreetNetwork(out _);
+        }
+
+        static bool TryFindReserved(
+            IReadOnlyList<WorldRouteCorridor> routes,
+            Vector3 point,
+            float radius,
+            out string corridorId)
+        {
+            corridorId = null;
+            for (int routeIndex = 0; routeIndex < routes.Count; routeIndex++)
             {
-                WorldRouteCorridor corridor = defaultRoutes[routeIndex];
+                WorldRouteCorridor corridor = routes[routeIndex];
                 if (!corridor.ReservesPlacement)
                     continue;
 
-                float clearance = safeRadius + corridor.Width * .5f;
+                float clearance = radius + corridor.Width * .5f;
                 if (DistanceSquaredToRoute(point, corridor.Nodes) <= clearance * clearance)
                 {
                     corridorId = corridor.Id;
@@ -215,11 +244,18 @@ namespace Tycoon
 
         public static bool ValidateContinuous(out string failure)
         {
+            return ValidateRoutes(defaultRoutes, out failure);
+        }
+
+        static bool ValidateRoutes(
+            IReadOnlyList<WorldRouteCorridor> routes,
+            out string failure)
+        {
             failure = null;
             var ids = new HashSet<string>(StringComparer.Ordinal);
-            for (int routeIndex = 0; routeIndex < defaultRoutes.Count; routeIndex++)
+            for (int routeIndex = 0; routeIndex < routes.Count; routeIndex++)
             {
-                WorldRouteCorridor corridor = defaultRoutes[routeIndex];
+                WorldRouteCorridor corridor = routes[routeIndex];
                 if (string.IsNullOrWhiteSpace(corridor.Id) || !ids.Add(corridor.Id))
                 {
                     failure = "route id is missing or duplicated";
@@ -253,7 +289,7 @@ namespace Tycoon
                     }
                 }
             }
-            return defaultRoutes.Count > 0;
+            return routes.Count > 0;
         }
 
         public static bool ValidateContinuous()
@@ -508,6 +544,46 @@ namespace Tycoon
                     true)
             };
             return new System.Collections.ObjectModel.ReadOnlyCollection<WorldRouteCorridor>(routes);
+        }
+
+        static IReadOnlyList<WorldRouteCorridor> BuildStreetNetworkRoutes()
+        {
+            var routes = new List<WorldRouteCorridor>
+            {
+                Street("street-main-south", new(-116, 0, -45), new(145, 0, -45), 8),
+                Street("street-main-north", new(-105, 0, 29), new(112, 0, 29), 8),
+                Street("street-west-connector", new(-105, 0, -45), new(-105, 0, 29), 6),
+                Street("street-east-north", new(102, 0, -45), new(102, 0, 91), 7),
+                Street("street-central-north", new(46, 0, 29), new(46, 0, 91), 6),
+                Street("street-north-connector", new(9, 0, 91), new(102, 0, 91), 6),
+                Street("street-park-spur", new(9, 0, 81), new(9, 0, 91), 5),
+                Street("street-west-farm", new(-82, 0, 29), new(-82, 0, 65), 5),
+                Street("street-west-farm-connector", new(-82, 0, 65), new(-66.7f, 0, 65), 5),
+                Street("street-processing-spur", new(-35, 0, 10), new(-35, 0, 29), 5),
+                Street("street-market-spur", new(-1, 0, -7), new(21, 0, -7), 5),
+                Street("street-market-connector", new(21, 0, -7), new(21, 0, 29), 5),
+                Street("street-processing-east", new(79, 0, -18), new(102, 0, -18), 5),
+                Street("street-central-east", new(46, 0, 56), new(57, 0, 56), 5),
+                Street("street-ring-west-south", new(-195, 0, -45), new(-116, 0, -45), 8),
+                Street("street-ring-east-south", new(145, 0, -45), new(190, 0, -45), 8),
+                Street("street-ring-west", new(-195, 0, -112), new(-195, 0, 155), 8),
+                Street("street-ring-east", new(190, 0, -112), new(190, 0, 155), 8),
+                Street("street-ring-north", new(-195, 0, 155), new(190, 0, 155), 8),
+                Street("street-ring-south", new(-195, 0, -112), new(190, 0, -112), 8),
+                Street("street-ring-west-connector", new(-195, 0, 29), new(-105, 0, 29), 8),
+                Street("street-ring-east-connector", new(112, 0, 29), new(190, 0, 29), 8)
+            };
+            return new System.Collections.ObjectModel.ReadOnlyCollection<WorldRouteCorridor>(routes);
+
+            static WorldRouteCorridor Street(string id, Vector3 start, Vector3 end, float width)
+            {
+                return new WorldRouteCorridor(
+                    id,
+                    RouteKind.Highway,
+                    new[] { start, end },
+                    width,
+                    true);
+            }
         }
 
         static IReadOnlyList<WorldPublicApproach> CreatePublicApproaches()
