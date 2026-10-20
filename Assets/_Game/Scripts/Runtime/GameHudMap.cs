@@ -19,8 +19,14 @@ namespace Tycoon
         void BuildMap()
         {
             minimapRect = (RectTransform)Panel("Minimap", hud.transform, Surface).transform;
-            minimap = NewRect("MinimapTerrain", minimapRect).gameObject.AddComponent<CityMapGraphic>();
-            Rect(minimap.rectTransform, Vector2.zero, Vector2.one, new(8, 30), new(-8, -8));
+            // Mask phải nằm ở cha của terrain; nhãn và nút giữ nguyên trên khung ngoài.
+            var viewport = NewRect("MinimapViewport", minimapRect);
+            Rect(viewport, Vector2.zero, Vector2.one, new(8, 30), new(-8, -8));
+            viewport.gameObject.AddComponent<RectMask2D>();
+            var terrain = NewRect("MinimapTerrain", viewport);
+            terrain.gameObject.AddComponent<CanvasRenderer>();
+            minimap = terrain.gameObject.AddComponent<CityMapGraphic>();
+            Rect(minimap.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             minimap.Initialize(game, true);
             minimapHelp = Text("MinimapHelp", minimapRect, "", 15, TextAnchor.MiddleCenter, Ink);
             Rect(minimapHelp.rectTransform, Vector2.zero, new(1, 0), new(4, 3), new(-4, 26));

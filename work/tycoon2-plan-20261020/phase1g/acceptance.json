@@ -1,0 +1,79 @@
+{
+  "phase": "1G",
+  "scope": "Minimap viewport clipping repair",
+  "sourceBase": "11b74fbb28122da0cf99285f0a379470a866cad3",
+  "overallRedesignComplete": false,
+  "phase1Complete": false,
+  "objective": "work/tycoon2-plan-20261020/objective-recovered.md",
+  "before": {
+    "result": "Failed",
+    "total": 3,
+    "passed": 1,
+    "failed": 2,
+    "xml": "before.xml",
+    "visual": "../phase1f/world-features/minimap-1920.png"
+  },
+  "intermediateFailures": [
+    "Unsupported NUnit NonParallelizable attribute removed from new test fixture",
+    "First masked HUD test exposed missing CanvasRenderer; explicit renderer creation added before CityMapGraphic"
+  ],
+  "after": {
+    "result": "Passed",
+    "total": 31,
+    "passed": 31,
+    "failed": 0,
+    "skipped": 0,
+    "startedUtc": "2026-10-20T06:01:57Z",
+    "finishedUtc": "2026-10-20T06:01:58Z",
+    "xml": "after-renderer.xml",
+    "suites": {
+      "WorldRouteGeometryTests": 14,
+      "CityMapCaptionLayoutTests": 4,
+      "MinimapViewportTests": 3,
+      "Stage7MapWayfindingTests": 6,
+      "Stage9MapWayfindingTests": 4
+    }
+  },
+  "build": {
+    "result": "Succeeded",
+    "builtUtc": "2026-10-20T06:02:53.0413086Z",
+    "bytes": 117118015,
+    "seconds": 28.6473804,
+    "errors": 0,
+    "warnings": 34,
+    "runtimeAssemblySha256": "743543C87AE36DC65836DB917BEC1EB6EE3EBD05110F47C5747CA4ECA14E2B92",
+    "report": "Player/build-report.json",
+    "executable": "Player/TYCOON2.exe"
+  },
+  "player": {
+    "passed": true,
+    "exitCode": 0,
+    "startedUtc": "2026-10-20T06:03:17Z",
+    "finishedUtc": "2026-10-20T06:03:49Z",
+    "graphicsDevice": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "checks": 3705,
+    "interactions": 30,
+    "screenshots": 63,
+    "runtimeErrors": 0,
+    "runtimeErrorLogMatches": 0,
+    "nativeClippingResolutions": [[1920, 1080], [2560, 1440]],
+    "openedCaptures": [
+      "world-features/minimap-clipped-1920.png",
+      "world-features/minimap-clipped-2560.png"
+    ],
+    "visualVerdict": "Route and POI spill observed in Phase 1F is absent in both fresh minimap captures",
+    "report": "world-features/world-features-report.json"
+  },
+  "preservation": {
+    "preexistingTrackedDirtyFiles": 101,
+    "preexistingDirtyHashChanges": 0,
+    "snapshot": "dirty-before.json"
+  },
+  "notEstablished": [
+    "Complete Phase 1 street joins and overlap acceptance",
+    "Shared sampled geometry for every mesh, NavMesh, traffic and map consumer",
+    "Full regression suite and old-save migration acceptance",
+    "All interiors, final environment and interactive map redesign",
+    "FPS or Steam hardware acceptance"
+  ]
+}

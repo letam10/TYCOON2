@@ -7,12 +7,14 @@ dưới đây; tài liệu lịch sử không được dùng để ghi đè tr�
 
 ## Ưu tiên 1 — nguồn sự thật của dự án
 
-0. `Docs/HANDOFF_TYCOON2_WORLD_STAGE1F_VALIDATOR_REPAIR_20261020.md` —
-   checkpoint redesign hiện tại: sửa validator đã qua 36 test và Player smoke;
-   visual gate còn lỗi vệt tràn minimap, Phase 1 và mục tiêu tổng thể chưa xong.
+0. `Docs/HANDOFF_TYCOON2_WORLD_STAGE1G_MINIMAP_CLIPPING_20261020.md` —
+   checkpoint redesign hiện tại: sửa vệt tràn minimap, 31 test đạt và Player
+   3705 checks/0 lỗi runtime; đã xem ảnh clipping 1080p/1440p. Phase 1 và
+   mục tiêu tổng thể chưa xong; tiếp theo là hình học nút giao/vỉa hè.
    `work/tycoon2-plan-20261020/objective-recovered.md` giữ nguyên mục tiêu gốc
    được khôi phục từ lần đọc attachment thành công trong chính chat này.
-   Evidence mới nằm ở `work/tycoon2-plan-20261020/phase1f/`.
+   Evidence mới và acceptance summary nằm ở `work/tycoon2-plan-20261020/phase1g/`.
+   Handoff Phase 1F bên cạnh giữ lịch sử sửa validator và ảnh lỗi trước sửa.
    V21 bên dưới vẫn mô tả bản bàn giao cũ, không đại diện nghiệm thu redesign.
 
 1. `Docs/CODEX_HANDOFF.md` — mục V21: bản đồ, đổi phím, slot lưu, hồi quy nhanh và bàn giao Windows.
