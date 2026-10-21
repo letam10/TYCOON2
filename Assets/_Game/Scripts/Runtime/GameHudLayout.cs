@@ -23,7 +23,13 @@ namespace Tycoon
             bool compact = width < 1460;
             TopLeft(cashRect, 16, 16, Mathf.Min(340, width - 264), 66);
             BottomLeft(carryRect, 16, 248, 284, 74);
-            if (minimapRect) BottomLeft(minimapRect, 16, 44, 220, 192);
+            if (minimapRect)
+            {
+                float minimapWidth = compact ? 204 : 220;
+                float minimapHeight = compact ? 180 : 192;
+                BottomLeft(minimapRect, 16, 44, minimapWidth, minimapHeight);
+                minimapRect.SetAsLastSibling();
+            }
             BottomCenter(actionRect, 44, Mathf.Min(560, width - 32), 84);
             Rect((RectTransform)help.transform.parent, Vector2.zero, new(1, 0), new(16, 6), new(-16, 30));
             // Bảng lớn chỉ nằm trong modal; HUD chơi thường giữ diện tích che rất nhỏ.

@@ -14,6 +14,8 @@ namespace Tycoon
         ScreenMode mapReturnMode;
         int inputRevision = -1;
         Text mapMessage, minimapHelp;
+        Vector2 mapPointerPosition;
+        bool mapPointerActive;
         public bool MapOpen => mode == ScreenMode.Map;
 
         void BuildMap()
@@ -87,6 +89,21 @@ namespace Tycoon
                     captionOffset + new Vector2(0, -9),
                     captionOffset + new Vector2(captionWidth, 9));
             }
+            var zoomOut = Button(board.transform, "−", () => ZoomMap(-.2f));
+            zoomOut.name = "MapZoomOut";
+            Rect((RectTransform)zoomOut.transform, new(.04f, .80f), new(.11f, .87f), Vector2.zero, Vector2.zero);
+            var zoomIn = Button(board.transform, "+", () => ZoomMap(.2f));
+            zoomIn.name = "MapZoomIn";
+            Rect((RectTransform)zoomIn.transform, new(.115f, .80f), new(.185f, .87f), Vector2.zero, Vector2.zero);
+            var northButton = Button(board.transform, "Bắc", ResetMapNorth);
+            northButton.name = "MapResetNorth";
+            Rect((RectTransform)northButton.transform, new(.19f, .80f), new(.31f, .87f), Vector2.zero, Vector2.zero);
+            var focusButton = Button(board.transform, "Về bạn", FocusMapPlayer);
+            focusButton.name = "MapFocusPlayer";
+            Rect((RectTransform)focusButton.transform, new(.315f, .80f), new(.46f, .87f), Vector2.zero, Vector2.zero);
+            var legend = Text("MapLegend", board.transform,
+                "Kéo để pan • chuột giữa để xoay • cuộn để zoom", 14, TextAnchor.MiddleLeft, Muted);
+            Rect(legend.rectTransform, new(.47f, .80f), new(.73f, .87f), Vector2.zero, Vector2.zero);
             mapPlayer = NewRect("MapPlayerIndicator", worldMap.transform).gameObject.AddComponent<MapPlayerIndicator>();
             Rect(mapPlayer.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             mapPlayer.Initialize(worldMap, game.Player);
@@ -104,6 +121,7 @@ namespace Tycoon
             if (game.SaveBlocked || game.IsRestoring || MapOpen) return;
             mapReturnMode = mode;
             ShowScreen(ScreenMode.Map);
+            worldMap.SetTooltip(string.Empty);
             worldMap.SetVerticesDirty();
             mapPlayer.SetVerticesDirty();
             SetText(mapMessage, "Dịch chuyển miễn phí, giữ nguyên hàng và tiền.");
@@ -117,11 +135,154 @@ namespace Tycoon
 
         void MapTravel(int index)
         {
+            if (index >= 0 && index < CityMapLocations.Points.Length)
+            {
+                string id = CityMapLocations.Points[index].id;
+                worldMap.SelectPoi(id);
+                worldMap.SetRouteHighlight(id);
+            }
             if (!CityMapLocations.Teleport(game, index, out string message))
             { SetText(mapMessage, message); return; }
             ShowScreen(ScreenMode.Play);
             game.Say(message);
             minimap.SetVerticesDirty();
+        }
+
+        public void ZoomMap(float amount)
+        {
+            worldMap?.ZoomBy(amount);
+            RefreshMapOverlayPositions();
+        }
+
+        public void PanMap(Vector2 normalizedDelta)
+        {
+            worldMap?.Pan(normalizedDelta);
+            RefreshMapOverlayPositions();
+        }
+
+        public void RotateMap(float degrees)
+        {
+            worldMap?.RotateBy(degrees);
+            RefreshMapOverlayPositions();
+        }
+
+        public void ResetMapNorth()
+        {
+            worldMap?.ResetNorth();
+            RefreshMapOverlayPositions();
+        }
+
+        public void FocusMapPlayer()
+        {
+            worldMap?.FocusPlayer();
+            RefreshMapOverlayPositions();
+        }
+
+        public void ToggleMapKind(string kind)
+        {
+            worldMap?.ToggleKind(kind);
+            RefreshMapOverlayPositions();
+        }
+
+        public void SelectMapPoi(string id)
+        {
+            worldMap?.SelectPoi(id);
+            worldMap?.SetRouteHighlight(id);
+            SetMapTooltip(id);
+        }
+
+        public void SetMapTooltip(string id)
+        {
+            if (!worldMap || !mapMessage)
+                return;
+            worldMap.SetTooltip(id);
+            string tooltip = worldMap.GetPoiTooltip(id);
+            SetText(mapMessage, string.IsNullOrEmpty(tooltip)
+                ? "Dịch chuyển miễn phí, giữ nguyên hàng và tiền."
+                : tooltip + " • điểm vàng để dịch chuyển");
+        }
+
+        void RefreshMapOverlayPositions()
+        {
+            if (!worldMap)
+                return;
+            foreach (var point in CityMapLocations.Points)
+            {
+                Vector2 position = worldMap.Position(point.position);
+                Transform pin = worldMap.transform.Find("MapPin_" + point.id);
+                if (pin)
+                {
+                    pin.gameObject.SetActive(worldMap.IsPoiVisible(point.id));
+                    Rect((RectTransform)pin, position, position, new(-12, -12), new(12, 12));
+                }
+                Transform caption = worldMap.transform.Find("MapLabel_" + point.id);
+                if (caption)
+                {
+                    caption.gameObject.SetActive(worldMap.IsPoiVisible(point.id));
+                    Vector2 offset = CityMapLocations.CaptionOffset(point.id);
+                    float width = CityMapLocations.CaptionWidth(point.id);
+                    Rect((RectTransform)caption, position, position,
+                        offset + new Vector2(0, -9), offset + new Vector2(width, 9));
+                }
+            }
+            worldMap.SetVerticesDirty();
+            if (mapPlayer)
+                mapPlayer.SetVerticesDirty();
+        }
+
+        void UpdateMapInput()
+        {
+            if (!MapOpen)
+                return;
+            Mouse mouse = Mouse.current;
+            Keyboard keyboard = Keyboard.current;
+            Gamepad gamepad = Gamepad.current;
+            if (mouse != null)
+            {
+                float scroll = mouse.scroll.ReadValue().y;
+                if (Mathf.Abs(scroll) > .01f)
+                    ZoomMap(scroll * .002f);
+                Vector2 pointer = mouse.position.ReadValue();
+                bool inMap = worldMap && RectTransformUtility.RectangleContainsScreenPoint(
+                    worldMap.rectTransform, pointer);
+                bool rotate = mouse.middleButton.isPressed || keyboard?.leftAltKey.isPressed == true;
+                bool drag = mouse.leftButton.isPressed || rotate;
+                if (drag && inMap)
+                {
+                    if (!mapPointerActive)
+                        mapPointerPosition = pointer;
+                    Vector2 delta = pointer - mapPointerPosition;
+                    if (rotate)
+                        RotateMap(delta.x * .35f);
+                    else
+                        PanMap(new Vector2(-delta.x / Mathf.Max(1, worldMap.rectTransform.rect.width),
+                            -delta.y / Mathf.Max(1, worldMap.rectTransform.rect.height)));
+                    mapPointerPosition = pointer;
+                    mapPointerActive = true;
+                }
+                else
+                    mapPointerActive = false;
+            }
+            if (keyboard != null)
+            {
+                if (keyboard.nKey.wasPressedThisFrame)
+                    ResetMapNorth();
+                if (keyboard.fKey.wasPressedThisFrame)
+                    FocusMapPlayer();
+            }
+            if (gamepad != null)
+            {
+                Vector2 pan = gamepad.leftStick.ReadValue();
+                if (pan.sqrMagnitude > .01f)
+                    PanMap(-pan * Time.unscaledDeltaTime * .45f);
+                Vector2 rotate = gamepad.rightStick.ReadValue();
+                if (Mathf.Abs(rotate.x) > .01f)
+                    RotateMap(rotate.x * Time.unscaledDeltaTime * 90);
+                if (gamepad.leftShoulder.wasPressedThisFrame)
+                    ZoomMap(-.2f);
+                if (gamepad.rightShoulder.wasPressedThisFrame)
+                    ZoomMap(.2f);
+            }
         }
 
         bool UpdateNavigationInput()
@@ -137,6 +298,11 @@ namespace Tycoon
             {
                 if (MapOpen) CloseMap();
                 else if (mode is ScreenMode.Play or ScreenMode.Pause or ScreenMode.Settings) OpenMap();
+            }
+            if (MapOpen)
+            {
+                UpdateMapInput();
+                RefreshMapOverlayPositions();
             }
             if (menuKey.WasPressedThisFrame() || Keyboard.current?.escapeKey.wasPressedThisFrame == true
                 || Gamepad.current?.selectButton.wasPressedThisFrame == true) TogglePause();

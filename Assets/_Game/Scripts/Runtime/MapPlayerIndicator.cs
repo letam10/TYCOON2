@@ -17,8 +17,7 @@ namespace Tycoon
             if (!map || !player) return;
             var rect = rectTransform.rect;
             Vector2 center = rect.min + Vector2.Scale(map.Position(player.transform.position), rect.size);
-            Vector3 forward = player.transform.forward;
-            Vector2 direction = new Vector2(forward.x, forward.z).normalized;
+            Vector2 direction = map.Direction(player.transform.forward);
             Vector2 side = new(-direction.y, direction.x);
             Triangle(mesh, center, direction, side, 1.35f, new Color32(18, 40, 34, 255));
             Triangle(mesh, center, direction, side, 1, Color.white);

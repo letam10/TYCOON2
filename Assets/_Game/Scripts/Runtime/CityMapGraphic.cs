@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,6 +12,16 @@ namespace Tycoon
         Bounds[] roads, districts, landmarks;
         WorldStreetLayout streetSurfaces;
         WorldPathSurfaceLayout pathSurfaces;
+        MapViewportState viewport;
+        string routeHighlightPoiId;
+        public event Action<string> PoiTooltipChanged;
+        public event Action<string> PoiSelectionChanged;
+        public event Action<string> RouteHighlightChanged;
+        public MapViewportState Viewport => viewport;
+        public MapViewportState ViewportState => viewport;
+        public string SelectedPoiId => viewport?.SelectedPoiId ?? string.Empty;
+        public string TooltipPoiId { get; private set; }
+        public string RouteHighlightPoiId => routeHighlightPoiId;
         public WorldPathSurfaceLayout PathSurfaces => pathSurfaces;
         static readonly string[] areas = { "farm", "farm_shop", "processing", "supermarket", "bakery", "restaurant" };
 
@@ -83,6 +94,11 @@ namespace Tycoon
         public void Initialize(GameSession session, bool local)
         {
             game = session; Local = local; raycastTarget = false;
+            viewport = new MapViewportState();
+            if (Local && game && game.Player)
+                viewport.FocusPlayer(game.Player.transform.position);
+            else
+                viewport.SetCenter(CityDistricts.WorldBounds.center);
             roads = CityStreetNetwork.Bounds().ToArray();
             streetSurfaces = WorldStreetGeometry.Build(WorldRouteCatalog.BuildStreetNetwork());
             var pathState = game.GetComponentInChildren<WorldPathSurfaceState>(true);
@@ -99,16 +115,162 @@ namespace Tycoon
         {
             get
             {
-                if (!Local || !game || !game.Player) return CityDistricts.WorldBounds;
+                float zoom = viewport == null ? 1 : Mathf.Max(.01f, viewport.Zoom);
+                if (!Local)
+                    return new Bounds(MapCenter(), CityDistricts.WorldBounds.size / zoom);
                 float aspect = rectTransform.rect.width / Mathf.Max(1, rectTransform.rect.height);
-                return new Bounds(game.Player.transform.position, new(128 * aspect, 4, 128));
+                return new Bounds(MapCenter(), new(128 * aspect / zoom, 4, 128 / zoom));
             }
         }
 
         public Vector2 Position(Vector3 world)
         {
             var bounds = ViewBounds;
-            return new((world.x - bounds.min.x) / bounds.size.x, (world.z - bounds.min.z) / bounds.size.z);
+            Vector2 delta = new((world.x - bounds.center.x) / bounds.size.x,
+                (world.z - bounds.center.z) / bounds.size.z);
+            delta = Rotate(delta, -(viewport?.RotationDegrees ?? 0));
+            return delta + Vector2.one * .5f;
+        }
+
+        public Vector2 Direction(Vector3 worldDirection)
+        {
+            Vector2 direction = new(worldDirection.x, worldDirection.z);
+            if (direction.sqrMagnitude < .000001f)
+                return Vector2.up;
+            return Rotate(direction.normalized, -(viewport?.RotationDegrees ?? 0));
+        }
+
+        public void ZoomBy(float amount)
+        {
+            viewport?.ZoomBy(amount);
+            SetVerticesDirty();
+        }
+
+        public void Pan(Vector2 normalizedDelta)
+        {
+            viewport?.Pan(normalizedDelta);
+            SetVerticesDirty();
+        }
+
+        public void RotateBy(float degrees)
+        {
+            viewport?.RotateBy(degrees);
+            SetVerticesDirty();
+        }
+
+        public void ResetNorth()
+        {
+            viewport?.ResetNorth();
+            SetVerticesDirty();
+        }
+
+        public void FocusPlayer()
+        {
+            if (game && game.Player)
+                FocusPlayer(game.Player.transform.position);
+        }
+
+        public void FocusPlayer(Vector3 playerPosition)
+        {
+            viewport?.FocusPlayer(playerPosition);
+            SetVerticesDirty();
+        }
+
+        public void ToggleKind(string kind)
+        {
+            viewport?.ToggleKind(kind);
+            SetVerticesDirty();
+        }
+
+        public bool IsKindEnabled(string kind)
+        {
+            return viewport == null || viewport.IsKindEnabled(kind);
+        }
+
+        public bool IsPoiVisible(string id)
+        {
+            return IsKindEnabled(PoiKind(id));
+        }
+
+        public void SelectPoi(string id)
+        {
+            if (viewport == null)
+                return;
+            string selected = FindPoint(id) ? id : string.Empty;
+            viewport.Select(selected);
+            PoiSelectionChanged?.Invoke(viewport.SelectedPoiId);
+            SetVerticesDirty();
+        }
+
+        public void SetSelectedPoi(string id)
+        {
+            SelectPoi(id);
+        }
+
+        public void SetTooltip(string id)
+        {
+            TooltipPoiId = FindPoint(id) ? id : string.Empty;
+            PoiTooltipChanged?.Invoke(TooltipPoiId);
+        }
+
+        public string GetPoiTooltip(string id)
+        {
+            foreach (var point in CityMapLocations.Points)
+                if (point.id == id)
+                    return point.label + " • " + PoiKind(id);
+            return string.Empty;
+        }
+
+        public void SetRouteHighlight(string id)
+        {
+            routeHighlightPoiId = FindPoint(id) ? id : string.Empty;
+            RouteHighlightChanged?.Invoke(routeHighlightPoiId);
+            SetVerticesDirty();
+        }
+
+        public void HighlightRoute(string id)
+        {
+            SetRouteHighlight(id);
+        }
+
+        public void ClearRouteHighlight()
+        {
+            SetRouteHighlight(string.Empty);
+        }
+
+        Vector3 MapCenter()
+        {
+            if (viewport != null && IsFinite(viewport.Center))
+                return viewport.Center;
+            if (Local && game && game.Player)
+                return game.Player.transform.position;
+            return CityDistricts.WorldBounds.center;
+        }
+
+        static Vector2 Rotate(Vector2 value, float degrees)
+        {
+            float radians = degrees * Mathf.Deg2Rad;
+            float cosine = Mathf.Cos(radians);
+            float sine = Mathf.Sin(radians);
+            return new Vector2(value.x * cosine - value.y * sine,
+                value.x * sine + value.y * cosine);
+        }
+
+        static bool IsFinite(Vector3 value)
+        {
+            return !float.IsNaN(value.x) && !float.IsInfinity(value.x)
+                && !float.IsNaN(value.y) && !float.IsInfinity(value.y)
+                && !float.IsNaN(value.z) && !float.IsInfinity(value.z);
+        }
+
+        static bool FindPoint(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+                return false;
+            foreach (var point in CityMapLocations.Points)
+                if (point.id == id)
+                    return true;
+            return false;
         }
 
         protected override void OnPopulateMesh(VertexHelper mesh)
@@ -156,20 +318,40 @@ namespace Tycoon
             }
             foreach (var district in districts) Quad(mesh, district, new Color32(211, 178, 116, 255));
             foreach (var landmark in landmarks) Quad(mesh, landmark, new Color32(126, 156, 165, 255));
+            DrawRouteHighlight(mesh);
             foreach (var point in CityMapLocations.Points)
-                PoiIcon(mesh, point.id, Position(point.position), Local ? 3 : 6);
+            {
+                if (!IsPoiVisible(point.id))
+                    continue;
+                PoiIcon(mesh, point.id, Position(point.position), Local ? 3 : 6,
+                    point.id == SelectedPoiId);
+            }
             var player = Position(game.Player.transform.position);
             Dot(mesh, player, 6, Color.white);
             var rect = rectTransform.rect;
             Vector2 center = rect.min + Vector2.Scale(player, rect.size);
             Vector3 forward = game.Player.transform.forward;
-            Vector2 direction = new Vector2(forward.x, forward.z).normalized;
+            Vector2 direction = Direction(forward);
             Vector2 side = new(-direction.y, direction.x);
             int first = mesh.currentVertCount;
             mesh.AddVert(center + direction * 12, Color.white, Vector2.zero);
             mesh.AddVert(center - direction * 5 + side * 6, Color.white, Vector2.zero);
             mesh.AddVert(center - direction * 5 - side * 6, Color.white, Vector2.zero);
             mesh.AddTriangle(first, first + 1, first + 2);
+        }
+
+        void DrawRouteHighlight(VertexHelper mesh)
+        {
+            if (string.IsNullOrEmpty(routeHighlightPoiId) || !game || !game.Player)
+                return;
+            foreach (var point in CityMapLocations.Points)
+            {
+                if (point.id != routeHighlightPoiId)
+                    continue;
+                RouteSegment(mesh, game.Player.transform.position, point.position, 3.5f,
+                    new Color32(255, 239, 116, 240));
+                return;
+            }
         }
 
         static Bounds CoastalWaterBounds()
@@ -251,11 +433,13 @@ namespace Tycoon
             AddPolygon(mesh, points, tint);
         }
 
-        void PoiIcon(VertexHelper mesh, string id, Vector2 center, float scale)
+        void PoiIcon(VertexHelper mesh, string id, Vector2 center, float scale, bool selected = false)
         {
             Color edge = new Color32(24, 56, 48, 225);
             Color tint = PoiColor(id);
             Circle(mesh, center, scale + 1.6f, edge);
+            if (selected)
+                Circle(mesh, center, scale + 3.6f, new Color32(255, 239, 116, 220));
             switch (PoiKind(id))
             {
                 case "farm":
