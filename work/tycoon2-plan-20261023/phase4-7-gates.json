@@ -1,0 +1,35 @@
+{
+  "phase": "4-7",
+  "capturedUtc": "2026-10-23T15:09:42.2527547Z",
+  "commit": "13ad76f12dacf162722dbb081d09c03484e8d824",
+  "playerReport": "work/tycoon2-plan-20261023/phase0-player-final-2/world-features-report.json",
+  "physicalReport": "work/physical-carry-20261007/player-20261023T141652908Z/physical-carry-report.json",
+  "worldFeaturesPass": true,
+  "runtimeErrors": 0,
+  "phase4": {
+    "pass": true,
+    "checks": 21,
+    "scope": "Farm production, customer order/payment/collect, upgrade, crew, truck/crate and diner transactions",
+    "evidence": "physical-carry-report.json"
+  },
+  "phase5": {
+    "pass": true,
+    "checks": 2111,
+    "scope": "Map/minimap viewport, POI pins/travel, zoom controls, focus/reset/close and safe HUD bounds",
+    "evidence": "world-features-report.json"
+  },
+  "phase6": {
+    "pass": true,
+    "checks": 862,
+    "cutawayChecks": 40,
+    "scope": "Water/vegetation/forest/asset presentation and gameplay cutaway shell restore",
+    "evidence": "world-features-report.json"
+  },
+  "phase7": {
+    "pass": true,
+    "checks": 381,
+    "scope": "Route, pedestrian, traffic, vehicle/transit and collider access checks",
+    "evidence": "world-features-report.json"
+  },
+  "boundary": "These receipts prove the current focused contracts and Player smoke. They do not claim an overnight soak or Steam AppID/depot upload."
+}
