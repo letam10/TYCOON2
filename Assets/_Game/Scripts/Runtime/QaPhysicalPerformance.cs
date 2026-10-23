@@ -25,6 +25,7 @@ namespace Tycoon
             public int carried;
             public float seconds;
             public float averageFps;
+            public float onePercentLowFps;
             public float p95FrameMs;
             public float maximumFrameMs;
             public float averageMainThreadMs;
@@ -32,6 +33,7 @@ namespace Tycoon
             public float averageDrawCalls;
             public float averageGcBytes;
             public bool target60Fps;
+            public bool targetOnePercentLow55Fps;
             public bool mainThreadCounterAvailable;
             public bool gpuTimingAvailable;
             public bool drawCallCounterAvailable;
@@ -87,7 +89,7 @@ namespace Tycoon
             RenderPipelineManager.beginFrameRendering += BeginRenderProbe;
             RenderPipelineManager.endFrameRendering += EndRenderProbe;
             // Chỉ đo vòng chơi đang chạy, chụp ảnh sau khi kết thúc cửa sổ đo.
-            while (Time.realtimeSinceStartup - began < 10)
+            while (Time.realtimeSinceStartup - began < 60)
             {
                 FrameTimingManager.CaptureFrameTimings();
                 yield return null;
@@ -106,6 +108,12 @@ namespace Tycoon
             RenderPipelineManager.beginFrameRendering -= BeginRenderProbe;
             RenderPipelineManager.endFrameRendering -= EndRenderProbe;
             timings.Sort();
+            int slowestOnePercent = Mathf.Max(1, Mathf.CeilToInt(timings.Count * .01f));
+            double slowestTotal = 0;
+            for (int index = timings.Count - slowestOnePercent; index < timings.Count; index++)
+                slowestTotal += timings[index];
+            float onePercentLowFps = 1000f / (float)(slowestTotal / slowestOnePercent);
+            int expectedWorkers = game.Transactions.Snapshot().crews.Sum(x => x.count);
             var performance = new PhysicalPerformance
             {
                 gpu = SystemInfo.graphicsDeviceName,
@@ -120,6 +128,7 @@ namespace Tycoon
                 seconds = Time.realtimeSinceStartup - began,
                 p95FrameMs = timings[Mathf.CeilToInt(timings.Count * .95f) - 1],
                 maximumFrameMs = timings[timings.Count - 1],
+                onePercentLowFps = onePercentLowFps,
                 averageMainThreadMs = (float)(mainTotal / timings.Count / 1000000),
                 averageDrawCalls = (float)(drawTotal / timings.Count),
                 averageGcBytes = (float)(allocationTotal / timings.Count),
@@ -137,14 +146,16 @@ namespace Tycoon
             };
             performance.averageFps = performance.frames / performance.seconds;
             performance.target60Fps = performance.averageFps >= 60;
+            performance.targetOnePercentLow55Fps = performance.onePercentLowFps >= 55;
             File.WriteAllText(Path.Combine(game.QaDirectory, "physical-performance.json"),
                 JsonUtility.ToJson(performance, true));
             yield return Capture("physical-crowd-full-carry.png");
             Check(performance.width == 1920 && performance.height == 1080,
                 "physical performance: actual 1920x1080 framebuffer");
-            Check(performance.activeWorkers == 78 && performance.customers >= 30 && performance.carried == 48,
-                "physical performance: 78 workers 30 customers and 48 carried items");
+            Check(performance.activeWorkers == expectedWorkers && expectedWorkers > 0 && performance.customers >= 30 && performance.carried == 48,
+                "physical performance: all projected workers 30 customers and 48 carried items");
             Check(performance.target60Fps, "physical performance: mean at least 60 FPS");
+            Check(performance.targetOnePercentLow55Fps, "physical performance: 1% low at least 55 FPS");
         }
     }
 }

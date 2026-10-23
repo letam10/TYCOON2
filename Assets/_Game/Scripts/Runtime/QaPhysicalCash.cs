@@ -16,22 +16,35 @@ namespace Tycoon
             Check(game.Economy.CashInHand == 0 && game.Economy.CashInSafe == 0, "physical: zero start");
             var safe = game.Stations.OfType<SafeStation>().Single();
             var plot = game.Producers.First(x => x.Id == "field_carrot");
-            yield return Travel(Near(plot));
-            yield return TownWait(() => game.Player.Carry.Count("carrot") >= 6, 35, "grow and harvest carrots");
-            yield return Travel(Near(plot) + Vector3.back * 2);
+            var pickup = game.Stations.OfType<StationZone>().Single(x => x.Target == plot && x.Kind == InteractionKind.Pickup);
+            while (game.Player.Carry.Count("carrot") < 6)
+            {
+                if (plot.Phase != 3)
+                {
+                    yield return Travel(Near(plot));
+                    yield return TownWait(() => plot.Phase == 3, 35, "grow carrots before harvest");
+                }
+                int before = game.Player.Carry.Count("carrot");
+                yield return Travel(pickup.InteractionPoint);
+                yield return TownWait(() => game.Player.Carry.Count("carrot") > before, 35,
+                    "harvest carrots from pickup zone");
+            }
+            yield return Travel(pickup.InteractionPoint + Vector3.back * 2);
             yield return Capture("01-carrots-in-hands.png");
             var counter = game.Checkouts.First(x => x.ShopId == "farm");
+            var customer = TownCustomer(counter, "carrot", Mathf.Min(2, game.Player.Carry.Count("carrot")), 90);
             yield return Travel(Near(counter));
-            yield return TownWait(() => counter.Cash > 0, 60, "natural customer completes order");
+            yield return TownWait(() => customer.Order.Paid && counter.Cash > 0, 30,
+                "FIFO customer completes real order");
             if (game.Player.Carry.Total > 0) yield return TownDrop(game.Storage);
             Check(game.Player.Carry.Total == 0 && counter.Cash > 0, "physical: goods exchanged for counter cash");
             Check(game.Economy.CashInHand == 0, "physical: payment remains at counter until collected");
-            yield return Travel(counter.CollectionPoint);
+            yield return Travel(counter.CashZone.InteractionPoint);
             yield return TownWait(() => game.Economy.CashInHand > 0, 5, "collect cash onto hands");
             long earned = game.Economy.CashInHand;
             Check(game.Player.HasCarry, "physical: cash enables carry pose");
             yield return Capture("02-earned-cash.png");
-            yield return Travel(Near(plot));
+            yield return Travel(pickup.InteractionPoint);
             yield return new WaitForSeconds(1);
             Check(game.Player.Carry.Total == 0 && game.Economy.CashInHand == earned,
                 "physical: cash blocks harvesting goods");

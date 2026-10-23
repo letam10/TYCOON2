@@ -239,7 +239,7 @@ namespace Tycoon
             station.InteractionPoint = point + Vector3.left * 2.7f + Vector3.forward * .6f;
             Zone(game, parent, station, "serve", station.InteractionPoint);
             Zone(game,parent,station,"deposit",point+Vector3.forward*2.6f);
-            Zone(game, parent, station, "cash", point + Vector3.right * 2.7f + Vector3.forward * .6f);
+            Zone(game, parent, station, "cash", station.CollectionPoint);
             game.Checkouts.Add(station); Locked(station); return station;
         }
         public static void Zone(GameSession game, Transform parent, Station target, string mode, Vector3 point)
