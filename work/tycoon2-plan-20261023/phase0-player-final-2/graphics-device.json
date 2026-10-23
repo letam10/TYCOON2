@@ -1,0 +1,9 @@
+{
+    "name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "vendor": "NVIDIA",
+    "api": "Direct3D11",
+    "started": "2026-10-23T13:07:01.5252228Z",
+    "memoryMiB": 7956,
+    "width": 1920,
+    "height": 1080
+}

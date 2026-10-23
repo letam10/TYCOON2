@@ -23,7 +23,12 @@ namespace Tycoon
                 albedo = Texture("Carry Albedo", false);
                 normal = Texture("Carry Normal", true);
                 metallic = Texture("Carry Surface", true);
-                material = new Material(Shader.Find("Universal Render Pipeline/Lit"))
+                // Shader.Find có thể không resolve URP Lit trong Player build; dùng shader Resources làm fallback.
+                var shader = Shader.Find("Universal Render Pipeline/Lit");
+                if (!shader) shader = Resources.Load<Shader>("VisualRedesign/TownSurface");
+                if (!shader) shader = Shader.Find("Standard");
+                if (!shader) throw new System.InvalidOperationException("Không tìm thấy shader cho carry atlas.");
+                material = new Material(shader)
                 {
                     name = "Carry Shared Textured Atlas",
                     enableInstancing = true

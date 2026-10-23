@@ -11,7 +11,13 @@ namespace Tycoon
         {
             string key = "paint:" + hex;
             if (cache.TryGetValue(key, out var found) && found) return found;
-            var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            // Player build không luôn giữ shader URP theo tên trong Shader.Find.
+            // Shader mặt nền nằm trong Resources nên có thể resolve ổn định ở Editor và Player.
+            var shader = Resources.Load<Shader>("VisualRedesign/TownSurface");
+            if (!shader) shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (!shader) shader = Shader.Find("Standard");
+            if (!shader) throw new System.InvalidOperationException("Không tìm thấy shader cho vật liệu Paint.");
+            var material = new Material(shader);
             material.name = "Paint_" + hex;
             material.SetColor("_BaseColor", Art.Hex(hex));
             material.SetFloat("_Smoothness", .36f);

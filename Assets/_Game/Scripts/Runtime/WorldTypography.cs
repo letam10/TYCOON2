@@ -17,7 +17,7 @@ namespace Tycoon
             var material = new Material(shader)
             {
                 name = "OutlinedWorldFont_" + font.name,
-                mainTexture = font.material.mainTexture
+                mainTexture = font.material ? font.material.mainTexture : null
             };
             materials[font] = material;
             if (!subscribed)
@@ -31,7 +31,7 @@ namespace Tycoon
         static void RefreshTexture(Font font)
         {
             if (materials.TryGetValue(font, out var material) && material)
-                material.mainTexture = font.material.mainTexture;
+                material.mainTexture = font.material ? font.material.mainTexture : null;
         }
 
         public static float LinePixels(Camera camera, bool quantity)

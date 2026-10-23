@@ -7,7 +7,24 @@ namespace Tycoon
     public static class GameSaveSlots
     {
         public const int Count = 3;
+        public const string RedesignProfileId = "redesign-v1";
         [Serializable] sealed class Selection { public int slot = 1; }
+
+        public static string ProfileDirectory(string baseDirectory, string profileId)
+        {
+            if (string.IsNullOrWhiteSpace(baseDirectory))
+                throw new ArgumentException("Save profile base directory is required.", nameof(baseDirectory));
+            if (string.IsNullOrWhiteSpace(profileId)
+                || profileId.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0
+                || profileId is "." or "..")
+                throw new ArgumentException("Save profile id is invalid.", nameof(profileId));
+            return Path.Combine(baseDirectory, profileId);
+        }
+
+        public static string RedesignDirectory(string baseDirectory)
+        {
+            return ProfileDirectory(baseDirectory, RedesignProfileId);
+        }
 
         public static string PathFor(string directory, int slot, bool qa)
         {

@@ -54,6 +54,16 @@ namespace Tycoon
             transitSeconds = 0;
             Phase = CityPassengerPhase.Approaching;
             if (Navigation.Go(agent, carrier.DoorOutside)) return true;
+            // Cửa xe là điểm tạm thời, không luôn nằm trên graph pedestrian authored.
+            // Cho phép một leg NavMesh ngắn tới cửa sau khi planner chung đã nối tới vùng đó.
+            if (NavMesh.SamplePosition(carrier.DoorOutside, out var door, 1.8f, agent.areaMask))
+            {
+                var path = new NavMeshPath();
+                if (NavMesh.CalculatePath(agent.transform.position, door.position, agent.areaMask, path)
+                    && path.status == NavMeshPathStatus.PathComplete
+                    && agent.SetDestination(door.position))
+                    return true;
+            }
             CancelApproach();
             return false;
         }
@@ -227,14 +237,21 @@ namespace Tycoon
         {
             // Chỉ bật capsule khi đã bước ra khỏi cửa và vùng đứng thực sự trống.
             if (!ClearExit(transform.position)) return;
+            Vector3 outside = transform.position;
             transform.SetParent(originalParent, true);
+            if (!NavMesh.SamplePosition(outside, out var navHit, 1.5f, NavMesh.AllAreas))
+            {
+                return;
+            }
             agent.enabled = true;
-            if (!agent.isOnNavMesh)
+            if (!agent.isOnNavMesh && !agent.Warp(navHit.position))
             {
                 agent.enabled = false;
                 return;
             }
-            agent.nextPosition = transform.position;
+            // Unbaked sidewalk có thể cao hơn NavMesh; giữ chân ở mặt collider sau khi agent đã được neo.
+            transform.position = outside;
+            agent.nextPosition = outside;
             agent.ResetPath();
             agent.isStopped = false;
             if (motion && motion.Body) motion.Body.enabled = true;

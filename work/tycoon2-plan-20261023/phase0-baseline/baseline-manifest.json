@@ -1,0 +1,141 @@
+{
+  "phase": "0",
+  "capturedUtc": "2026-10-23T10:31:14Z",
+  "sourceCheckout": {
+    "path": "D:\\GAME\\TYCOON2",
+    "branch": "main",
+    "head": "1e2329a249c62c133b7d11535733c9055a2c9951",
+    "originMain": "1e2329a249c62c133b7d11535733c9055a2c9951",
+    "statusEntries": 1264,
+    "modifiedTracked": 104,
+    "untracked": 7469,
+    "statusSha256": "16D0E2207D3A51849C81F6BECE0DA9576B3A18DA3D1FF9773BA0CA0E509DE7E6",
+    "statusFiles": [
+      "source-checkout-status.txt",
+      "source-modified-tracked.txt",
+      "source-untracked.txt"
+    ]
+  },
+  "cleanWorktree": {
+    "path": "C:\\Users\\TAM\\Documents\\Codex\\Codex-Desktop-Profiles\\ChatGPT\\codex-home\\worktrees\\tycoon2-redesign\\TYCOON2",
+    "head": "1e2329a249c62c133b7d11535733c9055a2c9951",
+    "originMain": "1e2329a249c62c133b7d11535733c9055a2c9951",
+    "remoteFetched": true
+  },
+  "authoritativeSceneAndResources": {
+    "scene": "Assets/_Game/Scenes/Tycoon.unity",
+    "catalog": "Assets/_Game/Resources/GameCatalog.asset",
+    "transactionWriter": "Assets/_Game/Scripts/Runtime/TransactionCore.cs",
+    "transactionProjection": "Assets/_Game/Scripts/Runtime/RuntimeTransactions.cs",
+    "saveData": "Assets/_Game/Scripts/Runtime/SaveData.cs",
+    "saveSlots": "Assets/_Game/Scripts/Runtime/GameSaveSlots.cs",
+    "routeCatalog": "Assets/_Game/Scripts/Runtime/WorldRouteCorridor.cs",
+    "poiCatalog": "Assets/_Game/Scripts/Runtime/WorldPoiAccessCatalog.cs"
+  },
+  "stableIds": {
+    "items": [
+      "carrot", "tomato", "wheat", "corn", "soybean", "milk", "egg", "flour", "cheese", "sauce", "bread", "cake", "meal", "beef", "animal_feed", "soy_sauce", "bottled_milk", "wool", "yarn", "cloth", "bread_dough", "cake_batter", "beef_soy", "corn_soup", "pasta", "egg_sandwich", "soy_vegetables"
+    ],
+    "recipes": [
+      "mill", "cheesemaker", "saucemaker", "oven", "cakeoven", "breadmixer", "cakemixer", "feedmill", "soyextractor", "milkbottler", "spinner", "loom", "cook_beef", "cook_soup", "cook_pasta", "cook_sandwich", "cook_vegetables", "kitchen"
+    ],
+    "knownGameplayEntities": [
+      "field_carrot", "checkout_farm", "checkout_farm_serve", "checkout_farm_cash", "machine_oven", "storage_processing", "truck:starter", "farm", "farm_shop", "processing", "supermarket", "bakery", "restaurant"
+    ],
+    "routeCorridors": [
+      "farm-dirt-path", "farm-service-loop", "sidewalk-crossings", "farm-sidewalk-connector", "highway-ring", "rail-mainline", "dock-harbor-approach", "forest-access", "expansion-forest-access", "expansion-industrial-approach", "expansion-village-road", "expansion-marina-dock", "expansion-south-highway"
+    ],
+    "streetNetworkRoutes": [
+      "street-main-south", "street-main-north", "street-west-connector", "street-east-north", "street-central-north", "street-north-connector", "street-park-spur", "street-west-farm", "street-west-farm-connector", "street-processing-spur", "street-market-spur", "street-market-connector", "street-processing-east", "street-central-east", "street-ring-west-south", "street-ring-east-south", "street-ring-west", "street-ring-east", "street-ring-north", "street-ring-south", "street-ring-west-connector", "street-ring-east-connector"
+    ],
+    "publicApproaches": [
+      "industrial-sidewalk-approach", "village-sidewalk-approach", "marina-sidewalk-approach", "south-service-sidewalk"
+    ],
+    "poiAccess": [
+      "farm", "farm_shop", "park", "community_hall", "residential_housing", "bank", "restaurant", "commercial_market", "station", "rail_platform_1", "industrial_yard", "harbor", "marina", "forest_reserve", "beach_swim", "north_village", "highway_service_area", "highway_service_stop"
+    ]
+  },
+  "saveProfile": {
+    "profileId": "redesign-v1",
+    "ordinaryBase": "Application.persistentDataPath",
+    "ordinaryDirectory": "Application.persistentDataPath/redesign-v1",
+    "slotOne": "save-v2.json",
+    "qaSlotOne": "qa-save-v2.json",
+    "legacyPrototypeDirectory": "Application.persistentDataPath",
+    "legacyPrototypePreserved": true
+  },
+  "baselineGates": {
+    "source": {
+      "gitDiffCheckBeforeChanges": "pass"
+    },
+    "editModeTestsBeforeChanges": {
+      "command": "Tools/run_unity.ps1 -Task Tests",
+      "exitCode": 1,
+      "total": 1207,
+      "passed": 1167,
+      "failed": 40,
+      "skipped": 0,
+      "inconclusive": 0,
+      "result": "failed",
+      "failureClasses": [
+        "Stage6 vegetation asset hash",
+        "building placement and typography fixture",
+        "character animation clip lookup",
+        "pedestrian route continuity",
+        "public transport passenger setup",
+        "diner seating and furniture fixtures",
+        "truck model lifetime fixture",
+        "Vietnamese typography fixture"
+      ]
+    },
+    "editModeTestsAfterChanges": {
+      "command": "Tools/run_unity.ps1 -Task Tests",
+      "exitCode": 1,
+      "total": 1208,
+      "passed": 1168,
+      "failed": 40,
+      "skipped": 0,
+      "inconclusive": 0,
+      "result": "failed",
+      "regression": "one new test passed; the pre-existing 40 failures remained unchanged"
+    },
+    "windowsBuildBeforeChanges": {
+      "command": "Tools/run_unity.ps1 -Task Build",
+      "exitCode": 0,
+      "result": "Succeeded",
+      "errors": 0,
+      "warnings": 34,
+      "bytes": 86779845,
+      "builtUtc": "2026-10-23T10:01:39.2364578Z",
+      "sha256": "96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873"
+    },
+    "windowsBuildAfterChanges": {
+      "command": "Tools/run_unity.ps1 -Task Build",
+      "exitCode": 0,
+      "result": "Succeeded",
+      "errors": 0,
+      "warnings": 34,
+      "bytes": 86780357,
+      "builtUtc": "2026-10-23T10:44:32.3446137Z",
+      "sha256": "96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873"
+    },
+    "playerSmokeBeforeChanges": {
+      "command": "Tools/run_world_features.ps1 -BuildPath Builds/Windows/TYCOON2.exe -OutputPath work/tycoon2-plan-20261023/phase0-player-baseline",
+      "exitCode": 1,
+      "result": "failed during WorldFactory.Build",
+      "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "api": "Direct3D11",
+      "resolution": "1920x1080",
+      "failure": "Tycoon.Art.Material called from WorldFactory.Build; no world-features report was emitted"
+    },
+    "saveProfileFocusedTestAfterChanges": {
+      "command": "Tools/run_unity.ps1 -Task Tests -TestFilter Tycoon.Tests.MapAndSlotPersistenceTests",
+      "exitCode": 0,
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "evidenceBoundary": "Phase 0 captures source, test, build and Player baseline only. It does not claim visual, persistence, FPS, native headed, or Steam acceptance."
+}

@@ -45,11 +45,17 @@ namespace Tycoon
             get
             {
                 if (glass) return glass;
-                glass = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                var shader = Shader.Find("Universal Render Pipeline/Lit");
+                if (!shader) shader = Resources.Load<Shader>("VisualRedesign/TownSurface");
+                if (!shader) shader = Shader.Find("Standard");
+                if (!shader) throw new System.InvalidOperationException("Không tìm thấy shader cho kính xe.");
+                glass = new Material(shader);
                 glass.name = "VehicleV8SharedClearGlass";
                 glass.SetColor("_BaseColor", new Color(.18f, .37f, .43f, .3f));
                 if (glass.HasProperty("_BaseMap"))
                     glass.SetTexture("_BaseMap", TownSurfaceTexture.Get("glass"));
+                if (glass.HasProperty("_SurfaceMap"))
+                    glass.SetTexture("_SurfaceMap", TownSurfaceTexture.Get("glass"));
                 glass.SetFloat("_Metallic", .05f);
                 glass.SetFloat("_Smoothness", .93f);
                 if (glass.HasProperty("_CoatWeight"))

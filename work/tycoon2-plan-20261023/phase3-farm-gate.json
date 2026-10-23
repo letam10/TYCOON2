@@ -1,0 +1,36 @@
+{
+  "phase": "3",
+  "objective": "Farm vertical slice and redesign profile",
+  "sourceContracts": [
+    "Assets/_Game/Scripts/Runtime/WorldFactory.cs",
+    "Assets/_Game/Scripts/Runtime/TransactionCore.cs",
+    "Assets/_Game/Scripts/Runtime/RuntimeTransactions.cs",
+    "Assets/_Game/Scripts/Runtime/GameSessionSlots.cs",
+    "Assets/_Game/Scripts/Runtime/GameSaveSlots.cs"
+  ],
+  "evidence": {
+    "capturedUtc": "2026-10-23T13:15:52.1124844Z",
+    "cleanWorktreeHead": "1e2329a249c62c133b7d11535733c9055a2c9951",
+    "editMode": {
+      "command": "Tools/run_unity.ps1 -Task Tests",
+      "total": 1208,
+      "passed": 1208,
+      "failed": 0
+    },
+    "player": {
+      "report": "work\\tycoon2-plan-20261023\\phase0-player-final-2\\world-features-report.json",
+      "passed": true,
+      "runtimeErrors": 0,
+      "checkCount": 6132,
+      "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU"
+    }
+  },
+  "playerCheckCounts": {
+    "farm": 208,
+    "save": 871,
+    "interaction": 16,
+    "cutaway": 40
+  },
+  "profile": "redesign-v1",
+  "gate": "Source, full EditMode and Player acceptance checks pass. A dedicated headed Farm playthrough, FPS soak and close-process/reopen persistence receipt remain separate evidence."
+}

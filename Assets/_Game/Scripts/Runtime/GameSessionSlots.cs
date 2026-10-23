@@ -8,7 +8,9 @@ namespace Tycoon
     {
         string freshTownJson;
         public int ActiveSaveSlot { get; private set; } = 1;
-        public string SlotDirectory => IsQa ? QaDirectory : Application.persistentDataPath;
+        public string SlotDirectory => IsQa
+            ? QaDirectory
+            : GameSaveSlots.RedesignDirectory(Application.persistentDataPath);
         public string SlotPath(int slot) => GameSaveSlots.PathFor(SlotDirectory, slot, IsQa);
 
         void CaptureFreshTown()

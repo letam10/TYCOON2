@@ -42,6 +42,22 @@ namespace Tycoon.Tests
         [TestCase(0)] [TestCase(4)] public void InvalidSlotNeverProducesAFilePath(int slot)
         { Assert.Throws<ArgumentOutOfRangeException>(() => GameSaveSlots.PathFor(directory, slot, false)); }
 
+        [Test] public void RedesignProfileIsIsolatedFromPrototypeSaveDirectory()
+        {
+            string prototype = GameSaveSlots.PathFor(directory, 1, false);
+            string redesignDirectory = GameSaveSlots.RedesignDirectory(directory);
+            string redesign = GameSaveSlots.PathFor(redesignDirectory, 1, false);
+            Directory.CreateDirectory(directory);
+            File.WriteAllText(prototype, "prototype progress");
+            Assert.That(redesignDirectory, Is.EqualTo(Path.Combine(directory, GameSaveSlots.RedesignProfileId)));
+            Assert.That(redesign, Is.Not.EqualTo(prototype));
+            Assert.That(File.Exists(redesign), Is.False);
+            Directory.CreateDirectory(redesignDirectory);
+            File.WriteAllText(redesign, "redesign progress");
+            Assert.That(File.ReadAllText(prototype), Is.EqualTo("prototype progress"));
+            Assert.That(File.ReadAllText(redesign), Is.EqualTo("redesign progress"));
+        }
+
         [Test] public void RebindSurvivesStoreReloadAndResetSurvivesAnotherReload()
         {
             Assert.That(GameKeyBindings.Set("map", "<Keyboard>/p", out _), Is.True);

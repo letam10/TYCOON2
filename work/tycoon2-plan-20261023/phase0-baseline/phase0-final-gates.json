@@ -1,0 +1,49 @@
+{
+  "phase": "0",
+  "capturedUtc": "2026-10-23T13:08:37.5489611Z",
+  "cleanWorktreeHead": "1e2329a249c62c133b7d11535733c9055a2c9951",
+  "editMode": {
+    "command": "Tools/run_unity.ps1 -Task Tests",
+    "exitCode": 0,
+    "total": 1208,
+    "passed": 1208,
+    "failed": 0,
+    "skipped": 0
+  },
+  "windowsBuild": {
+    "command": "Tools/run_unity.ps1 -Task Build",
+    "exitCode": 0,
+    "result": "Succeeded",
+    "errors": 0,
+    "warnings": 5,
+    "bytes": 97353093,
+    "builtUtc": "2026-10-23T13:05:13.5077979Z",
+    "seconds": 5.7241902,
+    "executableSha256": "96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873"
+  },
+  "player": {
+    "command": "Tools/run_world_features.ps1 -BuildPath Builds/Windows/TYCOON2.exe -OutputPath work/tycoon2-plan-20261023/phase0-player-final-2 -Require4060",
+    "exitCode": 0,
+    "passed": true,
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "startedUtc": "2026-10-23T13:07:05.4656019Z",
+    "finishedUtc": "2026-10-23T13:07:41.4302466Z",
+    "runtimeErrors": 0,
+    "interactions": 28,
+    "distanceWalked": 1.099870204925537,
+    "checkCounts": {
+      "total": 6132,
+      "route": 380,
+      "collider": 1367,
+      "poi": 83,
+      "cutaway": 40,
+      "map": 2111,
+      "save": 871
+    }
+  },
+  "profile": {
+    "id": "redesign-v1",
+    "legacyPrototypePreserved": true
+  },
+  "evidenceBoundary": "Phase 0 source, full EditMode, Windows build and Player world-features gates are green. Native headed visual review, 60-second FPS 1% low, process-close/reopen persistence and Steam package gate remain separate evidence."
+}

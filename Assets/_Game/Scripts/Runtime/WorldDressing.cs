@@ -174,17 +174,18 @@ namespace Tycoon
         {
             using var lateUpdateProbe = QaFrameProbe.Measure("WorldDressing.2.LateUpdate");
             // Món chỉ hiện khi basket thật đã nhận; không tạo inventory hoặc payment.
+            if (!Table) return;
             bool occupied = Table.IsUnlocked && Table.Occupant && Table.Occupant.Phase == 2
-                && Table.Occupant.Basket.Total > 0;
+                && Table.Occupant.Basket != null && Table.Occupant.Basket.Total > 0;
             if (occupied && Table.Occupant.WantedItem != item)
             {
-                Object.Destroy(Meal);
+                if (Meal) Object.Destroy(Meal);
                 item = Table.Occupant.WantedItem;
                 Meal = BuildMeal(item);
             }
-            Meal.SetActive(occupied);
-            Dirty.SetActive(Table.IsUnlocked && Table.Cleaning > 0);
-            Empty.SetActive(Table.IsUnlocked && Table.Occupant && Table.Occupant.Phase == 1);
+            if (Meal) Meal.SetActive(occupied);
+            if (Dirty) Dirty.SetActive(Table.IsUnlocked && Table.Cleaning > 0);
+            if (Empty) Empty.SetActive(Table.IsUnlocked && Table.Occupant && Table.Occupant.Phase == 1);
         }
     }
 }

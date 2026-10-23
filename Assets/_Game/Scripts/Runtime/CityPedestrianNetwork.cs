@@ -93,9 +93,8 @@ namespace Tycoon
                         " enters the farm outside a designated sidewalk";
                     return false;
                 }
-                bool networkEndpoint = IsPedestrianNode(point)
-                    && (index == 0 || index == route.Count - 1);
-                if (!sidewalkCrossing && !networkEndpoint && TryGetReservedCorridor(point, capsuleRadius,
+                bool networkNode = IsPedestrianNode(point);
+                if (!sidewalkCrossing && !networkNode && TryGetReservedCorridor(point, capsuleRadius,
                     out WorldRouteCorridor corridor))
                 {
                     if (corridor.Kind == RouteKind.FarmPath && !farmLocalTrip &&
@@ -122,13 +121,15 @@ namespace Tycoon
                 bool sidewalkCrossing = IsSidewalkPoint(first) || IsSidewalkPoint(second);
                 bool endpointTransition = (index == 1 && IsPedestrianNode(first))
                     || (index == route.Count - 1 && IsPedestrianNode(second));
+                bool authoredNetworkEdge = IsAuthoredNetworkEdge(first, second);
                 if (!farmLocalTrip && SegmentIntersectsFarm(first, second) && !sidewalkCrossing)
                 {
                     failure = "public route segment " + (index - 1) +
                         " enters the farm outside a designated sidewalk";
                     return false;
                 }
-                if (sidewalkCrossing || endpointTransition || !TryGetIntersectedCorridor(
+                if (sidewalkCrossing || endpointTransition || authoredNetworkEdge ||
+                    !TryGetIntersectedCorridor(
                     first, second, capsuleRadius, out WorldRouteCorridor corridor))
                     continue;
                 if (IsRestrictedCorridor(corridor.Kind))
@@ -466,6 +467,30 @@ namespace Tycoon
             for (int index = 0; index < Nodes.Length; index++)
                 if ((Nodes[index] - point).sqrMagnitude < .0001f)
                     return true;
+            return false;
+        }
+
+        static bool IsAuthoredNetworkEdge(Vector3 first, Vector3 second)
+        {
+            int firstNode = -1;
+            int secondNode = -1;
+            for (int index = 0; index < Nodes.Length; index++)
+            {
+                if ((Nodes[index] - first).sqrMagnitude < .0001f)
+                    firstNode = index;
+                if ((Nodes[index] - second).sqrMagnitude < .0001f)
+                    secondNode = index;
+            }
+            if (firstNode < 0 || secondNode < 0)
+                return false;
+            for (int edge = 0; edge < Edges.GetLength(0); edge++)
+            {
+                int start = Edges[edge, 0];
+                int end = Edges[edge, 1];
+                if (start == firstNode && end == secondNode ||
+                    start == secondNode && end == firstNode)
+                    return true;
+            }
             return false;
         }
 
