@@ -1,0 +1,34 @@
+{
+  "commit": "5d95e055fa3a788cc07213489a06842e08cb2ab2",
+  "packages": {
+    "Evidence.zip": {
+      "bytes": 7840201,
+      "crc_verified": true,
+      "file_count": 16,
+      "sha256": "370d7f875959c1c9c13c3f03cb2753f678e067918efb028bbc13953c87e1a165",
+      "uncompressed_bytes": 8797966
+    },
+    "Source.zip": {
+      "bytes": 2156036,
+      "crc_verified": true,
+      "file_count": 1801,
+      "sha256": "69cda51a1d5b41a36fb9eb6a5fa7056f252b57212890eac7250eaa1e5975b2d9",
+      "uncompressed_bytes": 6948042
+    },
+    "Windows.zip": {
+      "bytes": 37709911,
+      "crc_verified": true,
+      "file_count": 133,
+      "sha256": "61e67226273278ba11240259bf5664bf5d8e5adfee9badaacf76e903914ca32b",
+      "uncompressed_bytes": 97278426
+    }
+  },
+  "source_file_count": 1801,
+  "source_list": "work/tycoon2-plan-20261023/phase8-release/source-list.txt",
+  "tracked_checkout_dirty": false,
+  "windows": {
+    "data_directory": "TYCOON2_Data/",
+    "executable": "TYCOON2.exe",
+    "player_library": "UnityPlayer.dll"
+  }
+}

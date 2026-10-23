@@ -1,0 +1,70 @@
+{
+  "phase": "8",
+  "capturedUtc": "2026-10-23T14:52:12.7597733Z",
+  "commit": "5d95e055fa3a788cc07213489a06842e08cb2ab2",
+  "editMode": {
+    "testcasecount": 1208,
+    "total": 1208,
+    "passed": 1208,
+    "failed": 0,
+    "skipped": 0,
+    "startUtc": "2026-10-23 14:29:52Z",
+    "endUtc": "2026-10-23 14:30:30Z"
+  },
+  "windowsBuild": {
+    "result": "Succeeded",
+    "exitCode": 0,
+    "executable": "Builds/Windows/TYCOON2.exe",
+    "executableSha256": "96B492CB271111251FE42B8646E65370A1B7B566773A1E35B34C3F2D1AE70873",
+    "resolution": "1920x1080"
+  },
+  "farmPhysical": {
+    "pass": true,
+    "startedUtc": "2026-10-23T14:17:00.3447355Z",
+    "finishedUtc": "2026-10-23T14:19:44.368516Z",
+    "interactions": 337,
+    "distanceWalked": 387.8314208984375,
+    "runtimeErrors": 0
+  },
+  "persistenceCloseReopen": {
+    "pass": true,
+    "startedUtc": "2026-10-23T14:21:19.7281819Z",
+    "finishedUtc": "2026-10-23T14:21:22.074496Z",
+    "runtimeErrors": 0,
+    "sourceCheckpoint": "player-20261023T141652908Z/qa-save-v2.json"
+  },
+  "performance": {
+    "pass": true,
+    "seconds": 60.03649139404297,
+    "averageFps": 119.244140625,
+    "onePercentLowFps": 59.389678955078125,
+    "width": 1920,
+    "height": 1080,
+    "customers": 30,
+    "activeWorkers": 39,
+    "carried": 48,
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "api": "Direct3D11"
+  },
+  "nativeHeadedVisual": {
+    "pass": true,
+    "visibleWindowRequested": true,
+    "command": "Tools/run_player.ps1 -Task PhysicalVisual ... -Visible",
+    "startedUtc": "2026-10-23T14:41:22.4398127Z",
+    "finishedUtc": "2026-10-23T14:42:59.1952333Z",
+    "screenshotsInEvidence": 3,
+    "runtimeErrors": 0
+  },
+  "packageGate": {
+    "tool": "Tools/package_city.py",
+    "packageTest": "3 tests passed",
+    "outputDirectory": "work/tycoon2-plan-20261023/phase8-release/output-v2",
+    "windowsZipCrcVerified": true,
+    "sourceZipCrcVerified": true,
+    "evidenceZipCrcVerified": true,
+    "trackedCheckoutDirty": false,
+    "lfsPointersRejected": true,
+    "steamUpload": "not attempted; local release package receipt only"
+  },
+  "boundaries": "This receipt proves local Windows build, native-visible Player smoke, 60-second performance, process-close/reopen checkpoint and reproducible local packages. Steam AppID/depot upload and long-term overnight soak are outside this local gate."
+}

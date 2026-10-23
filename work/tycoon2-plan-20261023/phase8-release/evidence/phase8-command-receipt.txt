@@ -1,0 +1,11 @@
+Native headed visual command:
+Tools/run_player.ps1 -Task PhysicalVisual -LoadPath work/physical-carry-20261007/player-20261023T141652908Z/qa-save-v2.json -BuildPath Builds/Windows/TYCOON2.exe -Visible
+Result: PHYSICAL-VISUALS_QA PASS, exit 0, 2026-10-23T14:41:22Z..2026-10-23T14:42:59Z
+
+Persistence command:
+Tools/run_player.ps1 -Task PhysicalLoad -LoadPath work/physical-carry-20261007/player-20261023T141652908Z/qa-save-v2.json -BuildPath Builds/Windows/TYCOON2.exe
+Result: PHYSICAL-LOAD_QA PASS, exit 0
+
+Performance command:
+Tools/run_player.ps1 -Task PhysicalPerformance -LoadPath work/physical-carry-20261007/player-20261023T141652908Z/qa-save-v2.json -BuildPath Builds/Windows/TYCOON2.exe
+Result: 60.036s, 119.244 FPS average, 59.390 FPS 1% low, 1920x1080, 30 customers, 39 active workers, exit 0

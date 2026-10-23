@@ -1,0 +1,29 @@
+{
+    "passed": true,
+    "startedUtc": "2026-10-23T14:21:19.7281819Z",
+    "finishedUtc": "2026-10-23T14:21:22.0744960Z",
+    "graphicsDevice": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "failure": "",
+    "distanceWalked": 0.0,
+    "playerHeight": 0.0,
+    "interactions": 1,
+    "materialSlotsChecked": 0,
+    "checks": [
+        "physical relaunch: source checkpoint verified",
+        "physical relaunch restores all actors",
+        "physical relaunch: save is writable",
+        "physical relaunch: exact hand and safe balances",
+        "physical relaunch: exact inventory including workers and customers",
+        "physical relaunch: maximum and derived capacity persist",
+        "physical relaunch: every maximized crew has all workers",
+        "physical relaunch: final pads remain noninteractive",
+        "physical relaunch: final pads disappear completely",
+        "physical relaunch: no runtime errors"
+    ],
+    "screenshots": [
+        "physical-relaunch.png"
+    ],
+    "runtimeErrors": [],
+    "renderCostScope": "",
+    "renderCostRuns": []
+}

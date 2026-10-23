@@ -1,0 +1,922 @@
+{
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "api": "Direct3D11",
+    "width": 1920,
+    "height": 1080,
+    "frames": 7159,
+    "customers": 30,
+    "workers": 39,
+    "activeWorkers": 39,
+    "carried": 48,
+    "seconds": 60.03649139404297,
+    "averageFps": 119.244140625,
+    "onePercentLowFps": 59.389678955078125,
+    "p95FrameMs": 11.308503150939941,
+    "maximumFrameMs": 29.02080535888672,
+    "averageMainThreadMs": 8.377617835998535,
+    "averageGpuMs": 0.0,
+    "averageDrawCalls": 0.0,
+    "averageGcBytes": 0.0,
+    "target60Fps": true,
+    "targetOnePercentLow55Fps": true,
+    "mainThreadCounterAvailable": true,
+    "gpuTimingAvailable": false,
+    "drawCallCounterAvailable": false,
+    "gcCounterAvailable": false,
+    "workSamples": [
+        {
+            "name": "RuntimeTransactions.Execute",
+            "count": 376,
+            "totalMs": 363.1781999999998,
+            "maximumMs": 4.0975,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute",
+            "count": 376,
+            "totalMs": 186.91050000000004,
+            "maximumMs": 3.7278000000000002,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.DraftCopy",
+            "count": 376,
+            "totalMs": 49.16430000000001,
+            "maximumMs": 3.3848000000000003,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Apply",
+            "count": 376,
+            "totalMs": 9.919499999999998,
+            "maximumMs": 0.9818,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.StoreCommit",
+            "count": 376,
+            "totalMs": 0.021199999999999934,
+            "maximumMs": 0.00030000000000000003,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "RuntimeTransactions.Refresh",
+            "count": 376,
+            "totalMs": 176.01990000000004,
+            "maximumMs": 2.8785000000000003,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "RuntimeTransactions.ViewSnapshot",
+            "count": 376,
+            "totalMs": 30.657899999999998,
+            "maximumMs": 2.2131000000000003,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "RuntimeTransactions.InventoryProjection",
+            "count": 376,
+            "totalMs": 145.20320000000004,
+            "maximumMs": 2.3416,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.Take",
+            "count": 10,
+            "totalMs": 4.735,
+            "maximumMs": 0.8355,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.Place",
+            "count": 12,
+            "totalMs": 8.0087,
+            "maximumMs": 2.1393,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.Transfer",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.Reserve",
+            "count": 18,
+            "totalMs": 8.431700000000001,
+            "maximumMs": 1.9494,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.Release",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.Split",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.Merge",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.CreateOrder",
+            "count": 5,
+            "totalMs": 3.7243000000000004,
+            "maximumMs": 1.0947,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.DeliverOrder",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.CompleteOrder",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.FailOrder",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.CreatePayment",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.CollectPayment",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.ContributePurchase",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.CompletePurchase",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.StartMachine",
+            "count": 1,
+            "totalMs": 1.1013,
+            "maximumMs": 1.1013,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.AdvanceMachine",
+            "count": 23,
+            "totalMs": 9.584700000000002,
+            "maximumMs": 0.8898,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.CompleteMachine",
+            "count": 1,
+            "totalMs": 0.7331000000000001,
+            "maximumMs": 0.7331000000000001,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.AcknowledgeEvent",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.RegisterOwner",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.OperateProducer",
+            "count": 143,
+            "totalMs": 66.32399999999998,
+            "maximumMs": 2.1318,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.TickProducer",
+            "count": 104,
+            "totalMs": 56.78789999999999,
+            "maximumMs": 3.7269,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.HarvestProducer",
+            "count": 40,
+            "totalMs": 18.811400000000003,
+            "maximumMs": 2.2205,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.FeedProducer",
+            "count": 3,
+            "totalMs": 1.4042,
+            "maximumMs": 0.5411,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.ReleaseOperator",
+            "count": 16,
+            "totalMs": 6.578000000000001,
+            "maximumMs": 1.7604000000000002,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.BreakMachine",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.RepairMachine",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.UpgradeCrew",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.CleanTable",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.AdvanceDiner",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.Checkpoint",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.RestockProducer",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.GrantAssistance",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.SelectRecipe",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.PackCrate",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.ClaimCrate",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.LoadCrate",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.UnloadCrate",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.SelectTruckRoute",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.DispatchTruck",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.TickTruck",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.GrantModCash",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.DepositCash",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.WithdrawCash",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.GrantMaximum",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        },
+        {
+            "name": "TransactionCore.Execute.UnknownKind",
+            "count": 0,
+            "totalMs": 0.0,
+            "maximumMs": 0.0,
+            "maximumFrameMs": 0.0,
+            "maximumFrame": 0
+        }
+    ],
+    "frameWorkSamples": [
+        {
+            "name": "CityLife.1.Update",
+            "count": 7159,
+            "totalMs": 12719.775199999991,
+            "maximumMs": 5.0975,
+            "maximumFrameMs": 5.0975,
+            "maximumFrame": 6806
+        },
+        {
+            "name": "Navigation.Go",
+            "count": 81540,
+            "totalMs": 12530.252099999696,
+            "maximumMs": 4.890000000000001,
+            "maximumFrameMs": 7.897399999999999,
+            "maximumFrame": 1053
+        },
+        {
+            "name": "PlayerController.1.Update",
+            "count": 7159,
+            "totalMs": 11730.399499999969,
+            "maximumMs": 8.409,
+            "maximumFrameMs": 8.409,
+            "maximumFrame": 5842
+        },
+        {
+            "name": "ActorPhysicalMotion.1.Update",
+            "count": 665694,
+            "totalMs": 5106.264400002488,
+            "maximumMs": 0.6449,
+            "maximumFrameMs": 2.1647,
+            "maximumFrame": 3007
+        },
+        {
+            "name": "ActorPhysicalMotion.2.ApplyStep",
+            "count": 609779,
+            "totalMs": 3967.883700002931,
+            "maximumMs": 0.6414000000000001,
+            "maximumFrameMs": 1.6788,
+            "maximumFrame": 3007
+        },
+        {
+            "name": "ActorPhysicalMotion.3.CapsuleMove",
+            "count": 351866,
+            "totalMs": 3750.840700001976,
+            "maximumMs": 0.2902,
+            "maximumFrameMs": 1.6112,
+            "maximumFrame": 3007
+        },
+        {
+            "name": "WorkerAgent.Update",
+            "count": 279201,
+            "totalMs": 2237.298400000981,
+            "maximumMs": 7.7491,
+            "maximumFrameMs": 8.3037,
+            "maximumFrame": 1053
+        },
+        {
+            "name": "CityTraffic.1.Update",
+            "count": 7159,
+            "totalMs": 1544.7874000000054,
+            "maximumMs": 0.8816,
+            "maximumFrameMs": 0.8816,
+            "maximumFrame": 6570
+        },
+        {
+            "name": "ActorView.SetMotion",
+            "count": 688432,
+            "totalMs": 943.1101999991989,
+            "maximumMs": 0.1502,
+            "maximumFrameMs": 0.4676,
+            "maximumFrame": 4774
+        },
+        {
+            "name": "OrderBubbleCustomerAgent.1.Update",
+            "count": 196778,
+            "totalMs": 784.6214000000783,
+            "maximumMs": 4.4259,
+            "maximumFrameMs": 4.600099999999999,
+            "maximumFrame": 3257
+        },
+        {
+            "name": "CityPublicTransportVehicle.1.Update",
+            "count": 21477,
+            "totalMs": 765.382200000005,
+            "maximumMs": 0.9987,
+            "maximumFrameMs": 1.1048000000000002,
+            "maximumFrame": 3023
+        },
+        {
+            "name": "BillboardLabel.RefreshNow",
+            "count": 349166,
+            "totalMs": 696.5561000006426,
+            "maximumMs": 1.935,
+            "maximumFrameMs": 2.0663,
+            "maximumFrame": 4044
+        },
+        {
+            "name": "ActorView.1.LateUpdate",
+            "count": 737284,
+            "totalMs": 671.4396000011026,
+            "maximumMs": 4.6511000000000005,
+            "maximumFrameMs": 4.845900000000001,
+            "maximumFrame": 7555
+        },
+        {
+            "name": "CityPedestrianRoute.1.Update",
+            "count": 665693,
+            "totalMs": 522.7678999988805,
+            "maximumMs": 0.1449,
+            "maximumFrameMs": 0.2457000000000001,
+            "maximumFrame": 4291
+        },
+        {
+            "name": "ActorPhysicalMotion.2.NavigationSyncAndFacing",
+            "count": 609779,
+            "totalMs": 462.3213000010177,
+            "maximumMs": 0.2245,
+            "maximumFrameMs": 0.28360000000000024,
+            "maximumFrame": 7250
+        },
+        {
+            "name": "Station.2.LateUpdate",
+            "count": 1030896,
+            "totalMs": 438.26920000070845,
+            "maximumMs": 0.449,
+            "maximumFrameMs": 0.6614000000000009,
+            "maximumFrame": 2046
+        },
+        {
+            "name": "GameSession.Update",
+            "count": 7159,
+            "totalMs": 360.0025999999994,
+            "maximumMs": 3.298,
+            "maximumFrameMs": 3.298,
+            "maximumFrame": 630
+        },
+        {
+            "name": "InventoryStack.LateUpdate",
+            "count": 769498,
+            "totalMs": 357.4529000017981,
+            "maximumMs": 18.0488,
+            "maximumFrameMs": 18.133099999999942,
+            "maximumFrame": 1541
+        },
+        {
+            "name": "UpgradeModelView.1.LateUpdate",
+            "count": 608515,
+            "totalMs": 353.4748000005339,
+            "maximumMs": 1.8281,
+            "maximumFrameMs": 2.776899999999999,
+            "maximumFrame": 1933
+        },
+        {
+            "name": "CozyCropMotion.1.LateUpdate",
+            "count": 7159,
+            "totalMs": 353.1789999999997,
+            "maximumMs": 0.24680000000000002,
+            "maximumFrameMs": 0.24680000000000002,
+            "maximumFrame": 4774
+        },
+        {
+            "name": "Station.1.Update",
+            "count": 100226,
+            "totalMs": 331.3492000000415,
+            "maximumMs": 4.1347000000000005,
+            "maximumFrameMs": 5.3123000000000005,
+            "maximumFrame": 6570
+        },
+        {
+            "name": "UpgradeVisualMotion.1.Update",
+            "count": 164657,
+            "totalMs": 280.25810000000183,
+            "maximumMs": 0.203,
+            "maximumFrameMs": 0.2799,
+            "maximumFrame": 2062
+        },
+        {
+            "name": "GameSession.SyncWorkers",
+            "count": 7159,
+            "totalMs": 269.0292999999996,
+            "maximumMs": 3.2805,
+            "maximumFrameMs": 3.2805,
+            "maximumFrame": 630
+        },
+        {
+            "name": "TruckLogistics.Loader",
+            "count": 64431,
+            "totalMs": 265.66540000001635,
+            "maximumMs": 1.3489,
+            "maximumFrameMs": 1.3706999999999998,
+            "maximumFrame": 3723
+        },
+        {
+            "name": "InventoryStack.Refresh",
+            "count": 769498,
+            "totalMs": 263.31980000341497,
+            "maximumMs": 18.0485,
+            "maximumFrameMs": 18.120099999999958,
+            "maximumFrame": 1541
+        },
+        {
+            "name": "WorkerTransport.Transport",
+            "count": 46280,
+            "totalMs": 242.36929999999177,
+            "maximumMs": 6.005800000000001,
+            "maximumFrameMs": 6.060200000000002,
+            "maximumFrame": 4769
+        },
+        {
+            "name": "CityRailTrain.1.Update",
+            "count": 14318,
+            "totalMs": 201.39820000000248,
+            "maximumMs": 0.5739000000000001,
+            "maximumFrameMs": 0.5947000000000001,
+            "maximumFrame": 1821
+        },
+        {
+            "name": "MachineStation.2.Update",
+            "count": 85908,
+            "totalMs": 182.46810000001676,
+            "maximumMs": 0.1268,
+            "maximumFrameMs": 0.15100000000000005,
+            "maximumFrame": 3883
+        },
+        {
+            "name": "CozyMachineMotion.1.LateUpdate",
+            "count": 93067,
+            "totalMs": 159.608399999966,
+            "maximumMs": 0.15810000000000002,
+            "maximumFrameMs": 0.17910000000000004,
+            "maximumFrame": 539
+        },
+        {
+            "name": "TruckLogistics.1.LateUpdate",
+            "count": 7159,
+            "totalMs": 158.14930000000044,
+            "maximumMs": 1.6840000000000002,
+            "maximumFrameMs": 1.6840000000000002,
+            "maximumFrame": 2890
+        },
+        {
+            "name": "FollowCamera.1.LateUpdate",
+            "count": 7159,
+            "totalMs": 145.8963000000001,
+            "maximumMs": 0.1811,
+            "maximumFrameMs": 0.1811,
+            "maximumFrame": 4397
+        },
+        {
+            "name": "WorldDressing.1.LateUpdate",
+            "count": 93067,
+            "totalMs": 137.42909999995842,
+            "maximumMs": 0.2164,
+            "maximumFrameMs": 0.251,
+            "maximumFrame": 6570
+        },
+        {
+            "name": "CityPublicTransportPassenger.1.Update",
+            "count": 71723,
+            "totalMs": 117.11120000002349,
+            "maximumMs": 0.6486000000000001,
+            "maximumFrameMs": 0.6711999999999999,
+            "maximumFrame": 5576
+        },
+        {
+            "name": "Station.1.LateUpdate",
+            "count": 365109,
+            "totalMs": 116.31110000033644,
+            "maximumMs": 0.3116,
+            "maximumFrameMs": 0.32470000000000004,
+            "maximumFrame": 2648
+        },
+        {
+            "name": "GameHud.1.Update",
+            "count": 7159,
+            "totalMs": 97.63729999999977,
+            "maximumMs": 2.2043,
+            "maximumFrameMs": 2.2043,
+            "maximumFrame": 5914
+        },
+        {
+            "name": "ActorView.Play",
+            "count": 728916,
+            "totalMs": 89.90380000115695,
+            "maximumMs": 0.0589,
+            "maximumFrameMs": 0.07150000000000002,
+            "maximumFrame": 4952
+        },
+        {
+            "name": "NavigationWorld.1.Update",
+            "count": 214676,
+            "totalMs": 88.33310000003928,
+            "maximumMs": 0.07150000000000001,
+            "maximumFrameMs": 0.08440000000000002,
+            "maximumFrame": 5662
+        },
+        {
+            "name": "RestaurantDirector.2.Update",
+            "count": 17899,
+            "totalMs": 79.1228999999985,
+            "maximumMs": 4.6893,
+            "maximumFrameMs": 4.6997,
+            "maximumFrame": 1958
+        },
+        {
+            "name": "CheckoutStation.ReadCash",
+            "count": 85908,
+            "totalMs": 75.76050000000377,
+            "maximumMs": 1.607,
+            "maximumFrameMs": 1.6200999999999999,
+            "maximumFrame": 4640
+        },
+        {
+            "name": "WorkerTransport.FindRoute",
+            "count": 1948,
+            "totalMs": 63.56129999999995,
+            "maximumMs": 5.359500000000001,
+            "maximumFrameMs": 7.705900000000001,
+            "maximumFrame": 1053
+        },
+        {
+            "name": "CommerceDirector.2.Update",
+            "count": 42954,
+            "totalMs": 48.769200000001184,
+            "maximumMs": 1.6084,
+            "maximumFrameMs": 1.6162,
+            "maximumFrame": 4640
+        },
+        {
+            "name": "CarryWorkerTransfers.1.LateUpdate",
+            "count": 279201,
+            "totalMs": 48.58560000009991,
+            "maximumMs": 0.6273000000000001,
+            "maximumFrameMs": 0.6359999999999991,
+            "maximumFrame": 774
+        },
+        {
+            "name": "MachineStation.1.Update",
+            "count": 93067,
+            "totalMs": 48.01300000005396,
+            "maximumMs": 2.2507,
+            "maximumFrameMs": 2.2702000000000004,
+            "maximumFrame": 5226
+        },
+        {
+            "name": "WorldDressing.2.LateUpdate",
+            "count": 42954,
+            "totalMs": 37.46880000000135,
+            "maximumMs": 0.19820000000000002,
+            "maximumFrameMs": 0.20320000000000002,
+            "maximumFrame": 4895
+        },
+        {
+            "name": "MachineStation.1.LateUpdate",
+            "count": 21477,
+            "totalMs": 26.590199999999463,
+            "maximumMs": 0.1192,
+            "maximumFrameMs": 0.12279999999999999,
+            "maximumFrame": 5025
+        },
+        {
+            "name": "OrderBubbleLayer.LateUpdate",
+            "count": 7159,
+            "totalMs": 25.66370000000031,
+            "maximumMs": 0.1259,
+            "maximumFrameMs": 0.1259,
+            "maximumFrame": 7089
+        },
+        {
+            "name": "ConveyorStation.1.Update",
+            "count": 28636,
+            "totalMs": 23.66139999999676,
+            "maximumMs": 1.2771000000000001,
+            "maximumFrameMs": 1.2987,
+            "maximumFrame": 3586
+        },
+        {
+            "name": "QaPresentationAudit.1.Update",
+            "count": 7159,
+            "totalMs": 16.766700000000025,
+            "maximumMs": 0.2793,
+            "maximumFrameMs": 0.2793,
+            "maximumFrame": 4252
+        },
+        {
+            "name": "OrderBubbleDiner.1.LateUpdate",
+            "count": 17899,
+            "totalMs": 10.931000000000637,
+            "maximumMs": 0.0487,
+            "maximumFrameMs": 0.0497,
+            "maximumFrame": 2257
+        },
+        {
+            "name": "ActorPhysicalMotion.3.IdleSupportSkip",
+            "count": 257913,
+            "totalMs": 10.034599999990524,
+            "maximumMs": 0.0374,
+            "maximumFrameMs": 0.038400000000000004,
+            "maximumFrame": 5017
+        },
+        {
+            "name": "CommerceDirector.1.Update",
+            "count": 7159,
+            "totalMs": 8.103099999999936,
+            "maximumMs": 0.027,
+            "maximumFrameMs": 0.027,
+            "maximumFrame": 6563
+        },
+        {
+            "name": "CarryPresentation.LateUpdate",
+            "count": 7159,
+            "totalMs": 8.086799999999977,
+            "maximumMs": 0.08,
+            "maximumFrameMs": 0.08,
+            "maximumFrame": 3242
+        },
+        {
+            "name": "DinerSeatingPose.1.LateUpdate",
+            "count": 17899,
+            "totalMs": 5.570500000000442,
+            "maximumMs": 0.06420000000000001,
+            "maximumFrameMs": 0.06470000000000001,
+            "maximumFrame": 7377
+        },
+        {
+            "name": "TruckLogistics.1.Update",
+            "count": 7159,
+            "totalMs": 4.942500000000142,
+            "maximumMs": 0.0218,
+            "maximumFrameMs": 0.0218,
+            "maximumFrame": 4770
+        },
+        {
+            "name": "CarryTransferVisual.1.Update",
+            "count": 1818,
+            "totalMs": 4.576899999999971,
+            "maximumMs": 0.3211,
+            "maximumFrameMs": 0.3211,
+            "maximumFrame": 775
+        },
+        {
+            "name": "RestaurantDirector.1.Update",
+            "count": 7159,
+            "totalMs": 3.0567000000001587,
+            "maximumMs": 1.3281,
+            "maximumFrameMs": 1.3281,
+            "maximumFrame": 3975
+        },
+        {
+            "name": "ActorView.Work",
+            "count": 186,
+            "totalMs": 0.5283,
+            "maximumMs": 0.0412,
+            "maximumFrameMs": 0.0477,
+            "maximumFrame": 511
+        }
+    ],
+    "renderers": 7196,
+    "visibleRenderers": 6947,
+    "textMeshes": 69,
+    "animators": 103
+}
