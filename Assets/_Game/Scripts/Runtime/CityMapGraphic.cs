@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,10 +8,9 @@ namespace Tycoon
     {
         public bool Local;
         GameSession game;
-        Bounds[] roads, districts, landmarks;
-        WorldStreetLayout streetSurfaces;
         WorldPathSurfaceLayout pathSurfaces;
         MapViewportState viewport;
+        CityMapCapture capture;
         string routeHighlightPoiId;
         public event Action<string> PoiTooltipChanged;
         public event Action<string> PoiSelectionChanged;
@@ -23,7 +21,8 @@ namespace Tycoon
         public string TooltipPoiId { get; private set; }
         public string RouteHighlightPoiId => routeHighlightPoiId;
         public WorldPathSurfaceLayout PathSurfaces => pathSurfaces;
-        static readonly string[] areas = { "farm", "farm_shop", "processing", "supermarket", "bakery", "restaurant" };
+        public CityMapCapture Capture => capture;
+        public override Texture mainTexture => capture && capture.Atlas ? capture.Atlas : Texture2D.whiteTexture;
 
         public static string PoiKind(string id)
         {
@@ -99,16 +98,31 @@ namespace Tycoon
                 viewport.FocusPlayer(game.Player.transform.position);
             else
                 viewport.SetCenter(CityDistricts.WorldBounds.center);
-            roads = CityStreetNetwork.Bounds().ToArray();
-            streetSurfaces = WorldStreetGeometry.Build(WorldRouteCatalog.BuildStreetNetwork());
             var pathState = game.GetComponentInChildren<WorldPathSurfaceState>(true);
             pathSurfaces = pathState ? pathState.Layout : null;
-            districts = areas.Select(CityDistricts.Footprint).ToArray();
-            var existingLandmarks = game.GetComponentsInChildren<CityLandmark>()
-                .Select(x => new Bounds(x.transform.position, x.Footprint));
-            var expansionLandmarks = WorldExpansionCatalog.BuildDefault()
-                .Select(x => x.FootprintBounds);
-            landmarks = existingLandmarks.Concat(expansionLandmarks).ToArray();
+            if (Application.isPlaying)
+            {
+                capture = CityMapCapture.Ensure(game);
+                capture.Changed += SnapshotChanged;
+            }
+        }
+
+        void SnapshotChanged()
+        {
+            SetAllDirty();
+        }
+
+        public void RefreshSnapshot()
+        {
+            if (capture)
+                capture.RequestRefresh();
+        }
+
+        protected override void OnDestroy()
+        {
+            if (capture)
+                capture.Changed -= SnapshotChanged;
+            base.OnDestroy();
         }
 
         public Bounds ViewBounds
@@ -126,10 +140,18 @@ namespace Tycoon
         public Vector2 Position(Vector3 world)
         {
             var bounds = ViewBounds;
-            Vector2 delta = new((world.x - bounds.center.x) / bounds.size.x,
-                (world.z - bounds.center.z) / bounds.size.z);
+            Vector2 delta = new(world.x - bounds.center.x, world.z - bounds.center.z);
             delta = Rotate(delta, -(viewport?.RotationDegrees ?? 0));
-            return delta + Vector2.one * .5f;
+            return new Vector2(delta.x / bounds.size.x, delta.y / bounds.size.z) + Vector2.one * .5f;
+        }
+
+        public Vector3 WorldAt(Vector2 normalized)
+        {
+            Bounds bounds = ViewBounds;
+            Vector2 offset = normalized - Vector2.one * .5f;
+            offset = new Vector2(offset.x * bounds.size.x, offset.y * bounds.size.z);
+            offset = Rotate(offset, viewport?.RotationDegrees ?? 0);
+            return bounds.center + new Vector3(offset.x, 0, offset.y);
         }
 
         public Vector2 Direction(Vector3 worldDirection)
@@ -148,7 +170,16 @@ namespace Tycoon
 
         public void Pan(Vector2 normalizedDelta)
         {
-            viewport?.Pan(normalizedDelta);
+            Bounds bounds = ViewBounds;
+            Vector2 offset = new Vector2(normalizedDelta.x * bounds.size.x, normalizedDelta.y * bounds.size.z);
+            viewport?.Pan(Rotate(offset, viewport?.RotationDegrees ?? 0));
+            if (viewport != null)
+            {
+                Bounds world = CityDistricts.WorldBounds;
+                Vector3 center = viewport.Center;
+                viewport.SetCenter(new Vector3(Mathf.Clamp(center.x, world.min.x, world.max.x), center.y,
+                    Mathf.Clamp(center.z, world.min.z, world.max.z)));
+            }
             SetVerticesDirty();
         }
 
@@ -276,48 +307,10 @@ namespace Tycoon
         protected override void OnPopulateMesh(VertexHelper mesh)
         {
             mesh.Clear();
-            if (roads == null || !game || !game.Player) return;
-            var bounds = ViewBounds;
-            Quad(mesh, bounds, new Color32(91, 126, 91, 255));
-            Quad(mesh, CoastalWaterBounds(), new Color32(57, 165, 181, 255));
-            DrawCoastline(mesh);
-            DrawRegionTints(mesh);
-            foreach (WorldStreetSurface surface in streetSurfaces.Sidewalks)
-                SurfacePolygon(mesh, surface, new Color32(211, 204, 177, 255));
-            foreach (WorldStreetSurface surface in streetSurfaces.Pavements)
-                SurfacePolygon(mesh, surface, new Color32(185, 185, 159, 255));
-            if (pathSurfaces != null)
-            {
-                foreach (WorldPathSurfacePiece piece in pathSurfaces.Pieces)
-                {
-                    RouteKind kind = piece.Request.Surface switch
-                    {
-                        "wood" => RouteKind.Dock,
-                        "stone" => RouteKind.Highway,
-                        "soil" => RouteKind.FarmPath,
-                        _ => RouteKind.Sidewalk
-                    };
-                    SurfacePolygon(mesh, piece.Geometry, RouteColor(kind));
-                }
-            }
-            foreach (var corridor in WorldRouteCatalog.BuildDefault())
-            {
-                if (pathSurfaces != null && corridor.Kind != RouteKind.Rail)
-                    continue;
-                for (int index = 1; index < corridor.SampledNodes.Count; index++)
-                    RouteSegment(mesh, corridor.SampledNodes[index - 1], corridor.SampledNodes[index],
-                        corridor.Width, RouteColor(corridor.Kind));
-            }
-            foreach (WorldPublicApproach approach in WorldRouteCatalog.BuildPublicApproaches())
-            {
-                if (pathSurfaces != null)
-                    break;
-                for (int index = 1; index < approach.SampledNodes.Count; index++)
-                    RouteSegment(mesh, approach.SampledNodes[index - 1], approach.SampledNodes[index],
-                        approach.Width, RouteColor(RouteKind.Sidewalk));
-            }
-            foreach (var district in districts) Quad(mesh, district, new Color32(211, 178, 116, 255));
-            foreach (var landmark in landmarks) Quad(mesh, landmark, new Color32(126, 156, 165, 255));
+            if (!game || !game.Player) return;
+            Rect background = rectTransform.rect;
+            AddQuad(mesh, background.min, background.max, new Color32(31, 53, 48, 255));
+            DrawCapturedTiles(mesh);
             DrawRouteHighlight(mesh);
             foreach (var point in CityMapLocations.Points)
             {
@@ -340,6 +333,34 @@ namespace Tycoon
             mesh.AddTriangle(first, first + 1, first + 2);
         }
 
+        void DrawCapturedTiles(VertexHelper mesh)
+        {
+            if (!capture || !capture.Atlas || capture.Grid == null)
+                return;
+            Rect rect = rectTransform.rect;
+            for (int index = 0; index < capture.Grid.TileCount; index++)
+            {
+                Bounds tile = capture.Grid.TileBounds(index);
+                Rect uv = capture.Grid.TileUv(index);
+                Vector2[] points =
+                {
+                    Position(tile.min),
+                    Position(new Vector3(tile.min.x, 0, tile.max.z)),
+                    Position(tile.max),
+                    Position(new Vector3(tile.max.x, 0, tile.min.z))
+                };
+                Vector2[] coordinates =
+                {
+                    uv.min, new Vector2(uv.xMin, uv.yMax), uv.max, new Vector2(uv.xMax, uv.yMin)
+                };
+                int first = mesh.currentVertCount;
+                for (int corner = 0; corner < points.Length; corner++)
+                    mesh.AddVert(rect.min + Vector2.Scale(points[corner], rect.size), Color.white, coordinates[corner]);
+                mesh.AddTriangle(first, first + 1, first + 2);
+                mesh.AddTriangle(first, first + 2, first + 3);
+            }
+        }
+
         void DrawRouteHighlight(VertexHelper mesh)
         {
             if (string.IsNullOrEmpty(routeHighlightPoiId) || !game || !game.Player)
@@ -352,56 +373,6 @@ namespace Tycoon
                     new Color32(255, 239, 116, 240));
                 return;
             }
-        }
-
-        static Bounds CoastalWaterBounds()
-        {
-            return new Bounds(new(530, 0, 22), new(526, 4, CityDistricts.GroundDepth));
-        }
-
-        void DrawCoastline(VertexHelper mesh)
-        {
-            Bounds bounds = CityDistricts.WorldBounds;
-            float start = bounds.min.z;
-            Vector3 previous = CoastPoint(start);
-            for (int index = 1; index <= 32; index++)
-            {
-                float amount = (float)index / 32;
-                float z = Mathf.Lerp(bounds.min.z, bounds.max.z, amount);
-                Vector3 current = CoastPoint(z);
-                RouteSegment(mesh, previous, current, 2.2f, new Color32(244, 221, 153, 235));
-                previous = current;
-            }
-        }
-
-        static Vector3 CoastPoint(float z)
-        {
-            Bounds water = CoastalWaterBounds();
-            float x = water.min.x + Mathf.Sin((z + 14) * .037f) * 5.5f
-                + Mathf.Sin((z - 42) * .083f) * 2.2f;
-            return new Vector3(x, 0, z);
-        }
-
-        void DrawRegionTints(VertexHelper mesh)
-        {
-            Quad(mesh, new Bounds(new(30, 0, 133), new(92, 4, 76)),
-                new Color32(53, 144, 92, 100));
-            foreach (var poi in WorldExpansionCatalog.BuildDefault())
-            {
-                if (poi.Id == "ForestReserve")
-                    Quad(mesh, poi.FootprintBounds, new Color32(53, 144, 92, 105));
-                if (poi.Id == "IndustrialYard")
-                    Quad(mesh, poi.FootprintBounds, new Color32(192, 135, 91, 112));
-            }
-        }
-
-        void Quad(VertexHelper mesh, Bounds world, Color tint)
-        {
-            Vector2 min = Position(world.min), max = Position(world.max);
-            min = Vector2.Max(Vector2.zero, min); max = Vector2.Min(Vector2.one, max);
-            if (min.x >= max.x || min.y >= max.y) return;
-            var rect = rectTransform.rect;
-            AddQuad(mesh, rect.min + Vector2.Scale(min, rect.size), rect.min + Vector2.Scale(max, rect.size), tint);
         }
 
         void Dot(VertexHelper mesh, Vector2 point, float radius, Color tint)
@@ -423,14 +394,6 @@ namespace Tycoon
                 Position(start + side), Position(start - side),
                 Position(end - side), Position(end + side)
             }, tint);
-        }
-
-        void SurfacePolygon(VertexHelper mesh, WorldStreetSurface surface, Color tint)
-        {
-            var points = new Vector2[surface.Outline.Count];
-            for (int index = 0; index < points.Length; index++)
-                points[index] = Position(surface.Outline[index]);
-            AddPolygon(mesh, points, tint);
         }
 
         void PoiIcon(VertexHelper mesh, string id, Vector2 center, float scale, bool selected = false)
@@ -529,18 +492,6 @@ namespace Tycoon
             for (int index = 0; index < offsets.Length; index++)
                 points[index] = center + new Vector2(offsets[index].x / width, offsets[index].y / height);
             AddPolygon(mesh, points, tint);
-        }
-
-        static Color RouteColor(RouteKind kind)
-        {
-            return kind switch
-            {
-                RouteKind.FarmPath => new Color32(151, 113, 73, 220),
-                RouteKind.Highway => new Color32(73, 82, 85, 230),
-                RouteKind.Rail => new Color32(83, 76, 70, 230),
-                RouteKind.Dock => new Color32(161, 139, 104, 230),
-                _ => new Color32(225, 222, 187, 220)
-            };
         }
 
         void AddPolygon(VertexHelper mesh, Vector2[] points, Color tint)

@@ -441,11 +441,15 @@ namespace Tycoon
                     }
                 }
             }
-            if (!farmPathNode || !WorldRouteCatalog.IsReserved(point, .01f, out string routeId))
+            if (!farmPathNode)
                 return false;
-            if (!WorldRouteCatalog.TryGet(routeId, out WorldRouteCorridor restricted))
-                return false;
-            return IsRestrictedCorridor(restricted.Kind);
+            // Dò mọi corridor cấm: route nông thôn có thể đứng trước đường bộ trong catalog.
+            foreach (WorldRouteCorridor restricted in routes)
+                if (IsRestrictedCorridor(restricted.Kind)
+                    && WorldRouteCatalog.TryGetNearestPoint(restricted.Id, point,
+                        restricted.Width * .5f + .01f, out _, out _))
+                    return true;
+            return false;
         }
 
         static bool IsFarmEdge(Vector3 first, Vector3 second)

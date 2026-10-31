@@ -448,8 +448,6 @@ namespace Tycoon
         }
         static void Marina(CityStaticGeometry g, Transform root, WorldExpansionPoi poi)
         {
-            g.Box(new Vector3(30, .02f, 0), new Vector3(84f, .04f, 70f),
-                "water", "#346D73");
             const float terminalX = -43f;
             g.Box(new Vector3(terminalX, .05f, 0), new Vector3(38f, .1f, 18f),
                 "stone", "#AAA89A");
@@ -474,8 +472,8 @@ namespace Tycoon
             AddPier(g, root, poi, 27f);
             AddMooring(g, root, poi, new Vector3(-58, 0, 27));
             AddMooring(g, root, poi, new Vector3(58, 0, 27));
-            AddMarinaKiosk(g, root, poi, new Vector3(-12, 0, -46));
-            AddDockCrane(g, root, poi, new Vector3(60, 0, 36));
+            AddMarinaKiosk(g, root, poi, new Vector3(-20, 0, -46));
+            AddDockCrane(g, root, poi, new Vector3(-25, 0, 36));
             AddDockLight(g, root, poi, new Vector3(-42, 0, -32));
             AddDockLight(g, root, poi, new Vector3(42, 0, -32));
             AddDockLight(g, root, poi, new Vector3(-42, 0, 27));
@@ -490,17 +488,23 @@ namespace Tycoon
             float z)
         {
             const float startX = -62f;
+            g.Ramp(new Vector3(-68, .04f, z), new Vector3(-62, .36f, z), "wood", "#927957");
             for (int index = 0; index < 6; index++)
             {
                 float x = startX + index * 20f + 10f;
                 Vector3 local = new Vector3(x, 0, z);
-                if (!CanPlace(root, local, poi.Footprint, 3.2f))
-                    continue;
+                // Cầu cảng chính là mặt đi của route; không loại deck vì trùng hành lang đi bộ.
                 g.Box(local + Vector3.up * .18f, new Vector3(20f, .36f, 5.6f),
                     "wood", "#927957");
+                g.Collider("EastMarinaPier", local + Vector3.up * .18f,
+                    new Vector3(20f, .36f, 5.6f));
                 g.Cylinder(new Vector3(x, .7f, z - 2.15f), .22f, 1.4f,
                     "wood", "#5B5145");
             }
+            g.Collider("EastMarinaPierEnd", new Vector3(58f, .75f, z), new Vector3(.18f, 1.2f, 5.6f));
+            for (int side = -1; side <= 1; side += 2)
+                g.Collider("EastMarinaPierRail", new Vector3(-2f, .8f, z + side * 2.7f),
+                    new Vector3(120f, 1f, .14f));
             for (int side = -1; side <= 1; side += 2)
             {
                 float railZ = z + side * 2.65f;

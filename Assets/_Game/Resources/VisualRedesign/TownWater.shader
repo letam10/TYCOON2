@@ -11,6 +11,7 @@ Shader "TYCOON/Town Water"
         _WaveAmplitude ("Wave amplitude", Range(0,2)) = 1
         _DepthScale ("Depth scale", Range(0,2)) = 1
         _FoamWidth ("Foam width", Range(.1,10)) = 2.5
+        _UseShoreUv ("Use measured shoreline distance", Range(0,1)) = 0
     }
     SubShader
     {
@@ -29,6 +30,7 @@ Shader "TYCOON/Town Water"
             half _WaveAmplitude;
             half _DepthScale;
             half _FoamWidth;
+            half _UseShoreUv;
         CBUFFER_END
         float WaterShoreDistance(float3 position)
         {
@@ -37,12 +39,14 @@ Shader "TYCOON/Town Water"
         struct Attributes
         {
             float4 positionOS : POSITION;
+            float2 uv : TEXCOORD0;
             UNITY_VERTEX_INPUT_INSTANCE_ID
         };
         struct Varyings
         {
             float4 positionCS : SV_POSITION;
             float3 positionWS : TEXCOORD0;
+            float shoreDistance : TEXCOORD1;
             UNITY_VERTEX_INPUT_INSTANCE_ID
         };
         Varyings Vert(Attributes input)
@@ -51,8 +55,10 @@ Shader "TYCOON/Town Water"
             UNITY_SETUP_INSTANCE_ID(input);
             UNITY_TRANSFER_INSTANCE_ID(input, output);
             output.positionWS = TransformObjectToWorld(input.positionOS.xyz);
+            output.shoreDistance = lerp(WaterShoreDistance(output.positionWS), input.uv.x, _UseShoreUv);
             // Sóng nhiều tầng cao tối đa khoảng 6 cm; mọi pass dùng cùng phép dịch để depth khớp.
-            float calm = _Shoreline.w > 0 ? smoothstep(0, _Shoreline.w, WaterShoreDistance(output.positionWS)) : 1;
+            float shoreEnabled = max(step(.01, _Shoreline.w), _UseShoreUv);
+            float calm = lerp(1, smoothstep(0, max(5, _Shoreline.w), output.shoreDistance), shoreEnabled);
             float seed = _WaveSeed * .0007;
             float swell = sin(dot(output.positionWS.xz, float2(.07, .11)) + _Time.y * .19 + seed) * .025;
             output.positionWS.y += (sin(dot(output.positionWS.xz, float2(.37, .21)) + _Time.y * .55 + seed) * .02
@@ -96,7 +102,7 @@ Shader "TYCOON/Town Water"
             half nearView = 1 - smoothstep(18, 70, distance(position, _WorldSpaceCameraPos));
             return filtered * nearView * _Detail;
         }
-        half3 WaterNormal(float3 position)
+        half3 WaterNormal(float3 position, float shoreDistance)
         {
             float2 phase = WaterPhases(position);
             half attenuation = rcp(1 + dot(fwidth(phase), float2(2, 2)));
@@ -109,12 +115,12 @@ Shader "TYCOON/Town Water"
                 WaterNoise(position.xz * .23 + _Time.y * .018 + 19.2),
                 WaterNoise(position.xz * .19 - _Time.y * .015 + 43.7)) - .5;
             slope += breakup * .012 * attenuation;
+            slope *= lerp(1, smoothstep(0, 4, shoreDistance), max(step(.01, _Shoreline.w), _UseShoreUv));
             return normalize(float3(slope.x, 1, slope.y));
         }
-        half3 ClearWaterBase(float3 position)
+        half3 ClearWaterBase(float3 position, float distanceToShore)
         {
-            float shore = step(.01, _Shoreline.w);
-            float distanceToShore = WaterShoreDistance(position);
+            float shore = max(step(.01, _Shoreline.w), _UseShoreUv);
             float depth = lerp(4.5, .18 + distanceToShore * .23, shore) * _DepthScale;
             // Beer-Lambert: đỏ bị hấp thụ mạnh hơn xanh; thấy cát và caustic ở vùng nông.
             half3 transmission = exp(-half3(.8, .30, .18) * depth);
@@ -127,9 +133,10 @@ Shader "TYCOON/Town Water"
             float a = sin(dot(p, float2(1.7, .8)) + _Time.y * .6);
             float b = sin(dot(p, float2(-.7, 1.8)) - _Time.y * .47);
             float causticWarp = (WaterNoise(p * .16 + _Time.y * .012 + 7.9) - .5) * .42;
-            half caustic = pow(saturate(1 - abs(a + b + causticWarp) * .5), 18);
+            half caustic = pow(saturate(1 - abs(a + b + causticWarp) * .5), 22)
+                * smoothstep(.35, .8, WaterNoise(p * .63 + _Time.y * .025));
             half3 sand = half3(.64, .60, .43) * (.94 + WaterNoise(p * .3) * .06);
-            sand += caustic * .045;
+            sand += caustic * .025;
             return sand * transmission + waterTint * (1 - transmission);
         }
         half4 Frag(Varyings input) : SV_Target
@@ -150,14 +157,14 @@ Shader "TYCOON/Town Water"
             if (visibility <= .001h) return half4(unity_FogColor.rgb, 1);
             InputData data = (InputData)0;
             data.positionWS = input.positionWS;
-            data.normalWS = WaterNormal(input.positionWS);
+            data.normalWS = WaterNormal(input.positionWS, input.shoreDistance);
             data.viewDirectionWS = GetWorldSpaceNormalizeViewDir(input.positionWS);
             data.shadowCoord = TransformWorldToShadowCoord(input.positionWS);
             data.bakedGI = SampleSH(data.normalWS);
             data.normalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(input.positionCS);
             data.shadowMask = half4(1, 1, 1, 1);
             SurfaceData surface = (SurfaceData)0;
-            surface.albedo = ClearWaterBase(input.positionWS);
+            surface.albedo = ClearWaterBase(input.positionWS, input.shoreDistance);
             surface.alpha = 1;
             surface.smoothness = _Smoothness;
             surface.metallic = _Metallic;
@@ -167,9 +174,9 @@ Shader "TYCOON/Town Water"
             float wave = sin(phase.x);
             float crossWave = sin(phase.y);
             color.rgb *= 1 + wave * .02 + crossWave * .015;
-            float shoreDistance = WaterShoreDistance(input.positionWS);
-            half shore = step(.01, _Shoreline.w)
-                * (1 - smoothstep(0, max(.01, _Shoreline.w), shoreDistance));
+            float shoreDistance = input.shoreDistance;
+            half shore = max(step(.01, _Shoreline.w), _UseShoreUv)
+                * (1 - smoothstep(0, max(5, _Shoreline.w), shoreDistance));
             color.rgb += shore * smoothstep(.78, .98, wave) * .025;
             float2 ripple = RipplePhases(input.positionWS);
             half detail = RippleWeight(input.positionWS, ripple);
@@ -189,7 +196,7 @@ Shader "TYCOON/Town Water"
         }
         half4 NormalFrag(Varyings input) : SV_Target
         {
-            return half4(WaterNormal(input.positionWS), 0);
+            return half4(WaterNormal(input.positionWS, input.shoreDistance), 0);
         }
         ENDHLSL
         Pass

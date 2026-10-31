@@ -53,7 +53,10 @@ namespace Tycoon.Tests
                 Assert.That(shells.Length, Is.EqualTo(4));
                 Assert.That(shells.All(x => Mathf.Abs(x.bounds.min.y) < .001f), Is.True);
                 var water = root.GetComponentsInChildren<NavMeshModifierVolume>();
-                Assert.That(water.Length, Is.EqualTo(12));
+                Assert.That(water.Count(x => x.name == "WaterNavigationBoundary"), Is.EqualTo(8),
+                    "Harbor and marina keep their pier openings; the beach uses the shared curved boundary.");
+                Assert.That(water.Any(x => x.name == "HydrologyNotWalkable"), Is.True,
+                    "Continuous sea replaces the three old rectangular edge volumes.");
                 Assert.That(water.All(x => x.area == 1), Is.True);
                 var cafe = landmarks.Single(x => x.Id == "CoffeeHouse");
                 Assert.That(cafe.Approach.z, Is.EqualTo(-134).Within(.001f));

@@ -518,6 +518,7 @@ namespace Tycoon
                         new Vector3(-342, 0, 286),
                         new Vector3(-309, 0, 276),
                         new Vector3(-274, 0, 248),
+                        CoastalTownLayout.ForestIndustryCrossing,
                         new Vector3(-235, 0, 226),
                         new Vector3(-192, 0, 208),
                         new Vector3(-150, 0, 190),
@@ -531,18 +532,7 @@ namespace Tycoon
                 new WorldRouteCorridor(
                     "expansion-industrial-approach",
                     RouteKind.Highway,
-                    new[]
-                    {
-                        new Vector3(190, 0, 155),
-                        new Vector3(220, 0, 176),
-                        new Vector3(251, 0, 205),
-                        new Vector3(286, 0, 221),
-                        new Vector3(323, 0, 247),
-                        new Vector3(359, 0, 265),
-                        new Vector3(397, 0, 291),
-                        new Vector3(432, 0, 309),
-                        new Vector3(465, 0, 330)
-                    },
+                    CoastalTownLayout.IndustrialRoad,
                     7f,
                     true),
                 new WorldRouteCorridor(
@@ -559,13 +549,7 @@ namespace Tycoon
                 new WorldRouteCorridor(
                     "expansion-marina-dock",
                     RouteKind.Dock,
-                    new[]
-                    {
-                        new Vector3(370, 0, -135),
-                        new Vector3(420, 0, -120),
-                        new Vector3(440, 0, -152),
-                        new Vector3(470, 0, -105)
-                    },
+                    CoastalTownLayout.MarinaDock,
                     5f,
                     true),
                 new WorldRouteCorridor(
@@ -671,20 +655,7 @@ namespace Tycoon
             {
                 new WorldPublicApproach(
                     "industrial-sidewalk-approach",
-                    new[]
-                    {
-                        new Vector3(185.1f, 0, 150.1f),
-                        new Vector3(190, 0, 164),
-                        new Vector3(220, 0, 187),
-                        new Vector3(250, 0, 208),
-                        new Vector3(285, 0, 232),
-                        new Vector3(323, 0, 255),
-                        new Vector3(330, 0, 250),
-                        new Vector3(360, 0, 285),
-                        new Vector3(399, 0, 310),
-                        new Vector3(435, 0, 330),
-                        new Vector3(465, 0, 330)
-                    },
+                    CoastalTownLayout.IndustrialWalk,
                     3f),
                 new WorldPublicApproach(
                     "village-sidewalk-approach",
@@ -701,19 +672,7 @@ namespace Tycoon
                     3f),
                 new WorldPublicApproach(
                     "marina-sidewalk-approach",
-                    new[]
-                    {
-                        new Vector3(185.1f, 0, -107.1f),
-                        new Vector3(190, 0, -90),
-                        new Vector3(205, 0, -60),
-                        new Vector3(230, 0, -40),
-                        new Vector3(285, 0, -70),
-                        new Vector3(335, 0, -110),
-                        new Vector3(370, 0, -135),
-                        new Vector3(420, 0, -120),
-                        new Vector3(440, 0, -152),
-                        new Vector3(470, 0, -105)
-                    },
+                    CoastalTownLayout.MarinaWalk,
                     3f),
                 new WorldPublicApproach(
                     "south-service-sidewalk",

@@ -7,7 +7,7 @@ namespace Tycoon
         public static void Build(CityStaticGeometry g, CityDressingSpace space)
         {
             Park(g, space);
-            River(g, space);
+
             Roadsides(g, space);
             Orchards(g, space);
         }
@@ -32,44 +32,6 @@ namespace Tycoon
                         "stone", "#AAA89A");
                 }
                 CityProps.Lamp(g, p + new Vector3(side * 10, 0, 1.8f));
-            }
-        }
-
-        static void River(CityStaticGeometry g, CityDressingSpace space)
-        {
-            // Sông nằm sau khu phố; mặt cầu thấp giữ lối đi ngang bằng với bờ.
-            const float z = 103;
-            for (int section = 0; section < 13; section++)
-            {
-                Vector3 p = new(-119 + section * 21, 0, z);
-                if (!space.Take(p, 21, 9)) continue;
-                g.Box(p + Vector3.up * .02f, new(21, .035f, 7), "water", "#548E90");
-                for (int side = -1; side <= 1; side += 2)
-                {
-                    g.Box(p + new Vector3(0, .13f, side * 3.8f), new(21, .3f, .6f), "stone", "#AAA89A");
-                    if (section is not (2 or 6 or 10))
-                        g.Collider("RiverBank", p + new Vector3(0, .13f, side * 3.8f), new(21, .3f, .6f));
-                    g.Box(p + new Vector3(0, .055f, side * 4.45f), new(21, .08f, .7f),
-                        "paving", "#C0B8A0");
-                }
-                if (section is 2 or 6 or 10)
-                {
-                    g.Box(p + Vector3.up * .14f, new(4.8f, .2f, 10), "wood", "#817154");
-                    for (int side = -1; side <= 1; side += 2)
-                    {
-                        g.Box(p + new Vector3(side * 2.5f, 1.05f, 0), new(.14f, .14f, 10),
-                            "wood", "#817154");
-                        g.Collider("BridgeRailing", p + new Vector3(side * 2.5f, .6f, 0), new(.2f, 1.2f, 10));
-                        for (int post = 0; post < 6; post++)
-                            g.Box(p + new Vector3(side * 2.5f, .6f, -5 + post * 2), new(.2f, 1.2f, .2f),
-                                "wood", "#817154");
-                    }
-                }
-            }
-            for (int i = 0; i < 17; i++)
-            {
-                Vector3 p = new(-123 + i * 16, 0, 112);
-                if (space.Take(p, 7, 7)) Tree(g, p, 1.25f);
             }
         }
 

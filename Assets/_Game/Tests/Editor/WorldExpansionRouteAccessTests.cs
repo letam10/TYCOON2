@@ -24,7 +24,7 @@ namespace Tycoon.Tests
         [Test]
         public void MarinaDockRoutePassesTheExpansionBoatDoor()
         {
-            root.transform.position = new Vector3(420, 0, -120);
+            root.transform.position = CoastalTownLayout.MarinaCenter;
             WorldExpansionBoat boat = WorldExpansionBoat.Build(
                 root.transform, new Vector3(20, 0, -27));
             Vector3 door = boat.DoorOutside;

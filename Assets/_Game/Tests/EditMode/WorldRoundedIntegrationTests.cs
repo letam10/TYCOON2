@@ -70,8 +70,9 @@ namespace Tycoon.Tests
         [Test]
         public void PublicApproachRecognizesActualWidthAndRejectsAirAndRemotePoints()
         {
-            Assert.That(WorldRouteCatalog.IsPublicApproachPoint(new(330, 0, 250)), Is.True);
-            Assert.That(WorldRouteCatalog.IsPublicApproachPoint(new(330, 10, 250)), Is.False);
+            Assert.That(WorldRouteCatalog.IsPublicApproachPoint(CoastalTownLayout.IndustrialEntry), Is.True);
+            Assert.That(WorldRouteCatalog.IsPublicApproachPoint(
+                CoastalTownLayout.IndustrialEntry + Vector3.up * 10), Is.False);
             Assert.That(WorldRouteCatalog.IsPublicApproachPoint(new(520, 0, 40)), Is.False);
             Assert.That(WorldRouteCatalog.IsPublicApproachPoint(new(float.NaN, 0, 250)), Is.False);
         }

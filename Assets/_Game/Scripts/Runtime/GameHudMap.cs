@@ -43,11 +43,16 @@ namespace Tycoon
                 "Chọn điểm vàng để dịch chuyển • mũi tên trắng là bạn");
             var area = NewRect("MapArea", board.transform);
             Rect(area, new(.035f, .19f), new(.73f, .79f), Vector2.zero, Vector2.zero);
-            worldMap = NewRect("WorldMapTerrain", area).gameObject.AddComponent<CityMapGraphic>();
-            Rect(worldMap.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-            var aspect = worldMap.gameObject.AddComponent<AspectRatioFitter>();
+            var mapViewport = NewRect("WorldMapViewport", area);
+            Rect(mapViewport, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            mapViewport.gameObject.AddComponent<RectMask2D>();
+            var aspect = mapViewport.gameObject.AddComponent<AspectRatioFitter>();
             aspect.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
             aspect.aspectRatio = CityDistricts.GroundWidth / CityDistricts.GroundDepth;
+            var worldTerrain = NewRect("WorldMapTerrain", mapViewport);
+            worldTerrain.gameObject.AddComponent<CanvasRenderer>();
+            worldMap = worldTerrain.gameObject.AddComponent<CityMapGraphic>();
+            Rect(worldMap.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             worldMap.Initialize(game, false);
             for (int i = 0; i < CityMapLocations.Points.Length; i++)
             {
@@ -104,7 +109,9 @@ namespace Tycoon
             var legend = Text("MapLegend", board.transform,
                 "Kéo để pan • chuột giữa để xoay • cuộn để zoom", 14, TextAnchor.MiddleLeft, Muted);
             Rect(legend.rectTransform, new(.47f, .80f), new(.73f, .87f), Vector2.zero, Vector2.zero);
-            mapPlayer = NewRect("MapPlayerIndicator", worldMap.transform).gameObject.AddComponent<MapPlayerIndicator>();
+            var playerIndicator = NewRect("MapPlayerIndicator", worldMap.transform);
+            playerIndicator.gameObject.AddComponent<CanvasRenderer>();
+            mapPlayer = playerIndicator.gameObject.AddComponent<MapPlayerIndicator>();
             Rect(mapPlayer.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             mapPlayer.Initialize(worldMap, game.Player);
             mapMessage = Text("MapMessage", board.transform, "", 18, TextAnchor.MiddleCenter, Muted);
@@ -122,6 +129,7 @@ namespace Tycoon
             mapReturnMode = mode;
             ShowScreen(ScreenMode.Map);
             worldMap.SetTooltip(string.Empty);
+            worldMap.RefreshSnapshot();
             worldMap.SetVerticesDirty();
             mapPlayer.SetVerticesDirty();
             SetText(mapMessage, "Dịch chuyển miễn phí, giữ nguyên hàng và tiền.");

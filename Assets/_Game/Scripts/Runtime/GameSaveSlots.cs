@@ -7,7 +7,7 @@ namespace Tycoon
     public static class GameSaveSlots
     {
         public const int Count = 3;
-        public const string RedesignProfileId = "redesign-v1";
+        public const string RedesignProfileId = "coastal-redesign-v2";
         [Serializable] sealed class Selection { public int slot = 1; }
 
         public static string ProfileDirectory(string baseDirectory, string profileId)

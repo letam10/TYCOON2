@@ -7,7 +7,6 @@ namespace Tycoon
         public static void Build(CityStaticGeometry g)
         {
             g.Box(new(-18, .045f, 0), new(24, .07f, 42), "paving", "#B7B09C");
-            g.Box(new(12, .035f, 0), new(36, .035f, 42), "water", "#346E7B");
             foreach (float z in new[] { -12f, 12f })
             {
                 g.Box(new(2, .18f, z), new(30, .22f, 3.2f), "wood", "#A18B68");

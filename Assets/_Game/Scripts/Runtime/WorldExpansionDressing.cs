@@ -1,49 +1,9 @@
-using Unity.AI.Navigation;
 using UnityEngine;
-using UnityEngine.AI;
 
 namespace Tycoon
 {
     public static class WorldExpansionDressing
     {
-        public static void BuildNavigation(Transform world)
-        {
-            if (!world) return;
-            Transform root = world.Find("WorldExpansionDressing");
-            if (!root) return;
-            var surface = root.GetComponent<NavMeshSurface>();
-            if (!surface) surface = root.gameObject.AddComponent<NavMeshSurface>();
-            surface.collectObjects = CollectObjects.Children;
-            surface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
-            surface.overrideVoxelSize = true;
-            surface.voxelSize = .16f;
-            surface.BuildNavMesh();
-            Transform links = world.Find("ExpansionNavLinks");
-            if (!links)
-            {
-                links = new GameObject("ExpansionNavLinks").transform;
-                links.SetParent(world, false);
-                AddLink(links, "Forest", new Vector3(30, 0, 133), new Vector3(-370, 0, 275), 6f);
-                AddLink(links, "Industrial", new Vector3(190, 0, 155), new Vector3(330, 0, 250), 7f);
-                AddLink(links, "Village", new Vector3(0, 0, 155), new Vector3(0, 0, 330), 6f);
-                AddLink(links, "Marina", new Vector3(199, 0, -40), new Vector3(370, 0, -135), 6f);
-                AddLink(links, "SouthHighway", new Vector3(190, 0, -112), new Vector3(0, 0, -300), 8f);
-            }
-        }
-
-        static void AddLink(Transform parent, string id, Vector3 start, Vector3 end, float width)
-        {
-            var link = new GameObject("ExpansionNavLink_" + id).AddComponent<NavMeshLink>();
-            link.transform.SetParent(parent, false);
-            link.startPoint = parent.InverseTransformPoint(start);
-            link.endPoint = parent.InverseTransformPoint(end);
-            link.width = width;
-            link.bidirectional = true;
-            link.autoUpdate = true;
-            link.agentTypeID = NavMesh.GetSettingsByIndex(0).agentTypeID;
-            link.UpdateLink();
-        }
-
         public static void Build(Transform world)
         {
             if (!world)
@@ -68,8 +28,11 @@ namespace Tycoon
             var root = new GameObject("Expansion_" + poi.Id).transform;
             root.SetParent(parent, false);
             root.localPosition = poi.Center;
-            Art.Box("ExpansionGround", Vector3.zero,
-                new Vector3(poi.Footprint.x, .08f, poi.Footprint.z), GroundColor(poi.Id), root, true);
+            float groundWidth = poi.Id == "EastMarina"
+                ? CoastalTownLayout.MarinaQuayX - (poi.Center.x - poi.Footprint.x * .5f) : poi.Footprint.x;
+            Vector3 groundCenter = new((groundWidth - poi.Footprint.x) * .5f, 0, 0);
+            Art.Box("ExpansionGround", groundCenter,
+                new Vector3(groundWidth, .08f, poi.Footprint.z), GroundColor(poi.Id), root, true);
             Art.Label(poi.Label, Vector3.up * .35f, root, .28f, "#F4E9C9", true);
             for (int index = 1; index < poi.RouteAnchors.Count; index++)
                 Segment(root, poi.RouteAnchors[index - 1] - poi.Center,

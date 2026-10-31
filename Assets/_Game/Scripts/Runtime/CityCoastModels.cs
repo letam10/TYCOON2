@@ -7,12 +7,10 @@ namespace Tycoon
     {
         public static void Beach(CityStaticGeometry g)
         {
-            // Dải cát và nước có chung ranh giới, tránh lớp đất xanh nhô xuyên mặt nước.
+            // Cát và mép nước do WorldHydrologyTerrain dựng chung để cửa sông không bị mảng cát đè.
             for (int row = 0; row < 4; row++)
             {
                 float z = -49.5f + row * 33;
-                g.Sculpt(CityCoastWaterMesh.BeachSand(34, 33, z + 77), new(-3, 0, z), "sand", "#E8D6AB");
-                g.Sculpt(CityCoastWaterMesh.BeachWater(20, 33, z + 77), new(24, 0, z), "ocean", CityOceanHorizon.Tint);
                 g.Box(new(-27, .055f, z), new(8, .07f, 33), "paving", "#C5BEA8");
             }
             for (int i = 0; i < 8; i++)
@@ -29,8 +27,6 @@ namespace Tycoon
         public static void Harbor(CityStaticGeometry g)
         {
             g.Box(new(-18, .045f, 0), new(24, .07f, 62), "paving", "#9EA9A2");
-            for (int row = 0; row < 2; row++)
-                g.Sculpt(CityCoastWaterMesh.Create(36, 31), new(12, 0, -15.5f + row * 31), "water", CityOceanHorizon.Tint);
             foreach (float z in new[] { -18f, 18f })
             {
                 g.Box(new(2, .18f, z), new(30, .22f, 3.2f), "wood", "#A18B68");
@@ -78,7 +74,7 @@ namespace Tycoon
 
         public static void BlockWater(Transform root, string id)
         {
-            if (id == "Beach") Block(new(24, 0, 0), new(20, 4, 132));
+            if (id == "Beach") return; // Bãi biển dùng biên cong và vùng cấm nước chung của hydrology.
             else if (id == "Marina")
             {
                 Block(new(5.5f, 0, -17.3f), new(23, 4, 7.4f));

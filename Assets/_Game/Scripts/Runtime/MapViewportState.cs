@@ -10,8 +10,8 @@ namespace Tycoon
     /// </summary>
     public sealed class MapViewportState
     {
-        public const float MinZoom = 0.65f;
-        public const float MaxZoom = 3.5f;
+        public const float MinZoom = 0.5f;
+        public const float MaxZoom = 6f;
 
         readonly List<string> enabledKinds = new List<string>();
         readonly IReadOnlyCollection<string> readonlyEnabledKinds;

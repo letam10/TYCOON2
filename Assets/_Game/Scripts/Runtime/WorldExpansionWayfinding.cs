@@ -31,7 +31,7 @@ namespace Tycoon
                 toPoi.y = 0;
                 if (toPoi.sqrMagnitude > .001f && Vector3.Dot(side, toPoi) < 0f)
                     side = -side;
-                Vector3 world = routePoint + side * (route.Width * .5f + 4f);
+                Vector3 world = ClearSignPosition(poi, route, routePoint, tangent, side);
                 facing = poi.Center - world;
                 facing.y = 0;
                 if (facing.sqrMagnitude < .001f)
@@ -69,10 +69,10 @@ namespace Tycoon
         {
             float closest = float.PositiveInfinity;
             Vector3 direction = Vector3.forward;
-            for (int index = 1; index < route.Nodes.Count; index++)
+            for (int index = 1; index < route.SampledNodes.Count; index++)
             {
-                Vector3 start = route.Nodes[index - 1];
-                Vector3 end = route.Nodes[index];
+                Vector3 start = route.SampledNodes[index - 1];
+                Vector3 end = route.SampledNodes[index];
                 Vector3 delta = end - start;
                 delta.y = 0;
                 if (delta.sqrMagnitude < .001f) continue;
@@ -84,6 +84,31 @@ namespace Tycoon
                 direction = delta.normalized;
             }
             return direction;
+        }
+
+        static Vector3 ClearSignPosition(WorldExpansionPoi poi, WorldRouteCorridor route,
+            Vector3 point, Vector3 tangent, Vector3 side)
+        {
+            const float clearance = 2.8f;
+            for (int distanceStep = 0; distanceStep < 6; distanceStep++)
+            {
+                float distance = route.Width * .5f + 4 + distanceStep * 2;
+                foreach (int sign in new[] { 1, -1 })
+                {
+                    foreach (float along in new[] { 0f, -6f, 6f })
+                    {
+                        Vector3 candidate = point + side * (distance * sign) + tangent * along;
+                        Vector3 local = candidate - poi.Center;
+                        if (Mathf.Abs(local.x) + clearance > poi.Footprint.x * .5f
+                            || Mathf.Abs(local.z) + clearance > poi.Footprint.z * .5f
+                            || WorldHydrologyLayout.IsWater(candidate)
+                            || WorldRouteCatalog.IsReserved(candidate, clearance, out _))
+                            continue;
+                        return candidate;
+                    }
+                }
+            }
+            throw new System.InvalidOperationException("Không có vị trí biển chỉ dẫn thông thoáng: " + poi.Id);
         }
 
         static void AddSign(

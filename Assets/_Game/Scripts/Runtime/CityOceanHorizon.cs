@@ -11,14 +11,10 @@ namespace Tycoon
         {
             const float margin = 1600;
             float west = bounds.min.x - margin;
-            float right = bounds.max.x + margin;
             float bottom = bounds.min.z - margin;
             float top = bounds.max.z + margin;
-            var water = TownSurfaceMaterials.Get("water", Tint);
             var grass = TownSurfaceMaterials.Get("grass", "#6C8151");
-            Plane(parent, "OceanVisualHorizon", left, right, bottom, top, .0525f, water);
-            Plane(parent, "OceanNorthContext", 261, left, bottom, bounds.min.z - 3, .0525f, water);
-            Plane(parent, "OceanSouthContext", 261, left, bounds.max.z + 3, top, .0525f, water);
+            WorldHydrologyWorld.BuildOcean(parent, bounds);
             // Bối cảnh ngoài bản đồ không thêm đất chơi, collider hay đường đi.
             Plane(parent, "CoastalNorthGround", west, 261, bottom, bounds.min.z, 0, grass);
             Plane(parent, "CoastalSouthGround", west, 261, bounds.max.z, top, 0, grass);

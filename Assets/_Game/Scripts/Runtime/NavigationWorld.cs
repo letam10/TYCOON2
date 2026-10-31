@@ -28,7 +28,7 @@ namespace Tycoon
             {
                 Physics.SyncTransforms();
                 surface.BuildNavMesh();
-                WorldExpansionDressing.BuildNavigation(transform);
+                // Cả khu mở rộng đã là con của World; một surface tránh các lớp nav chồng nhau.
             }
             finally
             {

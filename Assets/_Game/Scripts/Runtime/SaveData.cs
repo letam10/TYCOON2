@@ -98,7 +98,7 @@ namespace Tycoon
                 { stream.Write(bytes, 0, bytes.Length); stream.Flush(true); }
                 fault?.Invoke(CommitBoundary.TemporaryFlushed);
                 // Replace không truyền backup path: ghi nguyên tử mà không tạo .bak.
-                if (File.Exists(path)) File.Replace(temporary, path, null);
+                if (File.Exists(path)) AtomicSaveFile.Replace(temporary, path);
                 else File.Move(temporary, path);
                 fault?.Invoke(CommitBoundary.Replaced);
             }
@@ -107,7 +107,7 @@ namespace Tycoon
         public static SaveData Read(string path)
         {
             if (!File.Exists(path)) return null;
-            var data = JsonUtility.FromJson<SaveData>(File.ReadAllText(path));
+            var data = JsonUtility.FromJson<SaveData>(AtomicSaveFile.ReadText(path));
             // Unity có thể tạo inline class rỗng khi JSON thiếu field; marker phân biệt save v2 cũ.
             if(data!=null&&data.transactionVersion==0)data.transactionState=null;
             if(data?.transactionVersion==1&&data.transactionState!=null)

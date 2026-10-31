@@ -304,12 +304,14 @@ namespace Tycoon
         IEnumerator CoastalWaterPictures()
         {
             var beach = game.GetComponentsInChildren<CityLandmark>().Single(x => x.Id == "Beach");
-            var ocean = beach.GetComponentsInChildren<MeshRenderer>()
+            var coast = game.GetComponentsInChildren<WorldHydrologyWorld>()
+                .Single(owner => owner.name == "CoastalHorizon");
+            var ocean = coast.GetComponentsInChildren<MeshRenderer>()
                 .Select(x => x.sharedMaterial).First(x => x.shader.name == "TYCOON/Town Water");
             Color tint = ocean.GetColor("_BaseColor");
             Check(tint.g > tint.r && tint.b > tint.r && ocean.shader.isSupported,
                 "Coast uses supported blue-green water shader");
-            Check(beach.GetComponentsInChildren<MeshRenderer>().Any(x => x.sharedMaterial.name.Contains("sand:")),
+            Check(coast.GetComponentsInChildren<MeshRenderer>().Any(x => x.sharedMaterial.name.Contains("sand:")),
                 "Beach uses sand material with a wet shore band");
             Transform original = game.CameraRig.Target;
             float yaw = game.CameraRig.Yaw, distance = game.CameraRig.Distance;

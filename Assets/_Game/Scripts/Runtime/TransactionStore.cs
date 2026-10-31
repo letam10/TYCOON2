@@ -25,7 +25,7 @@ namespace Tycoon
         public TransactionState Read()
         {
             if (!File.Exists(Path)) return null;
-            var envelope = JsonUtility.FromJson<Envelope>(File.ReadAllText(Path));
+            var envelope = JsonUtility.FromJson<Envelope>(AtomicSaveFile.ReadText(Path));
             if (envelope == null || string.IsNullOrEmpty(envelope.payload) || Hash(envelope.payload) != envelope.sha256)
                 throw new InvalidDataException("Transaction checksum không hợp lệ: " + Path);
             return JsonUtility.FromJson<TransactionState>(envelope.payload);
@@ -48,7 +48,7 @@ namespace Tycoon
                 { stream.Write(bytes, 0, bytes.Length); stream.Flush(true); }
                 Fault?.Invoke(CommitBoundary.TemporaryFlushed);
                 // Mutation, dedup, receipt và outbox nằm trong cùng một lần thay file; không tạo backup.
-                if (File.Exists(Path)) File.Replace(temporary, Path, null);
+                if (File.Exists(Path)) AtomicSaveFile.Replace(temporary, Path);
                 else File.Move(temporary, Path);
                 Fault?.Invoke(CommitBoundary.Replaced);
             }

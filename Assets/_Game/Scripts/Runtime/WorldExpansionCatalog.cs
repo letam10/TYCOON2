@@ -56,10 +56,10 @@ namespace Tycoon
                 new WorldExpansionPoi(
                     "IndustrialYard",
                     "Bãi công nghiệp",
-                    new Vector3(410, 0, 300),
-                    new Vector3(180, 4, 140),
-                    new Vector3(330, 0, 250),
-                    new Vector3(465, 0, 330)),
+                    CoastalTownLayout.IndustrialCenter,
+                    CoastalTownLayout.IndustrialFootprint,
+                    CoastalTownLayout.IndustrialEntry,
+                    CoastalTownLayout.IndustrialVisit),
                 new WorldExpansionPoi(
                     "NorthVillage",
                     "Làng phía Bắc",
@@ -70,11 +70,11 @@ namespace Tycoon
                 new WorldExpansionPoi(
                     "EastMarina",
                     "Bến du thuyền phía Đông",
-                    new Vector3(420, 0, -120),
-                    new Vector3(180, 4, 110),
-                    new Vector3(370, 0, -135),
-                    new Vector3(440, 0, -152),
-                    new Vector3(470, 0, -105)),
+                    CoastalTownLayout.MarinaCenter,
+                    CoastalTownLayout.MarinaFootprint,
+                    CoastalTownLayout.MarinaEntry,
+                    CoastalTownLayout.MarinaDock[4],
+                    CoastalTownLayout.MarinaDock[5]),
                 new WorldExpansionPoi(
                     "SouthHighway",
                     "Xa lộ phía Nam",

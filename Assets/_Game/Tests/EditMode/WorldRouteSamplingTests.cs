@@ -149,10 +149,12 @@ namespace Tycoon.Tests
         [Test]
         public void CatalogNearestPointUsesCurvedMarinaSampleRatherThanRawChord()
         {
-            // Tâm (417.782195854, -125.885494498), R=5, góc quay -1.303653806 rad.
-            Vector3 expected = new Vector3(419.545298816f, 0, -121.206662599f);
             Assert.That(WorldRouteCatalog.TryGet(
                 "expansion-marina-dock", out WorldRouteCorridor route), Is.True);
+            Vector3 expected = route.SampledNodes[0];
+            foreach (Vector3 candidate in route.SampledNodes)
+                if (DistanceToPolyline(candidate, route.Nodes) > DistanceToPolyline(expected, route.Nodes))
+                    expected = candidate;
             Assert.That(DistanceToPolyline(expected, route.Nodes), Is.GreaterThan(.8f));
 
             bool found = WorldRouteCatalog.TryGetNearestPoint(
@@ -169,8 +171,23 @@ namespace Tycoon.Tests
         {
             Assert.That(WorldRouteCatalog.TryGet(
                 "expansion-marina-dock", out WorldRouteCorridor route), Is.True);
-            // Trung điểm cung cộng 2.35 m về tâm; cách cả hai dây raw khoảng 2.8935 m.
-            Vector3 point = new Vector3(418.716640424f, 0, -123.405713592f);
+            // Giữ regression ngoài dải raw, nhưng lấy góc cong của bến đã dời vào bờ mới.
+            Vector3 point = Vector3.zero;
+            bool pointFound = false;
+            for (int index = 1; index < route.SampledNodes.Count - 1 && !pointFound; index++)
+            {
+                Vector3 tangent = route.SampledNodes[index + 1] - route.SampledNodes[index - 1];
+                Vector3 side = Vector3.Cross(Vector3.up, tangent.normalized) * (route.Width * .5f - .15f);
+                foreach (Vector3 candidate in new[] { route.SampledNodes[index] + side, route.SampledNodes[index] - side })
+                {
+                    if (DistanceToPolyline(candidate, route.Nodes) <= route.Width * .5f + .01f)
+                        continue;
+                    point = candidate;
+                    pointFound = true;
+                    break;
+                }
+            }
+            Assert.That(pointFound, Is.True, "The relocated curved route must retain an outside-raw-strip probe.");
             Assert.That(DistanceToPolyline(point, route.Nodes), Is.GreaterThan(route.Width * .5f),
                 "This regression point must lie outside the former straight-strip reservation.");
 

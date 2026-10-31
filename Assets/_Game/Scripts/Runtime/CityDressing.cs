@@ -21,6 +21,8 @@ namespace Tycoon
             CityOuterDistricts.Build(world, space);
             CityLandscape.Build(geometry, space);
             geometry.Finish();
+            WorldHydrologyWorld.BuildRiver(world);
+            CoastalTownCrossing.Build(world);
             if (game.IsOrdinaryPlayCheck) space.WriteReport(game.QaDirectory);
         }
     }
@@ -97,6 +99,12 @@ namespace Tycoon
             var bounds = new Bounds(center, new(width, 10, depth));
             var attempt = new Placement { name = name, center = center, width = width, depth = depth };
             placements.Add(attempt);
+            if (name is not ("Harbor" or "Marina" or "Beach")
+                && WorldHydrologyLayout.CrossesWater(bounds))
+            {
+                attempt.blocker = "River or ocean";
+                return false;
+            }
             var world = CityDistricts.WorldBounds;
             if (bounds.min.x < world.min.x + 1 || bounds.max.x > world.max.x - 1
                 || bounds.min.z < world.min.z + 1 || bounds.max.z > world.max.z - 1)

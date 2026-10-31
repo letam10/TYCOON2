@@ -50,7 +50,17 @@ namespace Tycoon
             if(milestones14)mode="stage14-milestones";
             if(assets)mode="asset-library";
             if(town||townLayout||townLoad)mode=townLoad?"town-load":townLayout?"town-layout":"town-redesign";
-            if (Array.Exists(arguments, argument => argument == "--qa-world-features"))
+            if (Array.Exists(arguments, argument => argument == "--qa-hydrology"))
+            {
+                mode = "hydrology";
+                routines.Push(HydrologyAcceptance());
+            }
+            else if (Array.Exists(arguments, argument => argument == "--qa-map-photography"))
+            {
+                mode = "map-photography";
+                routines.Push(MapPhotographyAcceptance());
+            }
+            else if (Array.Exists(arguments, argument => argument == "--qa-world-features"))
             {
                 mode = "world-features";
                 routines.Push(WorldFeaturesAcceptance());
