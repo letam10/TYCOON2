@@ -1,0 +1,71 @@
+{
+  "capturedUtc": "2026-10-31T16:18:26.1303862Z",
+  "sourceCommit": "4b74d0f6bbdceb314495720aba48c32be4d08312",
+  "baseCommit": "3a3ad93b66b3ff014dd820b1203f135acb418e49",
+  "scope": "Photographic map, connected sea/river/estuary, inland industry/coastal marina, single NavMesh, save replacement repair",
+  "profile": "coastal-redesign-v2",
+  "build": {
+    "result": "Succeeded",
+    "builtUtc": "2026-10-31T16:06:08.2940343Z",
+    "bytes": 117286798,
+    "seconds": 41.4829861,
+    "errors": 0,
+    "warnings": 34
+  },
+  "tests": {
+    "skipped": 0,
+    "failed": 0,
+    "total": 1219,
+    "passed": 1219
+  },
+  "native": {
+    "device": {
+      "name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "vendor": "NVIDIA",
+      "api": "Direct3D11",
+      "started": "2026-10-31T16:07:44.1572963Z",
+      "memoryMiB": 7956,
+      "width": 1920,
+      "height": 1080
+    },
+    "finishedUtc": "2026-10-31T16:08:38.5271268Z",
+    "visibleWindowRequested": true,
+    "checks": 85,
+    "runtimeErrors": [],
+    "startedUtc": "2026-10-31T16:07:51.483777Z",
+    "passed": true
+  },
+  "map": {
+    "columns": 4,
+    "atlasHeight": 2786,
+    "projectionErrorPixels": 0.0001263465528609231,
+    "atlasWidth": 4098,
+    "rows": 3
+  },
+  "world": {
+    "runtimeErrors": [],
+    "checks": 6096,
+    "passed": true
+  },
+  "reload": {
+    "runtimeErrors": [],
+    "checks": 9,
+    "passed": true
+  },
+  "runtimeSha256": "CF59113F20570FD3E7B01BAC939C93908D43DCF27AA7A0BBC42037D5F30882D9",
+  "package": {
+    "sha256": "D464C4EA6068854F94563987B5E2ABDE904C011EED8273C34BD5CBC5CE638A25",
+    "verification": "Every ZIP entry SHA256 matched the corresponding built runtime file",
+    "file": "TYCOON2-Coastal-Windows-20261031.zip",
+    "filesVerified": 111,
+    "bytes": 48509577
+  },
+  "limitations": [
+    "Full city asset/interior/gameplay redesign remains planned",
+    "No FPS benchmark or soak in this scoped change",
+    "34 pre-existing build warnings remain",
+    "One earlier test cleanup AccessDenied did not reproduce in focused or final full tests",
+    "No Steam depot upload"
+  ],
+  "originalCheckout": "D:/GAME/TYCOON2 preserved without reset, clean, stash or merge"
+}

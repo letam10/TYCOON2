@@ -8,7 +8,9 @@ Unity 6000.6.3f1, URP 17.6.0; Windows, tiếng Việt/English, chơi đơn offli
 Giải nén toàn bộ gói Windows rồi chạy `TYCOON2.exe`.
 Giữ thư mục `TYCOON2_Data`, các DLL và thư mục kèm theo bên cạnh chương trình.
 Hướng dẫn điều khiển hiện hành nằm ngay bên dưới.
-Bản bàn giao V21 và bằng chứng hiện hành: [CODEX_HANDOFF.md](Docs/CODEX_HANDOFF.md).
+Bản sửa map/biển/sông 31/10/2026 và bằng chứng hiện hành:
+[DELIVERY.md](work/review-20261029/hydrology-20261031/DELIVERY.md).
+Các bản V21 trong [CODEX_HANDOFF.md](Docs/CODEX_HANDOFF.md) là lịch sử.
 
 | Thao tác | Điều khiển |
 | --- | --- |
@@ -23,9 +25,11 @@ Bản bàn giao V21 và bằng chứng hiện hành: [CODEX_HANDOFF.md](Docs/COD
 | Đổi phím | Cài đặt → Tùy chỉnh phím |
 | 3 slot lưu / chơi mới | Menu hoặc Cài đặt → Slot lưu • Chơi mới |
 
-Minimap nằm dưới bên trái, theo vị trí và hướng nhân vật. Bản đồ lớn tạm dừng game;
+Minimap dùng ảnh chụp thế giới 3D và theo vị trí nhân vật. Bản đồ lớn tạm dừng game;
 bấm điểm vàng hoặc tên điểm để dịch chuyển. Game mới xuất hiện trước quầy nông trại TYCOON.
-Slot 1 giữ save cũ; slot 2/3 độc lập. Lưu nhanh dùng slot đang chơi. Ghi đè cần xác nhận
+Kéo chuột trái để pan, chuột giữa để xoay, cuộn để zoom; N về Bắc, F về người chơi.
+Bản địa hình mới dùng profile `coastal-redesign-v2`; prototype và `redesign-v1` được giữ riêng.
+Ba slot độc lập trong profile mới. Lưu nhanh dùng slot đang chơi. Ghi đè cần xác nhận
 lần nữa và giữ checkpoint trước trong file `.previous.json` của slot đó.
 Đổi phím được tự lưu; Esc hủy lúc chọn phím, nút Khôi phục mặc định bỏ các phím tùy chỉnh.
 
@@ -51,7 +55,7 @@ Kiểm chứng hiện hành và giới hạn nằm trong `Docs/CODEX_HANDOFF.md`
 
 Cài đúng Unity qua Unity Hub, mở thư mục dự án, mở `Assets/_Game/Scenes/Tycoon.unity` và Play.
 Repo dùng Git LFS cho asset; chạy `git lfs pull` sau khi clone.
-Save cũ được phục hồi journal rồi chuyển tiền ví sang két và vị trí sang bản đồ mới đúng một lần.
+Profile cũ không tự nạp vào bản địa hình mới; các file save cũ được giữ nguyên.
 
 ## Kiểm tra tại máy phát triển
 

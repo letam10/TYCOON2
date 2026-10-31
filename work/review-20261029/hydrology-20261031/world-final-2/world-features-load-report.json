@@ -1,0 +1,28 @@
+{
+    "passed": true,
+    "startedUtc": "2026-10-31T16:14:36.1555150Z",
+    "finishedUtc": "2026-10-31T16:14:38.7403939Z",
+    "graphicsDevice": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "failure": "",
+    "distanceWalked": 0.0,
+    "playerHeight": 0.0,
+    "interactions": 1,
+    "materialSlotsChecked": 0,
+    "checks": [
+        "Separate process restores selected save slot",
+        "Selected slot persists across a new game process",
+        "Separate process restores exact slot money",
+        "Separate process restores completed town progression",
+        "Separate process restores saved player position",
+        "Relaunch preserves original legacy save",
+        "Custom keys survive native process relaunch",
+        "Restored custom key opens map in a new process",
+        "Separate-process feature verification has no runtime errors"
+    ],
+    "screenshots": [
+        "relaunch-map.png"
+    ],
+    "runtimeErrors": [],
+    "renderCostScope": "",
+    "renderCostRuns": []
+}
